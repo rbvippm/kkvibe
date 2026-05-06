@@ -107,10 +107,10 @@ onUnmounted(() => clearInterval(demoTimer))
           >
             <div class="relative">
               <div
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[var(--accent)]/30 to-[var(--accent)]/5 text-lg font-semibold text-[var(--text-h)] ring-2 ring-[var(--border)] transition group-hover:ring-[var(--accent-border)]"
+                class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-600 text-lg font-semibold text-amber-950 ring-2 ring-amber-700/40 transition group-hover:ring-amber-500"
                 :class="
                   user.speaking
-                    ? 'shadow-[0_0_0_4px_var(--accent-bg),0_0_28px_var(--accent-border)]'
+                    ? 'shadow-[0_0_0_4px_rgba(251,191,36,0.45),0_0_26px_rgba(217,119,6,0.55)]'
                     : ''
                 "
               >
