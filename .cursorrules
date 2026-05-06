@@ -1,0 +1,6 @@
+# Vue 3 Vibecoding Rules
+- 使用 <script setup> 和 TypeScript。
+- 样式必须使用 Tailwind CSS 类名，禁止写 <style> 块。
+- 优先使用单文件组件 (SFC)。
+- 当我描述意图时，直接修改或创建完整文件，不要解释代码原理。
+- 交互逻辑使用 Vue 3 的 Ref 和 Reactive，保持极致简洁。
