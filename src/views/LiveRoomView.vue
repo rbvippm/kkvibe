@@ -1,225 +1,474 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 
-type SeatUser = {
-  id: string
-  name: string
-  tag?: string
-  speaking?: boolean
-  muted?: boolean
-}
+/** 麦位角色：主播 / 房管 / 普通（无角标） */
+type MicRole = 'anchor' | 'admin' | 'none'
+
+type MicSeat =
+  | {
+      id: string
+      empty: false
+      name: string
+      /** 头像占位：首字或 emoji */
+      avatar: string
+      /** 发言中：外圈蓝光动画 */
+      speaking: boolean
+      /** 语音开启：白麦；关闭：红麦+斜杠 */
+      voiceOn: boolean
+      role: MicRole
+    }
+  | {
+      id: string
+      empty: true
+      /** 1–8 麦序号，用于「加入N麦」 */
+      micIndex: number
+    }
 
 const emit = defineEmits<{
   back: []
 }>()
 
-const roomTitle = ref('深夜 FM · 读诗房间')
-const roomTopic = ref('今晚主题：城市孤独感与一首晚安曲')
+const roomTitle = ref('直接上高速')
+const heatText = ref('热度: 10k')
+const viewerCount = ref('1.2w')
 
-const micOn = ref(true)
-const handRaised = ref(false)
+const viewerAvatars = ref(['K', '猫', '南', 'E', '7'])
 
-const onStage = ref<SeatUser[]>([
-  { id: '1', name: '阿晨', tag: '房主', speaking: true, muted: false },
-  { id: '2', name: '南岸', tag: '嘉宾', speaking: false, muted: false },
-  { id: '3', name: '椰子', tag: '', speaking: false, muted: true },
-  { id: '4', name: '麦位空', tag: '空位', speaking: false, muted: true },
+const floatGame1 = ref(true)
+const floatGame2 = ref(true)
+
+const selfMicOn = ref(true)
+
+/** 8 麦位：含主播、房管、发言中/闭麦等演示态 */
+const seats = ref<MicSeat[]>([
+  {
+    id: 's1',
+    empty: false,
+    name: '主播-快乐小旋风',
+    avatar: '高',
+    speaking: true,
+    voiceOn: true,
+    role: 'anchor',
+  },
+  {
+    id: 's2',
+    empty: false,
+    name: '房管小陈',
+    avatar: '陈',
+    speaking: false,
+    voiceOn: true,
+    role: 'admin',
+  },
+  {
+    id: 's3',
+    empty: false,
+    name: '南岸听风',
+    avatar: '南',
+    speaking: false,
+    voiceOn: false,
+    role: 'none',
+  },
+  {
+    id: 's4',
+    empty: false,
+    name: '椰子不加糖',
+    avatar: '椰',
+    speaking: false,
+    voiceOn: true,
+    role: 'none',
+  },
+  {
+    id: 's5',
+    empty: false,
+    name: 'Echo电台',
+    avatar: 'E',
+    speaking: false,
+    voiceOn: true,
+    role: 'none',
+  },
+  {
+    id: 's6',
+    empty: false,
+    name: '匿名用户',
+    avatar: '匿',
+    speaking: false,
+    voiceOn: true,
+    role: 'none',
+  },
+  { id: 's7', empty: true, micIndex: 7 },
+  { id: 's8', empty: true, micIndex: 8 },
 ])
 
-const listeners = ref<SeatUser[]>([
-  { id: 'l1', name: '小猫电台', muted: true },
-  { id: 'l2', name: '匿名用户', muted: true },
-  { id: 'l3', name: 'Echo', muted: true },
-  { id: 'l4', name: '听众 047', muted: true },
-  { id: 'l5', name: '听众 048', muted: true },
+type ChatLine =
+  | { type: 'enter'; text: string; user: string; level?: string }
+  | { type: 'system'; text: string }
+  | { type: 'chat'; user: string; text: string }
+  | { type: 'gift'; user: string; gift: string; count: number }
+
+const chatLines = ref<ChatLine[]>([
+  { type: 'enter', user: 'KINYU', level: 'Lv.12', text: '进入直播间 热烈欢迎!' },
+  {
+    type: 'system',
+    text: '欢迎来到语音直播间，请文明发言，禁止低俗、引流与违规内容。',
+  },
+  { type: 'chat', user: '南岸听风', text: '晚上好各位～' },
+  { type: 'chat', user: '小猫电台', text: '主播声音好听' },
+  { type: 'gift', user: 'J***', gift: '小心心', count: 15 },
+  { type: 'chat', user: 'Echo', text: '求连麦' },
 ])
 
-const onlineCount = computed(() => onStage.value.length + listeners.value.length)
-
-function toggleMic() {
-  micOn.value = !micOn.value
+const statusTime = ref('')
+function tickTime() {
+  const d = new Date()
+  statusTime.value = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+tickTime()
+const timeTimer = setInterval(tickTime, 30_000)
 
-function toggleHand() {
-  handRaised.value = !handRaised.value
-}
-
+/** 轮换「发言中」演示 */
 function cycleSpeakingDemo() {
-  const idx = onStage.value.findIndex((u) => u.speaking)
-  const next = idx === -1 ? 0 : (idx + 1) % onStage.value.length
-  onStage.value = onStage.value.map((u, i) => ({
-    ...u,
-    speaking: i === next,
-  }))
+  const occupied = seats.value
+    .map((s, i) => ({ s, i }))
+    .filter((x): x is { s: Extract<MicSeat, { empty: false }>; i: number } => !x.s.empty)
+  if (occupied.length === 0) return
+  const speakingIdx = occupied.findIndex((x) => x.s.speaking)
+  const next = (speakingIdx + 1) % occupied.length
+  seats.value = seats.value.map((seat, i) => {
+    if (seat.empty) return seat
+    const oi = occupied.findIndex((x) => x.i === i)
+    if (oi === -1) return seat
+    return { ...seat, speaking: oi === next }
+  })
 }
 
 const demoTimer = setInterval(cycleSpeakingDemo, 3200)
-onUnmounted(() => clearInterval(demoTimer))
+
+onUnmounted(() => {
+  clearInterval(timeTimer)
+  clearInterval(demoTimer)
+})
+
+function roleBadgeClass(role: MicRole) {
+  if (role === 'anchor') return 'bg-[#e879a9] text-white'
+  if (role === 'admin') return 'bg-[#5b9bd5] text-white'
+  return ''
+}
+
+function roleBadgeText(role: MicRole) {
+  if (role === 'anchor') return '主'
+  if (role === 'admin') return '管'
+  return ''
+}
+
+const onlineHint = computed(() => `${viewerCount.value} 在看`)
 </script>
 
 <template>
   <div
-    class="voice-room flex min-h-svh flex-col bg-[var(--bg)] text-[var(--text)] antialiased"
+    class="live-room relative mx-auto flex min-h-svh max-w-[430px] flex-col bg-[#1e2a5e] text-white antialiased"
   >
-    <header
-      class="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--border)] px-4 py-3 sm:px-6"
+    <!-- 状态栏 -->
+    <div
+      class="flex shrink-0 items-center justify-between px-4 pb-1 pt-[max(8px,env(safe-area-inset-top))] text-[12px] text-white/90"
     >
-      <div class="flex min-w-0 flex-1 items-start gap-3">
+      <span class="tabular-nums font-medium">{{ statusTime }}</span>
+      <div class="flex items-center gap-1.5">
+        <span class="text-[11px] opacity-90">●●●●</span>
+        <svg class="h-3.5 w-4 text-white/90" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path
+            d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C15.34 2.34 8.66 2.34 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.67 10.34 8.33 10.34 5 13z"
+          />
+        </svg>
+        <span class="tabular-nums">100%</span>
+      </div>
+    </div>
+
+    <!-- 顶栏：房间信息 -->
+    <header class="flex shrink-0 items-center gap-2 px-3 pb-2 pt-1">
+      <div
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/10 text-lg font-bold text-white/70"
+      >
+        直
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-[15px] font-bold leading-tight">
+          {{ roomTitle }}
+        </p>
+        <p class="mt-0.5 text-[11px] text-white/55">
+          {{ heatText }}
+        </p>
+      </div>
+      <button
+        type="button"
+        class="shrink-0 rounded-full bg-gradient-to-b from-[#ff9f4a] to-[#ff7a2b] px-3.5 py-1 text-[12px] font-semibold text-white shadow-[0_4px_12px_rgba(255,122,43,0.35)] transition active:scale-[0.98]"
+      >
+        关注
+      </button>
+      <div class="flex shrink-0 items-center gap-1.5 pl-1">
+        <div class="flex -space-x-2">
+          <span
+            v-for="(a, i) in viewerAvatars"
+            :key="i"
+            class="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#1e2a5e] bg-gradient-to-br from-indigo-400/80 to-purple-600/80 text-[10px] font-bold"
+          >
+            {{ a }}
+          </span>
+        </div>
+        <span class="text-[12px] font-semibold tabular-nums text-white/95">{{ viewerCount }}</span>
         <button
           type="button"
-          class="mt-0.5 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--social-bg)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-h)] transition hover:border-[var(--accent-border)]"
+          class="ml-0.5 flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10"
+          aria-label="关闭"
           @click="emit('back')"
         >
-          ← 返回
-        </button>
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-xs font-medium uppercase tracking-wider text-[var(--accent)]">
-            直播 · 语音房原型
-          </p>
-          <h1 class="mt-1 truncate text-lg font-semibold text-[var(--text-h)] sm:text-xl">
-            {{ roomTitle }}
-          </h1>
-          <p class="mt-1 line-clamp-2 text-sm opacity-90">
-            {{ roomTopic }}
-          </p>
-        </div>
-      </div>
-      <div class="flex shrink-0 flex-col items-end gap-2">
-        <span
-          class="rounded-full border border-[var(--border)] bg-[var(--social-bg)] px-3 py-1 text-xs tabular-nums text-[var(--text-h)]"
-        >
-          {{ onlineCount }} 人在线
-        </span>
-        <button
-          type="button"
-          class="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-500/10"
-        >
-          离开房间
+          <span class="text-lg leading-none">×</span>
         </button>
       </div>
     </header>
 
-    <main class="flex flex-1 flex-col overflow-hidden px-4 py-5 sm:px-6">
-      <section class="shrink-0">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-sm font-medium text-[var(--text-h)]">麦上</h2>
-          <span class="text-xs opacity-70">点击为演示 · 说话光圈自动轮换</span>
-        </div>
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <button
-            v-for="user in onStage"
-            :key="user.id"
-            type="button"
-            class="group flex flex-col items-center rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-4 text-center transition hover:border-[var(--accent-border)] hover:shadow-[var(--shadow)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
-            @click="cycleSpeakingDemo"
-          >
-            <div class="relative">
-              <div
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-yellow-400 to-amber-600 text-lg font-semibold text-amber-950 ring-2 ring-amber-700/40 transition group-hover:ring-amber-500"
-                :class="
-                  user.speaking
-                    ? 'shadow-[0_0_0_4px_rgba(251,191,36,0.45),0_0_26px_rgba(217,119,6,0.55)]'
-                    : ''
-                "
-              >
-                {{ user.name.slice(0, 1) }}
-              </div>
-              <span
-                v-if="user.muted"
-                class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg)] text-[10px]"
-                aria-label="闭麦"
-              >
-                🔇
-              </span>
-              <span
-                v-else-if="user.speaking"
-                class="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--accent-border)] bg-[var(--accent-bg)] text-[10px]"
-                aria-label="发言中"
-              >
-                🎙
-              </span>
-            </div>
-            <p class="mt-3 w-full truncate text-sm font-medium text-[var(--text-h)]">
-              {{ user.name }}
-            </p>
-            <p v-if="user.tag" class="mt-0.5 text-xs text-[var(--accent)]">
-              {{ user.tag }}
-            </p>
-          </button>
-        </div>
-      </section>
-
-      <section class="mt-8 flex min-h-0 flex-1 flex-col">
-        <h2 class="mb-3 shrink-0 text-sm font-medium text-[var(--text-h)]">
-          听众席 · {{ listeners.length }} 人
-        </h2>
+    <!-- 麦位 4×2 -->
+    <section class="shrink-0 px-3 pt-1">
+      <div class="grid grid-cols-4 gap-x-2 gap-y-3">
         <div
-          class="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--code-bg)]/40 p-3"
+          v-for="seat in seats"
+          :key="seat.id"
+          class="flex flex-col items-center"
         >
-          <ul class="flex flex-wrap gap-2">
-            <li
-              v-for="u in listeners"
-              :key="u.id"
-              class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg)] px-3 py-1.5 text-xs text-[var(--text-h)]"
+          <template v-if="!seat.empty">
+            <div
+              class="relative aspect-square w-full max-w-[76px] rounded-xl transition-[box-shadow]"
+              :class="
+                seat.speaking
+                  ? 'live-speaking-ring shadow-[0_0_0_2px_rgba(91,198,255,0.95),0_0_18px_rgba(91,198,255,0.55)]'
+                  : 'ring-1 ring-white/12'
+              "
             >
-              <span
-                class="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--social-bg)] text-[11px] font-medium"
+              <div
+                class="flex h-full w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#3d4d8a] to-[#252f5c] text-xl font-bold text-white/90"
               >
-                {{ u.name.slice(0, 1) }}
+                {{ seat.avatar }}
+              </div>
+              <!-- 麦状态角标：语音开/关 -->
+              <div
+                class="absolute bottom-0.5 right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 ring-1 ring-white/20"
+                :title="seat.voiceOn ? '语音开启' : '语音关闭'"
+              >
+                <template v-if="seat.voiceOn">
+                  <svg class="h-3.5 w-3.5 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                    <path d="M8 11v1a4 4 0 0 0 8 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                    <path d="M12 18v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                </template>
+                <template v-else>
+                  <svg class="h-3.5 w-3.5 text-[#ff4d4f]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                    />
+                    <path d="M8 11v1a4 4 0 0 0 8 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                    <path d="M5 5l14 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </template>
+              </div>
+              <!-- 发言中角标 -->
+              <div
+                v-if="seat.speaking"
+                class="absolute -top-1 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#5bc6ff]/95 px-1.5 py-0.5 text-[9px] font-bold text-[#0a1a2e] shadow-sm"
+              >
+                发言中
+              </div>
+            </div>
+            <div class="mt-1.5 flex max-w-[76px] items-center justify-center gap-0.5 px-0.5">
+              <span
+                v-if="seat.role !== 'none'"
+                class="flex h-[15px] min-w-[15px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold leading-none"
+                :class="roleBadgeClass(seat.role)"
+                :title="seat.role === 'anchor' ? '主播' : '房管'"
+              >
+                {{ roleBadgeText(seat.role) }}
               </span>
-              <span class="max-w-[8rem] truncate">{{ u.name }}</span>
-              <span v-if="u.muted" class="opacity-50" title="闭麦">🔇</span>
-            </li>
-          </ul>
+              <span class="truncate text-center text-[10px] font-medium text-white/90">{{ seat.name }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <button
+              type="button"
+              class="flex aspect-square w-full max-w-[76px] flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#151d40]/90 text-white/75 transition hover:border-white/35 hover:bg-[#1a2450]"
+            >
+              <span class="text-2xl font-light leading-none">+</span>
+            </button>
+            <p class="mt-1.5 text-center text-[10px] text-white/65">加入{{ seat.micIndex }}麦</p>
+          </template>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
 
+    <!-- 公屏 + 右侧悬浮 -->
+    <div class="relative mt-2 min-h-0 flex-1 px-3 pb-[calc(3.25rem+env(safe-area-inset-bottom))]">
+      <!-- 悬浮游戏位 -->
+      <div class="pointer-events-none absolute right-0 top-0 z-10 flex w-[72px] flex-col gap-2 pr-1 pt-1">
+        <div v-if="floatGame1" class="pointer-events-auto relative">
+          <button
+            type="button"
+            class="absolute right-0.5 top-0.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/45 text-[11px] text-white/90"
+            aria-label="关闭"
+            @click="floatGame1 = false"
+          >
+            ×
+          </button>
+          <div
+            class="overflow-hidden rounded-lg border border-white/15 bg-gradient-to-b from-[#2a3570] to-[#1a2248] shadow-lg"
+          >
+            <div class="h-14 w-full bg-gradient-to-br from-amber-500/30 to-red-600/20" />
+            <p class="bg-[#ff7a2b] py-0.5 text-center text-[9px] font-semibold text-white">世界大战</p>
+          </div>
+        </div>
+        <div v-if="floatGame2" class="pointer-events-auto relative mt-20">
+          <button
+            type="button"
+            class="absolute right-0.5 top-0.5 z-20 flex h-5 w-5 items-center justify-center rounded-full bg-black/45 text-[11px] text-white/90"
+            aria-label="关闭"
+            @click="floatGame2 = false"
+          >
+            ×
+          </button>
+          <div
+            class="overflow-hidden rounded-lg border border-white/15 bg-gradient-to-b from-[#2a3570] to-[#1a2248] shadow-lg"
+          >
+            <div class="h-14 w-full bg-gradient-to-br from-emerald-500/25 to-cyan-600/20" />
+            <p class="bg-[#ff7a2b] py-0.5 text-center text-[9px] font-semibold text-white">游戏中心</p>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="scrollbar-thin max-h-[42vh] space-y-2 overflow-y-auto pr-[76px] text-[12px] leading-snug"
+      >
+        <template v-for="(line, idx) in chatLines" :key="idx">
+          <div
+            v-if="line.type === 'enter'"
+            class="inline-flex max-w-full flex-wrap items-center gap-1 rounded-full bg-gradient-to-r from-[#d946a6]/35 to-[#7c6bff]/35 px-2.5 py-1.5 ring-1 ring-white/10"
+          >
+            <span class="h-5 w-5 shrink-0 rounded-full bg-white/20 text-center text-[10px] leading-5">👤</span>
+            <span v-if="line.level" class="rounded bg-[#ff9f4a]/90 px-1 text-[10px] font-bold text-[#1a1a1a]">
+              {{ line.level }}
+            </span>
+            <span class="font-semibold text-[#ffe08a]">{{ line.user }}</span>
+            <span class="text-white/90">{{ line.text }}</span>
+          </div>
+          <div
+            v-else-if="line.type === 'system'"
+            class="rounded-xl bg-white/10 px-3 py-2 text-white/80 ring-1 ring-white/10"
+          >
+            {{ line.text }}
+          </div>
+          <p v-else-if="line.type === 'chat'" class="break-words">
+            <span class="font-semibold text-[#ffe08a]">{{ line.user }}:</span>
+            <span class="text-white/95">{{ line.text }}</span>
+          </p>
+          <p v-else class="break-words">
+            <span class="font-semibold text-[#ffe08a]">{{ line.user }}:</span>
+            <span class="text-white/95">送</span>
+            <span class="mx-0.5 inline-block text-red-400">♥</span>
+            <span class="text-[#ffe08a]">{{ line.gift }}</span>
+            <span class="text-white/95"> ×{{ line.count }}</span>
+          </p>
+        </template>
+      </div>
+      <p class="mt-1 text-center text-[10px] text-white/35">{{ onlineHint }}</p>
+    </div>
+
+    <!-- 底栏 -->
     <footer
-      class="safe-pb flex shrink-0 items-center justify-center gap-3 border-t border-[var(--border)] bg-[var(--bg)] px-4 py-4 sm:gap-4"
+      class="safe-pb fixed bottom-0 left-1/2 z-20 flex w-full max-w-[430px] -translate-x-1/2 items-center gap-2 border-t border-white/10 bg-[#151d40]/95 px-3 py-2 backdrop-blur-sm"
     >
+      <div class="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-[#0f142e]/90 px-3 py-2 ring-1 ring-white/10">
+        <input
+          type="text"
+          readonly
+          class="min-w-0 flex-1 bg-transparent text-[13px] text-white/90 outline-none placeholder:text-white/35"
+          placeholder="说点什么..."
+        />
+        <button type="button" class="shrink-0 text-lg text-white/70" aria-label="表情">
+          🙂
+        </button>
+      </div>
       <button
         type="button"
-        class="flex h-12 min-w-[5.5rem] flex-col items-center justify-center rounded-xl border px-3 text-xs font-medium transition sm:h-14 sm:min-w-[6rem] sm:text-sm"
-        :class="
-          micOn
-            ? 'border-[var(--border)] bg-[var(--social-bg)] text-[var(--text-h)] hover:border-[var(--accent-border)]'
-            : 'border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--accent)]'
-        "
-        @click="toggleMic"
+        class="flex shrink-0 flex-col items-center gap-0.5 text-[10px] text-white/80"
+        @click="selfMicOn = !selfMicOn"
       >
-        <span class="text-base sm:text-lg">{{ micOn ? '🎙' : '🔇' }}</span>
-        <span>{{ micOn ? '麦克风开' : '麦克风关' }}</span>
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+          <svg v-if="selfMicOn" class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"
+              stroke="currentColor"
+              stroke-width="1.6"
+            />
+            <path d="M8 11v1a4 4 0 0 0 8 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+          <svg v-else class="h-4 w-4 text-[#ff4d4f]" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M12 14a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v4a3 3 0 0 0 3 3Z"
+              stroke="currentColor"
+              stroke-width="1.6"
+            />
+            <path d="M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </span>
+        <span class="flex items-center gap-0.5 whitespace-nowrap">
+          下麦
+          <span class="text-[8px]">▼</span>
+        </span>
       </button>
-
-      <button
-        type="button"
-        class="flex h-12 min-w-[5.5rem] flex-col items-center justify-center rounded-xl border px-3 text-xs font-medium transition sm:h-14 sm:min-w-[6rem] sm:text-sm"
-        :class="
-          handRaised
-            ? 'border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--accent)]'
-            : 'border-[var(--border)] bg-[var(--social-bg)] text-[var(--text-h)] hover:border-[var(--accent-border)]'
-        "
-        @click="toggleHand"
-      >
-        <span class="text-base sm:text-lg">✋</span>
-        <span>{{ handRaised ? '已举手' : '举手' }}</span>
+      <button type="button" class="shrink-0 text-2xl leading-none" aria-label="游戏">
+        🎮
       </button>
-
+      <button type="button" class="shrink-0 text-2xl leading-none" aria-label="礼物">
+        🎁
+      </button>
       <button
         type="button"
-        class="flex h-12 min-w-[5.5rem] flex-col items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--social-bg)] px-3 text-xs font-medium text-[var(--text-h)] opacity-80 sm:h-14 sm:min-w-[6rem] sm:text-sm"
-        disabled
+        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg text-white/70"
+        aria-label="更多"
       >
-        <span class="text-base sm:text-lg">💬</span>
-        <span>公屏</span>
+        ···
       </button>
     </footer>
   </div>
 </template>
 
 <style scoped>
+.live-speaking-ring {
+  animation: speakPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes speakPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(91, 198, 255, 0.95),
+      0 0 14px rgba(91, 198, 255, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(91, 198, 255, 1),
+      0 0 22px rgba(91, 198, 255, 0.75);
+  }
+}
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
 .safe-pb {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
 </style>
