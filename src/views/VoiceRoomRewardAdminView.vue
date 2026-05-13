@@ -16,6 +16,7 @@ type RewardSource = 'live' | 'voice'
 const rewardFilter = ref({
   giverId: '',
   hostId: '',
+  liveSessionId: '',
   /** 空字符串表示全部；live=直播间；voice=语聊房 */
   source: '' as '' | RewardSource,
   startTime: '',
@@ -37,6 +38,8 @@ type RewardRow = {
   id: number
   /** 礼物来源：直播间 / 语聊房 */
   source: RewardSource
+  /** 直播场次 ID（单场直播/语聊房实例） */
+  liveSessionId: string
   giverName: string
   giverId: string
   hostName: string
@@ -59,7 +62,7 @@ type SettlementRow = {
 }
 
 const rewardSourceOptions = [
-  { value: '' as const, label: '全部礼物来源' },
+  { value: '' as const, label: '全部' },
   { value: 'live' as const, label: '直播间' },
   { value: 'voice' as const, label: '语聊房' },
 ]
@@ -78,6 +81,7 @@ const rewardSource = ref<RewardRow[]>([
   {
     id: 1,
     source: 'voice',
+    liveSessionId: 'sess_v_20260112_k7m2',
     giverName: 'UI-5',
     giverId: '3180664521199420635',
     hostName: 'UI',
@@ -89,6 +93,7 @@ const rewardSource = ref<RewardRow[]>([
   {
     id: 2,
     source: 'live',
+    liveSessionId: 'sess_live_20260112_88a2',
     giverName: 'feature',
     giverId: '3180664521199420636',
     hostName: '进度',
@@ -100,6 +105,7 @@ const rewardSource = ref<RewardRow[]>([
   {
     id: 3,
     source: 'voice',
+    liveSessionId: 'sess_v_20260112_k7m2',
     giverName: 'Vicky03',
     giverId: '3180664521199420638',
     hostName: 'Vicky02',
@@ -111,6 +117,7 @@ const rewardSource = ref<RewardRow[]>([
   {
     id: 4,
     source: 'live',
+    liveSessionId: 'sess_live_20260113_01bx',
     giverName: '小猫电台',
     giverId: '3180664521199420640',
     hostName: '南岸',
@@ -164,6 +171,7 @@ const payStatusOptions = [
 function matchReward(row: RewardRow) {
   const f = rewardFilter.value
   if (f.source && row.source !== f.source) return false
+  if (f.liveSessionId && !row.liveSessionId.includes(f.liveSessionId.trim())) return false
   if (f.giverId && !row.giverId.includes(f.giverId.trim())) return false
   if (f.hostId && !row.hostId.includes(f.hostId.trim())) return false
   const rowT = new Date(row.rewardTime.replace(' ', 'T')).getTime()
@@ -191,7 +199,14 @@ const rewardRows = computed(() => rewardSource.value.filter(matchReward))
 const settlementRows = computed(() => settlementSource.value.filter(matchSettlement))
 
 function clearRewardFilter() {
-  rewardFilter.value = { giverId: '', hostId: '', source: '', startTime: '', endTime: '' }
+  rewardFilter.value = {
+    giverId: '',
+    hostId: '',
+    liveSessionId: '',
+    source: '',
+    startTime: '',
+    endTime: '',
+  }
 }
 
 function clearSettlementFilter() {
@@ -278,6 +293,15 @@ function clearSettlementFilter() {
               class="rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm outline-none transition placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
             />
           </label>
+          <label class="flex min-w-[200px] flex-1 flex-col gap-1.5 text-xs font-medium text-[#4b5563]">
+            直播场次ID
+            <input
+              v-model="rewardFilter.liveSessionId"
+              type="text"
+              placeholder="请输入直播场次ID"
+              class="rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm outline-none transition placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+            />
+          </label>
           <label
             class="flex min-w-[140px] flex-col gap-1.5 text-xs font-medium text-[#4b5563]"
             for="gift-source-filter"
@@ -335,11 +359,12 @@ function clearSettlementFilter() {
         </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[980px] border-collapse text-sm">
+          <table class="w-full min-w-[1120px] border-collapse text-sm">
             <thead>
               <tr class="bg-[#f3f4f6] text-left text-xs font-semibold text-[#4b5563]">
                 <th class="border-b border-black/6 px-4 py-3 text-center">编号</th>
                 <th class="border-b border-black/6 px-4 py-3">礼物来源</th>
+                <th class="border-b border-black/6 px-4 py-3">直播场次ID</th>
                 <th class="border-b border-black/6 px-4 py-3">打赏人</th>
                 <th class="border-b border-black/6 px-4 py-3">打赏人ID</th>
                 <th class="border-b border-black/6 px-4 py-3">主播</th>
@@ -364,6 +389,9 @@ function clearSettlementFilter() {
                     {{ rewardSourceLabel(row.source) }}
                   </span>
                 </td>
+                <td class="max-w-[200px] px-4 py-3 font-mono text-xs text-[#374151]">
+                  <span class="break-all">{{ row.liveSessionId }}</span>
+                </td>
                 <td class="px-4 py-3 font-medium text-[#111827]">{{ row.giverName }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-[#374151]">{{ row.giverId }}</td>
                 <td class="px-4 py-3 font-medium text-[#111827]">{{ row.hostName }}</td>
@@ -373,7 +401,7 @@ function clearSettlementFilter() {
                 <td class="px-4 py-3 tabular-nums text-[#374151]">{{ row.giftCount }}</td>
               </tr>
               <tr v-if="rewardRows.length === 0">
-                <td colspan="9" class="px-4 py-12 text-center text-sm text-[#9ca3af]">暂无数据</td>
+                <td colspan="10" class="px-4 py-12 text-center text-sm text-[#9ca3af]">暂无数据</td>
               </tr>
             </tbody>
           </table>
