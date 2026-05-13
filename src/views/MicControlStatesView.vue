@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits<{
-  back: []
-}>()
+const router = useRouter()
+
+function goBack() {
+  router.push({ name: 'mobile' })
+}
 
 const sceneTabs = [
   { id: 1 as const, label: '麦位关闭' },
@@ -25,7 +28,7 @@ const activeScene = ref<1 | 2 | 3>(1)
       <button
         type="button"
         class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/90 transition hover:bg-white/10"
-        @click="emit('back')"
+        @click="goBack()"
       >
         ← 返回
       </button>

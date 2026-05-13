@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goBack() {
+  router.push({ name: 'mobile' })
+}
 
 /** 麦位角色：主播 / 房管 / 普通（无角标） */
 type MicRole = 'anchor' | 'admin' | 'none'
@@ -23,10 +30,6 @@ type MicSeat =
       /** 1–8 麦序号，用于「加入N麦」 */
       micIndex: number
     }
-
-const emit = defineEmits<{
-  back: []
-}>()
 
 const roomTitle = ref('直接上高速')
 const heatText = ref('热度: 10k')
@@ -217,7 +220,7 @@ const onlineHint = computed(() => `${viewerCount.value} 在看`)
           type="button"
           class="ml-0.5 flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10"
           aria-label="关闭"
-          @click="emit('back')"
+          @click="goBack()"
         >
           <span class="text-lg leading-none">×</span>
         </button>

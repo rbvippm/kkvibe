@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits<{
-  back: []
-}>()
+const router = useRouter()
+
+function goBack() {
+  router.push({ name: 'pc' })
+}
 
 type TabKey = 'reward' | 'settlement'
 
@@ -229,7 +232,7 @@ function clearSettlementFilter() {
         <button
           type="button"
           class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-[#374151] transition hover:bg-[#f9fafb]"
-          @click="emit('back')"
+          @click="goBack()"
         >
           ← 返回
         </button>

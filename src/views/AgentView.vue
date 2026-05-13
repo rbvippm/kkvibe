@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const emit = defineEmits<{
-  back: []
-}>()
+const router = useRouter()
+
+function goBack() {
+  router.push({ name: 'mobile' })
+}
 
 type SubAgent = {
   id: string
@@ -102,7 +105,7 @@ async function copyInvite() {
           type="button"
           class="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-[#D4A373] transition hover:opacity-80"
           aria-label="返回"
-          @click="emit('back')"
+          @click="goBack()"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
