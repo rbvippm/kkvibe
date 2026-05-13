@@ -48,6 +48,16 @@ import { RouterLink } from 'vue-router'
         <p class="mt-1 text-xs opacity-75">/mobile/mic</p>
         <p class="mt-2 text-sm opacity-80">麦位关闭、全体禁麦、被禁麦等态。</p>
       </RouterLink>
+
+      <RouterLink
+        to="/mobile/app-join-mic"
+        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-orange-500/40 active:scale-[0.99]"
+      >
+        <span class="text-2xl">📲</span>
+        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">APP 专享上麦</h2>
+        <p class="mt-1 text-xs opacity-75">/mobile/app-join-mic</p>
+        <p class="mt-2 text-sm opacity-80">已装 App 则唤起；未装则跳转超级签下载页（与直播 7、8 麦一致）。</p>
+      </RouterLink>
     </main>
 
     <footer class="safe-pb px-4 pb-6 text-center text-xs opacity-50">移动端原型</footer>

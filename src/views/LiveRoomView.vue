@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { openJoinMicAppOrDownload } from '../utils/joinMicAppBridge'
 
 const router = useRouter()
+
+/** 与 App 唤起参数一致，上线后由路由或接口注入 */
+const voiceRoomId = 'demo_voice_room_001'
+
+function onJoinEmptyMic(micIndex: number) {
+  if (micIndex >= 7) {
+    openJoinMicAppOrDownload(voiceRoomId, micIndex)
+    return
+  }
+  // 普通空麦位可走 H5 内上麦，此处仅占位
+}
 
 function goBack() {
   router.push({ name: 'mobile' })
@@ -312,13 +324,22 @@ const onlineHint = computed(() => `${viewerCount.value} 在看`)
             </div>
           </template>
           <template v-else>
-            <button
-              type="button"
-              class="flex aspect-square w-full max-w-[76px] flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#151d40]/90 text-white/75 transition hover:border-white/35 hover:bg-[#1a2450]"
-            >
-              <span class="text-2xl font-light leading-none">+</span>
-            </button>
-            <p class="mt-1.5 text-center text-[10px] text-white/65">加入{{ seat.micIndex }}麦</p>
+            <div class="relative flex w-full max-w-[76px] flex-col items-center">
+              <span
+                v-if="seat.micIndex >= 7"
+                class="absolute -top-5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded bg-[#ff7a2b] px-1 py-0.5 text-[8px] font-bold text-white shadow"
+              >
+                APP专享
+              </span>
+              <button
+                type="button"
+                class="flex aspect-square w-full max-w-[76px] flex-col items-center justify-center rounded-xl border border-dashed border-white/20 bg-[#151d40]/90 text-white/75 transition hover:border-white/35 hover:bg-[#1a2450]"
+                @click="onJoinEmptyMic(seat.micIndex)"
+              >
+                <span class="text-2xl font-light leading-none">+</span>
+              </button>
+              <p class="mt-1.5 text-center text-[10px] text-white/65">加入{{ seat.micIndex }}麦</p>
+            </div>
           </template>
         </div>
       </div>

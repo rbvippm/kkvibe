@@ -5,7 +5,9 @@ import PcHubView from '../views/pc/PcHubView.vue'
 import LiveRoomView from '../views/LiveRoomView.vue'
 import AgentView from '../views/AgentView.vue'
 import MicControlStatesView from '../views/MicControlStatesView.vue'
+import VoiceRoomAppJoinMicView from '../views/VoiceRoomAppJoinMicView.vue'
 import VoiceRoomRewardAdminView from '../views/VoiceRoomRewardAdminView.vue'
+import VoiceRoomMicThresholdView from '../views/VoiceRoomMicThresholdView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -41,6 +43,12 @@ export const router = createRouter({
       meta: { title: '麦控状态' },
     },
     {
+      path: '/mobile/app-join-mic',
+      name: 'mobile-app-join-mic',
+      component: VoiceRoomAppJoinMicView,
+      meta: { title: 'APP 专享上麦' },
+    },
+    {
       path: '/pc',
       name: 'pc',
       component: PcHubView,
@@ -51,6 +59,12 @@ export const router = createRouter({
       name: 'pc-reward',
       component: VoiceRoomRewardAdminView,
       meta: { title: '语聊打赏后台' },
+    },
+    {
+      path: '/pc/mic-threshold',
+      name: 'pc-mic-threshold',
+      component: VoiceRoomMicThresholdView,
+      meta: { title: '语音房上麦门槛' },
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
