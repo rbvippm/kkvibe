@@ -59,7 +59,7 @@ type SettlementRow = {
 }
 
 const rewardSourceOptions = [
-  { value: '' as const, label: '全部' },
+  { value: '' as const, label: '全部礼物来源' },
   { value: 'live' as const, label: '直播间' },
   { value: 'voice' as const, label: '语聊房' },
 ]
@@ -278,11 +278,16 @@ function clearSettlementFilter() {
               class="rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm outline-none transition placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
             />
           </label>
-          <label class="flex min-w-[140px] flex-col gap-1.5 text-xs font-medium text-[#4b5563]">
+          <label
+            class="flex min-w-[140px] flex-col gap-1.5 text-xs font-medium text-[#4b5563]"
+            for="gift-source-filter"
+          >
             礼物来源
             <select
+              id="gift-source-filter"
               v-model="rewardFilter.source"
               class="rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm outline-none focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
+              aria-label="礼物来源"
             >
               <option v-for="opt in rewardSourceOptions" :key="opt.value === '' ? 'all' : opt.value" :value="opt.value">
                 {{ opt.label }}
