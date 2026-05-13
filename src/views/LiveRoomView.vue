@@ -44,8 +44,8 @@ const seats = ref<MicSeat[]>([
   {
     id: 's1',
     empty: false,
-    name: '主播-快乐小旋风',
-    avatar: '高',
+    name: '小旋风',
+    avatar: '旋',
     speaking: true,
     voiceOn: true,
     role: 'anchor',
@@ -149,13 +149,11 @@ onUnmounted(() => {
 })
 
 function roleBadgeClass(role: MicRole) {
-  if (role === 'anchor') return 'bg-[#e879a9] text-white'
   if (role === 'admin') return 'bg-[#5b9bd5] text-white'
   return ''
 }
 
 function roleBadgeText(role: MicRole) {
-  if (role === 'anchor') return '主'
   if (role === 'admin') return '管'
   return ''
 }
@@ -284,12 +282,26 @@ const onlineHint = computed(() => `${viewerCount.value} 在看`)
                 发言中
               </div>
             </div>
-            <div class="mt-1.5 flex max-w-[76px] items-center justify-center gap-0.5 px-0.5">
+            <div class="mt-1.5 flex max-w-[76px] items-center justify-center gap-1 px-0.5">
+              <!-- 主播：图标角标（替代「主」字） -->
               <span
-                v-if="seat.role !== 'none'"
-                class="flex h-[15px] min-w-[15px] shrink-0 items-center justify-center rounded-full text-[9px] font-bold leading-none"
+                v-if="seat.role === 'anchor'"
+                class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#e879a9] text-white shadow-sm"
+                title="主播"
+              >
+                <svg class="h-2.5 w-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                  <circle cx="12" cy="17" r="1.5" fill="currentColor" stroke="none" />
+                  <path d="M8.5 12.5a3.5 3.5 0 0 1 7 0" />
+                  <path d="M6 9.5a6 6 0 0 1 12 0" />
+                  <path d="M3.5 6.5a8.5 8.5 0 0 1 17 0" />
+                </svg>
+              </span>
+              <!-- 房管：「管」字角标 -->
+              <span
+                v-else-if="seat.role === 'admin'"
+                class="flex h-4 min-w-[15px] shrink-0 items-center justify-center rounded-full px-0.5 text-[9px] font-bold leading-none"
                 :class="roleBadgeClass(seat.role)"
-                :title="seat.role === 'anchor' ? '主播' : '房管'"
+                title="房管"
               >
                 {{ roleBadgeText(seat.role) }}
               </span>
