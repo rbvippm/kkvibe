@@ -29,7 +29,7 @@ const rewardFilter = ref({
 /** 结算列表 · 筛选 */
 const settlementFilter = ref({
   serialNo: '',
-  hostId: '',
+  userId: '',
   startTime: '',
   endTime: '',
   payStatus: '',
@@ -55,8 +55,8 @@ type RewardRow = {
 type SettlementRow = {
   id: number
   serialNo: string
-  hostName: string
-  hostId: string
+  nickname: string
+  userId: string
   amount: string
   action: string
   /** 到账时间（用于时间筛选演示） */
@@ -135,8 +135,8 @@ const settlementSource = ref<SettlementRow[]>([
   {
     id: 1,
     serialNo: 'ld_v0z8aNypKtkol',
-    hostName: 'UI',
-    hostId: '3180664521199420634',
+    nickname: 'UI',
+    userId: '3180664521199420634',
     amount: '0.02',
     action: '-',
     arrivedAt: '2026-01-10 10:00:00',
@@ -145,8 +145,8 @@ const settlementSource = ref<SettlementRow[]>([
   {
     id: 2,
     serialNo: 'ld_mK2pQn8xRtYol',
-    hostName: 'Kate',
-    hostId: '3180664521199420642',
+    nickname: 'Kate',
+    userId: '3180664521199420642',
     amount: '5.83',
     action: '-',
     arrivedAt: '2026-01-11 14:20:00',
@@ -155,8 +155,8 @@ const settlementSource = ref<SettlementRow[]>([
   {
     id: 3,
     serialNo: 'ld_jW9nLk3vPqRst',
-    hostName: 'Vicky02',
-    hostId: '3180664521199420639',
+    nickname: 'Vicky02',
+    userId: '3180664521199420639',
     amount: '12.00',
     action: '-',
     arrivedAt: '2026-01-12 09:15:00',
@@ -186,7 +186,7 @@ function matchReward(row: RewardRow) {
 function matchSettlement(row: SettlementRow) {
   const f = settlementFilter.value
   if (f.serialNo && !row.serialNo.includes(f.serialNo.trim())) return false
-  if (f.hostId && !row.hostId.includes(f.hostId.trim())) return false
+  if (f.userId && !row.userId.includes(f.userId.trim())) return false
   const rowT = new Date(row.arrivedAt.replace(' ', 'T')).getTime()
   if (f.startTime && rowT < new Date(f.startTime).getTime()) return false
   if (f.endTime && rowT > new Date(f.endTime).getTime()) return false
@@ -215,7 +215,7 @@ function clearRewardFilter() {
 function clearSettlementFilter() {
   settlementFilter.value = {
     serialNo: '',
-    hostId: '',
+    userId: '',
     startTime: '',
     endTime: '',
     payStatus: '',
@@ -427,11 +427,11 @@ function clearSettlementFilter() {
             />
           </label>
           <label class="flex min-w-[180px] flex-1 flex-col gap-1.5 text-xs font-medium text-[#4b5563]">
-            主播ID
+            用户ID
             <input
-              v-model="settlementFilter.hostId"
+              v-model="settlementFilter.userId"
               type="text"
-              placeholder="请输入主播ID"
+              placeholder="请输入用户ID"
               class="rounded-md border border-[#d1d5db] bg-white px-3 py-2 text-sm outline-none transition placeholder:text-[#9ca3af] focus:border-[#2563eb] focus:ring-1 focus:ring-[#2563eb]"
             />
           </label>
@@ -510,8 +510,8 @@ function clearSettlementFilter() {
               <tr class="bg-[#f3f4f6] text-left text-xs font-semibold text-[#4b5563]">
                 <th class="border-b border-black/6 px-4 py-3 text-center">编号</th>
                 <th class="border-b border-black/6 px-4 py-3">流水号</th>
-                <th class="border-b border-black/6 px-4 py-3">主播</th>
-                <th class="border-b border-black/6 px-4 py-3">主播ID</th>
+                <th class="border-b border-black/6 px-4 py-3">昵称</th>
+                <th class="border-b border-black/6 px-4 py-3">用户ID</th>
                 <th class="border-b border-black/6 px-4 py-3">结算金额</th>
                 <th class="border-b border-black/6 px-4 py-3">操作</th>
               </tr>
@@ -524,8 +524,8 @@ function clearSettlementFilter() {
               >
                 <td class="px-4 py-3 text-center tabular-nums text-[#6b7280]">{{ row.id }}</td>
                 <td class="px-4 py-3 font-mono text-xs text-[#374151]">{{ row.serialNo }}</td>
-                <td class="px-4 py-3 font-medium text-[#111827]">{{ row.hostName }}</td>
-                <td class="px-4 py-3 font-mono text-xs text-[#374151]">{{ row.hostId }}</td>
+                <td class="px-4 py-3 font-medium text-[#111827]">{{ row.nickname }}</td>
+                <td class="px-4 py-3 font-mono text-xs text-[#374151]">{{ row.userId }}</td>
                 <td class="px-4 py-3 tabular-nums font-medium text-[#111827]">{{ row.amount }}</td>
                 <td class="px-4 py-3 text-[#9ca3af]">{{ row.action }}</td>
               </tr>

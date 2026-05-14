@@ -8,6 +8,7 @@ import MicControlStatesView from '../views/MicControlStatesView.vue'
 import VoiceRoomAppJoinMicView from '../views/VoiceRoomAppJoinMicView.vue'
 import VoiceRoomRewardAdminView from '../views/VoiceRoomRewardAdminView.vue'
 import VoiceRoomMicThresholdView from '../views/VoiceRoomMicThresholdView.vue'
+import LiveCommissionConfigView from '../views/LiveCommissionConfigView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,6 +66,12 @@ export const router = createRouter({
       name: 'pc-mic-threshold',
       component: VoiceRoomMicThresholdView,
       meta: { title: '语音房上麦门槛' },
+    },
+    {
+      path: '/pc/live-commission',
+      name: 'pc-live-commission',
+      component: LiveCommissionConfigView,
+      meta: { title: '直播佣金配置' },
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

@@ -40,6 +40,16 @@ import { RouterLink } from 'vue-router'
         <p class="mt-1 text-xs opacity-75">/pc/mic-threshold</p>
         <p class="mt-2 text-sm opacity-80">胜率优先上麦开关；分币种充值门槛与无充值时总资产规则。</p>
       </RouterLink>
+
+      <RouterLink
+        to="/pc/live-commission"
+        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-rose-500/35 active:scale-[0.99]"
+      >
+        <span class="text-2xl">💰</span>
+        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">直播佣金配置</h2>
+        <p class="mt-1 text-xs opacity-75">/pc/live-commission</p>
+        <p class="mt-2 text-sm opacity-80">主播、语聊房平台用户、特定用户的礼物分成与优先级说明。</p>
+      </RouterLink>
     </main>
 
     <footer class="safe-pb px-4 pb-6 text-center text-xs opacity-50">管理端原型</footer>
