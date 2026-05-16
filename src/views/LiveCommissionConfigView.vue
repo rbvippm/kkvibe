@@ -53,15 +53,60 @@ const anchorRows = ref<AnchorRow[]>([
   },
 ])
 
-/** 语聊房 · 平台用户（非签约主播等）默认礼物分成 */
-const voicePlatformDefault = ref({
-  /** 收礼用户（麦上/房主）所得 % */
+type PlatformSplit = {
+  receiverPercent: number
+  platformPercent: number
+}
+
+/** 平台默认：未命中任何渠道配置时使用 */
+const platformUserDefault = ref<PlatformSplit & { remark: string }>({
   receiverPercent: 45,
-  /** 平台 % */
-  platformPercent: 35,
-  /** 公会/渠道等预留 %（演示） */
-  channelPercent: 20,
-  remark: '未命中「主播单独配置」且非「特定用户」时走本默认。',
+  platformPercent: 55,
+  remark: '未单独配置渠道的收礼用户，统一走平台默认拆账。',
+})
+
+/** 按渠道覆盖平台用户礼物分成 */
+type PlatformChannelRow = {
+  id: string
+  channelCode: string
+  channelName: string
+  receiverPercent: number
+  platformPercent: number
+  enabled: boolean
+}
+
+const platformChannelRows = ref<PlatformChannelRow[]>([
+  {
+    id: 'c1',
+    channelCode: 'ios',
+    channelName: 'iOS 客户端',
+    receiverPercent: 50,
+    platformPercent: 50,
+    enabled: true,
+  },
+  {
+    id: 'c2',
+    channelCode: 'android',
+    channelName: 'Android 客户端',
+    receiverPercent: 48,
+    platformPercent: 52,
+    enabled: true,
+  },
+  {
+    id: 'c3',
+    channelCode: 'h5',
+    channelName: 'H5 / Web',
+    receiverPercent: 42,
+    platformPercent: 58,
+    enabled: false,
+  },
+])
+
+const newPlatformChannel = ref({
+  channelCode: '',
+  channelName: '',
+  receiverPercent: 50,
+  platformPercent: 50,
 })
 
 /** 特定用户：按用户 ID 覆盖分成（常用于大客户、内部测试号） */
@@ -100,22 +145,38 @@ const specificUserRows = ref<SpecificUserRow[]>([
 const newAnchor = ref({ hostId: '', nickname: '', giftSharePercent: 50, applyToVoiceRoom: true })
 const newSpecific = ref({ userId: '', nickname: '', giftSharePercent: 50, scope: 'all' as const, priority: 50 })
 
-const voiceSum = computed(() => {
-  const a = voicePlatformDefault.value.receiverPercent
-  const b = voicePlatformDefault.value.platformPercent
-  const c = voicePlatformDefault.value.channelPercent
-  return a + b + c
-})
+function platformSplitSum(split: PlatformSplit) {
+  return split.receiverPercent + split.platformPercent
+}
 
-function normalizeVoicePlatform() {
-  const v = voicePlatformDefault.value
-  const sum = v.receiverPercent + v.platformPercent + v.channelPercent
+const platformDefaultSum = computed(() => platformSplitSum(platformUserDefault.value))
+
+function normalizePlatformSplit(split: PlatformSplit) {
+  const sum = split.receiverPercent + split.platformPercent
   if (sum === 100) return
   if (sum <= 0) return
   const k = 100 / sum
-  v.receiverPercent = Math.round(v.receiverPercent * k * 10) / 10
-  v.platformPercent = Math.round(v.platformPercent * k * 10) / 10
-  v.channelPercent = Math.round((100 - v.receiverPercent - v.platformPercent) * 10) / 10
+  split.receiverPercent = Math.round(split.receiverPercent * k * 10) / 10
+  split.platformPercent = Math.round((100 - split.receiverPercent) * 10) / 10
+}
+
+function addPlatformChannel() {
+  const code = newPlatformChannel.value.channelCode.trim()
+  if (!code) return
+  if (platformChannelRows.value.some((r) => r.channelCode === code)) return
+  platformChannelRows.value.push({
+    id: `c_${Date.now()}`,
+    channelCode: code,
+    channelName: newPlatformChannel.value.channelName.trim() || code,
+    receiverPercent: Math.min(100, Math.max(0, newPlatformChannel.value.receiverPercent)),
+    platformPercent: Math.min(100, Math.max(0, newPlatformChannel.value.platformPercent)),
+    enabled: true,
+  })
+  newPlatformChannel.value = { channelCode: '', channelName: '', receiverPercent: 50, platformPercent: 50 }
+}
+
+function removePlatformChannel(id: string) {
+  platformChannelRows.value = platformChannelRows.value.filter((r) => r.id !== id)
 }
 
 function addAnchor() {
@@ -196,21 +257,9 @@ async function handleSave() {
     </header>
 
     <main class="mx-auto max-w-5xl space-y-4 px-4 py-6">
-      <div
-        class="rounded-lg border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-xs leading-relaxed text-amber-950"
-      >
-        <span class="font-semibold">优先级（建议）</span>
-        ：同一笔礼物结算时，
-        <span class="font-medium">特定用户配置</span>
-        ＞
-        <span class="font-medium">主播维度配置</span>
-        ＞
-        <span class="font-medium">语聊房平台用户默认</span>
-        ；直播场次内若未配置主播或特定用户，则走直播侧全局默认（可与语聊默认拆分，此处原型合并展示逻辑说明）。
-      </div>
-
-      <!-- Tabs -->
-      <div class="inline-flex flex-wrap gap-1 rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
+      <div class="flex flex-wrap items-center gap-3">
+        <!-- Tabs -->
+        <div class="inline-flex shrink-0 flex-wrap gap-1 rounded-lg bg-white p-1 shadow-sm ring-1 ring-black/5">
         <button
           type="button"
           class="rounded-md px-4 py-2 text-sm font-medium transition"
@@ -221,19 +270,7 @@ async function handleSave() {
           "
           @click="activeTab = 'anchor'"
         >
-          主播礼物分成
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-4 py-2 text-sm font-medium transition"
-          :class="
-            activeTab === 'voicePlatform'
-              ? 'bg-[#111827] text-white shadow-sm'
-              : 'text-[#6b7280] hover:bg-[#f3f4f6]'
-          "
-          @click="activeTab = 'voicePlatform'"
-        >
-          语聊房平台用户
+          主播配置
         </button>
         <button
           type="button"
@@ -245,8 +282,33 @@ async function handleSave() {
           "
           @click="activeTab = 'specificUser'"
         >
-          特定用户
+          特定用户配置
         </button>
+        <button
+          type="button"
+          class="rounded-md px-4 py-2 text-sm font-medium transition"
+          :class="
+            activeTab === 'voicePlatform'
+              ? 'bg-[#111827] text-white shadow-sm'
+              : 'text-[#6b7280] hover:bg-[#f3f4f6]'
+          "
+          @click="activeTab = 'voicePlatform'"
+        >
+          平台用户配置
+        </button>
+        </div>
+        <div
+          class="min-w-0 flex-1 rounded-lg border border-amber-200/80 bg-amber-50/90 px-4 py-2.5 text-xs leading-relaxed text-amber-950"
+        >
+          <span class="font-semibold">礼物比例匹配优先级</span>
+          ：礼物结算给用户时，按照该优先级读取配置进行结算【
+          <span class="font-medium">主播配置</span>
+          ＞
+          <span class="font-medium">特定用户配置</span>
+          ＞
+          <span class="font-medium">平台用户配置</span>
+          】
+        </div>
       </div>
 
       <!-- 主播 -->
@@ -349,74 +411,212 @@ async function handleSave() {
         </div>
       </section>
 
-      <!-- 语聊房平台用户 -->
+      <!-- 平台用户配置 -->
       <section
         v-show="activeTab === 'voicePlatform'"
         class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-black/5"
       >
         <div class="border-b border-black/6 bg-[#f9fafb] px-4 py-3">
-          <h2 class="text-sm font-semibold text-[#111827]">语聊房 · 平台用户默认礼物分成</h2>
+          <h2 class="text-sm font-semibold text-[#111827]">平台用户 · 礼物分成</h2>
           <p class="mt-1 text-xs text-[#6b7280]">
-            面向「平台普通用户 / 未单独签约」在语聊房内收礼时的默认拆账；三项比例之和应为 100%。
+            须保留一条<strong class="font-medium text-[#374151]">平台默认</strong>拆账；可按渠道单独配置，结算时优先匹配渠道，未命中则回退平台默认。
           </p>
         </div>
-        <div class="grid gap-6 px-4 py-6 sm:grid-cols-3">
+
+        <div class="border-b border-black/6 bg-[#f8fafc] px-4 py-4">
+          <div class="mb-3 flex flex-wrap items-center gap-2">
+            <span class="rounded-md bg-[#111827] px-2 py-0.5 text-xs font-medium text-white">平台默认</span>
+            <span class="text-xs text-[#6b7280]">兜底配置，不可删除</span>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="text-xs font-medium text-[#374151]">收礼用户所得 %</label>
+              <input
+                v-model.number="platformUserDefault.receiverPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm tabular-nums"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-medium text-[#374151]">平台 %</label>
+              <input
+                v-model.number="platformUserDefault.platformPercent"
+                type="number"
+                min="0"
+                max="100"
+                step="0.5"
+                class="mt-1 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm tabular-nums"
+              />
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <p
+              class="text-sm font-medium tabular-nums"
+              :class="platformDefaultSum === 100 ? 'text-emerald-700' : 'text-rose-600'"
+            >
+              合计：{{ platformDefaultSum }}%
+              {{ platformDefaultSum === 100 ? '（正确）' : '（需调整为 100%）' }}
+            </p>
+            <button
+              type="button"
+              class="rounded-lg border border-black/15 bg-white px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#f9fafb]"
+              @click="normalizePlatformSplit(platformUserDefault)"
+            >
+              按比例归一化到 100%
+            </button>
+          </div>
+          <div class="mt-3">
+            <label class="text-xs font-medium text-[#374151]">备注</label>
+            <textarea
+              v-model="platformUserDefault.remark"
+              rows="2"
+              class="mt-1 w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
+            />
+          </div>
+        </div>
+
+        <div class="border-b border-black/6 px-4 py-3">
+          <h3 class="text-sm font-semibold text-[#111827]">渠道单独配置</h3>
+          <p class="mt-1 text-xs text-[#6b7280]">
+            按渠道标识（如 ios、android、h5）覆盖默认拆账；停用后该渠道回退平台默认。
+          </p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[720px] text-left text-sm">
+            <thead class="border-b border-black/6 text-xs font-medium uppercase tracking-wide text-[#6b7280]">
+              <tr>
+                <th class="px-4 py-3">渠道标识</th>
+                <th class="px-4 py-3">渠道名称</th>
+                <th class="px-4 py-3">收礼用户 %</th>
+                <th class="px-4 py-3">平台 %</th>
+                <th class="px-4 py-3">合计</th>
+                <th class="px-4 py-3">状态</th>
+                <th class="px-4 py-3 w-24" />
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-black/6">
+              <tr v-for="row in platformChannelRows" :key="row.id" class="hover:bg-[#fafafa]">
+                <td class="px-4 py-3 font-mono text-xs text-[#374151]">{{ row.channelCode }}</td>
+                <td class="px-4 py-3">
+                  <input
+                    v-model="row.channelName"
+                    type="text"
+                    class="w-full min-w-[120px] rounded-lg border border-black/10 px-2 py-1.5 text-sm"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    v-model.number="row.receiverPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    class="w-20 rounded-lg border border-black/10 px-2 py-1.5 text-sm tabular-nums"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <input
+                    v-model.number="row.platformPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    class="w-20 rounded-lg border border-black/10 px-2 py-1.5 text-sm tabular-nums"
+                  />
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="text-xs font-medium tabular-nums"
+                    :class="platformSplitSum(row) === 100 ? 'text-emerald-700' : 'text-rose-600'"
+                  >
+                    {{ platformSplitSum(row) }}%
+                  </span>
+                  <button
+                    v-if="platformSplitSum(row) !== 100"
+                    type="button"
+                    class="ml-2 text-xs text-[#374151] underline hover:text-[#111827]"
+                    @click="normalizePlatformSplit(row)"
+                  >
+                    归一化
+                  </button>
+                </td>
+                <td class="px-4 py-3">
+                  <label class="inline-flex cursor-pointer items-center gap-2 text-xs">
+                    <input v-model="row.enabled" type="checkbox" class="rounded border-[#d1d5db]" />
+                    {{ row.enabled ? '启用' : '停用' }}
+                  </label>
+                </td>
+                <td class="px-4 py-3">
+                  <button
+                    type="button"
+                    class="text-xs text-rose-600 hover:underline"
+                    @click="removePlatformChannel(row.id)"
+                  >
+                    删除
+                  </button>
+                </td>
+              </tr>
+              <tr v-if="platformChannelRows.length === 0">
+                <td colspan="7" class="px-4 py-8 text-center text-sm text-[#9ca3af]">
+                  暂无渠道配置，将统一使用平台默认
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div
+          class="flex flex-col gap-3 border-t border-black/6 bg-[#f9fafb] px-4 py-4 sm:flex-row sm:flex-wrap sm:items-end"
+        >
           <div>
-            <label class="text-xs font-medium text-[#374151]">收礼用户所得 %</label>
+            <label class="text-xs font-medium text-[#374151]">渠道标识</label>
             <input
-              v-model.number="voicePlatformDefault.receiverPercent"
+              v-model="newPlatformChannel.channelCode"
+              type="text"
+              class="mt-1 block w-full min-w-[120px] rounded-lg border border-black/10 bg-white px-3 py-2 text-sm font-mono sm:w-32"
+              placeholder="如 mini_program"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-[#374151]">渠道名称（选填）</label>
+            <input
+              v-model="newPlatformChannel.channelName"
+              type="text"
+              class="mt-1 block w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm sm:w-40"
+              placeholder="展示用"
+            />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-[#374151]">收礼用户 %</label>
+            <input
+              v-model.number="newPlatformChannel.receiverPercent"
               type="number"
               min="0"
               max="100"
               step="0.5"
-              class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm tabular-nums"
+              class="mt-1 w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm tabular-nums"
             />
           </div>
           <div>
             <label class="text-xs font-medium text-[#374151]">平台 %</label>
             <input
-              v-model.number="voicePlatformDefault.platformPercent"
+              v-model.number="newPlatformChannel.platformPercent"
               type="number"
               min="0"
               max="100"
               step="0.5"
-              class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm tabular-nums"
+              class="mt-1 w-24 rounded-lg border border-black/10 bg-white px-3 py-2 text-sm tabular-nums"
             />
           </div>
-          <div>
-            <label class="text-xs font-medium text-[#374151]">公会/渠道预留 %</label>
-            <input
-              v-model.number="voicePlatformDefault.channelPercent"
-              type="number"
-              min="0"
-              max="100"
-              step="0.5"
-              class="mt-1 w-full rounded-lg border border-black/10 px-3 py-2 text-sm tabular-nums"
-            />
-          </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-3 border-t border-black/6 px-4 py-4">
-          <p
-            class="text-sm font-medium tabular-nums"
-            :class="voiceSum === 100 ? 'text-emerald-700' : 'text-rose-600'"
-          >
-            当前合计：{{ voiceSum }}% {{ voiceSum === 100 ? '（正确）' : '（需调整为 100%）' }}
-          </p>
           <button
             type="button"
-            class="rounded-lg border border-black/15 bg-white px-3 py-1.5 text-xs font-medium text-[#374151] hover:bg-[#f9fafb]"
-            @click="normalizeVoicePlatform"
+            class="rounded-lg bg-[#111827] px-4 py-2 text-sm font-medium text-white"
+            @click="addPlatformChannel"
           >
-            按比例归一化到 100%
+            添加渠道
           </button>
-        </div>
-        <div class="border-t border-black/6 bg-[#f9fafb] px-4 py-3">
-          <label class="text-xs font-medium text-[#374151]">备注</label>
-          <textarea
-            v-model="voicePlatformDefault.remark"
-            rows="2"
-            class="mt-1 w-full resize-none rounded-lg border border-black/10 bg-white px-3 py-2 text-sm"
-          />
         </div>
       </section>
 
