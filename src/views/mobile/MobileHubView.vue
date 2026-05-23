@@ -1,27 +1,21 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import '../../styles/mobile-h5.css'
 </script>
 
 <template>
-  <div
-    class="flex min-h-svh flex-col bg-[var(--bg)] text-[var(--text)] antialiased"
-  >
-    <header class="border-b border-[var(--border)] px-4 py-5 sm:px-6">
-      <RouterLink
-        to="/"
-        class="mb-3 inline-flex items-center text-sm text-[var(--accent)] transition hover:opacity-80"
-      >
-        ← 返回首页
-      </RouterLink>
-      <p class="text-xs font-medium uppercase tracking-widest text-amber-600/90">一级路由 · /mobile</p>
-      <h1 class="mt-1 text-xl font-semibold text-[var(--text-h)] sm:text-2xl">移动端</h1>
-      <p class="mt-1 text-sm opacity-75">以下为二级路由入口</p>
+  <div class="mh5-page">
+    <header class="mh5-header sm:px-6">
+      <RouterLink to="/" class="mh5-back mb-3 inline-flex">← 返回首页</RouterLink>
+      <p class="mh5-eyebrow mh5-eyebrow--amber">一级路由 · /mobile</p>
+      <h1 class="mh5-title sm:text-2xl">移动端</h1>
+      <p class="mh5-desc">以下为二级路由入口</p>
     </header>
 
-    <main class="flex flex-1 flex-col gap-3 px-4 py-6 sm:mx-auto sm:max-w-md sm:px-6">
+    <main class="mh5-main sm:mx-auto sm:max-w-md sm:px-6">
       <RouterLink
         to="/mobile/live"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-amber-500/35 active:scale-[0.99]"
+        class="mh5-hub-link group hover:border-amber-500/35"
       >
         <span class="text-2xl">📻</span>
         <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">直播</h2>
@@ -31,7 +25,7 @@ import { RouterLink } from 'vue-router'
 
       <RouterLink
         to="/mobile/agent"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-[var(--accent-border)] active:scale-[0.99]"
+        class="mh5-hub-link group hover:border-[var(--accent-border)]"
       >
         <span class="text-2xl">🤝</span>
         <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">代理</h2>
@@ -41,7 +35,7 @@ import { RouterLink } from 'vue-router'
 
       <RouterLink
         to="/mobile/mic"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-sky-500/35 active:scale-[0.99]"
+        class="mh5-hub-link group hover:border-sky-500/35"
       >
         <span class="text-2xl">🎙</span>
         <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">麦控状态</h2>
@@ -51,21 +45,25 @@ import { RouterLink } from 'vue-router'
 
       <RouterLink
         to="/mobile/app-join-mic"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-orange-500/40 active:scale-[0.99]"
+        class="mh5-hub-link group hover:border-orange-500/40"
       >
         <span class="text-2xl">📲</span>
         <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">APP 专享上麦</h2>
         <p class="mt-1 text-xs opacity-75">/mobile/app-join-mic</p>
         <p class="mt-2 text-sm opacity-80">已装 App 则唤起；未装则跳转超级签下载页（与直播 7、8 麦一致）。</p>
       </RouterLink>
+
+      <RouterLink
+        to="/mobile/live-start-notice"
+        class="mh5-hub-link group hover:border-rose-500/40"
+      >
+        <span class="text-2xl">🔔</span>
+        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">开播通知</h2>
+        <p class="mt-1 text-xs opacity-75">/mobile/live-start-notice</p>
+        <p class="mt-2 text-sm opacity-80">全局顶部浮窗：主播开播、大神语聊房上麦。规范见 docs/H5移动端设计规范.md。</p>
+      </RouterLink>
     </main>
 
-    <footer class="safe-pb px-4 pb-6 text-center text-xs opacity-50">移动端原型</footer>
+    <footer class="mh5-footer">移动端原型</footer>
   </div>
 </template>
-
-<style scoped>
-.safe-pb {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-}
-</style>

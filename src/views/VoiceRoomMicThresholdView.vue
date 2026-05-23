@@ -1,12 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-function goBack() {
-  router.push({ name: 'pc' })
-}
 
 /** 条件一：仅可开关「是否启用」，规则文案固定 */
 const priorityMicEnabled = ref(true)
@@ -65,13 +58,6 @@ const ruleSummary = computed(() => {
   <div class="admin-page min-h-svh bg-[#eceff4] text-[#1f2937] antialiased">
     <header class="sticky top-0 z-10 border-b border-black/6 bg-white px-4 py-3 shadow-sm">
       <div class="mx-auto flex max-w-4xl flex-wrap items-center gap-3">
-        <button
-          type="button"
-          class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-[#374151] transition hover:bg-[#f9fafb]"
-          @click="goBack()"
-        >
-          ← 返回
-        </button>
         <div class="min-w-0 flex-1">
           <h1 class="text-base font-semibold text-[#111827]">语音房 · 上麦门槛设置</h1>
           <p class="text-xs text-[#6b7280]">

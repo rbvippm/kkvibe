@@ -1,0 +1,649 @@
+/**
+ * KK Vibe · 移动端 App 壳层（橙色主题）
+ * 底栏：直播 / 代理 / 游戏 / 我的
+ */
+
+:root {
+  --mh5-app-orange: #ff7a2b;
+  --mh5-app-orange-hover: #ff6820;
+  --mh5-app-orange-light: #fff5eb;
+  --mh5-app-orange-muted: rgb(255 122 43 / 0.12);
+  --mh5-app-bg: #f5f6f8;
+  --mh5-app-card: #fff;
+  --mh5-app-text: #1a1a1a;
+  --mh5-app-text-secondary: #8a8f98;
+  --mh5-app-border: #eef0f3;
+  --mh5-app-tabbar-h: 56px;
+  --mh5-app-radius: 14px;
+}
+
+/* ---------- App 壳层 ---------- */
+.mh5-app-shell {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  max-width: var(--mh5-max-width, 430px);
+  margin-inline: auto;
+  background: var(--mh5-app-bg);
+  color: var(--mh5-app-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.mh5-app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding-bottom: calc(var(--mh5-app-tabbar-h) + env(safe-area-inset-bottom));
+}
+
+.mh5-app-body--immersive {
+  padding-bottom: 0;
+}
+
+/* ---------- 底栏导航 ---------- */
+.mh5-app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  width: 100%;
+  max-width: var(--mh5-max-width, 430px);
+  height: calc(var(--mh5-app-tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--mh5-app-border);
+  background: var(--mh5-app-card);
+  transform: translateX(-50%);
+}
+
+.mh5-app-tabbar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-text-secondary);
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.mh5-app-tabbar__item--active {
+  color: var(--mh5-app-orange);
+}
+
+.mh5-app-tabbar__icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- 二级 Tab 栏 ---------- */
+.mh5-sub-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: var(--mh5-app-card);
+  border-bottom: 1px solid var(--mh5-app-border);
+}
+
+.mh5-sub-tabs__item {
+  position: relative;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-text-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.mh5-sub-tabs__item--active {
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-sub-tabs__item--active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mh5-app-orange);
+  transform: translateX(-50%);
+}
+
+.mh5-sub-tabs__menu {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-text-secondary);
+  cursor: pointer;
+}
+
+.mh5-sub-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+/* ---------- 语聊大厅卡片网格 ---------- */
+.mh5-lobby-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  padding: 12px;
+}
+
+.mh5-lobby-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--mh5-app-radius);
+  background: linear-gradient(145deg, #fff8ee 0%, #ffe8cc 45%, #ffd9a8 100%);
+  padding: 14px 12px 12px;
+  min-height: 148px;
+  display: flex;
+  flex-direction: column;
+}
+
+.mh5-lobby-card__bg {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background:
+    radial-gradient(circle at 80% 20%, rgb(255 122 43 / 0.25), transparent 50%),
+    linear-gradient(180deg, transparent 60%, rgb(255 122 43 / 0.08));
+}
+
+.mh5-lobby-card__title {
+  position: relative;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--mh5-app-orange);
+  line-height: 1.3;
+}
+
+.mh5-lobby-card__subtitle {
+  position: relative;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--mh5-app-orange);
+  opacity: 0.85;
+}
+
+.mh5-lobby-card__footer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+}
+
+.mh5-lobby-card__avatars {
+  display: flex;
+  align-items: center;
+}
+
+.mh5-lobby-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-left: -6px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb347, #ff7a2b);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.mh5-lobby-card__avatar:first-child {
+  margin-left: 0;
+}
+
+.mh5-lobby-card__count {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-lobby-card__join {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.mh5-lobby-card__join:active {
+  transform: scale(0.96);
+  background: var(--mh5-app-orange-hover);
+}
+
+.mh5-lobby-end {
+  padding: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+/* ---------- 游戏页 ---------- */
+.mh5-games-header {
+  padding: 16px 16px 8px;
+  background: var(--mh5-app-card);
+}
+
+.mh5-games-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.mh5-games-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 12px 16px 24px;
+}
+
+.mh5-game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: none;
+  border-radius: var(--mh5-app-radius);
+  background: var(--mh5-app-card);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 4%);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.mh5-game-card:active {
+  transform: scale(0.97);
+}
+
+.mh5-game-card__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--mh5-app-orange-muted);
+  font-size: 24px;
+}
+
+.mh5-game-card__name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mh5-app-text);
+}
+
+/* ---------- 我的页 ---------- */
+.mh5-mine-page {
+  padding-bottom: 16px;
+}
+
+.mh5-mine-topbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px 0;
+}
+
+.mh5-mine-topbar__btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--mh5-app-text-secondary);
+  cursor: pointer;
+}
+
+.mh5-mine-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 12px 0;
+  padding: 16px;
+  border-radius: var(--mh5-app-radius);
+  background: var(--mh5-app-card);
+}
+
+.mh5-mine-profile__avatar {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb347, #ff7a2b);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.mh5-mine-profile__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-mine-profile__name {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.mh5-mine-profile__id {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-mine-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 12px 0;
+}
+
+.mh5-mine-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--mh5-app-radius);
+  background: var(--mh5-app-card);
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-mine-action__icon {
+  color: var(--mh5-app-orange);
+  font-size: 20px;
+}
+
+.mh5-mine-wallet {
+  margin: 10px 12px 0;
+  padding: 16px;
+  border-radius: var(--mh5-app-radius);
+  background: var(--mh5-app-card);
+}
+
+.mh5-mine-wallet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mh5-mine-wallet__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mh5-mine-wallet__currency {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--mh5-app-bg);
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-mine-wallet__tools {
+  display: flex;
+  gap: 12px;
+  color: var(--mh5-app-orange);
+  font-size: 18px;
+}
+
+.mh5-mine-wallet__balance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.mh5-mine-wallet__eye {
+  border: none;
+  background: none;
+  color: var(--mh5-app-text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mh5-mine-wallet__btns {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.mh5-mine-wallet__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: none;
+  border-radius: 10px;
+  background: var(--mh5-app-bg);
+  font-size: 13px;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-mine-wallet__btn--primary {
+  background: var(--mh5-app-orange);
+  color: #fff;
+}
+
+.mh5-mine-wallet__btn-icon {
+  font-size: 20px;
+}
+
+.mh5-mine-assets {
+  margin: 10px 12px 0;
+  padding: 4px 16px;
+  border-radius: var(--mh5-app-radius);
+  background: var(--mh5-app-card);
+}
+
+.mh5-mine-asset {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--mh5-app-border);
+}
+
+.mh5-mine-asset:last-child {
+  border-bottom: none;
+}
+
+.mh5-mine-asset__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mh5-mine-asset__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  background: var(--mh5-app-orange-muted);
+}
+
+.mh5-mine-asset__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mh5-mine-asset__sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-mine-asset__value {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* embedded 子页 */
+.mh5-embedded-page {
+  min-height: auto !important;
+}
+
+.mh5-embedded-page .mh5-page {
+  min-height: auto;
+}
+
+/* 直播 Tab 内嵌子页：强制浅色可读文字（覆盖系统暗色 --text / --text-h） */
+.mh5-embedded-light {
+  color-scheme: light only;
+  color: #666;
+  --text: #666;
+  --text-h: #1a1a1a;
+  --bg: #f5f6f8;
+  --border: #eef0f3;
+  --social-bg: #fff;
+  --accent: #ff7a2b;
+  --shadow: 0 2px 10px rgb(0 0 0 / 5%);
+  --code-bg: rgb(255 122 43 / 10%);
+}
+
+.mh5-embedded-head {
+  border-bottom: 1px solid var(--mh5-app-border);
+  background: #fff;
+  padding: 12px 16px;
+}
+
+.mh5-embedded-head__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.mh5-embedded-head__desc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #8a8f98;
+  line-height: 1.5;
+}
+
+.mh5-embedded-light .mh5-page {
+  background: var(--mh5-app-bg);
+  color: #666;
+}
+
+.mh5-embedded-light .mh5-card {
+  background: #fff;
+  border-color: #eef0f3;
+  color: #666;
+}
+
+.mh5-embedded-light .mh5-section-title,
+.mh5-embedded-light .mh5-title,
+.mh5-embedded-light h1,
+.mh5-embedded-light h2 {
+  color: #1a1a1a;
+}
+
+.mh5-embedded-light .mh5-feed-item {
+  background: #fff;
+  border-color: #eef0f3;
+}
+
+.mh5-embedded-light .mh5-btn--primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.mh5-embedded-light label {
+  color: #1a1a1a;
+}
+
+.mh5-embedded-light .mh5-hint-bar {
+  background: #fffbeb !important;
+  color: #92400e !important;
+}
+
+.mh5-embedded-light code {
+  color: #c2410c !important;
+  background: rgb(255 122 43 / 12%) !important;
+}
+
+.mh5-embedded-light .opacity-60,
+.mh5-embedded-light .opacity-70,
+.mh5-embedded-light .opacity-75 {
+  opacity: 1;
+  color: #8a8f98;
+}
+
+.mh5-embedded-light .text-\[var\(--text-h\)\] {
+  color: #1a1a1a !important;
+}
+
+.mh5-embedded-light .text-\[var\(--accent\)\] {
+  color: #ff7a2b !important;
+}
+
+.mh5-embedded-action-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgb(255 122 43 / 40%);
+  background: rgb(255 122 43 / 12%);
+  color: #c2410c;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+
+.mh5-embedded-action-btn:active {
+  transform: scale(0.99);
+  background: rgb(255 122 43 / 20%);
+}

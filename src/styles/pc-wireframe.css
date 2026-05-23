@@ -1,0 +1,390 @@
+/**
+ * KK Vibe · PC 后台线框规范样式
+ * 参考：直播佣金配置（/pc/live-commission）
+ * 新 PC 页面请引入本文件，使用文档中的 class 组合，勿混用 Tailwind 卡片风。
+ */
+
+:root {
+  --pc-bg-page: #fff;
+  --pc-text: #333;
+  --pc-text-secondary: #666;
+  --pc-text-muted: #999;
+  --pc-border: #d9d9d9;
+  --pc-border-light: #e8e8e8;
+  --pc-bg-table-head: #fafafa;
+  --pc-bg-pagination: #fafafa;
+  --pc-primary: #1890ff;
+  --pc-primary-border: #91d5ff;
+  --pc-primary-bg: #e6f7ff;
+  --pc-danger: #ff4d4f;
+  --pc-tab-active-bg: #595959;
+  --pc-notice-border: #ffe58f;
+  --pc-notice-bg: #fffbe6;
+  --pc-focus: #40a9ff;
+  --pc-radius: 2px;
+  --pc-font-size: 14px;
+  --pc-font-size-sm: 12px;
+  --pc-font-size-title: 16px;
+  --pc-control-height: 32px;
+  --pc-page-padding-x: 20px;
+  --pc-page-padding-y: 16px;
+  --pc-modal-max-width: 640px;
+  --pc-modal-mask: rgb(0 0 0 / 45%);
+}
+
+/* ---------- 页面容器 ---------- */
+.pc-wireframe-page {
+  min-height: 100svh;
+  padding: var(--pc-page-padding-y) var(--pc-page-padding-x) 32px;
+  background: var(--pc-bg-page);
+  color: var(--pc-text);
+  font-size: var(--pc-font-size);
+  line-height: 1.5;
+}
+
+/* ---------- Tab + 提示条 ---------- */
+.wf-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.wf-tabs {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid var(--pc-border);
+}
+
+.wf-tab {
+  padding: 8px 20px;
+  border: none;
+  border-right: 1px solid var(--pc-border);
+  background: var(--pc-bg-page);
+  font-size: var(--pc-font-size);
+  color: var(--pc-text);
+  cursor: pointer;
+}
+
+.wf-tab:last-child {
+  border-right: none;
+}
+
+.wf-tab--active {
+  background: var(--pc-tab-active-bg);
+  color: #fff;
+}
+
+.wf-notice {
+  flex: 1;
+  min-width: 280px;
+  padding: 8px 12px;
+  border: 1px solid var(--pc-notice-border);
+  background: var(--pc-notice-bg);
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-text);
+  line-height: 1.6;
+}
+
+.wf-notice-label {
+  font-weight: 600;
+}
+
+/* ---------- 内容块 / 工具栏 ---------- */
+.wf-block {
+  margin-bottom: 8px;
+}
+
+.wf-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wf-toolbar--platform {
+  align-items: center;
+}
+
+.wf-label {
+  flex-shrink: 0;
+  font-size: var(--pc-font-size);
+  color: var(--pc-text);
+}
+
+.wf-tip {
+  margin: 0;
+  margin-left: 8px;
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-text-secondary);
+}
+
+/* ---------- 表单控件 ---------- */
+.wf-input {
+  width: 200px;
+  height: var(--pc-control-height);
+  padding: 4px 11px;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  font-size: var(--pc-font-size);
+  outline: none;
+}
+
+.wf-input:focus {
+  border-color: var(--pc-focus);
+}
+
+.wf-input--select {
+  width: 160px;
+  background: var(--pc-bg-page);
+}
+
+.wf-input--channel {
+  width: 220px;
+}
+
+.wf-input--pct {
+  width: 72px;
+}
+
+.wf-pct {
+  margin-left: 4px;
+  color: var(--pc-text);
+}
+
+.wf-select {
+  min-width: 140px;
+  height: var(--pc-control-height);
+  padding: 4px 8px;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  font-size: 13px;
+  background: var(--pc-bg-page);
+}
+
+.wf-select--full {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ---------- 按钮 ---------- */
+.wf-btn {
+  height: var(--pc-control-height);
+  padding: 0 15px;
+  border: 1px solid transparent;
+  border-radius: var(--pc-radius);
+  font-size: var(--pc-font-size);
+  cursor: pointer;
+}
+
+.wf-btn--primary {
+  border-color: var(--pc-primary);
+  background: var(--pc-primary);
+  color: #fff;
+}
+
+.wf-btn--danger {
+  border-color: var(--pc-danger);
+  background: var(--pc-bg-page);
+  color: var(--pc-danger);
+}
+
+.wf-btn--add {
+  border-color: var(--pc-primary-border);
+  background: var(--pc-primary-bg);
+  color: var(--pc-primary);
+}
+
+.wf-btn--default {
+  border-color: var(--pc-border);
+  background: var(--pc-bg-page);
+  color: var(--pc-text);
+}
+
+.wf-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- 表格 ---------- */
+.wf-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.wf-th,
+.wf-td {
+  border: 1px solid var(--pc-border-light);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  font-weight: normal;
+}
+
+.wf-th {
+  background: var(--pc-bg-table-head);
+  color: var(--pc-text);
+  font-size: var(--pc-font-size);
+}
+
+.wf-th--no {
+  width: 56px;
+  text-align: center;
+}
+
+.wf-th--op {
+  width: 88px;
+  text-align: center;
+}
+
+.wf-td--center {
+  text-align: center;
+}
+
+.wf-td--empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--pc-text-muted);
+}
+
+.wf-muted {
+  color: var(--pc-text-muted);
+}
+
+.wf-link-del {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: var(--pc-font-size);
+  color: var(--pc-danger);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wf-link-del:hover {
+  text-decoration: underline;
+}
+
+.wf-pagination {
+  margin-top: 16px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pc-border-light);
+  background: var(--pc-bg-pagination);
+  color: var(--pc-text-muted);
+  font-size: var(--pc-font-size);
+}
+
+/* ---------- 弹框 ---------- */
+.wf-modal-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--pc-modal-mask);
+}
+
+.wf-modal {
+  width: 100%;
+  max-width: var(--pc-modal-max-width);
+  background: var(--pc-bg-page);
+  border-radius: var(--pc-radius);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
+
+.wf-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--pc-border-light);
+}
+
+.wf-modal__title {
+  margin: 0;
+  font-size: var(--pc-font-size-title);
+  font-weight: 600;
+  color: var(--pc-text);
+}
+
+.wf-modal__close {
+  border: none;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--pc-text-muted);
+  cursor: pointer;
+}
+
+.wf-modal__close:hover {
+  color: var(--pc-text);
+}
+
+.wf-modal__body {
+  padding: 20px;
+}
+
+.wf-modal__query {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wf-modal__hint {
+  margin: 0 0 12px;
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-danger);
+}
+
+.wf-table--modal {
+  margin-top: 4px;
+}
+
+.wf-modal__commission {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px 20px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--pc-border-light);
+}
+
+.wf-modal__commission--disabled {
+  opacity: 0.65;
+}
+
+.wf-modal__field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--pc-font-size);
+  color: var(--pc-text);
+}
+
+.wf-modal__pct-row {
+  display: flex;
+  align-items: center;
+}
+
+.wf-modal__commission-tip {
+  margin: 8px 0 0;
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-text-muted);
+}
+
+.wf-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--pc-border-light);
+}

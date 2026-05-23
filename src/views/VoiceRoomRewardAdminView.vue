@@ -1,12 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-function goBack() {
-  router.push({ name: 'pc' })
-}
 
 type TabKey = 'reward' | 'settlement'
 
@@ -229,13 +222,6 @@ function clearSettlementFilter() {
   <div class="admin-page min-h-svh bg-[#eceff4] text-[#1f2937] antialiased">
     <header class="sticky top-0 z-10 border-b border-black/6 bg-white px-4 py-3 shadow-sm">
       <div class="mx-auto flex max-w-6xl items-center gap-3">
-        <button
-          type="button"
-          class="rounded-lg border border-black/10 bg-white px-3 py-1.5 text-sm text-[#374151] transition hover:bg-[#f9fafb]"
-          @click="goBack()"
-        >
-          ← 返回
-        </button>
         <div>
           <h1 class="text-base font-semibold text-[#111827]">语聊房 · 打赏与结算</h1>
           <p class="text-xs text-[#6b7280]">打赏列表支持按礼物来源区分「直播间 / 语聊房」；结算流水为原型数据。</p>

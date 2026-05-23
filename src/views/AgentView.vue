@@ -1,12 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-function goBack() {
-  router.push({ name: 'mobile' })
-}
 
 type SubAgent = {
   id: string
@@ -101,22 +94,6 @@ async function copyInvite() {
     <div class="relative z-10 mx-auto flex min-h-svh max-w-[420px] flex-col">
       <!-- 顶栏：左返回 / 居中标题 -->
       <header class="relative flex h-11 items-center px-3 pt-1">
-        <button
-          type="button"
-          class="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center text-[#D4A373] transition hover:opacity-80"
-          aria-label="返回"
-          @click="goBack()"
-        >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M14.5 6.5L8 12l6.5 5.5"
-              stroke="currentColor"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
         <h1 class="w-full text-center text-[15px] font-semibold tracking-wide text-[#D4A373]">
           代理中心
         </h1>

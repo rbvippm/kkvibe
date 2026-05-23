@@ -1,63 +1,45 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import '../../styles/pc-admin-layout.css'
+
+const quickLinks = [
+  {
+    to: '/pc/live-commission',
+    icon: '💰',
+    title: '直播佣金配置',
+    desc: 'Tab + 表格 + 弹框，PC 线框规范标准页。',
+  },
+  {
+    to: '/pc/reward',
+    icon: '🎁',
+    title: '语聊打赏后台',
+    desc: '打赏列表与结算列表，支持筛选与表格布局。',
+  },
+  {
+    to: '/pc/mic-threshold',
+    icon: '🎚',
+    title: '语音房上麦门槛',
+    desc: '胜率优先上麦开关；分币种充值门槛与总资产规则。',
+  },
+]
 </script>
 
 <template>
-  <div
-    class="flex min-h-svh flex-col bg-[var(--bg)] text-[var(--text)] antialiased"
-  >
-    <header class="border-b border-[var(--border)] px-4 py-5 sm:px-6">
-      <RouterLink
-        to="/"
-        class="mb-3 inline-flex items-center text-sm text-[var(--accent)] transition hover:opacity-80"
-      >
-        ← 返回首页
-      </RouterLink>
-      <p class="text-xs font-medium uppercase tracking-widest text-slate-500 dark:text-slate-400">
-        一级路由 · /pc
-      </p>
-      <h1 class="mt-1 text-xl font-semibold text-[var(--text-h)] sm:text-2xl">PC 后台</h1>
-      <p class="mt-1 text-sm opacity-75">以下为二级路由入口</p>
-    </header>
+  <div class="pc-dashboard">
+    <h1 class="pc-dashboard__title">工作台</h1>
+    <p class="pc-dashboard__desc">从左侧菜单或下方快捷入口进入各管理模块。</p>
 
-    <main class="flex flex-1 flex-col gap-3 px-4 py-6 sm:mx-auto sm:max-w-lg sm:px-6">
+    <div class="pc-dashboard__grid">
       <RouterLink
-        to="/pc/reward"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-emerald-500/35 active:scale-[0.99]"
+        v-for="item in quickLinks"
+        :key="item.to"
+        :to="item.to"
+        class="pc-dashboard__card"
       >
-        <span class="text-2xl">🎁</span>
-        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">语聊打赏后台</h2>
-        <p class="mt-1 text-xs opacity-75">/pc/reward</p>
-        <p class="mt-2 text-sm opacity-80">打赏列表与结算列表，筛选与表格布局。</p>
+        <span class="pc-dashboard__card-icon">{{ item.icon }}</span>
+        <h2 class="pc-dashboard__card-title">{{ item.title }}</h2>
+        <p class="pc-dashboard__card-desc">{{ item.desc }}</p>
       </RouterLink>
-
-      <RouterLink
-        to="/pc/mic-threshold"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-violet-500/35 active:scale-[0.99]"
-      >
-        <span class="text-2xl">🎚</span>
-        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">语音房上麦门槛</h2>
-        <p class="mt-1 text-xs opacity-75">/pc/mic-threshold</p>
-        <p class="mt-2 text-sm opacity-80">胜率优先上麦开关；分币种充值门槛与无充值时总资产规则。</p>
-      </RouterLink>
-
-      <RouterLink
-        to="/pc/live-commission"
-        class="group rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-5 shadow-[var(--shadow)] transition hover:border-rose-500/35 active:scale-[0.99]"
-      >
-        <span class="text-2xl">💰</span>
-        <h2 class="mt-2 text-base font-semibold text-[var(--text-h)]">直播佣金配置</h2>
-        <p class="mt-1 text-xs opacity-75">/pc/live-commission</p>
-        <p class="mt-2 text-sm opacity-80">主播、语聊房平台用户、特定用户的礼物分成与优先级说明。</p>
-      </RouterLink>
-    </main>
-
-    <footer class="safe-pb px-4 pb-6 text-center text-xs opacity-50">管理端原型</footer>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.safe-pb {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-}
-</style>

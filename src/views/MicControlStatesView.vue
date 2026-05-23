@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
-
-function goBack() {
-  router.push({ name: 'mobile' })
-}
+const { embedded = false } = defineProps<{ embedded?: boolean }>()
 
 const sceneTabs = [
   { id: 1 as const, label: '麦位关闭' },
@@ -21,17 +16,14 @@ const activeScene = ref<1 | 2 | 3>(1)
 </script>
 
 <template>
-  <div class="flex min-h-svh flex-col bg-[#0f1428] text-white antialiased">
+  <div
+    class="flex flex-col bg-[#0f1428] text-white antialiased"
+    :class="embedded ? 'mh5-embedded-page' : 'min-h-svh'"
+  >
     <header
-      class="sticky top-0 z-10 flex items-center gap-3 border-b border-white/10 bg-[#0f1428]/95 px-4 py-3 backdrop-blur"
+      class="flex items-center gap-3 border-b border-white/10 bg-[#0f1428]/95 px-4 py-3"
+      :class="embedded ? '' : 'sticky top-0 z-10 backdrop-blur'"
     >
-      <button
-        type="button"
-        class="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/90 transition hover:bg-white/10"
-        @click="goBack()"
-      >
-        ← 返回
-      </button>
       <div class="min-w-0 flex-1">
         <h1 class="truncate text-base font-semibold">麦控状态演示</h1>
         <p class="truncate text-xs text-white/50">观众 / 管理 / 本人 · 三种表现形式</p>

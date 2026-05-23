@@ -17,7 +17,7 @@ function onJoinEmptyMic(micIndex: number) {
 }
 
 function goBack() {
-  router.push({ name: 'mobile' })
+  router.push({ name: 'mobile-live' })
 }
 
 /** 麦位角色：主播 / 房管 / 普通（无角标） */

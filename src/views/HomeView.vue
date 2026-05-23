@@ -1,71 +1,70 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import '../styles/home-entry.css'
+
+onMounted(() => {
+  document.documentElement.classList.add('theme-home-light')
+})
+
+onUnmounted(() => {
+  document.documentElement.classList.remove('theme-home-light')
+})
 </script>
 
 <template>
-  <div
-    class="flex min-h-svh flex-col bg-[var(--bg)] text-[var(--text)] antialiased"
-  >
-    <header class="border-b border-[var(--border)] px-4 py-6 text-center sm:px-6 sm:py-10">
-      <p class="text-xs font-medium uppercase tracking-widest text-[var(--accent)]">KK Vibe</p>
-      <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-h)] sm:text-3xl">
-        选择端类型
-      </h1>
-      <p class="mx-auto mt-2 max-w-sm text-sm opacity-75">
-        移动端原型与 PC 管理后台分开入口，便于演示与评审。
-      </p>
+  <div class="home-entry">
+    <header class="home-entry__header">
+      <span class="home-entry__brand">K</span>
+      <h1 class="home-entry__title">KK Vibe 原型</h1>
+      <p class="home-entry__desc">移动端与 PC 管理后台分入口演示，便于评审与联调。</p>
     </header>
 
-    <main class="flex flex-1 flex-col justify-center gap-4 px-4 py-8 sm:mx-auto sm:max-w-md sm:px-6">
-      <RouterLink
-        to="/mobile"
-        class="group relative block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-6 text-left shadow-[var(--shadow)] transition duration-300 hover:border-amber-500/40 hover:shadow-[0_20px_50px_-12px_rgba(245,158,11,0.25)] active:scale-[0.99]"
-      >
-        <div
-          class="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/30 to-orange-600/20 blur-2xl transition group-hover:opacity-100"
-        />
-        <span class="text-3xl">📱</span>
-        <h2 class="mt-3 text-lg font-semibold text-[var(--text-h)]">移动端</h2>
-        <p class="mt-1 text-sm opacity-80">
-          直播、代理、麦控状态等 C 端能力演示（二级路由：直播 / 代理 / 麦控）。
-        </p>
-        <span
-          class="mt-4 inline-flex items-center text-sm font-medium text-amber-600 transition group-hover:translate-x-0.5"
-        >
+    <main class="home-entry__main">
+      <RouterLink to="/mobile/live" class="home-entry__card home-entry__card--mobile">
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--mobile">📱</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">移动端 H5</h2>
+            <p class="home-entry__card-text">
+              直播、代理、游戏、我的；语聊大厅与麦控等能力演示。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--mobile">直播</span>
+              <span class="home-entry__tag home-entry__tag--mobile">代理</span>
+              <span class="home-entry__tag home-entry__tag--mobile">游戏</span>
+              <span class="home-entry__tag home-entry__tag--mobile">我的</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--mobile">
           进入移动端
           <span class="ml-1">→</span>
         </span>
       </RouterLink>
 
-      <RouterLink
-        to="/pc"
-        class="group relative block overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--social-bg)] p-6 text-left shadow-[var(--shadow)] transition duration-300 hover:border-slate-500/35 hover:shadow-[0_20px_50px_-12px_rgba(100,116,139,0.2)] active:scale-[0.99]"
-      >
-        <div
-          class="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-slate-400/25 to-slate-600/20 blur-2xl transition group-hover:opacity-100"
-        />
-        <span class="text-3xl">🖥</span>
-        <h2 class="mt-3 text-lg font-semibold text-[var(--text-h)]">PC 后台</h2>
-        <p class="mt-1 text-sm opacity-80">
-          语聊打赏、结算等管理端布局（二级路由：语聊打赏后台）。
-        </p>
-        <span
-          class="mt-4 inline-flex items-center text-sm font-medium text-slate-600 transition group-hover:translate-x-0.5 dark:text-slate-300"
-        >
+      <RouterLink to="/pc" class="home-entry__card home-entry__card--pc">
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--pc">🖥</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">PC 管理后台</h2>
+            <p class="home-entry__card-text">
+              侧栏菜单、面包屑与多标签导航；语聊打赏、佣金配置等模块。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--pc">语聊管理</span>
+              <span class="home-entry__tag home-entry__tag--pc">直播管理</span>
+              <span class="home-entry__tag home-entry__tag--pc">线框规范</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--pc">
           进入 PC 后台
           <span class="ml-1">→</span>
         </span>
       </RouterLink>
     </main>
 
-    <footer class="safe-pb shrink-0 px-4 pb-6 text-center text-xs opacity-50">
-      原型环境 · 数据均为演示
-    </footer>
+    <footer class="home-entry__footer">原型环境 · 数据均为演示</footer>
   </div>
 </template>
-
-<style scoped>
-.safe-pb {
-  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
-}
-</style>

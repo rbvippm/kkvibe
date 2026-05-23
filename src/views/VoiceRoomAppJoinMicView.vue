@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink, useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { APP_JOIN_MIC } from '../config/appJoinMic'
 import { openJoinMicAppOrDownload } from '../utils/joinMicAppBridge'
+import '../styles/mobile-app-shell.css'
 
-const router = useRouter()
-
-function goBack() {
-  router.push({ name: 'mobile' })
-}
+const { embedded = false } = defineProps<{ embedded?: boolean }>()
 
 const demoRoomId = 'demo_voice_room_001'
 const lastTip = ref('')
@@ -20,19 +17,23 @@ function tryJoin(seat: number) {
 </script>
 
 <template>
-  <div class="flex min-h-svh flex-col bg-[var(--bg)] text-[var(--text)] antialiased">
-    <header class="border-b border-[var(--border)] px-4 py-4">
-      <button
-        type="button"
-        class="mb-2 text-sm text-[var(--accent)] transition hover:opacity-80"
-        @click="goBack()"
-      >
-        ← 返回移动端
-      </button>
+  <div
+    class="flex flex-col antialiased"
+    :class="
+      embedded
+        ? 'mh5-embedded-page mh5-embedded-light bg-[#f5f6f8]'
+        : 'min-h-svh bg-[var(--bg)] text-[var(--text)]'
+    "
+  >
+    <header v-if="!embedded" class="border-b border-[var(--border)] px-4 py-4">
       <h1 class="text-lg font-semibold text-[var(--text-h)]">APP 专享上麦（唤起 / 超级签）</h1>
       <p class="mt-1 text-xs leading-relaxed opacity-75">
         点击空麦「加入 N 麦」→ 优先通过 URL Scheme 打开已安装 App；若仍停留在浏览器，则跳转超级签安装页。
       </p>
+    </header>
+    <header v-else class="mh5-embedded-head">
+      <h1 class="mh5-embedded-head__title">APP 专享上麦</h1>
+      <p class="mh5-embedded-head__desc">7、8 麦唤起 App 或跳转超级签安装页</p>
     </header>
 
     <main class="flex flex-1 flex-col gap-4 px-4 py-5">
@@ -68,14 +69,22 @@ function tryJoin(seat: number) {
         <div class="mt-4 flex gap-3">
           <button
             type="button"
-            class="flex-1 rounded-xl border border-amber-500/40 bg-amber-500/15 py-3 text-sm font-semibold text-amber-800 transition active:scale-[0.99] dark:text-amber-100"
+            :class="
+              embedded
+                ? 'mh5-embedded-action-btn'
+                : 'flex-1 rounded-xl border border-amber-500/40 bg-amber-500/15 py-3 text-sm font-semibold text-amber-800 transition active:scale-[0.99]'
+            "
             @click="tryJoin(7)"
           >
             加入 7 麦（APP 专享）
           </button>
           <button
             type="button"
-            class="flex-1 rounded-xl border border-amber-500/40 bg-amber-500/15 py-3 text-sm font-semibold text-amber-800 transition active:scale-[0.99] dark:text-amber-100"
+            :class="
+              embedded
+                ? 'mh5-embedded-action-btn'
+                : 'flex-1 rounded-xl border border-amber-500/40 bg-amber-500/15 py-3 text-sm font-semibold text-amber-800 transition active:scale-[0.99]'
+            "
             @click="tryJoin(8)"
           >
             加入 8 麦（APP 专享）
@@ -85,10 +94,11 @@ function tryJoin(seat: number) {
       </section>
 
       <RouterLink
-        to="/mobile/live"
+        v-if="!embedded"
+        to="/mobile/live/room"
         class="block rounded-xl border border-[var(--border)] px-4 py-3 text-center text-sm font-medium text-[var(--accent)] transition hover:bg-[var(--social-bg)]"
       >
-        去直播演示页看 7、8 麦 UI →
+        去语聊房看 7、8 麦 UI →
       </RouterLink>
     </main>
   </div>

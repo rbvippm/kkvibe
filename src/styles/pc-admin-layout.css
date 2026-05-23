@@ -1,0 +1,342 @@
+/**
+ * PC 后台壳层：侧栏 + 面包屑 + 多标签导航
+ */
+
+:root {
+  --pc-layout-bg: #f0f2f5;
+  --pc-layout-header-bg: #fff;
+  --pc-layout-tags-bg: #f5f7fa;
+  --pc-layout-sidebar-bg: #001529;
+  --pc-layout-sidebar-width: 220px;
+  --pc-layout-sidebar-collapsed: 64px;
+  --pc-layout-header-height: 88px;
+  --pc-tag-active-bg: #1890ff;
+  --pc-breadcrumb-color: #8c9bab;
+}
+
+.pc-admin-layout {
+  display: flex;
+  min-height: 100svh;
+  background: var(--pc-layout-bg);
+  color: var(--pc-text);
+  font-size: var(--pc-font-size, 14px);
+}
+
+/* ---------- 侧栏 ---------- */
+.pc-admin-sidebar {
+  flex-shrink: 0;
+  width: var(--pc-layout-sidebar-width);
+  background: var(--pc-layout-sidebar-bg);
+  transition: width 0.2s ease;
+  overflow: hidden;
+}
+
+.pc-admin-sidebar--collapsed {
+  width: var(--pc-layout-sidebar-collapsed);
+}
+
+.pc-admin-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+}
+
+.pc-admin-sidebar__brand-mark {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  background: var(--pc-tag-active-bg);
+  font-size: 14px;
+}
+
+.pc-admin-sidebar__nav {
+  padding: 8px 0 16px;
+}
+
+.pc-admin-menu-group__title {
+  padding: 12px 16px 6px;
+  color: rgb(255 255 255 / 45%);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.pc-admin-sidebar--collapsed .pc-admin-menu-group__title {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pc-admin-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px 10px 20px;
+  border: none;
+  background: transparent;
+  color: rgb(255 255 255 / 75%);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.pc-admin-menu-item:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 8%);
+}
+
+.pc-admin-menu-item--active {
+  color: #fff;
+  background: var(--pc-tag-active-bg);
+}
+
+.pc-admin-menu-item--in-group {
+  padding-left: 28px;
+}
+
+.pc-admin-menu-item__icon {
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+
+.pc-admin-sidebar--collapsed .pc-admin-menu-item {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.pc-admin-sidebar--collapsed .pc-admin-menu-item__label {
+  display: none;
+}
+
+/* ---------- 主区域 ---------- */
+.pc-admin-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pc-admin-header {
+  flex-shrink: 0;
+  background: var(--pc-layout-header-bg);
+  border-bottom: 1px solid var(--pc-border-light, #e8e8e8);
+}
+
+.pc-admin-breadcrumb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+.pc-admin-collapse-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--pc-text-secondary, #666);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.pc-admin-collapse-btn:hover {
+  background: #f5f5f5;
+}
+
+.pc-admin-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--pc-breadcrumb-color);
+  font-size: 14px;
+}
+
+.pc-admin-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pc-admin-breadcrumb__sep {
+  color: #c0cad4;
+  user-select: none;
+}
+
+.pc-admin-breadcrumb__link {
+  border: none;
+  padding: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.pc-admin-breadcrumb__link:hover {
+  color: var(--pc-tag-active-bg);
+}
+
+.pc-admin-breadcrumb__current {
+  color: var(--pc-text, #333);
+}
+
+/* ---------- 标签栏 ---------- */
+.pc-admin-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  background: var(--pc-layout-tags-bg);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.pc-admin-tag {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 3px;
+  background: #fff;
+  color: var(--pc-text-secondary, #666);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.pc-admin-tag:hover {
+  color: var(--pc-tag-active-bg);
+}
+
+.pc-admin-tag--active {
+  background: var(--pc-tag-active-bg);
+  color: #fff;
+}
+
+.pc-admin-tag--active:hover {
+  color: #fff;
+}
+
+.pc-admin-tag__close {
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s, background 0.15s;
+}
+
+.pc-admin-tag__close:hover {
+  opacity: 1;
+  background: rgb(0 0 0 / 8%);
+}
+
+.pc-admin-tag--active .pc-admin-tag__close:hover {
+  background: rgb(255 255 255 / 25%);
+}
+
+/* ---------- 内容区 ---------- */
+.pc-admin-content {
+  flex: 1;
+  overflow: auto;
+}
+
+.pc-admin-content .pc-wireframe-page {
+  min-height: 100%;
+}
+
+.pc-admin-content .admin-page {
+  min-height: 100%;
+}
+
+/* 首页工作台 */
+.pc-dashboard {
+  padding: 20px;
+}
+
+.pc-dashboard__title {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--pc-text);
+}
+
+.pc-dashboard__desc {
+  margin: 0 0 20px;
+  color: var(--pc-text-secondary, #666);
+  font-size: 14px;
+}
+
+.pc-dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.pc-dashboard__card {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--pc-border-light, #e8e8e8);
+  border-radius: 2px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pc-dashboard__card:hover {
+  border-color: var(--pc-primary-border, #91d5ff);
+  box-shadow: 0 2px 8px rgb(24 144 255 / 12%);
+}
+
+.pc-dashboard__card-icon {
+  font-size: 24px;
+}
+
+.pc-dashboard__card-title {
+  margin: 8px 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.pc-dashboard__card-desc {
+  margin: 0;
+  color: var(--pc-text-secondary, #666);
+  font-size: 13px;
+  line-height: 1.5;
+}
