@@ -34,6 +34,31 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'account-change',
+    title: '账变管理',
+    icon: '💳',
+    children: [
+      {
+        key: 'account-change-manage',
+        title: '账变管理',
+        path: '/pc/account-change-manage',
+        routeName: 'pc-account-change-manage',
+      },
+      {
+        key: 'account-change-record',
+        title: '账变记录',
+        path: '/pc/account-change-record',
+        routeName: 'pc-account-change-record',
+      },
+      {
+        key: 'account-change-audit',
+        title: '账变审核',
+        path: '/pc/account-change-audit',
+        routeName: 'pc-account-change-audit',
+      },
+    ],
+  },
+  {
     key: 'voice',
     title: '语聊管理',
     icon: '🎙',

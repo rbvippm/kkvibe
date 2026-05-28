@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import '../../styles/mobile-app-shell.css'
 
 const balanceHidden = ref(true)
+const router = useRouter()
 
 const user = {
   name: 'EZ1',
   id: 'mid_yly487ecnmd',
   avatar: 'E',
+  vipLevel: 1,
 }
 
 const assets = [
@@ -20,6 +23,14 @@ const assets = [
 
 function mask(value: string) {
   return balanceHidden.value ? '******' : value
+}
+
+function goUserHome() {
+  router.push({ name: 'mobile-user-home' })
+}
+
+function goVip() {
+  router.push({ name: 'mobile-vip' })
 }
 </script>
 
@@ -42,16 +53,34 @@ function mask(value: string) {
       </button>
     </div>
 
-    <section class="mh5-mine-profile">
+    <div
+      class="mh5-mine-profile"
+      role="button"
+      tabindex="0"
+      @click="goUserHome"
+      @keydown.enter="goUserHome"
+      @keydown.space.prevent="goUserHome"
+    >
       <div class="mh5-mine-profile__avatar">{{ user.avatar }}</div>
       <div class="mh5-mine-profile__info">
-        <h2 class="mh5-mine-profile__name">{{ user.name }}</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="mh5-mine-profile__name">{{ user.name }}</h2>
+          <button
+            type="button"
+            class="mh5-vip-badge"
+            aria-label="进入 VIP 详情"
+            @click.stop="goVip"
+          >
+            <span class="mh5-vip-badge__crown" aria-hidden="true">♛</span>
+            VIP{{ user.vipLevel }}
+          </button>
+        </div>
         <p class="mh5-mine-profile__id">MiCall号：{{ user.id }}</p>
       </div>
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="text-[var(--mh5-app-text-secondary)]" aria-hidden="true">
         <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
-    </section>
+    </div>
 
     <div class="mh5-mine-actions">
       <button type="button" class="mh5-mine-action">

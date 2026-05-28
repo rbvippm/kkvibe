@@ -4,6 +4,24 @@ import '../../styles/pc-admin-layout.css'
 
 const quickLinks = [
   {
+    to: '/pc/account-change-manage',
+    icon: '💳',
+    title: '账变管理',
+    desc: '发起账变、风控/财务审核状态、账变方式与流水。',
+  },
+  {
+    to: '/pc/account-change-record',
+    icon: '📋',
+    title: '账变记录',
+    desc: '账单号维度查询，账变成功记录与重新账变。',
+  },
+  {
+    to: '/pc/account-change-audit',
+    icon: '✅',
+    title: '账变审核',
+    desc: '审核列表、账变方式/流水/账变金额，查看详情。',
+  },
+  {
     to: '/pc/live-commission',
     icon: '💰',
     title: '直播佣金配置',

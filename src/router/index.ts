@@ -4,6 +4,8 @@ import MobileAppLayout from '../layouts/MobileAppLayout.vue'
 import MobileLiveSectionView from '../views/mobile/MobileLiveSectionView.vue'
 import MobileGamesView from '../views/mobile/MobileGamesView.vue'
 import MobileMineView from '../views/mobile/MobileMineView.vue'
+import MobileUserHomeView from '../views/mobile/MobileUserHomeView.vue'
+import MobileVipDetailView from '../views/mobile/MobileVipDetailView.vue'
 import PcAdminLayout from '../layouts/PcAdminLayout.vue'
 import PcHubView from '../views/pc/PcHubView.vue'
 import LiveRoomView from '../views/LiveRoomView.vue'
@@ -11,6 +13,9 @@ import AgentView from '../views/AgentView.vue'
 import VoiceRoomRewardAdminView from '../views/VoiceRoomRewardAdminView.vue'
 import VoiceRoomMicThresholdView from '../views/VoiceRoomMicThresholdView.vue'
 import LiveCommissionConfigView from '../views/LiveCommissionConfigView.vue'
+import PcAccountChangeManageView from '../views/pc/PcAccountChangeManageView.vue'
+import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue'
+import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +62,18 @@ export const router = createRouter({
           component: MobileMineView,
           meta: { title: '我的' },
         },
+        {
+          path: 'user',
+          name: 'mobile-user-home',
+          component: MobileUserHomeView,
+          meta: { title: '个人主页', hideTabBar: true },
+        },
+        {
+          path: 'vip',
+          name: 'mobile-vip',
+          component: MobileVipDetailView,
+          meta: { title: 'VIP', hideTabBar: true },
+        },
       ],
     },
     {
@@ -87,6 +104,24 @@ export const router = createRouter({
           name: 'pc-live-commission',
           component: LiveCommissionConfigView,
           meta: { title: '直播佣金配置' },
+        },
+        {
+          path: 'account-change-manage',
+          name: 'pc-account-change-manage',
+          component: PcAccountChangeManageView,
+          meta: { title: '账变管理' },
+        },
+        {
+          path: 'account-change-record',
+          name: 'pc-account-change-record',
+          component: PcAccountChangeRecordView,
+          meta: { title: '账变记录' },
+        },
+        {
+          path: 'account-change-audit',
+          name: 'pc-account-change-audit',
+          component: PcAccountChangeAuditView,
+          meta: { title: '账变审核' },
         },
       ],
     },
