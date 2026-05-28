@@ -1,0 +1,26 @@
+---
+description: KK Vibe PC 后台线框规范（Tab/表格/弹框），基于直播佣金配置页
+globs: src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
+alwaysApply: false
+---
+
+# PC 后台线框规范
+
+开发 `/pc/*` 或 PC 管理页时，**必须**遵循 `docs/PC后台设计规范.md` 与 `src/styles/pc-wireframe.css`。
+
+## 必做
+
+1. 页面根：`class="pc-wireframe-page"`，并 `import '../styles/pc-wireframe.css'`（路径按文件调整）。
+2. 布局：顶部 `wf-tabs` + 可选 `wf-notice`；内容 `wf-block` → `wf-toolbar` → `wf-table` → `wf-pagination`。
+3. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除）、`wf-btn--add`（新增）。
+4. 弹框：`Teleport` + `wf-modal-*`；底部取消 `wf-btn--default` + 确定 `wf-btn--primary`。
+5. **禁止**：面包屑「一、直播管理/…」、Tailwind 圆角卡片主布局、无 Mock 空页。
+
+## 禁止
+
+- 在 PC 后台新页使用 `admin-page` + 大圆角 `rounded-xl` + 深色顶栏（旧打赏后台风格）。
+- 移动端规范（Tailwind 移动优先）套用到 `/pc` 路由。
+
+## 参考实现
+
+`src/views/LiveCommissionConfigView.vue` 为唯一标准样例；不确定 class 时对照该文件与 `pc-wireframe.css`。

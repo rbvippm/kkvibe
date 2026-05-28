@@ -1,0 +1,30 @@
+---
+description: KK Vibe H5 移动端规范（壳页/直播/开播通知），基于 /mobile 路由
+globs: src/views/mobile/**/*.vue,src/views/LiveRoomView.vue,src/views/AgentView.vue,src/views/MicControlStatesView.vue,src/views/VoiceRoom*.vue,src/components/LiveStartTopNotice.vue,src/composables/useLiveStartNotice.ts,src/styles/mobile-h5.css,docs/H5移动端设计规范.md
+alwaysApply: false
+---
+
+# H5 移动端规范
+
+开发 `/mobile/*` 或直播/语聊相关移动页时，遵循 `docs/H5移动端设计规范.md` 与 `src/styles/mobile-h5.css`。
+
+## 页面分型
+
+1. **App 壳页**（Hub、演示控制台）：`mh5-page` + `mh5-header` / `mh5-main` / `mh5-card` / `mh5-btn-*`；使用 `var(--bg)`、`var(--text-h)`。
+2. **沉浸式房间**（`/mobile/live`）：`mh5-live-room` 或 `max-w-[430px] bg-[#1e2a5e]`；底栏 fixed + safe-area；不用浅色壳页背景。
+
+## 开播通知
+
+- 全局仅 `LiveStartTopNotice` + `useLiveStartNotice().push()`。
+- kind：`live_start` | `voice_mic_on`；禁止重复实现顶部浮层。
+
+## 必做 / 禁止
+
+- 必做：触控热区 ≥44px、`active:scale` 反馈、safe-area、中文 Mock。
+- 禁止：PC 线框 `wf-*`；在壳页使用直播深色全屏背景；未处理底栏遮挡公屏。
+
+## 标准样例
+
+- 壳页：`src/views/mobile/LiveStartNoticeDemoView.vue`
+- 直播：`src/views/LiveRoomView.vue`
+- Hub：`src/views/mobile/MobileHubView.vue`
