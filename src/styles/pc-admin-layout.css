@@ -2,6 +2,11 @@
  * PC 后台壳层：侧栏 + 面包屑 + 多标签导航
  */
 
+/* 仅右侧内容区滚动，避免整页滚动带动侧栏 */
+body:has(.pc-admin-layout) {
+  overflow: hidden;
+}
+
 :root {
   --pc-layout-bg: #f0f2f5;
   --pc-layout-header-bg: #fff;
@@ -16,7 +21,8 @@
 
 .pc-admin-layout {
   display: flex;
-  min-height: 100svh;
+  height: 100svh;
+  overflow: hidden;
   background: var(--pc-layout-bg);
   color: var(--pc-text);
   font-size: var(--pc-font-size, 14px);
@@ -24,8 +30,11 @@
 
 /* ---------- 侧栏 ---------- */
 .pc-admin-sidebar {
+  display: flex;
   flex-shrink: 0;
+  flex-direction: column;
   width: var(--pc-layout-sidebar-width);
+  height: 100%;
   background: var(--pc-layout-sidebar-bg);
   transition: width 0.2s ease;
   overflow: hidden;
@@ -60,7 +69,11 @@
 }
 
 .pc-admin-sidebar__nav {
+  flex: 1;
+  min-height: 0;
   padding: 8px 0 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .pc-admin-menu-group__title {
@@ -128,6 +141,8 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pc-admin-header {
@@ -273,11 +288,13 @@
 /* ---------- 内容区 ---------- */
 .pc-admin-content {
   flex: 1;
+  min-height: 0;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pc-admin-content .pc-wireframe-page {
-  min-height: 100%;
+  min-height: auto;
 }
 
 .pc-admin-content .admin-page {

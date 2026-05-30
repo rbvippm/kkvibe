@@ -34,7 +34,7 @@
 
 /* ---------- 页面容器 ---------- */
 .pc-wireframe-page {
-  min-height: 100svh;
+  min-height: 100%;
   padding: var(--pc-page-padding-y) var(--pc-page-padding-x) 32px;
   background: var(--pc-bg-page);
   color: var(--pc-text);

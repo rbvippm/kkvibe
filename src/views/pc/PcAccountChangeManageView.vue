@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import '../../styles/pc-wireframe.css'
+import { formatSignedNumber, signedNumberClass } from '../../utils/formatSignedNumber'
 
 const ACCOUNT_CHANGE_METHODS = ['充值加币', '充值减币', '人工加分', '人工减分'] as const
 
@@ -547,7 +548,12 @@ function confirmInitiate() {
                 {{ formatAmount(row) }}
               </td>
               <td class="wf-td wf-td--method">{{ row.method }}</td>
-              <td class="wf-td wf-td--center wf-td--turnover">{{ row.turnover }}</td>
+              <td
+                class="wf-td wf-td--center wf-td--turnover"
+                :class="signedNumberClass(row.turnover)"
+              >
+                {{ formatSignedNumber(row.turnover) }}
+              </td>
               <td class="wf-td">{{ row.initiator }}</td>
               <td class="wf-td wf-td--initiator-id">{{ row.initiatorId }}</td>
               <td class="wf-td wf-td--time">{{ row.appliedAt }}</td>

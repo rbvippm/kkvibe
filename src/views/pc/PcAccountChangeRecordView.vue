@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import '../../styles/pc-wireframe.css'
+import { formatSignedNumber, signedNumberClass } from '../../utils/formatSignedNumber'
 
 /** 账变方式枚举值 */
 const ACCOUNT_CHANGE_METHODS = ['充值加币', '充值减币', '人工加分', '人工减分'] as const
@@ -394,7 +395,12 @@ function onRetry(row: RecordRow) {
                 {{ formatAmount(row) }}
               </td>
               <td class="wf-td wf-td--method">{{ row.method }}</td>
-              <td class="wf-td wf-td--center wf-td--turnover">{{ row.turnover }}</td>
+              <td
+                class="wf-td wf-td--center wf-td--turnover"
+                :class="signedNumberClass(row.turnover)"
+              >
+                {{ formatSignedNumber(row.turnover) }}
+              </td>
               <td class="wf-td wf-td--status">{{ statusLabel(row.status) }}</td>
               <td class="wf-td wf-td--center wf-td--actions">
                 <button
@@ -455,7 +461,9 @@ function onRetry(row: RecordRow) {
               </div>
               <div class="wf-detail-list__row">
                 <dt>流水</dt>
-                <dd>{{ detailRow.turnover }}</dd>
+                <dd :class="signedNumberClass(detailRow.turnover)">
+                  {{ formatSignedNumber(detailRow.turnover) }}
+                </dd>
               </div>
               <div class="wf-detail-list__row">
                 <dt>账变状态</dt>
