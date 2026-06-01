@@ -55,6 +55,7 @@ export const pcMenuTree: PcMenuItem[] = [
         title: '账变审核',
         path: '/pc/account-change-audit',
         routeName: 'pc-account-change-audit',
+        icon: '🧾',
       },
     ],
   },

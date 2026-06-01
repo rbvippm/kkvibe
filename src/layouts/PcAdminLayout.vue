@@ -67,7 +67,7 @@ function isMenuActive(item: PcMenuItem) {
               }"
               :title="sidebarCollapsed ? child.title : undefined"
             >
-              <span class="pc-admin-menu-item__icon">{{ group.icon }}</span>
+              <span class="pc-admin-menu-item__icon">{{ child.icon ?? group.icon }}</span>
               <span class="pc-admin-menu-item__label">{{ child.title }}</span>
             </RouterLink>
           </div>

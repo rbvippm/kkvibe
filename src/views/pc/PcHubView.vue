@@ -17,7 +17,7 @@ const quickLinks = [
   },
   {
     to: '/pc/account-change-audit',
-    icon: '✅',
+    icon: '🧾',
     title: '账变审核',
     desc: '审核列表、账变方式/提现流水/账变金额，查看详情。',
   },
