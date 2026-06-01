@@ -128,7 +128,7 @@ export const router = createRouter({
           path: 'turnover-audit',
           name: 'pc-turnover-audit',
           component: PcTurnoverAuditView,
-          meta: { title: '流水审核' },
+          meta: { title: '账变审核' },
         },
       ],
     },

@@ -23,9 +23,9 @@ const quickLinks = [
   },
   {
     to: '/pc/turnover-audit',
-    icon: '🛡',
-    title: '流水审核',
-    desc: '风控侧提现流水变动审核，待审/通过/驳回与详情。',
+    icon: '🧾',
+    title: '账变审核',
+    desc: '与账变管理下账变审核相同界面，供风控角色独立入口。',
   },
   {
     to: '/pc/live-commission',

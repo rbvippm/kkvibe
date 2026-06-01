@@ -20,11 +20,6 @@ export const WITHDRAW_TURNOVER_SPEC = {
     '正数为增加提现流水，负数为扣减；符号/颜色规则与列表相同。',
     '详情为只读展示，修改需通过账变管理重新发起。',
   ],
-  audit: [
-    '风控侧对提现流水变动申请的独立审核列表，与账变审核流程分离。',
-    '审核通过后提现流水才生效；驳回须填写理由并通知发起人。',
-    '列表「提现流水」列含义与账变管理一致，正数增加、负数扣减。',
-  ],
 } as const
 
 export type WithdrawTurnoverSpecContext = keyof typeof WITHDRAW_TURNOVER_SPEC

@@ -373,10 +373,6 @@
   min-width: 1680px;
 }
 
-.wf-table--turnover-audit {
-  min-width: 1520px;
-}
-
 .wf-table--audit .wf-th--auditor,
 .wf-table--audit .wf-td--auditor {
   min-width: 88px;

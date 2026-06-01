@@ -66,9 +66,10 @@ export const pcMenuTree: PcMenuItem[] = [
     children: [
       {
         key: 'turnover-audit',
-        title: '流水审核',
+        title: '账变审核',
         path: '/pc/turnover-audit',
         routeName: 'pc-turnover-audit',
+        icon: '🧾',
       },
     ],
   },
