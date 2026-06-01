@@ -22,6 +22,12 @@ const quickLinks = [
     desc: '审核列表、账变方式/提现流水/账变金额，查看详情。',
   },
   {
+    to: '/pc/turnover-audit',
+    icon: '🛡',
+    title: '流水审核',
+    desc: '风控侧提现流水变动审核，待审/通过/驳回与详情。',
+  },
+  {
     to: '/pc/live-commission',
     icon: '💰',
     title: '直播佣金配置',

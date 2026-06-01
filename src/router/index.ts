@@ -16,6 +16,7 @@ import LiveCommissionConfigView from '../views/LiveCommissionConfigView.vue'
 import PcAccountChangeManageView from '../views/pc/PcAccountChangeManageView.vue'
 import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue'
 import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
+import PcTurnoverAuditView from '../views/pc/PcTurnoverAuditView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -122,6 +123,12 @@ export const router = createRouter({
           name: 'pc-account-change-audit',
           component: PcAccountChangeAuditView,
           meta: { title: '账变审核' },
+        },
+        {
+          path: 'turnover-audit',
+          name: 'pc-turnover-audit',
+          component: PcTurnoverAuditView,
+          meta: { title: '流水审核' },
         },
       ],
     },
