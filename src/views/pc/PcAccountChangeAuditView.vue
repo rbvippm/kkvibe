@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import WfAccountChangeMethodAnnot from '../../components/wireframe/WfAccountChangeMethodAnnot.vue'
+import WfWithdrawTurnoverAnnot from '../../components/wireframe/WfWithdrawTurnoverAnnot.vue'
+import { WITHDRAW_TURNOVER_LABEL } from '../../constants/withdrawTurnover'
+import {
+  ACCOUNT_CHANGE_METHODS,
+  countsRechargeData,
+  type AccountChangeMethod,
+} from '../../constants/accountChangeMethod'
 import '../../styles/pc-wireframe.css'
 import { formatSignedNumber, signedNumberClass } from '../../utils/formatSignedNumber'
 
-/** 账变方式枚举值 */
-const ACCOUNT_CHANGE_METHODS = ['充值加币', '充值减币', '人工加分', '人工减分'] as const
-
-type ChangeMethod = (typeof ACCOUNT_CHANGE_METHODS)[number]
+type ChangeMethod = AccountChangeMethod
 
 type AuditStatus = 'pending' | 'approved' | 'rejected'
-
-const RECHARGE_DATA_METHODS: ChangeMethod[] = ['充值加币', '充值减币']
-
-function countsRechargeData(method: ChangeMethod) {
-  return RECHARGE_DATA_METHODS.includes(method)
-}
 
 function auditStatusLabel(status: AuditStatus) {
   const map: Record<AuditStatus, string> = {
@@ -316,7 +315,10 @@ const detailRechargeHint = computed(() => {
       </div>
 
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label">账变方式：</label>
+        <label class="wf-label wf-label--with-spec">
+          账变方式：
+          <WfAccountChangeMethodAnnot context="filter" />
+        </label>
         <select v-model="filter.method" class="wf-input wf-input--select">
           <option value="">全部</option>
           <option v-for="m in ACCOUNT_CHANGE_METHODS" :key="m" :value="m">
@@ -342,10 +344,6 @@ const detailRechargeHint = computed(() => {
         </span>
       </div>
 
-      <p class="wf-page-tip">
-        账变方式说明：充值加币、充值减币计入充值数据；人工加分、人工减分不加入充值数据。
-      </p>
-
       <div class="wf-table-wrap">
         <table class="wf-table wf-table--account-change wf-table--audit">
           <thead>
@@ -357,8 +355,14 @@ const detailRechargeHint = computed(() => {
               <th class="wf-th wf-th--initiator-id">发起人ID</th>
               <th class="wf-th wf-th--time">发起时间</th>
               <th class="wf-th wf-th--amount">账变金额</th>
-              <th class="wf-th wf-th--method">账变方式</th>
-              <th class="wf-th wf-th--turnover">流水</th>
+              <th class="wf-th wf-th--method wf-th--with-spec">
+                账变方式
+                <WfAccountChangeMethodAnnot context="table" placement="bottom" />
+              </th>
+              <th class="wf-th wf-th--turnover wf-th--with-spec">
+                {{ WITHDRAW_TURNOVER_LABEL }}
+                <WfWithdrawTurnoverAnnot context="table" placement="bottom" />
+              </th>
               <th class="wf-th">账变原因</th>
               <th class="wf-th wf-th--status">审核状态</th>
               <th class="wf-th wf-th--auditor">审核人</th>
@@ -442,7 +446,10 @@ const detailRechargeHint = computed(() => {
                 </dd>
               </div>
               <div class="wf-detail-list__row">
-                <dt>流水</dt>
+                <dt class="wf-detail-list__term--with-spec">
+                  {{ WITHDRAW_TURNOVER_LABEL }}
+                  <WfWithdrawTurnoverAnnot context="detail" placement="bottom" />
+                </dt>
                 <dd :class="signedNumberClass(detailRow.turnover)">
                   {{ formatSignedNumber(detailRow.turnover) }}
                 </dd>

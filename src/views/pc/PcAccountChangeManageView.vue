@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import WfAccountChangeMethodAnnot from '../../components/wireframe/WfAccountChangeMethodAnnot.vue'
+import WfWithdrawTurnoverAnnot from '../../components/wireframe/WfWithdrawTurnoverAnnot.vue'
+import { WITHDRAW_TURNOVER_LABEL } from '../../constants/withdrawTurnover'
+import {
+  ACCOUNT_CHANGE_METHODS,
+  countsRechargeData,
+  isSubtractMethod,
+  type AccountChangeMethod,
+} from '../../constants/accountChangeMethod'
 import '../../styles/pc-wireframe.css'
 import { formatSignedNumber, signedNumberClass } from '../../utils/formatSignedNumber'
 
-const ACCOUNT_CHANGE_METHODS = ['充值加币', '充值减币', '人工加分', '人工减分'] as const
-
-type ChangeMethod = (typeof ACCOUNT_CHANGE_METHODS)[number]
+type ChangeMethod = AccountChangeMethod
 
 type ReviewStatus = 'pending' | 'approved' | 'rejected'
 
 type ChangeStatus = 'success' | 'processing' | 'failed'
-
-const RECHARGE_DATA_METHODS: ChangeMethod[] = ['充值加币', '充值减币']
 
 function changeStatusLabel(status: ChangeStatus) {
   const map: Record<ChangeStatus, string> = {
@@ -24,14 +29,6 @@ function changeStatusLabel(status: ChangeStatus) {
 
 function formatArrivedAt(value: string) {
   return value.trim() ? value : '—'
-}
-
-function countsRechargeData(method: ChangeMethod) {
-  return RECHARGE_DATA_METHODS.includes(method)
-}
-
-function isSubtractMethod(method: ChangeMethod) {
-  return method === '充值减币' || method === '人工减分'
 }
 
 function reviewStatusLabel(status: ReviewStatus) {
@@ -418,7 +415,7 @@ function confirmInitiate() {
   }
   const turnover = parseSignedNumber(initiateTurnover.value)
   if (initiateTurnover.value.trim() !== '' && turnover === null) {
-    initiateQueryHint.value = '流水格式不正确，可输入负数'
+    initiateQueryHint.value = `${WITHDRAW_TURNOVER_LABEL}格式不正确，可输入负数`
     return
   }
   if (!initiateReason.value.trim()) {
@@ -485,7 +482,10 @@ function confirmInitiate() {
           </option>
         </select>
 
-        <label class="wf-label">账变方式：</label>
+        <label class="wf-label wf-label--with-spec">
+          账变方式：
+          <WfAccountChangeMethodAnnot context="filter" />
+        </label>
         <select v-model="filter.method" class="wf-input wf-input--select">
           <option value="">全部</option>
           <option v-for="m in ACCOUNT_CHANGE_METHODS" :key="m" :value="m">
@@ -522,8 +522,14 @@ function confirmInitiate() {
               <th class="wf-th wf-th--user">用户</th>
               <th class="wf-th wf-th--user-id">用户ID</th>
               <th class="wf-th wf-th--amount">账变金额</th>
-              <th class="wf-th wf-th--method">账变方式</th>
-              <th class="wf-th wf-th--turnover">流水</th>
+              <th class="wf-th wf-th--method wf-th--with-spec">
+                账变方式
+                <WfAccountChangeMethodAnnot context="table" placement="bottom" />
+              </th>
+              <th class="wf-th wf-th--turnover wf-th--with-spec">
+                {{ WITHDRAW_TURNOVER_LABEL }}
+                <WfWithdrawTurnoverAnnot context="table" placement="bottom" />
+              </th>
               <th class="wf-th">发起人</th>
               <th class="wf-th wf-th--initiator-id">发起人ID</th>
               <th class="wf-th wf-th--time">发起时间</th>
@@ -648,12 +654,15 @@ function confirmInitiate() {
               <div class="wf-form-row">
                 <label class="wf-form-row__label wf-form-row__label--required">账变方式</label>
                 <div>
-                  <select v-model="initiateMethod" class="wf-select wf-select--full">
-                    <option value="">请选择</option>
-                    <option v-for="m in ACCOUNT_CHANGE_METHODS" :key="m" :value="m">
-                      {{ m }}
-                    </option>
-                  </select>
+                  <div class="wf-form-row__field-head">
+                    <select v-model="initiateMethod" class="wf-select wf-select--full">
+                      <option value="">请选择</option>
+                      <option v-for="m in ACCOUNT_CHANGE_METHODS" :key="m" :value="m">
+                        {{ m }}
+                      </option>
+                    </select>
+                    <WfAccountChangeMethodAnnot context="form" />
+                  </div>
                   <p class="wf-form-row__hint">{{ methodNotice }}</p>
                 </div>
               </div>
@@ -677,14 +686,17 @@ function confirmInitiate() {
                 />
               </div>
               <div class="wf-form-row">
-                <label class="wf-form-row__label">流水</label>
-                <input
-                  v-model="initiateTurnover"
-                  type="number"
-                  step="0.01"
-                  class="wf-input wf-input--full"
-                  placeholder="请输入流水，负数为减流水"
-                />
+                <label class="wf-form-row__label">{{ WITHDRAW_TURNOVER_LABEL }}</label>
+                <div class="wf-form-row__field-head">
+                  <input
+                    v-model="initiateTurnover"
+                    type="number"
+                    step="0.01"
+                    class="wf-input wf-input--full"
+                    :placeholder="`请输入${WITHDRAW_TURNOVER_LABEL}，负数为扣减`"
+                  />
+                  <WfWithdrawTurnoverAnnot context="form" />
+                </div>
               </div>
               <div class="wf-form-row">
                 <label class="wf-form-row__label wf-form-row__label--required">账变理由</label>

@@ -7,7 +7,7 @@ const quickLinks = [
     to: '/pc/account-change-manage',
     icon: '💳',
     title: '账变管理',
-    desc: '发起账变、风控/财务审核状态、账变方式与流水。',
+    desc: '发起账变、风控/财务审核状态、账变方式与提现流水。',
   },
   {
     to: '/pc/account-change-record',
@@ -19,7 +19,7 @@ const quickLinks = [
     to: '/pc/account-change-audit',
     icon: '✅',
     title: '账变审核',
-    desc: '审核列表、账变方式/流水/账变金额，查看详情。',
+    desc: '审核列表、账变方式/提现流水/账变金额，查看详情。',
   },
   {
     to: '/pc/live-commission',
