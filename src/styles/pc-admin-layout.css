@@ -17,6 +17,9 @@ body:has(.pc-admin-layout) {
   --pc-layout-header-height: 88px;
   --pc-tag-active-bg: #1890ff;
   --pc-breadcrumb-color: #8c9bab;
+  --pc-text: #333;
+  --pc-text-secondary: #666;
+  --pc-text-muted: #999;
 }
 
 .pc-admin-layout {
@@ -347,6 +350,7 @@ body:has(.pc-admin-layout) {
 
 .pc-dashboard__card-title {
   margin: 8px 0 4px;
+  color: var(--pc-text, #333);
   font-size: 15px;
   font-weight: 600;
 }

@@ -105,7 +105,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420635',
     amount: 500,
     currency: 'USDT(TRON)',
-    method: '充值加币',
+    method: '充值加分',
     turnover: 500,
     initiator: 'ruby',
     initiatorId: '76',
@@ -124,7 +124,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420636',
     amount: 1000,
     currency: 'KKC',
-    method: '充值加币',
+    method: '充值加分',
     turnover: 1000,
     initiator: 'Wade',
     initiatorId: '103',
@@ -143,7 +143,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420637',
     amount: 200,
     currency: 'USDT(TRON)',
-    method: '人工加分',
+    method: '加币',
     turnover: 0,
     initiator: 'COKE',
     initiatorId: '90',
@@ -162,7 +162,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420634',
     amount: -88,
     currency: 'KKV',
-    method: '人工减分',
+    method: '减币',
     turnover: -50,
     initiator: 'ruby',
     initiatorId: '76',
@@ -181,7 +181,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420999',
     amount: -300,
     currency: 'KKC',
-    method: '充值减币',
+    method: '充值减分',
     turnover: -300,
     initiator: 'admin01',
     initiatorId: '12',
@@ -200,7 +200,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420640',
     amount: 120,
     currency: 'KKC',
-    method: '人工加分',
+    method: '加币',
     turnover: 120,
     initiator: 'Wade',
     initiatorId: '103',
@@ -219,7 +219,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420639',
     amount: -50,
     currency: 'KKV',
-    method: '人工减分',
+    method: '减币',
     turnover: -50,
     initiator: 'COKE',
     initiatorId: '90',
@@ -238,7 +238,7 @@ const manageSource = ref<ManageRow[]>([
     userId: '3180664521199420635',
     amount: 66,
     currency: 'KKC',
-    method: '充值减币',
+    method: '充值减分',
     turnover: -66,
     initiator: 'ruby',
     initiatorId: '76',
@@ -335,7 +335,7 @@ const initiateReason = ref('')
 
 const methodNotice = computed(() => {
   if (!initiateMethod.value) {
-    return '充值加币、充值减币计入充值数据；人工加分、人工减分不加入充值数据。'
+    return '充值加分、充值减分计入充值数据；加币、减币不加入充值数据。'
   }
   if (countsRechargeData(initiateMethod.value)) {
     return `当前方式「${initiateMethod.value}」将计入充值数据统计。`
