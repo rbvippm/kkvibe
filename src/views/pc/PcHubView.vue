@@ -28,6 +28,12 @@ const quickLinks = [
     desc: '与账变管理下账变审核相同界面，供风控角色独立入口。',
   },
   {
+    to: '/pc/user-manage',
+    icon: '👤',
+    title: '用户详情',
+    desc: '用户资产详情，虚拟货币/法币账户与钱包、银行资产查询。',
+  },
+  {
     to: '/pc/live-commission',
     icon: '💰',
     title: '直播佣金配置',

@@ -17,6 +17,7 @@ import PcAccountChangeManageView from '../views/pc/PcAccountChangeManageView.vue
 import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue'
 import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
 import PcTurnoverAuditView from '../views/pc/PcTurnoverAuditView.vue'
+import PcUserManageView from '../views/pc/PcUserManageView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -105,6 +106,12 @@ export const router = createRouter({
           name: 'pc-live-commission',
           component: LiveCommissionConfigView,
           meta: { title: '直播佣金配置' },
+        },
+        {
+          path: 'user-manage',
+          name: 'pc-user-manage',
+          component: PcUserManageView,
+          meta: { title: '用户详情' },
         },
         {
           path: 'account-change-manage',

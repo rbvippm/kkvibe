@@ -21,6 +21,19 @@ export const pcMenuTree: PcMenuItem[] = [
     affix: true,
   },
   {
+    key: 'user',
+    title: '用户管理',
+    icon: '👤',
+    children: [
+      {
+        key: 'user-manage',
+        title: '用户详情',
+        path: '/pc/user-manage',
+        routeName: 'pc-user-manage',
+      },
+    ],
+  },
+  {
     key: 'live',
     title: '直播管理',
     icon: '📺',
