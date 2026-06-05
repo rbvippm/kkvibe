@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import {
+  REMAINING_WITHDRAW_TURNOVER_LABEL,
   USER_TURNOVER_ADJUST_SPEC,
   type UserTurnoverAdjustSpecContext,
 } from '../../constants/userTurnoverAdjust'
 import WfSpecAnnot from './WfSpecAnnot.vue'
 
 const TITLE_MAP: Record<UserTurnoverAdjustSpecContext, string> = {
+  remaining: REMAINING_WITHDRAW_TURNOVER_LABEL,
+  entry: '调整提现流水',
+  record: '流水变动',
   amount: '流水',
   reason: '调整理由',
 }

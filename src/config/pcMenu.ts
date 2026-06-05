@@ -73,6 +73,19 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'finance',
+    title: '财务管理',
+    icon: '💰',
+    children: [
+      {
+        key: 'withdraw-turnover-record',
+        title: '剩余提现流水记录',
+        path: '/pc/withdraw-turnover-record',
+        routeName: 'pc-withdraw-turnover-record',
+      },
+    ],
+  },
+  {
     key: 'risk-audit',
     title: '风控审核',
     icon: '🛡',

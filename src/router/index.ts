@@ -18,6 +18,7 @@ import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue
 import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
 import PcTurnoverAuditView from '../views/pc/PcTurnoverAuditView.vue'
 import PcUserManageView from '../views/pc/PcUserManageView.vue'
+import PcWithdrawTurnoverRecordView from '../views/pc/PcWithdrawTurnoverRecordView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -136,6 +137,12 @@ export const router = createRouter({
           name: 'pc-turnover-audit',
           component: PcTurnoverAuditView,
           meta: { title: '账变审核' },
+        },
+        {
+          path: 'withdraw-turnover-record',
+          name: 'pc-withdraw-turnover-record',
+          component: PcWithdrawTurnoverRecordView,
+          meta: { title: '剩余提现流水记录' },
         },
       ],
     },

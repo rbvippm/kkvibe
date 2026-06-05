@@ -4,14 +4,11 @@ import WfUserTurnoverAdjustAnnot from '../../components/wireframe/WfUserTurnover
 import '../../styles/pc-wireframe.css'
 
 type TurnoverAdjustMethod = 'increase' | 'decrease' | ''
-type TurnoverAdjustCurrency = 'KKC' | 'KKV' | 'USDT-TRON' | ''
 
 const TURNOVER_ADJUST_METHOD_OPTIONS = [
-  { value: 'increase' as const, label: '增加' },
-  { value: 'decrease' as const, label: '减少' },
+  { value: 'increase' as const, label: '后台增加' },
+  { value: 'decrease' as const, label: '后台减少' },
 ]
-
-const TURNOVER_ADJUST_CURRENCY_OPTIONS = ['KKC', 'KKV', 'USDT-TRON'] as const
 
 type AccountTab = 'crypto' | 'fiat'
 type AssetTab = 'wallet' | 'bank'
@@ -29,13 +26,20 @@ const assetTab = ref<AssetTab>('wallet')
 const fiatUnit = ref('cny')
 const lastUpdatedAt = ref('2026-06-05 16:34:16')
 const refreshing = ref(false)
-const turnoverByCurrency = ref<Record<(typeof TURNOVER_ADJUST_CURRENCY_OPTIONS)[number], number>>({
+const turnoverByCurrency = ref<Record<string, number>>({
+  'USDT-TRON': 800,
+  'USDT-SOL': 0,
   KKC: 1500,
   KKV: 350,
-  'USDT-TRON': 800,
+  ETH: 0,
+  BTC: 0,
+  TRX: 0,
+  SOL: 0,
+  CNY: 120.5,
+  USD: 200,
 })
 const turnoverModalVisible = ref(false)
-const turnoverAdjustCurrency = ref<TurnoverAdjustCurrency>('')
+const turnoverAdjustCurrency = ref('')
 const turnoverAdjustMethod = ref<TurnoverAdjustMethod>('')
 const turnoverAdjustAmount = ref('')
 const turnoverAdjustReason = ref('')
@@ -131,6 +135,12 @@ const displayRows = computed(() => {
   return accountTab.value === 'crypto' ? cryptoWalletRows.value : fiatWalletRows.value
 })
 
+const allCurrencyOptions = computed(() => {
+  const currencies = new Set<string>()
+  for (const row of cryptoWalletRows.value) currencies.add(row.currency)
+  return [...currencies]
+})
+
 function formatAmount(value: number) {
   if (value === 0) return '0.000000'
   if (Number.isInteger(value)) return value.toFixed(2)
@@ -141,18 +151,10 @@ function totalAmount(row: WalletRow) {
   return row.tradable + row.frozen
 }
 
-const WITHDRAW_TURNOVER_CURRENCIES = ['KKC', 'KKV', 'USDT-TRON', 'USDT'] as const
-
-function currencySupportsWithdrawTurnover(currency: string) {
-  const normalized = currency.toUpperCase()
-  return (WITHDRAW_TURNOVER_CURRENCIES as readonly string[]).includes(normalized)
-}
-
 function formatRemainingWithdrawTurnover(row: WalletRow) {
-  if (!currencySupportsWithdrawTurnover(row.currency)) return '-'
-  const key = row.currency.toUpperCase() as (typeof TURNOVER_ADJUST_CURRENCY_OPTIONS)[number]
-  const value = turnoverByCurrency.value[key]
-  return value !== undefined ? value.toFixed(2) : '-'
+  const key = row.currency.toUpperCase()
+  const value = turnoverByCurrency.value[key] ?? 0
+  return value.toFixed(2)
 }
 
 const selectedTurnoverText = computed(() => {
@@ -185,7 +187,7 @@ function closeTurnoverModal() {
 
 function confirmTurnoverAdjust() {
   if (!turnoverAdjustCurrency.value) {
-    turnoverSubmitHint.value = '请选择游戏币种'
+    turnoverSubmitHint.value = '请选择币种'
     return
   }
   if (!turnoverAdjustMethod.value) {
@@ -207,7 +209,7 @@ function confirmTurnoverAdjust() {
   }
   const amount = turnoverAdjustMethod.value === 'decrease' ? -rawAmount : rawAmount
   const currency = turnoverAdjustCurrency.value
-  const prev = turnoverByCurrency.value[currency]
+  const prev = turnoverByCurrency.value[currency] ?? 0
   turnoverByCurrency.value[currency] = Math.round((prev + amount) * 100) / 100
   turnoverSubmitHint.value = ''
   closeTurnoverModal()
@@ -281,9 +283,12 @@ function confirmTurnoverAdjust() {
           银行资产
         </button>
       </div>
-      <button type="button" class="user-asset-page__turnover-entry" @click="openTurnoverModal">
-        调整提现流水
-      </button>
+      <div class="user-asset-page__turnover-entry-wrap">
+        <button type="button" class="user-asset-page__turnover-entry" @click="openTurnoverModal">
+          调整提现流水
+        </button>
+        <WfUserTurnoverAdjustAnnot context="entry" placement="bottom" />
+      </div>
     </div>
 
     <div v-if="assetTab === 'wallet'" class="wf-table-wrap">
@@ -294,7 +299,10 @@ function confirmTurnoverAdjust() {
             <th class="wf-th">可进行交易的货币数（单位/个）</th>
             <th class="wf-th">冻结的货币数（单位/个）</th>
             <th class="wf-th">总资产（单位/个）</th>
-            <th class="wf-th">剩余提现流水要求</th>
+            <th class="wf-th wf-th--with-spec">
+              剩余提现流水要求
+              <WfUserTurnoverAdjustAnnot context="remaining" placement="bottom" />
+            </th>
             <th class="wf-th">钱包地址</th>
           </tr>
         </thead>
@@ -359,14 +367,10 @@ function confirmTurnoverAdjust() {
           </div>
           <div class="wf-modal__body">
             <div class="wf-form-row user-asset-page__turnover-currency">
-              <label class="wf-form-row__label wf-form-row__label--required">游戏币种</label>
+              <label class="wf-form-row__label wf-form-row__label--required">选择币种</label>
               <select v-model="turnoverAdjustCurrency" class="wf-select wf-select--full">
                 <option value="">请选择</option>
-                <option
-                  v-for="currency in TURNOVER_ADJUST_CURRENCY_OPTIONS"
-                  :key="currency"
-                  :value="currency"
-                >
+                <option v-for="currency in allCurrencyOptions" :key="currency" :value="currency">
                   {{ currency }}
                 </option>
               </select>
@@ -521,8 +525,14 @@ function confirmTurnoverAdjust() {
   gap: 8px;
 }
 
-.user-asset-page__turnover-entry {
+.user-asset-page__turnover-entry-wrap {
+  display: flex;
   flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.user-asset-page__turnover-entry {
   padding: 6px 0;
   border: none;
   background: none;
