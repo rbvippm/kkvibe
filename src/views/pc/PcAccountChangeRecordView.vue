@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import WfAccountChangeCurrencyAnnot from '../../components/wireframe/WfAccountChangeCurrencyAnnot.vue'
 import WfAccountChangeMethodAnnot from '../../components/wireframe/WfAccountChangeMethodAnnot.vue'
 import WfWithdrawTurnoverAnnot from '../../components/wireframe/WfWithdrawTurnoverAnnot.vue'
 import { WITHDRAW_TURNOVER_LABEL } from '../../constants/withdrawTurnover'
+import {
+  ACCOUNT_CHANGE_CURRENCY_OPTIONS,
+  accountChangeCurrencyLabel,
+} from '../../constants/accountChangeCurrency'
 import {
   ACCOUNT_CHANGE_METHODS,
   countsRechargeData,
@@ -24,12 +29,7 @@ function statusLabel(status: ChangeStatus) {
   return map[status]
 }
 
-const CURRENCY_OPTIONS = [
-  { value: '', label: '请选择' },
-  { value: 'usdt_tron', label: 'USDT(TRON)' },
-  { value: 'kkc', label: 'KKC' },
-  { value: 'kkv', label: 'KKV' },
-]
+const CURRENCY_OPTIONS = ACCOUNT_CHANGE_CURRENCY_OPTIONS
 
 const changeStatusOptions = [
   { value: '', label: '请选择' },
@@ -69,12 +69,7 @@ const filter = ref({
 })
 
 function currencyLabel(value: string) {
-  const map: Record<string, string> = {
-    usdt_tron: 'USDT(TRON)',
-    kkc: 'KKC',
-    kkv: 'KKV',
-  }
-  return map[value] ?? value
+  return accountChangeCurrencyLabel(value)
 }
 
 const recordSource = ref<RecordRow[]>([
@@ -345,7 +340,10 @@ function onRetry(row: RecordRow) {
           </option>
         </select>
 
-        <label class="wf-label">币种类型：</label>
+        <label class="wf-label wf-label--with-spec">
+          币种类型：
+          <WfAccountChangeCurrencyAnnot context="filter" />
+        </label>
         <select v-model="filter.currency" class="wf-input wf-input--select">
           <option value="">全部</option>
           <option
