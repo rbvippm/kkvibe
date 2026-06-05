@@ -8,15 +8,11 @@ import {
   TURNOVER_RECORD_NOTICE,
   type RecordChangeType,
 } from '../../constants/withdrawTurnoverRecord'
+import { USER_GAME_CURRENCY_FILTER_OPTIONS } from '../../constants/userAssetCurrency'
 import '../../styles/pc-wireframe.css'
 import { formatSignedNumber, signedNumberClass } from '../../utils/formatSignedNumber'
 
-const GAME_CURRENCY_OPTIONS = [
-  { value: '', label: '全部' },
-  { value: 'KKC', label: 'KKC' },
-  { value: 'KKV', label: 'KKV' },
-  { value: 'USDT-TRON', label: 'USDT-TRON' },
-]
+const GAME_CURRENCY_OPTIONS = USER_GAME_CURRENCY_FILTER_OPTIONS
 
 const changeTypeOptions = [
   { value: '', label: '全部' },
@@ -232,7 +228,7 @@ function resetFilter() {
         <label class="wf-label">用户ID：</label>
         <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
 
-        <label class="wf-label">游戏币种：</label>
+        <label class="wf-label">选择币种：</label>
         <select v-model="filter.currency" class="wf-input wf-input--select">
           <option v-for="opt in GAME_CURRENCY_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
             {{ opt.label }}

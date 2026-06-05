@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfUserTurnoverAdjustAnnot from '../../components/wireframe/WfUserTurnoverAdjustAnnot.vue'
+import { USER_ACTIVITY_GOLD_CURRENCIES } from '../../constants/userAssetCurrency'
 import '../../styles/pc-wireframe.css'
 
 type TurnoverAdjustMethod = 'increase' | 'decrease' | ''
@@ -35,6 +36,9 @@ const turnoverByCurrency = ref<Record<string, number>>({
   BTC: 0,
   TRX: 0,
   SOL: 0,
+  '活动金-USDT-TRON': 120,
+  '活动金-KKC': 0,
+  '活动金-KKV': 80,
   CNY: 120.5,
   USD: 200,
 })
@@ -102,6 +106,13 @@ const cryptoWalletRows = ref<WalletRow[]>([
     frozen: 0,
     address: '',
   },
+  ...USER_ACTIVITY_GOLD_CURRENCIES.map((currency, index) => ({
+    id: `w-activity-${index + 1}`,
+    currency,
+    tradable: currency === '活动金-USDT-TRON' ? 500 : currency === '活动金-KKV' ? 200 : 0,
+    frozen: 0,
+    address: '',
+  })),
 ])
 
 const fiatWalletRows = ref<WalletRow[]>([
@@ -152,8 +163,7 @@ function totalAmount(row: WalletRow) {
 }
 
 function formatRemainingWithdrawTurnover(row: WalletRow) {
-  const key = row.currency.toUpperCase()
-  const value = turnoverByCurrency.value[key] ?? 0
+  const value = turnoverByCurrency.value[row.currency] ?? 0
   return value.toFixed(2)
 }
 
