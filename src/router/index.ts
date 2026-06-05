@@ -19,6 +19,7 @@ import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
 import PcTurnoverAuditView from '../views/pc/PcTurnoverAuditView.vue'
 import PcUserManageView from '../views/pc/PcUserManageView.vue'
 import PcWithdrawTurnoverRecordView from '../views/pc/PcWithdrawTurnoverRecordView.vue'
+import PcVersionRecordV2View from '../views/pc/PcVersionRecordV2View.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -89,6 +90,12 @@ export const router = createRouter({
           name: 'pc',
           component: PcHubView,
           meta: { title: '首页' },
+        },
+        {
+          path: 'version-record/v2-account-turnover',
+          name: 'pc-version-record-v2',
+          component: PcVersionRecordV2View,
+          meta: { title: 'v2.x.x 账变细化和流水调整' },
         },
         {
           path: 'reward',

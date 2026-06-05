@@ -21,6 +21,19 @@ export const pcMenuTree: PcMenuItem[] = [
     affix: true,
   },
   {
+    key: 'version-record',
+    title: '版本记录',
+    icon: '📋',
+    children: [
+      {
+        key: 'version-record-v2',
+        title: 'v2.x.x 账变细化和流水调整',
+        path: '/pc/version-record/v2-account-turnover',
+        routeName: 'pc-version-record-v2',
+      },
+    ],
+  },
+  {
     key: 'user',
     title: '用户管理',
     icon: '👤',
