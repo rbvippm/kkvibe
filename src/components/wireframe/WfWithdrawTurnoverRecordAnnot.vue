@@ -3,6 +3,7 @@ import {
   WITHDRAW_TURNOVER_RECORD_SPEC,
   type WithdrawTurnoverRecordSpecContext,
 } from '../../constants/withdrawTurnoverRecord'
+import { VERSION_V2_SPEC_ANNOT_NO } from '../../constants/versionRecordV2'
 import WfSpecAnnot from './WfSpecAnnot.vue'
 
 const TITLE_MAP: Record<WithdrawTurnoverRecordSpecContext, string> = {
@@ -24,6 +25,7 @@ withDefaults(
 
 <template>
   <WfSpecAnnot
+    :no="VERSION_V2_SPEC_ANNOT_NO.withdrawTurnoverRecord"
     :title="TITLE_MAP[context]"
     :items="[...WITHDRAW_TURNOVER_RECORD_SPEC[context]]"
     :placement="placement"

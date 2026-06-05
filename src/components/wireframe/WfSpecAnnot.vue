@@ -1,15 +1,19 @@
 <script setup lang="ts">
-import { nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 const props = withDefaults(
   defineProps<{
     title: string
     items: string[]
+    /** 需求功能清单编号，显示为「注N」 */
+    no?: number
     /** 相对触发器：表头/筛选多用 bottom，避免顶到上方搜索栏 */
     placement?: 'bottom' | 'top'
   }>(),
   { placement: 'bottom' },
 )
+
+const triggerLabel = computed(() => (props.no != null ? `注${props.no}` : '注'))
 
 const open = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
@@ -89,11 +93,12 @@ onUnmounted(() => {
       ref="triggerRef"
       type="button"
       class="wf-spec-annot__trigger"
-      :aria-label="`${title}，查看需求说明`"
+      :class="{ 'wf-spec-annot__trigger--numbered': no != null }"
+      :aria-label="`${no != null ? `【${no}】` : ''}${title}，查看需求说明`"
       aria-haspopup="true"
       :aria-expanded="open"
     >
-      注
+      {{ triggerLabel }}
     </button>
     <Teleport to="body">
       <div
@@ -105,8 +110,12 @@ onUnmounted(() => {
         :style="panelStyle"
         role="tooltip"
       >
-        <span class="wf-spec-annot__panel-tag">需求说明</span>
-        <strong class="wf-spec-annot__panel-title">{{ title }}</strong>
+        <span class="wf-spec-annot__panel-tag">
+          需求说明<template v-if="no != null"> #{{ no }}</template>
+        </span>
+        <strong class="wf-spec-annot__panel-title">
+          <span v-if="no != null" class="wf-spec-annot__panel-no">【{{ no }}】</span>{{ title }}
+        </strong>
         <ul class="wf-spec-annot__panel-list">
           <li v-for="(line, index) in items" :key="index">{{ line }}</li>
         </ul>

@@ -152,6 +152,17 @@
   cursor: help;
 }
 
+.wf-spec-annot__trigger--numbered {
+  width: auto;
+  min-width: 18px;
+  padding: 0 4px;
+}
+
+.wf-spec-annot__panel-no {
+  margin-right: 2px;
+  color: var(--pc-primary, #1677ff);
+}
+
 .wf-spec-annot__trigger:hover,
 .wf-spec-annot__trigger:focus-visible {
   color: #ad6800;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import {
   VERSION_RECORD_V2_META,
   VERSION_V2_BACKGROUND,
@@ -19,8 +18,8 @@ const activeTab = ref<DocTab>('summary')
   <div class="pc-wireframe-page version-record-page">
     <section class="wf-block">
       <header class="version-record-page__header">
-        <p class="version-record-page__version">{{ VERSION_RECORD_V2_META.version }}</p>
-        <h2 class="version-record-page__title">{{ VERSION_RECORD_V2_META.title }}</h2>
+        <p class="version-record-page__version">版本号：{{ VERSION_RECORD_V2_META.version }}</p>
+        <h2 class="version-record-page__title">需求名称：{{ VERSION_RECORD_V2_META.title }}</h2>
         <p class="version-record-page__meta">最近更新：{{ VERSION_RECORD_V2_META.updatedAt }}</p>
       </header>
 
@@ -80,8 +79,14 @@ const activeTab = ref<DocTab>('summary')
                   <td class="wf-td">{{ row.module }}</td>
                   <td class="wf-td">{{ row.feature }}</td>
                   <td class="wf-td version-record-page__td-desc">{{ row.description }}</td>
-                  <td class="wf-td">
-                    <RouterLink :to="row.route" class="version-record-page__link">{{ row.route }}</RouterLink>
+                  <td class="wf-td version-record-page__td-pages">
+                    <p
+                      v-for="page in row.relatedPages"
+                      :key="page"
+                      class="version-record-page__page-item"
+                    >
+                      {{ page }}
+                    </p>
                   </td>
                 </tr>
               </tbody>
@@ -126,7 +131,7 @@ const activeTab = ref<DocTab>('summary')
 
 .version-record-page__version {
   margin: 0 0 4px;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--pc-primary, #1677ff);
 }
@@ -188,16 +193,21 @@ const activeTab = ref<DocTab>('summary')
 .version-record-page__th-desc,
 .version-record-page__td-desc {
   min-width: 280px;
+  white-space: pre-line;
 }
 
-.version-record-page__link {
-  color: var(--pc-primary, #1677ff);
-  text-decoration: none;
-  transition: opacity 0.15s ease;
+.version-record-page__td-pages {
+  min-width: 200px;
 }
 
-.version-record-page__link:hover {
-  opacity: 0.85;
-  text-decoration: underline;
+.version-record-page__page-item {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--pc-text-secondary, #595959);
+}
+
+.version-record-page__page-item + .version-record-page__page-item {
+  margin-top: 4px;
 }
 </style>

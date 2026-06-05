@@ -4,6 +4,7 @@ import {
   USER_TURNOVER_ADJUST_SPEC,
   type UserTurnoverAdjustSpecContext,
 } from '../../constants/userTurnoverAdjust'
+import { VERSION_V2_SPEC_ANNOT_NO } from '../../constants/versionRecordV2'
 import WfSpecAnnot from './WfSpecAnnot.vue'
 
 const TITLE_MAP: Record<UserTurnoverAdjustSpecContext, string> = {
@@ -25,6 +26,7 @@ withDefaults(
 
 <template>
   <WfSpecAnnot
+    :no="VERSION_V2_SPEC_ANNOT_NO.userTurnoverAdjust"
     :title="TITLE_MAP[context]"
     :items="[...USER_TURNOVER_ADJUST_SPEC[context]]"
     :placement="placement"
