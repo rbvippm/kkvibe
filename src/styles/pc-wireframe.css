@@ -91,6 +91,24 @@
   font-weight: 600;
 }
 
+.wf-page-path {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--pc-notice-border);
+  background: var(--pc-notice-bg);
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-text);
+  line-height: 1.6;
+}
+
+.wf-page-path__label {
+  font-weight: 600;
+}
+
+.wf-page-path__value {
+  color: var(--pc-text-secondary);
+}
+
 /* ---------- 内容块 / 工具栏 ---------- */
 .wf-block {
   margin-bottom: 8px;

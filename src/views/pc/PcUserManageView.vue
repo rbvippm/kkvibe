@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfUserTurnoverAdjustAnnot from '../../components/wireframe/WfUserTurnoverAdjustAnnot.vue'
+import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import {
   getTurnoverPairCurrencies,
   getTurnoverPairDisplayLabel,
@@ -255,6 +256,8 @@ function confirmTurnoverAdjust() {
 
 <template>
   <div class="pc-wireframe-page user-asset-page">
+    <WfPagePathMenu />
+
     <h1 class="user-asset-page__title">用户资产详情</h1>
 
     <div class="user-asset-page__account-tabs">

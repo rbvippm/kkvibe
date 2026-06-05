@@ -15,6 +15,7 @@ alwaysApply: false
 3. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除）、`wf-btn--add`（新增）。
 4. 弹框：`Teleport` + `wf-modal-*`；底部取消 `wf-btn--default` + 确定 `wf-btn--primary`。
 5. **禁止**：面包屑「一、直播管理/…」、Tailwind 圆角卡片主布局、无 Mock 空页。
+6. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`；路径条用 `<WfPagePathMenu />`，配置在 `pcMenuV2Children.pagePath`。
 
 ## 禁止
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfWithdrawTurnoverRecordAnnot from '../../components/wireframe/WfWithdrawTurnoverRecordAnnot.vue'
+import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import {
   RECORD_CHANGE_TYPE_LABEL,
   RECORD_CHANGE_TYPE_OPTIONS,
@@ -216,6 +217,8 @@ function resetFilter() {
 
 <template>
   <div class="pc-wireframe-page">
+    <WfPagePathMenu />
+
     <div class="wf-top">
       <div class="wf-notice wf-notice--full">
         <span class="wf-notice-label">提现流水规则：</span>

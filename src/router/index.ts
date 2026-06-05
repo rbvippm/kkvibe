@@ -20,6 +20,7 @@ import PcTurnoverAuditView from '../views/pc/PcTurnoverAuditView.vue'
 import PcUserManageView from '../views/pc/PcUserManageView.vue'
 import PcWithdrawTurnoverRecordView from '../views/pc/PcWithdrawTurnoverRecordView.vue'
 import PcVersionRecordV2View from '../views/pc/PcVersionRecordV2View.vue'
+import PcReconciliationRelatedView from '../views/pc/PcReconciliationRelatedView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -93,9 +94,13 @@ export const router = createRouter({
         },
         {
           path: 'version-record/v2-account-turnover',
-          name: 'pc-version-record-v2',
+          redirect: { name: 'pc-version-record-v2-intro' },
+        },
+        {
+          path: 'version-record/v2-account-turnover/intro',
+          name: 'pc-version-record-v2-intro',
           component: PcVersionRecordV2View,
-          meta: { title: 'v2.x.x 账变细化和流水调整' },
+          meta: { title: '需求简介' },
         },
         {
           path: 'reward',
@@ -150,6 +155,12 @@ export const router = createRouter({
           name: 'pc-withdraw-turnover-record',
           component: PcWithdrawTurnoverRecordView,
           meta: { title: '提现流水变更记录' },
+        },
+        {
+          path: 'reconciliation-related',
+          name: 'pc-reconciliation-related',
+          component: PcReconciliationRelatedView,
+          meta: { title: '对账相关' },
         },
       ],
     },

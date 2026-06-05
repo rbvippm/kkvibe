@@ -4,7 +4,7 @@ import '../../styles/pc-admin-layout.css'
 
 const quickLinks = [
   {
-    to: '/pc/version-record/v2-account-turnover',
+    to: '/pc/version-record/v2-account-turnover/intro',
     icon: '📋',
     title: 'v2.x.x 账变细化和流水调整',
     desc: '版本记录：需求概要与修订记录文档。',

@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import WfAccountChangeCurrencyAnnot from '../../components/wireframe/WfAccountChangeCurrencyAnnot.vue'
 import WfAccountChangeMethodAnnot from '../../components/wireframe/WfAccountChangeMethodAnnot.vue'
 import WfWithdrawTurnoverAnnot from '../../components/wireframe/WfWithdrawTurnoverAnnot.vue'
+import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import { WITHDRAW_TURNOVER_LABEL } from '../../constants/withdrawTurnover'
 import {
   ACCOUNT_CHANGE_CURRENCY_OPTIONS,
@@ -278,6 +279,8 @@ const detailRechargeHint = computed(() => {
 
 <template>
   <div class="pc-wireframe-page">
+    <WfPagePathMenu />
+
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">用户ID：</label>

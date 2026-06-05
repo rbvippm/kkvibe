@@ -1,0 +1,93 @@
+---
+description: v2.x.x 账变细化和流水调整 · 侧栏分组与页面扩展规范
+globs: src/views/pc/**/*.vue,src/config/pcMenu.ts,src/router/index.ts,src/constants/versionRecordV2.ts
+alwaysApply: false
+---
+
+# v2.x.x 版本模块规范
+
+侧栏分组 **「v2.x.x 账变细化和流水调整」** 是账变/流水/对账相关原型的统一入口。新增或修改页面时**只改配置 + 最小页面骨架**，勿重复硬编码路径。
+
+## 单一数据源
+
+| 职责 | 文件 |
+|------|------|
+| 侧栏菜单、顶栏面包屑、页面路径条 | `src/config/pcMenu.ts` → `pcMenuV2Children` |
+| 需求文档与功能清单 | `src/constants/versionRecordV2.ts` |
+| 路由注册 | `src/router/index.ts`（`/pc` children） |
+
+## 新增 v2 页面（3 步）
+
+### 1. `pcMenu.ts` → `pcMenuV2Children` 追加一项
+
+```ts
+{
+  key: 'your-page-key',           // 唯一，kebab-case
+  title: '侧栏显示名',             // 标签页 title 同源
+  path: '/pc/your-path',
+  routeName: 'pc-your-route-name', // 必须以 pc- 开头
+  icon: '📋',                      // 可选 emoji
+  pagePath: ['一级模块', '二级页面'], // 页面顶栏「路径：」；无则不出路径条
+}
+```
+
+**`pagePath` 约定**（业务后台路径，与侧栏分组名可不同）：
+
+| 页面类型 | pagePath 示例 |
+|----------|---------------|
+| 用户资产 | `['用户管理', '用户列表', '用户资产详情']` |
+| 账变管理/记录 | `['账变管理', '账变管理']` / `['账变管理', '账变记录']` |
+| 风控账变审核 | `['风控审核', '账变审核']` |
+| 财务账变审核 / 流水 | `['财务管理', '账变审核']` / `['财务管理', '提现流水变更记录']` |
+| 对账 | `['后台', '对账', '对账相关']` |
+| 需求文档 | 不设 `pagePath` |
+
+### 2. `router/index.ts` 注册
+
+```ts
+{
+  path: 'your-path',
+  name: 'pc-your-route-name',
+  component: () => import('../views/pc/PcYourView.vue'), // 或静态 import
+  meta: { title: '与 menu.title 一致' },
+}
+```
+
+### 3. 页面 Vue 骨架
+
+```vue
+<script setup lang="ts">
+import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import '../../styles/pc-wireframe.css'
+</script>
+
+<template>
+  <div class="pc-wireframe-page">
+    <WfPagePathMenu />
+    <!-- wf-block / wf-toolbar / wf-table … 见 pc-admin-wireframe 规范 -->
+  </div>
+</template>
+```
+
+**禁止**在页面内写 `<WfPagePath :segments="[...]" />` 硬编码；路径只配在 `pcMenu.ts`。
+
+## 页面内「注 N」标记
+
+功能清单编号见 `VERSION_V2_SPEC_ANNOT_NO`（`versionRecordV2.ts`）。表格/按钮旁用对应 `Wf*Annot` 组件，编号与清单 `id` 对齐。
+
+## 侧栏结构（当前）
+
+```
+v2.x.x 账变细化和流水调整
+├─ 需求简介          （无 pagePath）
+├─ 用户详情
+├─ 账变管理 / 账变记录 / 账变审核 ×2
+├─ 提现流水变更记录
+└─ 对账相关
+```
+
+## 参考实现
+
+- 文档型页：`PcReconciliationRelatedView.vue`
+- 表格+筛选：`PcAccountChangeManageView.vue`
+- 路径条组件：`WfPagePathMenu.vue` + `getPcPagePath()`
