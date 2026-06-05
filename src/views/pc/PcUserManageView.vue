@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfUserTurnoverAdjustAnnot from '../../components/wireframe/WfUserTurnoverAdjustAnnot.vue'
-import { USER_ACTIVITY_GOLD_CURRENCIES } from '../../constants/userAssetCurrency'
+import {
+  getTurnoverPairCurrencies,
+  getTurnoverPairDisplayLabel,
+  isPairedTurnoverCurrency,
+  USER_ACTIVITY_GOLD_CURRENCIES,
+} from '../../constants/userAssetCurrency'
 import '../../styles/pc-wireframe.css'
 
 type TurnoverAdjustMethod = 'increase' | 'decrease' | ''
@@ -36,9 +41,9 @@ const turnoverByCurrency = ref<Record<string, number>>({
   BTC: 0,
   TRX: 0,
   SOL: 0,
-  '活动金-USDT-TRON': 120,
-  '活动金-KKC': 0,
-  '活动金-KKV': 80,
+  '活动金-USDT-TRON': 800,
+  '活动金-KKC': 1500,
+  '活动金-KKV': 350,
   CNY: 120.5,
   USD: 200,
 })
@@ -162,15 +167,26 @@ function totalAmount(row: WalletRow) {
   return row.tradable + row.frozen
 }
 
+function syncPairedTurnover(currency: string, value: number) {
+  const rounded = Math.round(value * 100) / 100
+  for (const item of getTurnoverPairCurrencies(currency)) {
+    turnoverByCurrency.value[item] = rounded
+  }
+  return rounded
+}
+
+function getRemainingTurnover(currency: string) {
+  const [primary] = getTurnoverPairCurrencies(currency)
+  return turnoverByCurrency.value[primary] ?? 0
+}
+
 function formatRemainingWithdrawTurnover(row: WalletRow) {
-  const value = turnoverByCurrency.value[row.currency] ?? 0
-  return value.toFixed(2)
+  return getRemainingTurnover(row.currency).toFixed(2)
 }
 
 const selectedTurnoverText = computed(() => {
   if (!turnoverAdjustCurrency.value) return '—'
-  const value = turnoverByCurrency.value[turnoverAdjustCurrency.value]
-  return value !== undefined ? value.toFixed(2) : '—'
+  return getRemainingTurnover(turnoverAdjustCurrency.value).toFixed(2)
 })
 
 async function refreshAssets() {
@@ -219,12 +235,20 @@ function confirmTurnoverAdjust() {
   }
   const amount = turnoverAdjustMethod.value === 'decrease' ? -rawAmount : rawAmount
   const currency = turnoverAdjustCurrency.value
-  const prev = turnoverByCurrency.value[currency] ?? 0
-  turnoverByCurrency.value[currency] = Math.round((prev + amount) * 100) / 100
+  const prev = getRemainingTurnover(currency)
+  const next = Math.round((prev + amount) * 100) / 100
+  if (isPairedTurnoverCurrency(currency)) {
+    syncPairedTurnover(currency, next)
+  } else {
+    turnoverByCurrency.value[currency] = next
+  }
+  const displayCurrency = isPairedTurnoverCurrency(currency)
+    ? getTurnoverPairDisplayLabel(currency)
+    : currency
   turnoverSubmitHint.value = ''
   closeTurnoverModal()
   window.alert(
-    `演示：${currency} 提现流水要求已调整 ${amount >= 0 ? '+' : ''}${amount}，当前为 ${turnoverByCurrency.value[currency].toFixed(2)}`,
+    `演示：${displayCurrency} 提现流水要求已调整 ${amount >= 0 ? '+' : ''}${amount}，当前为 ${next.toFixed(2)}`,
   )
 }
 </script>
@@ -447,6 +471,7 @@ function confirmTurnoverAdjust() {
   margin: 0 0 16px;
   font-size: var(--pc-font-size-title, 16px);
   font-weight: 600;
+  color: var(--pc-text, #262626);
 }
 
 .user-asset-page__account-tabs {

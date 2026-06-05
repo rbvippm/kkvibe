@@ -29,15 +29,18 @@ export function accountChangeCurrencyLabel(value: string) {
 export const ACCOUNT_CHANGE_CURRENCY_SPEC = {
   filter: [
     '筛选项对应列表「币种类型」列，不选表示查询全部。',
-    '可选：USDT(TRON)、USDT(SOL)、KKC、KKV、ETH、BTC、TRX、SOL，及活动金-USDT-TRON、活动金-KKC、活动金-KKV。',
+    '普通虚拟货币：USDT(TRON)、USDT(SOL)、ETH、BTC、TRX、SOL 等，各币种独立账变与流水。',
+    '主币与活动金成对：USDT(TRON)↔活动金-USDT-TRON、KKC↔活动金-KKC、KKV↔活动金-KKV，余额分开、流水共用。',
     '仅支持虚拟货币与活动金币种，不含法币。',
   ],
   table: [
     '展示每笔账变的币种，与筛选、发起时选项一致。',
+    '活动金与对应主币在用户详情侧成对共用剩余提现流水。',
     '仅支持虚拟货币与活动金账变，不含法币。',
   ],
   form: [
     '发起账变时必选，提交后写入列表「币种类型」列。',
+    '活动金须指定具体币种入账；与同主币成对共用用户剩余提现流水要求。',
     '可选币种与筛选项一致，含虚拟货币与活动金币种。',
   ],
 } as const

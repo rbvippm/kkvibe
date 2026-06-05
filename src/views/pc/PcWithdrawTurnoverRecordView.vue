@@ -280,7 +280,7 @@ function resetFilter() {
               </th>
               <th class="wf-th wf-th--user">用户</th>
               <th class="wf-th wf-th--user-id">用户ID</th>
-              <th class="wf-th">游戏币种</th>
+              <th class="wf-th">币种</th>
               <th class="wf-th">变动类型</th>
               <th class="wf-th wf-th--with-spec">
                 变更前剩余提现流水要求
