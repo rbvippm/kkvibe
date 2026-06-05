@@ -317,7 +317,7 @@ function resetFilter() {
               <td class="wf-td wf-td--time">{{ row.occurredAt }}</td>
             </tr>
             <tr v-if="!recordRows.length">
-              <td colspan="11" class="wf-td wf-td--empty">暂无剩余提现流水记录</td>
+              <td colspan="11" class="wf-td wf-td--empty">暂无提现流水变更记录</td>
             </tr>
           </tbody>
         </table>

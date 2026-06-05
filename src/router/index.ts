@@ -149,7 +149,7 @@ export const router = createRouter({
           path: 'withdraw-turnover-record',
           name: 'pc-withdraw-turnover-record',
           component: PcWithdrawTurnoverRecordView,
-          meta: { title: '剩余提现流水记录' },
+          meta: { title: '提现流水变更记录' },
         },
       ],
     },

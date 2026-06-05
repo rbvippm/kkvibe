@@ -42,7 +42,7 @@ const quickLinks = [
   {
     to: '/pc/withdraw-turnover-record',
     icon: '💰',
-    title: '剩余提现流水记录',
+    title: '提现流水变更记录',
     desc: '提现流水要求全链路记录，含充值/有效流水/提现清零等业务类型。',
   },
   {

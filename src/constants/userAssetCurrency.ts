@@ -21,7 +21,7 @@ export const USER_ACTIVITY_GOLD_CURRENCIES = [
   '活动金-KKV',
 ] as const
 
-/** 剩余提现流水记录 · 游戏币种筛选项 */
+/** 提现流水变更记录 · 游戏币种筛选项 */
 export const USER_GAME_CURRENCY_FILTER_OPTIONS = [
   { value: '', label: '全部' },
   ...USER_CRYPTO_CURRENCIES.map((currency) => ({ value: currency, label: currency })),

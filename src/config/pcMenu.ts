@@ -92,7 +92,7 @@ export const pcMenuTree: PcMenuItem[] = [
     children: [
       {
         key: 'withdraw-turnover-record',
-        title: '剩余提现流水记录',
+        title: '提现流水变更记录',
         path: '/pc/withdraw-turnover-record',
         routeName: 'pc-withdraw-turnover-record',
       },
