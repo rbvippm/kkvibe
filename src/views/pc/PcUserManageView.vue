@@ -7,6 +7,7 @@ import {
   getTurnoverPairDisplayLabel,
   isPairedTurnoverCurrency,
   USER_ACTIVITY_GOLD_CURRENCIES,
+  WITHDRAW_TURNOVER_CURRENCIES,
 } from '../../constants/userAssetCurrency'
 import '../../styles/pc-wireframe.css'
 
@@ -150,12 +151,6 @@ const totalAssetCny = computed(() => {
 const displayRows = computed(() => {
   if (assetTab.value === 'bank') return []
   return accountTab.value === 'crypto' ? cryptoWalletRows.value : fiatWalletRows.value
-})
-
-const allCurrencyOptions = computed(() => {
-  const currencies = new Set<string>()
-  for (const row of cryptoWalletRows.value) currencies.add(row.currency)
-  return [...currencies]
 })
 
 function formatAmount(value: number) {
@@ -407,7 +402,7 @@ function confirmTurnoverAdjust() {
               <label class="wf-form-row__label wf-form-row__label--required">选择币种</label>
               <select v-model="turnoverAdjustCurrency" class="wf-select wf-select--full">
                 <option value="">请选择</option>
-                <option v-for="currency in allCurrencyOptions" :key="currency" :value="currency">
+                <option v-for="currency in WITHDRAW_TURNOVER_CURRENCIES" :key="currency" :value="currency">
                   {{ currency }}
                 </option>
               </select>

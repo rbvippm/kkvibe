@@ -1,13 +1,8 @@
-/** 账变模块 · 币种类型（筛选项 / 发起账变 / 列表展示） */
+/** 账变模块 · 币种类型（筛选项 / 发起账变 / 列表展示；不含全量流水币种） */
 export const ACCOUNT_CHANGE_CURRENCIES = [
   { value: 'usdt_tron', label: 'USDT(TRON)' },
-  { value: 'usdt_sol', label: 'USDT(SOL)' },
   { value: 'kkc', label: 'KKC' },
   { value: 'kkv', label: 'KKV' },
-  { value: 'eth', label: 'ETH' },
-  { value: 'btc', label: 'BTC' },
-  { value: 'trx', label: 'TRX' },
-  { value: 'sol', label: 'SOL' },
   { value: 'activity_usdt_tron', label: '活动金-USDT-TRON' },
   { value: 'activity_kkc', label: '活动金-KKC' },
   { value: 'activity_kkv', label: '活动金-KKV' },
@@ -29,7 +24,7 @@ export function accountChangeCurrencyLabel(value: string) {
 export const ACCOUNT_CHANGE_CURRENCY_SPEC = {
   filter: [
     '筛选项对应列表「币种类型」列，不选表示查询全部。',
-    '普通虚拟货币：USDT(TRON)、USDT(SOL)、ETH、BTC、TRX、SOL 等，各币种独立账变与流水。',
+    '普通虚拟货币：USDT(TRON)、KKC、KKV，各币种独立账变与流水。',
     '主币与活动金成对：USDT(TRON)↔活动金-USDT-TRON、KKC↔活动金-KKC、KKV↔活动金-KKV，余额分开、流水共用。',
     '仅支持虚拟货币与活动金币种，不含法币。',
   ],

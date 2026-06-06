@@ -11,6 +11,7 @@ export const VERSION_V2_BACKGROUND = [
   '由于目前的账变方式没有区分计入充值和不计入充值，导致运营要处理一些场景不适用。',
   '计入充值场景：适用充值掉单、钱包地址更换、充到老地址等需纳入充值统计的补账。',
   '不计入充值场景：适用玩家提现没到账、游戏派奖错误等需调账但不影响充值统计的情况。',
+  '活动金钱包和主钱包：余额独立，流水公用，对账统计按类型分开。',
 ] as const
 
 /** 2. 需求目标 */
@@ -61,7 +62,7 @@ export const VERSION_V2_FEATURE_LIST: VersionFeatureRow[] = [
     feature: '币种类型',
     description: [
       '筛选项对应列表「币种类型」列，不选表示查询全部。',
-      '普通虚拟货币：USDT(TRON)、USDT(SOL)、ETH、BTC、TRX、SOL 等，各币种独立账变与流水。',
+      '普通虚拟货币：USDT(TRON)、KKC、KKV，各币种独立账变与流水。',
       '主币与活动金成对：USDT(TRON) ↔ 活动金-USDT-TRON、KKC ↔ 活动金-KKC、KKV ↔ 活动金-KKV，余额分开、流水共用。',
       '仅支持虚拟货币与活动金币种，不含法币。',
     ].join('\n'),

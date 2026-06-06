@@ -21,6 +21,11 @@ export const USER_ACTIVITY_GOLD_CURRENCIES = [
   '活动金-KKV',
 ] as const
 
+/** 提现流水变更记录 · 币种（全量主币，不含活动金） */
+export const WITHDRAW_TURNOVER_CURRENCIES = USER_CRYPTO_CURRENCIES.filter(
+  (currency) => !(USER_ACTIVITY_GOLD_CURRENCIES as readonly string[]).includes(currency),
+)
+
 /** 主币种与活动金成对共用剩余提现流水（余额各自独立） */
 export const USER_TURNOVER_PAIRS = [
   { base: 'USDT-TRON', activity: '活动金-USDT-TRON' },
@@ -50,5 +55,5 @@ export function getTurnoverPairDisplayLabel(currency: string) {
 /** 提现流水变更记录 · 币种筛选项 */
 export const USER_GAME_CURRENCY_FILTER_OPTIONS = [
   { value: '', label: '全部' },
-  ...USER_CRYPTO_CURRENCIES.map((currency) => ({ value: currency, label: currency })),
+  ...WITHDRAW_TURNOVER_CURRENCIES.map((currency) => ({ value: currency, label: currency })),
 ]
