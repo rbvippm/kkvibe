@@ -13,6 +13,8 @@ import AgentView from '../views/AgentView.vue'
 import VoiceRoomRewardAdminView from '../views/VoiceRoomRewardAdminView.vue'
 import VoiceRoomMicThresholdView from '../views/VoiceRoomMicThresholdView.vue'
 import LiveCommissionConfigView from '../views/LiveCommissionConfigView.vue'
+import PcLiveBroadcastManageView from '../views/pc/PcLiveBroadcastManageView.vue'
+import PcLiveDanmakuMuteListView from '../views/pc/PcLiveDanmakuMuteListView.vue'
 import PcAccountChangeManageView from '../views/pc/PcAccountChangeManageView.vue'
 import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue'
 import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
@@ -113,6 +115,18 @@ export const router = createRouter({
           name: 'pc-mic-threshold',
           component: VoiceRoomMicThresholdView,
           meta: { title: '语音房上麦门槛' },
+        },
+        {
+          path: 'live-broadcast',
+          name: 'pc-live-broadcast',
+          component: PcLiveBroadcastManageView,
+          meta: { title: '直播中控台' },
+        },
+        {
+          path: 'live-danmaku-mute-list',
+          name: 'pc-live-danmaku-mute-list',
+          component: PcLiveDanmakuMuteListView,
+          meta: { title: '禁言列表' },
         },
         {
           path: 'live-commission',

@@ -46,6 +46,18 @@ const quickLinks = [
     desc: '提现流水要求全链路记录，含充值/有效流水/提现清零等业务类型。',
   },
   {
+    to: '/pc/live-broadcast',
+    icon: '📺',
+    title: '直播中控台',
+    desc: '直播画面、弹幕消息管理，支持禁言与删除弹幕。',
+  },
+  {
+    to: '/pc/live-danmaku-mute-list',
+    icon: '🚫',
+    title: '禁言列表',
+    desc: '直播间弹幕禁言记录，支持查询与解除禁言。',
+  },
+  {
     to: '/pc/live-commission',
     icon: '💰',
     title: '直播佣金配置',

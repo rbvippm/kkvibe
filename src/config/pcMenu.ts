@@ -99,6 +99,20 @@ export const pcMenuTree: PcMenuItem[] = [
     icon: '📺',
     children: [
       {
+        key: 'live-broadcast',
+        title: '直播中控台',
+        path: '/pc/live-broadcast',
+        routeName: 'pc-live-broadcast',
+        pagePath: ['管理后台', '直播管理', '直播中控台'],
+      },
+      {
+        key: 'live-danmaku-mute-list',
+        title: '禁言列表',
+        path: '/pc/live-danmaku-mute-list',
+        routeName: 'pc-live-danmaku-mute-list',
+        pagePath: ['管理后台', '直播管理', '禁言列表'],
+      },
+      {
         key: 'live-commission',
         title: '直播佣金配置',
         path: '/pc/live-commission',
