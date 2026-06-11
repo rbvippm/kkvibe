@@ -137,6 +137,13 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/mic-threshold',
         routeName: 'pc-mic-threshold',
       },
+      {
+        key: 'voice-role-permissions',
+        title: '角色权限与麦控',
+        path: '/pc/voice-role-permissions',
+        routeName: 'pc-voice-role-permissions',
+        pagePath: ['管理后台', '语聊管理', '角色权限与麦控'],
+      },
     ],
   },
 ]

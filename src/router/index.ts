@@ -23,6 +23,7 @@ import PcUserManageView from '../views/pc/PcUserManageView.vue'
 import PcWithdrawTurnoverRecordView from '../views/pc/PcWithdrawTurnoverRecordView.vue'
 import PcVersionRecordV2View from '../views/pc/PcVersionRecordV2View.vue'
 import PcReconciliationRelatedView from '../views/pc/PcReconciliationRelatedView.vue'
+import PcVoiceRoomRolePermissionsView from '../views/pc/PcVoiceRoomRolePermissionsView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -115,6 +116,12 @@ export const router = createRouter({
           name: 'pc-mic-threshold',
           component: VoiceRoomMicThresholdView,
           meta: { title: '语音房上麦门槛' },
+        },
+        {
+          path: 'voice-role-permissions',
+          name: 'pc-voice-role-permissions',
+          component: PcVoiceRoomRolePermissionsView,
+          meta: { title: '角色权限与麦控' },
         },
         {
           path: 'live-broadcast',
