@@ -64,6 +64,12 @@ const quickLinks = [
     desc: 'Tab + 表格 + 弹框，PC 线框规范标准页。',
   },
   {
+    to: '/pc/live-super-group-manage',
+    icon: '👥',
+    title: '超级群管理',
+    desc: '超级群列表查询、筛选与导出，支持查看群详情。',
+  },
+  {
     to: '/pc/reward',
     icon: '🎁',
     title: '语聊打赏后台',

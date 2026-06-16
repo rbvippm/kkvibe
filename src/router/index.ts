@@ -15,6 +15,7 @@ import VoiceRoomMicThresholdView from '../views/VoiceRoomMicThresholdView.vue'
 import LiveCommissionConfigView from '../views/LiveCommissionConfigView.vue'
 import PcLiveBroadcastManageView from '../views/pc/PcLiveBroadcastManageView.vue'
 import PcLiveDanmakuMuteListView from '../views/pc/PcLiveDanmakuMuteListView.vue'
+import PcSuperGroupManageView from '../views/pc/PcSuperGroupManageView.vue'
 import PcAccountChangeManageView from '../views/pc/PcAccountChangeManageView.vue'
 import PcAccountChangeRecordView from '../views/pc/PcAccountChangeRecordView.vue'
 import PcAccountChangeAuditView from '../views/pc/PcAccountChangeAuditView.vue'
@@ -140,6 +141,12 @@ export const router = createRouter({
           name: 'pc-live-commission',
           component: LiveCommissionConfigView,
           meta: { title: '直播佣金配置' },
+        },
+        {
+          path: 'live-super-group-manage',
+          name: 'pc-live-super-group-manage',
+          component: PcSuperGroupManageView,
+          meta: { title: '超级群管理' },
         },
         {
           path: 'user-manage',

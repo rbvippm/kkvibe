@@ -118,6 +118,13 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/live-commission',
         routeName: 'pc-live-commission',
       },
+      {
+        key: 'live-super-group-manage',
+        title: '超级群管理',
+        path: '/pc/live-super-group-manage',
+        routeName: 'pc-live-super-group-manage',
+        pagePath: ['群组管理', '超级群列表'],
+      },
     ],
   },
   {
