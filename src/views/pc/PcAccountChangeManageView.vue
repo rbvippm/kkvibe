@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WfAccountChangeCurrencyAnnot from '../../components/wireframe/WfAccountChangeCurrencyAnnot.vue'
 import WfAccountChangeMethodAnnot from '../../components/wireframe/WfAccountChangeMethodAnnot.vue'
 import WfWithdrawTurnoverAnnot from '../../components/wireframe/WfWithdrawTurnoverAnnot.vue'
@@ -297,7 +297,12 @@ type QueriedUser = {
   usdtTron: string
   kkc: string
   kkv: string
+  activityUsdtTron: string
+  activityKkc: string
+  activityKkv: string
 }
+
+const ACTIVITY_CURRENCY_VALUES = new Set(['activity_usdt_tron', 'activity_kkc', 'activity_kkv'])
 
 const MOCK_USER_DIRECTORY: Record<string, QueriedUser> = {
   '3180664521199420635': {
@@ -307,6 +312,9 @@ const MOCK_USER_DIRECTORY: Record<string, QueriedUser> = {
     usdtTron: '3,450.00',
     kkc: '52,600.00',
     kkv: '890.00',
+    activityUsdtTron: '800.00',
+    activityKkc: '1,500.00',
+    activityKkv: '350.00',
   },
   '3180664521199420634': {
     username: 'UI',
@@ -315,6 +323,9 @@ const MOCK_USER_DIRECTORY: Record<string, QueriedUser> = {
     usdtTron: '1,280.50',
     kkc: '8,200.00',
     kkv: '0.00',
+    activityUsdtTron: '500.00',
+    activityKkc: '0.00',
+    activityKkv: '200.00',
   },
 }
 
@@ -334,9 +345,22 @@ const methodNotice = computed(() => {
     return '充值加币、充值减币计入充值数据；人工加分、人工减分不加入充值数据。'
   }
   if (countsRechargeData(initiateMethod.value)) {
-    return `当前方式「${initiateMethod.value}」将计入充值数据统计。`
+    return `当前方式「${initiateMethod.value}」将计入充值数据统计，不可选择活动金币种。`
   }
   return `当前方式「${initiateMethod.value}」不加入充值数据统计。`
+})
+
+const initiateCurrencyOptions = computed(() => {
+  if (initiateMethod.value && countsRechargeData(initiateMethod.value)) {
+    return CURRENCY_OPTIONS.filter((opt) => !opt.value || !ACTIVITY_CURRENCY_VALUES.has(opt.value))
+  }
+  return CURRENCY_OPTIONS
+})
+
+watch(initiateMethod, (method) => {
+  if (method && countsRechargeData(method) && ACTIVITY_CURRENCY_VALUES.has(initiateCurrency.value)) {
+    initiateCurrency.value = ''
+  }
 })
 
 function resetInitiateModal() {
@@ -628,6 +652,9 @@ function confirmInitiate() {
                   <th class="wf-th">USDT(TRON)余额</th>
                   <th class="wf-th">KKC余额</th>
                   <th class="wf-th">KKV余额</th>
+                  <th class="wf-th">活动金-USDT-TRON余额</th>
+                  <th class="wf-th">活动金-KKC余额</th>
+                  <th class="wf-th">活动金-KKV余额</th>
                   <th class="wf-th wf-th--op">操作</th>
                 </tr>
               </thead>
@@ -639,12 +666,15 @@ function confirmInitiate() {
                   <td class="wf-td">{{ initiateQueried.usdtTron }}</td>
                   <td class="wf-td">{{ initiateQueried.kkc }}</td>
                   <td class="wf-td">{{ initiateQueried.kkv }}</td>
+                  <td class="wf-td">{{ initiateQueried.activityUsdtTron }}</td>
+                  <td class="wf-td">{{ initiateQueried.activityKkc }}</td>
+                  <td class="wf-td">{{ initiateQueried.activityKkv }}</td>
                   <td class="wf-td wf-td--center">
                     <button type="button" class="wf-link-del" @click="removeInitiateQueried">移除</button>
                   </td>
                 </tr>
                 <tr v-else>
-                  <td colspan="7" class="wf-td wf-td--empty">
+                  <td colspan="10" class="wf-td wf-td--empty">
                     暂无数据，可先搜索用户（演示 ID：3180664521199420635）
                   </td>
                 </tr>
@@ -670,7 +700,11 @@ function confirmInitiate() {
               <div class="wf-form-row">
                 <label class="wf-form-row__label wf-form-row__label--required">账变币种</label>
                 <select v-model="initiateCurrency" class="wf-select wf-select--full">
-                  <option v-for="opt in CURRENCY_OPTIONS" :key="opt.value || 'empty'" :value="opt.value">
+                  <option
+                    v-for="opt in initiateCurrencyOptions"
+                    :key="opt.value || 'empty'"
+                    :value="opt.value"
+                  >
                     {{ opt.label }}
                   </option>
                 </select>

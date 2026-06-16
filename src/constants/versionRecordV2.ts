@@ -3,7 +3,7 @@
 export const VERSION_RECORD_V2_META = {
   version: 'v2.x.x',
   title: '账变细化和流水调整',
-  updatedAt: '2026-06-05',
+  updatedAt: '2026-06-16',
 } as const
 
 /** 1. 需求背景 */
@@ -139,6 +139,14 @@ export const VERSION_V2_REVISIONS: VersionRevisionRow[] = [
     date: '6.5',
     content:
       '1. 账变方式细化（可分类加币、减币、加分、减分，并均可流水输入）；2. 针对币币兑换做的流水，增加用户钱包流水明细、剩余提现流水以及申请减流水的入口。',
+    author: VERSION_V2_DEFAULT_AUTHOR,
+  },
+  {
+    id: 2,
+    version: 'v1.1',
+    date: '6.16',
+    content:
+      '1. 发起账变：账变方式为充值加币、充值减币时，账变币种不可选活动金（活动金-USDT-TRON、活动金-KKC、活动金-KKV）；2. 发起账变：搜索用户结果表格新增活动金-USDT-TRON、活动金-KKC、活动金-KKV 三列余额展示。',
     author: VERSION_V2_DEFAULT_AUTHOR,
   },
 ]
