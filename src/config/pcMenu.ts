@@ -128,6 +128,20 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'product-research',
+    title: '产品调研',
+    icon: '📑',
+    children: [
+      {
+        key: 'av-interaction-modes',
+        title: '音视频三种模式',
+        path: '/pc/av-interaction-modes',
+        routeName: 'pc-av-interaction-modes',
+        pagePath: ['产品调研', '音视频三种模式'],
+      },
+    ],
+  },
+  {
     key: 'voice',
     title: '语聊管理',
     icon: '🎙',

@@ -25,6 +25,7 @@ import PcWithdrawTurnoverRecordView from '../views/pc/PcWithdrawTurnoverRecordVi
 import PcVersionRecordV2View from '../views/pc/PcVersionRecordV2View.vue'
 import PcReconciliationRelatedView from '../views/pc/PcReconciliationRelatedView.vue'
 import PcVoiceRoomRolePermissionsView from '../views/pc/PcVoiceRoomRolePermissionsView.vue'
+import PcAvInteractionModesResearchView from '../views/pc/PcAvInteractionModesResearchView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -123,6 +124,12 @@ export const router = createRouter({
           name: 'pc-voice-role-permissions',
           component: PcVoiceRoomRolePermissionsView,
           meta: { title: '角色权限与麦控' },
+        },
+        {
+          path: 'av-interaction-modes',
+          name: 'pc-av-interaction-modes',
+          component: PcAvInteractionModesResearchView,
+          meta: { title: '音视频三种模式调研' },
         },
         {
           path: 'live-broadcast',

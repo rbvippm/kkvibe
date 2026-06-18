@@ -21,7 +21,11 @@ type ConfigPanelFields = {
 }
 
 type FloatingLinkFields = {
-  title: string
+  titleZhCn: string
+  titleZhTw: string
+  titleEn: string
+  titleTh: string
+  titleVi: string
   url: string
   icon: string
 }
@@ -88,7 +92,11 @@ function createDefaultPanel(overrides: Partial<ConfigPanelFields> = {}): ConfigP
 
 function createDefaultFloatingLink(overrides: Partial<FloatingLinkFields> = {}): FloatingLinkFields {
   return {
-    title: '',
+    titleZhCn: '',
+    titleZhTw: '',
+    titleEn: '',
+    titleTh: '',
+    titleVi: '',
     url: '',
     icon: '',
     ...overrides,
@@ -187,7 +195,11 @@ const sourceRows = ref<SuperGroupRow[]>([
         sortOrder: '3',
       }),
       floatingLink: createDefaultFloatingLink({
-        title: "I'll 客服",
+        titleZhCn: "I'll 客服",
+        titleZhTw: "I'll 客服",
+        titleEn: "I'll Support",
+        titleTh: 'ฝ่ายบริการ',
+        titleVi: 'Chăm sóc khách hàng',
         url: 'https://support.kk.example/ill',
         icon: 'https://cdn.kk.example/icon/support.png',
       }),
@@ -492,7 +504,11 @@ function validatePanel(panel: ConfigPanelFields, label: string): string | null {
 }
 
 function validateFloatingLink(link: FloatingLinkFields): string | null {
-  if (!link.title.trim()) return '悬浮链接：请输入标题'
+  if (!link.titleZhCn.trim()) return '悬浮链接：请输入标题中文'
+  if (!link.titleZhTw.trim()) return '悬浮链接：请输入标题繁体'
+  if (!link.titleEn.trim()) return '悬浮链接：请输入标题英文'
+  if (!link.titleTh.trim()) return '悬浮链接：请输入标题泰语'
+  if (!link.titleVi.trim()) return '悬浮链接：请输入标题越南语'
   if (!link.url.trim()) return '悬浮链接：请输入跳转地址'
   return null
 }
@@ -651,12 +667,52 @@ function confirmEdit() {
                 <div class="super-group-config-tabs__panel super-group-panel-form">
                   <template v-if="editConfigTab === 'floating_link'">
                     <div class="wf-form-row">
-                      <label class="wf-form-row__label wf-form-row__label--required">标题</label>
+                      <label class="wf-form-row__label wf-form-row__label--required">标题中文</label>
                       <input
-                        v-model="editForm.floatingLink.title"
+                        v-model="editForm.floatingLink.titleZhCn"
                         type="text"
                         class="wf-input wf-input--full"
-                        placeholder="请输入标题"
+                        placeholder="请输入标题中文"
+                      />
+                    </div>
+
+                    <div class="wf-form-row">
+                      <label class="wf-form-row__label wf-form-row__label--required">标题繁体</label>
+                      <input
+                        v-model="editForm.floatingLink.titleZhTw"
+                        type="text"
+                        class="wf-input wf-input--full"
+                        placeholder="请输入标题繁体"
+                      />
+                    </div>
+
+                    <div class="wf-form-row">
+                      <label class="wf-form-row__label wf-form-row__label--required">标题英文</label>
+                      <input
+                        v-model="editForm.floatingLink.titleEn"
+                        type="text"
+                        class="wf-input wf-input--full"
+                        placeholder="请输入标题英文"
+                      />
+                    </div>
+
+                    <div class="wf-form-row">
+                      <label class="wf-form-row__label wf-form-row__label--required">标题泰语</label>
+                      <input
+                        v-model="editForm.floatingLink.titleTh"
+                        type="text"
+                        class="wf-input wf-input--full"
+                        placeholder="请输入标题泰语"
+                      />
+                    </div>
+
+                    <div class="wf-form-row">
+                      <label class="wf-form-row__label wf-form-row__label--required">标题越南语</label>
+                      <input
+                        v-model="editForm.floatingLink.titleVi"
+                        type="text"
+                        class="wf-input wf-input--full"
+                        placeholder="请输入标题越南语"
                       />
                     </div>
 

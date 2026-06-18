@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs:av-modes-pdf": "\"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless=new --disable-gpu --no-pdf-header-footer --print-to-pdf=docs/音视频互动三种模式需求调研.pdf file://$PWD/docs/音视频互动三种模式需求调研.html"
   },
   "dependencies": {
     "mermaid": "^11.15.0",

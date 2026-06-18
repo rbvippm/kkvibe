@@ -4,6 +4,12 @@ import '../../styles/pc-admin-layout.css'
 
 const quickLinks = [
   {
+    to: '/pc/av-interaction-modes',
+    icon: '📑',
+    title: '音视频三种模式调研',
+    desc: '链接分享、好友通话、直播连麦对比；KK Vibe 定位与 API 建议。',
+  },
+  {
     to: '/pc/version-record/v2-account-turnover/intro',
     icon: '📋',
     title: 'v2.x.x 账变细化和流水调整',

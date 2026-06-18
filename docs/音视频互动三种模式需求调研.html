@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>音视频三种模式调研 · 劈大话色场景</title>
+  <style>
+    @page { size: A4; margin: 20mm 16mm 22mm 16mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .cover {
+      page-break-after: always;
+      min-height: 240mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 6mm;
+    }
+    .cover-tag { font-size: 9pt; color: #888; letter-spacing: 0.1em; margin-bottom: 14px; }
+    .cover h1 { font-size: 26pt; font-weight: 600; line-height: 1.3; margin-bottom: 10px; }
+    .cover-sub { font-size: 12pt; color: #555; margin-bottom: 36px; }
+    .cover-scene {
+      background: linear-gradient(135deg, #1e2a5e 0%, #312e81 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+    .cover-scene strong { color: #fbbf24; }
+    .cover-meta { border-top: 1px solid #e5e5e5; padding-top: 18px; font-size: 10pt; color: #666; }
+    .cover-meta dl { display: grid; grid-template-columns: 80px 1fr; gap: 6px 14px; }
+
+    h2 {
+      font-size: 14pt; font-weight: 600; margin: 24px 0 10px;
+      padding-bottom: 5px; border-bottom: 2px solid #111;
+      page-break-after: avoid;
+    }
+    h3 { font-size: 11pt; font-weight: 600; margin: 16px 0 6px; page-break-after: avoid; }
+    p { margin-bottom: 8px; }
+    ul { margin: 0 0 10px 1.3em; }
+    li { margin-bottom: 3px; }
+
+    .highlight-box {
+      background: #f7f7f8; border-left: 3px solid #1e2a5e;
+      padding: 10px 14px; margin: 10px 0 14px; border-radius: 0 6px 6px 0;
+    }
+
+    table {
+      width: 100%; border-collapse: collapse; margin: 10px 0 16px;
+      font-size: 9.5pt; page-break-inside: avoid;
+    }
+    th, td { border: 1px solid #ddd; padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; font-weight: 600; }
+    tr:nth-child(even) td { background: #fafafa; }
+
+    .mode-card {
+      border: 1px solid #e8e8e8; border-radius: 8px;
+      padding: 14px 16px; margin: 12px 0; page-break-inside: avoid;
+    }
+    .badge {
+      display: inline-block; font-size: 8pt; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px; margin-bottom: 6px;
+    }
+    .badge-meet { background: #e8f0fe; color: #1a56db; }
+    .badge-friend { background: #e6f7ed; color: #0d7a3e; }
+    .badge-live { background: #fce8f0; color: #c41d7f; }
+
+    .figure-box {
+      border: 1px solid #e0e0e0; border-radius: 10px;
+      overflow: hidden; margin: 10px 0; page-break-inside: avoid;
+    }
+    .figure-box__head {
+      padding: 7px 12px; font-size: 8.5pt; font-weight: 600; border-bottom: 1px solid #eee;
+    }
+    .head-meet { background: #e8f0fe; color: #1a56db; }
+    .head-friend { background: #e6f7ed; color: #0d7a3e; }
+    .head-live { background: #fce8f0; color: #c41d7f; }
+    .head-scene { background: #1e2a5e; color: #fbbf24; }
+    .figure-box__body { padding: 8px; background: #fff; }
+    .figure-box__body svg { display: block; width: 100%; height: auto; }
+
+    .visual-grid-3 {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 12px 0;
+    }
+    .competitor-tags { display: flex; flex-wrap: wrap; gap: 5px; padding: 6px 8px 4px; }
+    .comp-tag {
+      font-size: 7.5pt; font-weight: 600; padding: 2px 7px;
+      border-radius: 4px; border: 1px solid #eee; background: #fafafa;
+    }
+    .disclaimer { font-size: 7.5pt; color: #999; text-align: center; margin: 8px 0; }
+
+    .page-break { page-break-before: always; }
+    .footer-note {
+      margin-top: 24px; padding-top: 10px; border-top: 1px solid #eee;
+      font-size: 8pt; color: #999; text-align: center;
+    }
+
+    .toc { page-break-after: always; padding-top: 10mm; }
+    .toc h2 { border: none; font-size: 15pt; }
+    .toc ol { list-style: none; }
+    .toc li {
+      display: flex; justify-content: space-between;
+      padding: 7px 0; border-bottom: 1px dotted #ddd; font-size: 10pt;
+    }
+    .toc li span { color: #999; }
+  </style>
+</head>
+<body>
+
+  <!-- 封面 -->
+  <div class="cover">
+    <span class="cover-tag">KK Vibe · 产品需求调研 · v1.2</span>
+    <h1>音视频互动三种模式<br>调研报告（精简版）</h1>
+    <p class="cover-sub">以「边视频聊天，边玩劈大话色」为统一场景，对比三种互动模式</p>
+    <div class="cover-scene">
+      <p style="margin:0;font-size:11pt;line-height:1.7;">
+        <strong>核心场景</strong>：用户打开视频语聊房，多人同时连麦聊天，并在房间内同步进行<strong>劈大话色</strong>（骰子博弈小游戏）——既要有实时音视频，又要有低延迟的游戏状态同步与房主的控场能力。
+      </p>
+    </div>
+    <div class="cover-meta">
+      <dl>
+        <dt>编制日期</dt><dd>2026 年 6 月 17 日</dd>
+        <dt>文档范围</dt><dd>第一～四章（背景、框架、模式分析、对比总结）</dd>
+        <dt>适用项目</dt><dd>KK Vibe</dd>
+      </dl>
+    </div>
+  </div>
+
+  <!-- 目录 -->
+  <div class="toc">
+    <h2>目录</h2>
+    <ol>
+      <li>一、调研背景与目标 <span>3</span></li>
+      <li>二、分析框架说明 <span>3</span></li>
+      <li>三、三种模式 × 劈大话色场景分析 <span>4</span></li>
+      <li>四、四维度总结对比 <span>7</span></li>
+    </ol>
+  </div>
+
+  <!-- ═══ 场景主图（贯穿全文） ═══ -->
+  <div class="figure-box" style="margin-bottom:18px;">
+    <div class="figure-box__head head-scene">统一场景示意 · 边视频聊天，边玩劈大话色</div>
+    <div class="figure-box__body">
+      <svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- 手机/房间外框 -->
+        <rect x="140" y="8" width="280" height="184" rx="16" fill="#111" stroke="#333" stroke-width="2"/>
+        <rect x="146" y="14" width="268" height="172" rx="12" fill="#1e2a5e"/>
+        <!-- 顶栏 -->
+        <text x="158" y="30" font-size="8" fill="#94a3b8">🎙 深夜劈骰局 · 6 人在线</text>
+        <rect x="370" y="18" width="36" height="12" rx="6" fill="#ef4444"/>
+        <text x="376" y="27" font-size="6" fill="#fff">LIVE</text>
+        <!-- 视频麦位 上排 -->
+        <rect x="154" y="38" width="58" height="44" rx="6" fill="#312e81" stroke="#6366f1"/>
+        <circle cx="183" cy="56" r="12" fill="#6366f1"/><text x="179" y="60" font-size="7" fill="#fff">房</text>
+        <text x="162" y="78" font-size="5.5" fill="#a5b4fc">房主·开麦</text>
+        <rect x="218" y="38" width="58" height="44" rx="6" fill="#312e81" stroke="#818cf8"/>
+        <circle cx="247" cy="56" r="12" fill="#818cf8"/><text x="244" y="60" font-size="7" fill="#fff">A</text>
+        <rect x="282" y="38" width="58" height="44" rx="6" fill="#312e81" stroke="#818cf8"/>
+        <circle cx="311" cy="56" r="12" fill="#818cf8"/><text x="308" y="60" font-size="7" fill="#fff">B</text>
+        <rect x="346" y="38" width="58" height="44" rx="6" fill="#312e81" stroke="#818cf8"/>
+        <circle cx="375" cy="56" r="12" fill="#818cf8"/><text x="372" y="60" font-size="7" fill="#fff">C</text>
+        <!-- 劈大话色 游戏区 -->
+        <rect x="154" y="88" width="250" height="72" rx="8" fill="#0f172a" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="168" y="104" font-size="9" fill="#fbbf24" font-weight="bold">🎲 劈大话色 · 第 3 轮</text>
+        <!-- 骰盅 -->
+        <ellipse cx="200" cy="132" rx="28" ry="18" fill="#374151" stroke="#6b7280"/>
+        <text x="186" y="128" font-size="12" fill="#fff">⚀⚁</text>
+        <text x="182" y="148" font-size="5.5" fill="#9ca3af">我的骰</text>
+        <ellipse cx="280" cy="132" rx="28" ry="18" fill="#374151" stroke="#6b7280"/>
+        <text x="268" y="128" font-size="12" fill="#fff">⚂⚃⚄</text>
+        <text x="262" y="148" font-size="5.5" fill="#9ca3af">当前叫: 4个3</text>
+        <ellipse cx="360" cy="132" rx="28" ry="18" fill="#374151" stroke="#ef4444" stroke-width="1.5"/>
+        <text x="348" y="136" font-size="10" fill="#ef4444" font-weight="bold">劈!</text>
+        <!-- 操作按钮 -->
+        <rect x="168" y="152" width="44" height="14" rx="4" fill="#4f46e5"/><text x="178" y="162" font-size="6" fill="#fff">叫骰</text>
+        <rect x="218" y="152" width="44" height="14" rx="4" fill="#dc2626"/><text x="228" y="162" font-size="6" fill="#fff">劈</text>
+        <rect x="268" y="152" width="44" height="14" rx="4" fill="#374151"/><text x="278" y="162" font-size="6" fill="#fff">开</text>
+        <!-- 公屏 -->
+        <rect x="154" y="166" width="250" height="16" rx="4" fill="rgba(0,0,0,0.4)"/>
+        <text x="160" y="177" font-size="6" fill="#fde68a">A：我劈你！  B：不信，开！  C：😂</text>
+        <!-- 左侧：音视频 -->
+        <rect x="8" y="40" width="120" height="56" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+        <text x="16" y="58" font-size="8" fill="#1d4ed8" font-weight="bold">实时音视频</text>
+        <text x="16" y="72" font-size="7" fill="#3b82f6">WebRTC 连麦</text>
+        <text x="16" y="84" font-size="7" fill="#3b82f6">看表情 · 听语气</text>
+        <!-- 右侧：游戏同步 -->
+        <rect x="432" y="40" width="120" height="56" rx="8" fill="#fef3c7" stroke="#fcd34d"/>
+        <text x="440" y="58" font-size="8" fill="#92400e" font-weight="bold">游戏状态同步</text>
+        <text x="440" y="72" font-size="7" fill="#b45309">叫骰 / 劈 / 开</text>
+        <text x="440" y="84" font-size="7" fill="#b45309">全员同步 &lt;200ms</text>
+        <!-- 底部标注 -->
+        <rect x="8" y="110" width="120" height="40" rx="6" fill="#f0fdf4" stroke="#86efac"/>
+        <text x="16" y="128" font-size="7" fill="#166534" font-weight="bold">为什么用视频？</text>
+        <text x="16" y="140" font-size="6.5" fill="#15803d">看微表情判断</text>
+        <text x="16" y="150" font-size="6.5" fill="#15803d">是否在「大话」</text>
+        <rect x="432" y="110" width="120" height="40" rx="6" fill="#fdf2f8" stroke="#f9a8d4"/>
+        <text x="440" y="128" font-size="7" fill="#9d174d" font-weight="bold">为什么语聊房？</text>
+        <text x="440" y="140" font-size="6.5" fill="#be185d">熟人/陌生人组局</text>
+        <text x="440" y="150" font-size="6.5" fill="#be185d">房主控场 + 礼物</text>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 一 -->
+  <h2>一、调研背景与目标</h2>
+  <p>
+    KK Vibe 的核心玩法是<strong>语聊房内的社交小游戏</strong>。以「劈大话色」为例：玩家需要一边视频连麦观察对手表情，一边同步进行骰子叫点、劈、开等操作。这类场景对音视频互动模式的选择有直接影响。
+  </p>
+  <div class="highlight-box">
+    <strong>调研目标：</strong>
+    <ul style="margin:6px 0 0 1.2em;">
+      <li>在「劈大话色」场景下，三种音视频模式分别怎么玩、有什么限制</li>
+      <li>明确 KK Vibe 应锚定哪种模式，以及需要补齐哪些能力</li>
+    </ul>
+  </div>
+
+  <!-- 二 -->
+  <h2>二、分析框架说明</h2>
+  <table>
+    <thead>
+      <tr><th>维度</th><th>说明</th><th>劈大话色场景下的关键问题</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>关系链</strong></td>
+        <td>玩家如何凑齐一局</td>
+        <td>好友组局？链接拉人？大厅匹配陌生人？</td>
+      </tr>
+      <tr>
+        <td><strong>权限控制</strong></td>
+        <td>谁说了算</td>
+        <td>谁开局、踢人、暂停游戏、判定作弊？</td>
+      </tr>
+      <tr>
+        <td><strong>核心目的</strong></td>
+        <td>用户来干什么</td>
+        <td>纯粹娱乐社交，还是顺带办公/围观？</td>
+      </tr>
+      <tr>
+        <td><strong>技术侧重点</strong></td>
+        <td>工程优先项</td>
+        <td>视频清晰度 vs 游戏低延迟 vs 万人围观分发</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-break"></div>
+
+  <!-- 三 -->
+  <h2>三、三种模式 × 劈大话色场景分析</h2>
+  <p>以下均以<strong>同一局劈大话色</strong>为参照，看三种模式如何承载「视频 + 游戏」。</p>
+
+  <!-- 模式一 -->
+  <div class="mode-card">
+    <span class="badge badge-meet">模式一</span>
+    <h3>链接分享（Google Meet / Zoom / 腾讯会议）</h3>
+    <p><strong>怎么玩劈大话色：</strong>发起人创建会议 → 分享链接 → 朋友点链接加入 → 另开游戏 App 或共享屏幕玩骰子。<strong>视频和游戏是割裂的。</strong></p>
+
+    <div class="figure-box">
+      <div class="figure-box__head head-meet">场景图 · 会议里「外挂」游戏</div>
+      <div class="figure-box__body">
+        <svg viewBox="0 0 480 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="480" height="160" fill="#f8faff" rx="4"/>
+          <!-- Meet 窗口 -->
+          <rect x="10" y="10" width="300" height="140" rx="8" fill="#fff" stroke="#1a56db"/>
+          <rect x="10" y="10" width="300" height="20" fill="#00897b" rx="8"/>
+          <text x="18" y="24" font-size="7" fill="#fff">Google Meet · 周五劈骰局</text>
+          <!-- 视频网格 -->
+          <rect x="18" y="36" width="88" height="60" rx="4" fill="#37474f"/><text x="40" y="68" font-size="7" fill="#fff">Host</text>
+          <rect x="112" y="36" width="60" height="44" rx="3" fill="#455a64"/><text x="124" y="60" font-size="6" fill="#fff">玩家A</text>
+          <rect x="178" y="36" width="60" height="44" rx="3" fill="#455a64"/><text x="190" y="60" font-size="6" fill="#fff">玩家B</text>
+          <rect x="244" y="36" width="60" height="44" rx="3" fill="#455a64"/><text x="256" y="60" font-size="6" fill="#fff">玩家C</text>
+          <!-- 屏幕共享游戏 -->
+          <rect x="18" y="102" width="140" height="40" rx="4" fill="#e8f0fe" stroke="#1a56db" stroke-dasharray="4,2"/>
+          <text x="26" y="118" font-size="7" fill="#1a56db" font-weight="bold">🖥 屏幕共享</text>
+          <text x="26" y="130" font-size="6" fill="#666">某玩家共享骰子 App</text>
+          <text x="26" y="140" font-size="6" fill="#ef4444">⚠ 延迟高 · 无法防作弊</text>
+          <!-- 割裂标注 -->
+          <rect x="320" y="10" width="150" height="140" rx="8" fill="#fef2f2" stroke="#fca5a5"/>
+          <text x="330" y="30" font-size="8" fill="#dc2626" font-weight="bold">场景痛点</text>
+          <text x="330" y="48" font-size="7" fill="#666">✕ 游戏不在会议内</text>
+          <text x="330" y="62" font-size="7" fill="#666">✕ 骰子状态不同步</text>
+          <text x="330" y="76" font-size="7" fill="#666">✕ 最多 ~500 人但</text>
+          <text x="330" y="88" font-size="7" fill="#666">  劈骰只需 4～8 人</text>
+          <text x="330" y="106" font-size="7" fill="#666">△ 适合临时远程</text>
+          <text x="330" y="120" font-size="7" fill="#666">  朋友「凑一局」</text>
+          <text x="330" y="138" font-size="6" fill="#999">链接：meet.app/xxx</text>
+        </svg>
+      </div>
+      <div class="competitor-tags">
+        <span class="comp-tag">Google Meet</span><span class="comp-tag">Zoom</span><span class="comp-tag">腾讯会议</span>
+      </div>
+    </div>
+
+    <ul>
+      <li><strong>关系链：</strong>链接分享，半私密，适合已知朋友临时组局</li>
+      <li><strong>权限：</strong>Host 控麦控人，但<strong>无法控制游戏</strong></li>
+      <li><strong>结论：</strong>能视频聊天，<strong>不适合</strong>原生嵌入劈大话色</li>
+    </ul>
+  </div>
+
+  <!-- 模式二 -->
+  <div class="mode-card">
+    <span class="badge badge-friend">模式二</span>
+    <h3>好友通话（微信视频 / FaceTime）</h3>
+    <p><strong>怎么玩劈大话色：</strong>微信群里喊一声「来劈骰」→ 发起群视频 → 线下摇骰，或用小游戏小程序。视频是视频，骰子是骰子。</p>
+
+    <div class="figure-box">
+      <div class="figure-box__head head-friend">场景图 · 群视频 + 线下/小程序骰子</div>
+      <div class="figure-box__body">
+        <svg viewBox="0 0 480 160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="480" height="160" fill="#f6fdf8" rx="4"/>
+          <!-- 微信手机 -->
+          <rect x="20" y="10" width="120" height="140" rx="14" fill="#111"/>
+          <rect x="26" y="16" width="108" height="128" rx="10" fill="#ededed"/>
+          <rect x="26" y="16" width="108" height="22" fill="#07c160" rx="10"/>
+          <text x="34" y="30" font-size="7" fill="#fff">家庭群 · 群视频</text>
+          <!-- 2x2 视频 -->
+          <rect x="30" y="42" width="48" height="40" rx="3" fill="#374151"/>
+          <rect x="82" y="42" width="48" height="40" rx="3" fill="#374151"/>
+          <rect x="30" y="86" width="48" height="40" rx="3" fill="#374151"/>
+          <rect x="82" y="86" width="48" height="40" rx="3" fill="#374151"/>
+          <circle cx="78" cy="134" r="10" fill="#ef4444"/>
+          <!-- 线下骰子 -->
+          <rect x="160" y="20" width="140" height="120" rx="8" fill="#fff" stroke="#86efac" stroke-width="2"/>
+          <text x="172" y="40" font-size="8" fill="#065f46" font-weight="bold">线下真实骰子 🎲</text>
+          <text x="172" y="56" font-size="14" fill="#333">⚀ ⚁ ⚂ ⚃ ⚄ ⚅</text>
+          <text x="172" y="76" font-size="7" fill="#666">每人自己摇 · 视频里看表情</text>
+          <text x="172" y="90" font-size="7" fill="#666">或点开小程序「大话骰」</text>
+          <rect x="172" y="100" width="80" height="28" rx="6" fill="#07c160"/>
+          <text x="184" y="118" font-size="7" fill="#fff">微信小程序</text>
+          <!-- 优劣 -->
+          <rect x="320" y="10" width="150" height="140" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+          <text x="330" y="30" font-size="8" fill="#065f46" font-weight="bold">场景特点</text>
+          <text x="330" y="50" font-size="7" fill="#166534">✓ 熟人信任，看表情</text>
+          <text x="330" y="64" font-size="7" fill="#166534">✓ 推送触达快</text>
+          <text x="330" y="82" font-size="7" fill="#dc2626">✕ 无原生游戏集成</text>
+          <text x="330" y="96" font-size="7" fill="#dc2626">✕ 线下骰易作弊</text>
+          <text x="330" y="110" font-size="7" fill="#dc2626">✕ 最多 9 人，无房</text>
+          <text x="330" y="124" font-size="7" fill="#dc2626">  主 / 礼物 / 围观</text>
+          <text x="330" y="142" font-size="6" fill="#999">平等制 · 无 Host</text>
+        </svg>
+      </div>
+      <div class="competitor-tags">
+        <span class="comp-tag">微信视频</span><span class="comp-tag">FaceTime</span>
+      </div>
+    </div>
+
+    <ul>
+      <li><strong>关系链：</strong>强好友/群关系，极私密，组局靠喊</li>
+      <li><strong>权限：</strong>人人平等，<strong>没人能主持游戏公平性</strong></li>
+      <li><strong>结论：</strong>适合熟人小局，<strong>无法支撑</strong>陌生人匹配 + 防作弊 + 打赏</li>
+    </ul>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- 模式三 -->
+  <div class="mode-card">
+    <span class="badge badge-live">模式三</span>
+    <h3>直播连麦 / 语聊房（抖音 / KK Vibe）</h3>
+    <p><strong>怎么玩劈大话色：</strong>进语聊房 → 视频连麦 → 游戏区原生嵌入劈大话色 → 房主开局、控麦、围观者送礼物。<strong>视频与游戏一体，正是 KK Vibe 的主场景。</strong></p>
+
+    <div class="figure-box">
+      <div class="figure-box__head head-live">场景图 · 语聊房内原生劈大话色（KK Vibe 目标态）</div>
+      <div class="figure-box__body">
+        <svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg">
+          <rect width="480" height="200" fill="#0f172a" rx="4"/>
+          <!-- 房间顶栏 -->
+          <text x="14" y="18" font-size="8" fill="#94a3b8">🎙 深夜劈骰局</text>
+          <text x="380" y="18" font-size="7" fill="#f87171">❤ 热度 8.2k · 126 围观</text>
+          <!-- 麦位+视频 -->
+          <rect x="14" y="26" width="70" height="52" rx="6" fill="#312e81" stroke="#fbbf24" stroke-width="2"/>
+          <text x="36" y="48" font-size="8" fill="#fbbf24">房主</text>
+          <text x="28" y="62" font-size="5.5" fill="#a5b4fc">Host·控局</text>
+          <rect x="90" y="26" width="56" height="52" rx="6" fill="#312e81" stroke="#6366f1"/>
+          <text x="108" y="52" font-size="7" fill="#fff">玩家A</text>
+          <rect x="152" y="26" width="56" height="52" rx="6" fill="#312e81" stroke="#6366f1"/>
+          <text x="170" y="52" font-size="7" fill="#fff">玩家B</text>
+          <rect x="214" y="26" width="56" height="52" rx="6" fill="#312e81" stroke="#6366f1"/>
+          <text x="232" y="52" font-size="7" fill="#fff">玩家C</text>
+          <rect x="276" y="26" width="56" height="52" rx="6" fill="#1e293b" stroke="#475569" stroke-dasharray="3,2"/>
+          <text x="290" y="52" font-size="6" fill="#64748b">空麦·加入</text>
+          <!-- 游戏主区域 -->
+          <rect x="14" y="84" width="318" height="80" rx="8" fill="#1e293b" stroke="#fbbf24"/>
+          <text x="24" y="100" font-size="9" fill="#fbbf24" font-weight="bold">🎲 劈大话色 · 进行中</text>
+          <!-- 4个玩家骰面 -->
+          <rect x="24" y="108" width="52" height="36" rx="5" fill="#334155"/>
+          <text x="32" y="128" font-size="11" fill="#fff">⚀⚁⚂</text>
+          <text x="30" y="140" font-size="5" fill="#94a3b8">A · 叫:3个2</text>
+          <rect x="82" y="108" width="52" height="36" rx="5" fill="#334155"/>
+          <text x="90" y="128" font-size="11" fill="#fff">⚃⚄</text>
+          <text x="88" y="140" font-size="5" fill="#94a3b8">B · 等待</text>
+          <rect x="140" y="108" width="52" height="36" rx="5" fill="#334155"/>
+          <text x="148" y="128" font-size="11" fill="#fff">⚅⚅</text>
+          <text x="146" y="140" font-size="5" fill="#94a3b8">C · 思考中</text>
+          <rect x="198" y="108" width="52" height="36" rx="5" fill="#7f1d1d" stroke="#ef4444"/>
+          <text x="212" y="130" font-size="10" fill="#fca5a5" font-weight="bold">劈!</text>
+          <!-- 按钮 -->
+          <rect x="260" y="112" width="36" height="16" rx="4" fill="#4f46e5"/><text x="268" y="123" font-size="6" fill="#fff">叫骰</text>
+          <rect x="260" y="132" width="36" height="16" rx="4" fill="#dc2626"/><text x="270" y="143" font-size="6" fill="#fff">劈</text>
+          <rect x="300" y="112" width="24" height="36" rx="4" fill="#374151"/><text x="306" y="133" font-size="6" fill="#fff">开</text>
+          <!-- 公屏+礼物 -->
+          <rect x="14" y="170" width="240" height="22" rx="4" fill="rgba(0,0,0,0.5)"/>
+          <text x="20" y="184" font-size="6" fill="#fde68a">围观：A劈B！  🎁 路人送了啤酒×3</text>
+          <!-- 右侧围观 -->
+          <rect x="342" y="26" width="124" height="166" rx="8" fill="#1e293b" stroke="#475569"/>
+          <text x="352" y="42" font-size="7" fill="#94a3b8" font-weight="bold">围观席 ×126</text>
+          <circle cx="362" cy="58" r="6" fill="#64748b"/><circle cx="378" cy="58" r="6" fill="#64748b"/>
+          <circle cx="394" cy="58" r="6" fill="#64748b"/><circle cx="410" cy="58" r="6" fill="#64748b"/>
+          <text x="352" y="78" font-size="6" fill="#64748b">只看不玩</text>
+          <text x="352" y="92" font-size="6" fill="#64748b">可打赏 · 可申请</text>
+          <text x="352" y="106" font-size="6" fill="#64748b">下一局上麦</text>
+          <rect x="352" y="120" width="104" height="24" rx="4" fill="#831843"/>
+          <text x="360" y="136" font-size="6" fill="#fda4af">🎁 礼物动画</text>
+          <rect x="352" y="152" width="104" height="30" rx="4" fill="#312e81"/>
+          <text x="360" y="164" font-size="6" fill="#a5b4fc">✓ 游戏服务端仲裁</text>
+          <text x="360" y="176" font-size="6" fill="#a5b4fc">✓ 骰子状态防作弊</text>
+        </svg>
+      </div>
+      <div class="competitor-tags">
+        <span class="comp-tag">抖音连麦</span><span class="comp-tag">B站直播</span><span class="comp-tag" style="background:#fdf2f8;border-color:#f9a8d4;color:#be185d;">KK Vibe ★</span>
+      </div>
+    </div>
+
+    <ul>
+      <li><strong>关系链：</strong>大厅发现 or 链接入房，陌生人/半熟人皆可组局</li>
+      <li><strong>权限：</strong>房主开局/踢人/禁麦，<strong>游戏服务端统一仲裁骰子</strong></li>
+      <li><strong>结论：</strong><strong>最契合</strong>「边视频聊天，边玩劈大话色」—— KK Vibe 应锚定此模式</li>
+    </ul>
+  </div>
+
+  <p class="disclaimer">以上界面为概念示意，非竞品官方截图。</p>
+
+  <!-- 四 -->
+  <h2>四、四维度总结对比</h2>
+
+  <div class="figure-box" style="margin-bottom:12px;">
+    <div class="figure-box__head head-scene">一图对比 · 同一局劈大话色，三种模式差在哪？</div>
+    <div class="figure-box__body">
+      <svg viewBox="0 0 520 130" xmlns="http://www.w3.org/2000/svg">
+        <!-- 模式一 -->
+        <rect x="4" y="4" width="160" height="122" rx="8" fill="#f8faff" stroke="#1a56db"/>
+        <text x="14" y="22" font-size="8" fill="#1a56db" font-weight="bold">链接分享</text>
+        <rect x="14" y="30" width="60" height="36" rx="4" fill="#dbeafe"/><text x="22" y="52" font-size="6" fill="#1e40af">视频会议</text>
+        <text x="82" y="48" font-size="14" fill="#999">+</text>
+        <rect x="96" y="30" width="60" height="36" rx="4" fill="#fef3c7" stroke-dasharray="3,2" stroke="#fcd34d"/><text x="104" y="52" font-size="6" fill="#92400e">外挂游戏</text>
+        <text x="14" y="82" font-size="6" fill="#dc2626">✕ 游戏不原生</text>
+        <text x="14" y="94" font-size="6" fill="#dc2626">✕ 易作弊 · 高延迟</text>
+        <text x="14" y="114" font-size="6" fill="#666">Meet / Zoom</text>
+        <!-- 模式二 -->
+        <rect x="178" y="4" width="160" height="122" rx="8" fill="#f6fdf8" stroke="#0d7a3e"/>
+        <text x="188" y="22" font-size="8" fill="#0d7a3e" font-weight="bold">好友通话</text>
+        <rect x="188" y="30" width="60" height="36" rx="4" fill="#d1fae5"/><text x="196" y="52" font-size="6" fill="#065f46">群视频</text>
+        <text x="256" y="48" font-size="14" fill="#999">+</text>
+        <rect x="270" y="30" width="60" height="36" rx="4" fill="#fef3c7"/><text x="282" y="48" font-size="10" fill="#333">🎲</text><text x="278" y="60" font-size="5" fill="#666">线下骰</text>
+        <text x="188" y="82" font-size="6" fill="#dc2626">✕ 最多 9 人</text>
+        <text x="188" y="94" font-size="6" fill="#dc2626">✕ 无房主 · 无围观</text>
+        <text x="188" y="114" font-size="6" fill="#666">微信 / FaceTime</text>
+        <!-- 模式三 -->
+        <rect x="352" y="4" width="164" height="122" rx="8" fill="#fdf2f8" stroke="#be185d" stroke-width="2"/>
+        <text x="362" y="22" font-size="8" fill="#be185d" font-weight="bold">语聊房 ★ KK Vibe</text>
+        <rect x="362" y="30" width="144" height="50" rx="6" fill="#1e2a5e" stroke="#fbbf24"/>
+        <text x="372" y="46" font-size="7" fill="#fbbf24">视频连麦 + 劈大话色</text>
+        <text x="372" y="60" font-size="10" fill="#fff">⚀⚁ ⚂ ⚃  叫:4个3  [劈!]</text>
+        <text x="372" y="74" font-size="6" fill="#94a3b8">一体 · 服务端仲裁 · 可围观</text>
+        <text x="362" y="96" font-size="6" fill="#166534">✓ 原生游戏 + 视频</text>
+        <text x="362" y="108" font-size="6" fill="#166534">✓ 房主控场 + 防作弊</text>
+        <text x="362" y="120" font-size="6" fill="#166534">✓ 陌生人组局 + 礼物</text>
+      </svg>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>维度</th>
+        <th>链接分享<br><small>Meet / Zoom</small></th>
+        <th>好友通话<br><small>微信 / FaceTime</small></th>
+        <th>语聊房连麦<br><small>KK Vibe ★</small></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>怎么组劈大话色局</strong></td>
+        <td>发会议链接，人齐另开游戏</td>
+        <td>群里喊一声，群视频 + 线下骰</td>
+        <td>大厅进房 / 分享链接，一键开局</td>
+      </tr>
+      <tr>
+        <td><strong>视频能看到表情吗</strong></td>
+        <td>✓ 能，但游戏在屏幕共享里</td>
+        <td>✓ 能，体验最接近线下</td>
+        <td>✓ 能，麦位视频 + 游戏同屏</td>
+      </tr>
+      <tr>
+        <td><strong>骰子状态同步</strong></td>
+        <td>✕ 不同步，靠自觉</td>
+        <td>✕ 线下骰 / 小程序，易作弊</td>
+        <td>✓ 服务端统一发骰、仲裁</td>
+      </tr>
+      <tr>
+        <td><strong>谁主持公平性</strong></td>
+        <td>Host 管会议，不管游戏</td>
+        <td>无人主持，靠熟人信任</td>
+        <td>房主 + 服务端规则引擎</td>
+      </tr>
+      <tr>
+        <td><strong>围观 / 打赏</strong></td>
+        <td>✕ 无</td>
+        <td>✕ 无</td>
+        <td>✓ 围观席 + 礼物 + 下局上麦</td>
+      </tr>
+      <tr>
+        <td><strong>适合劈大话色吗</strong></td>
+        <td>△ 临时凑合</td>
+        <td>△ 熟人小局</td>
+        <td><strong>✓ 最佳</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlight-box">
+    <strong>结论：</strong>「边视频聊天，边玩劈大话色」需要<strong>视频连麦 + 原生游戏 + 房主控场 + 服务端防作弊</strong>四件事同时具备——只有<strong>模式三（语聊房连麦）</strong>天然满足，这正是 KK Vibe 的产品锚点。
+  </div>
+
+  <div class="footer-note">
+    KK Vibe · 音视频互动三种模式需求调研（精简版）· v1.2 · 2026-06-17<br>
+    场景：边视频聊天，边玩劈大话色
+  </div>
+
+</body>
+</html>

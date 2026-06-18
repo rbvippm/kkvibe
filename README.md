@@ -16,9 +16,20 @@ Vue 3 + TypeScript + Vite 产品原型仓库。
 - 标准样例：壳页 `/mobile/live-start-notice`、直播 `/mobile/live`、全局通知 `LiveStartTopNotice.vue`
 - Cursor 规则：`.cursor/rules/mobile-h5.mdc`
 
+## 产品调研
+
+- HTML：[docs/音视频互动三种模式需求调研.html](docs/音视频互动三种模式需求调研.html)
+- 原型内阅读：`/pc/av-interaction-modes` → `PcAvInteractionModesResearchView.vue`
+
 ## 开发
 
 ```bash
 npm install
 npm run dev
+```
+
+重新导出 PDF（需本机 Chrome）：
+
+```bash
+npm run docs:av-modes-pdf
 ```
