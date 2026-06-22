@@ -499,7 +499,6 @@ function toggleConfigItem(key: ConfigItemKey) {
 
 function validatePanel(panel: ConfigPanelFields, label: string): string | null {
   if (!panel.languages.length) return `${label}：请至少选择一种支持语种`
-  if (!panel.sortOrder.trim()) return `${label}：请输入排序`
   return null
 }
 
@@ -849,31 +848,6 @@ function confirmEdit() {
                         {{ opt.label }}
                       </option>
                     </select>
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label wf-form-row__label--required">排序</label>
-                    <input
-                      v-model="activePanel.sortOrder"
-                      type="number"
-                      min="1"
-                      class="wf-input wf-input--full"
-                      placeholder="请输入排序"
-                    />
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label wf-form-row__label--required">状态</label>
-                    <div class="super-group-radio-group">
-                      <label class="super-group-radio">
-                        <input v-model="activePanel.enabled" type="radio" :value="true" />
-                        <span>启用</span>
-                      </label>
-                      <label class="super-group-radio">
-                        <input v-model="activePanel.enabled" type="radio" :value="false" />
-                        <span>禁用</span>
-                      </label>
-                    </div>
                   </div>
 
                   <div class="wf-form-row">
