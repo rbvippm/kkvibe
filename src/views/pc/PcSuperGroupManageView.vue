@@ -497,8 +497,9 @@ function toggleConfigItem(key: ConfigItemKey) {
   }
 }
 
-function validatePanel(panel: ConfigPanelFields, label: string): string | null {
+function validatePanel(panel: ConfigPanelFields, label: string, requireIcon = false): string | null {
   if (!panel.languages.length) return `${label}：请至少选择一种支持语种`
+  if (requireIcon && !panel.icon.trim()) return `${label}：请上传 icon`
   return null
 }
 
@@ -509,6 +510,7 @@ function validateFloatingLink(link: FloatingLinkFields): string | null {
   if (!link.titleTh.trim()) return '悬浮链接：请输入标题泰语'
   if (!link.titleVi.trim()) return '悬浮链接：请输入标题越南语'
   if (!link.url.trim()) return '悬浮链接：请输入跳转地址'
+  if (!link.icon.trim()) return '悬浮链接：请上传 icon'
   return null
 }
 
@@ -520,7 +522,7 @@ function confirmEdit() {
     const error =
       key === 'floating_link'
         ? validateFloatingLink(editForm.value.floatingLink)
-        : validatePanel(gamePanelConfig(key, editForm.value), label)
+        : validatePanel(gamePanelConfig(key, editForm.value), label, key === 'floating_game')
     if (error) {
       editHint.value = error
       editConfigTab.value = key
@@ -726,7 +728,7 @@ function confirmEdit() {
                     </div>
 
                     <div class="wf-form-row">
-                      <label class="wf-form-row__label">icon</label>
+                      <label class="wf-form-row__label wf-form-row__label--required">icon</label>
                       <div class="super-group-icon-upload">
                         <input
                           ref="floatingLinkIconInputRef"
@@ -861,7 +863,7 @@ function confirmEdit() {
                   </div>
 
                   <div v-if="editConfigTab === 'floating_game'" class="wf-form-row">
-                    <label class="wf-form-row__label">icon</label>
+                    <label class="wf-form-row__label wf-form-row__label--required">icon</label>
                     <div class="super-group-icon-upload">
                       <input
                         ref="gamePanelIconInputRef"
