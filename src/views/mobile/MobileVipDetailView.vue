@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
-
-const router = useRouter()
 
 const vip = ref({
   level: 1,
@@ -26,19 +24,11 @@ const benefits = computed(() => {
     },
   ]
 })
-
-function goBack() {
-  router.back()
-}
 </script>
 
 <template>
   <div class="mh5-vip-page">
-    <header class="mh5-vip-top">
-      <button type="button" class="mh5-vip-back" aria-label="返回" @click="goBack">←</button>
-      <h1 class="mh5-vip-title">VIP 详情</h1>
-      <span class="mh5-vip-top__right" aria-hidden="true" />
-    </header>
+    <Mh5SubPageHeader title="VIP 详情" />
 
     <main class="mh5-vip-body">
       <section class="mh5-vip-hero" aria-label="VIP 等级">

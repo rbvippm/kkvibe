@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
 
 const games = ref([
@@ -25,11 +26,10 @@ function onGameClick(name: string) {
 </script>
 
 <template>
-  <div>
-    <header class="mh5-games-header">
-      <h1 class="mh5-games-title">游戏中心</h1>
-      <p class="mt-1 text-sm text-[var(--mh5-app-text-secondary,#8a8f98)]">热门游戏，即刻开玩</p>
-    </header>
+  <div class="mh5-games-page">
+    <Mh5SubPageHeader title="游戏中心" />
+
+    <p class="mh5-games-subtitle">热门游戏，即刻开玩</p>
 
     <div class="mh5-games-grid">
       <button

@@ -21,18 +21,18 @@ onUnmounted(() => {
     </header>
 
     <main class="home-entry__main">
-      <RouterLink to="/mobile/live" class="home-entry__card home-entry__card--mobile">
+      <RouterLink to="/mobile/home" class="home-entry__card home-entry__card--mobile">
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--mobile">📱</span>
           <div class="home-entry__card-body">
             <h2 class="home-entry__card-title">移动端 H5</h2>
             <p class="home-entry__card-text">
-              直播、代理、游戏、我的；语聊大厅与麦控等能力演示。
+              首页、社区、会话、我的；语聊直播与代理中心等能力演示。
             </p>
             <div class="home-entry__card-tags">
-              <span class="home-entry__tag home-entry__tag--mobile">直播</span>
-              <span class="home-entry__tag home-entry__tag--mobile">代理</span>
-              <span class="home-entry__tag home-entry__tag--mobile">游戏</span>
+              <span class="home-entry__tag home-entry__tag--mobile">首页</span>
+              <span class="home-entry__tag home-entry__tag--mobile">社区</span>
+              <span class="home-entry__tag home-entry__tag--mobile">会话</span>
               <span class="home-entry__tag home-entry__tag--mobile">我的</span>
             </div>
           </div>

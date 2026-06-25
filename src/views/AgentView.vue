@@ -1,46 +1,51 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
-type SubAgent = {
-  id: string
-  nickname: string
-  level: '一级' | '二级'
-  monthGmv: string
-  status: '活跃' | '沉默' | '待激活'
-}
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import {
+  MOCK_AGENT_CREDIT_SUMMARY,
+  RELATION_LABEL,
+  relationTagClass,
+} from '../constants/xCoinTransfer'
+import {
+  TEAM_FILTER_TABS,
+  MOCK_TEAM_SELF,
+  agentSubordinateLabel,
+  getTeamChildren,
+  memberKindLabel,
+  showAgentSubordinateTag,
+  showMemberBadge,
+  type TeamFilterTab,
+  type TeamListItem,
+} from '../constants/agentTeam'
+import '../styles/mobile-app-shell.css'
 
 type BottomTab = 'overview' | 'team' | 'report' | 'me'
 type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
 
 const activeTab = ref<BottomTab>('overview')
 const preset = ref<RangePreset>('today')
+const route = useRoute()
+const router = useRouter()
+
+watch(
+  () => route.query.tab,
+  (tab) => {
+    if (tab === 'overview' || tab === 'team' || tab === 'report' || tab === 'me') {
+      activeTab.value = tab
+    }
+  },
+  { immediate: true },
+)
 
 const user = ref({
   nickname: 'fafa888888',
   avatarEmoji: '🧔🏻‍♂️',
 })
 
-const inviteCode = ref('KK-VIBE-8F2A')
-const copied = ref(false)
-
 const account = ref({
   balance: '236,188,666.00',
   profit: '-3,000,000,000',
 })
-
-const subAgents = ref<SubAgent[]>([
-  { id: 'a1', nickname: '小北_渠道', level: '一级', monthGmv: '¥ 42,300', status: '活跃' },
-  { id: 'a2', nickname: '阿鹿推广', level: '一级', monthGmv: '¥ 18,900', status: '活跃' },
-  { id: 'a3', nickname: '匿名代理 09', level: '二级', monthGmv: '¥ 3,200', status: '沉默' },
-  { id: 'a4', nickname: '城市合伙人·南', level: '一级', monthGmv: '¥ 0', status: '待激活' },
-  { id: 'a5', nickname: 'Echo 工作室', level: '二级', monthGmv: '¥ 6,750', status: '活跃' },
-])
-
-function statusClass(s: SubAgent['status']) {
-  if (s === '活跃') return 'border-emerald-500/35 bg-emerald-500/12 text-emerald-200'
-  if (s === '沉默') return 'border-white/15 bg-white/6 text-white/70'
-  return 'border-amber-400/35 bg-amber-500/12 text-amber-200'
-}
 
 const dateRangeText = computed(() => {
   const base = '2025-08-06'
@@ -69,37 +74,224 @@ const showOverviewSection = computed(() => activeTab.value === 'overview')
 const showReportSection = computed(() => activeTab.value === 'report')
 const showMeSection = computed(() => activeTab.value === 'me')
 
+const teamFilterTab = ref<TeamFilterTab>('all')
+const teamSelfExpanded = ref(true)
+
+const teamChildRows = computed(() => getTeamChildren(teamFilterTab.value))
+
+function goTeamDetailByNickname(item: TeamListItem) {
+  // x币类型 → 会员详情；V1/V2 代理等 → 代理详情
+  if (showMemberBadge(item.kind)) {
+    router.push({ name: 'mobile-member-detail', query: { id: item.id } })
+    return
+  }
+  router.push({ name: 'mobile-agent-detail', query: { id: item.id } })
+}
+
+function toggleTeamExpand() {
+  teamSelfExpanded.value = !teamSelfExpanded.value
+}
+
+function teamRowBadge(item: TeamListItem) {
+  return memberKindLabel(item.kind)
+}
+
 function pickPreset(v: RangePreset) {
   preset.value = v
 }
 
-async function copyInvite() {
-  try {
-    await navigator.clipboard.writeText(inviteCode.value)
-    copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, 1600)
-  } catch {
-    copied.value = false
-  }
+function goXCoinCreditMember() {
+  router.push({ name: 'mobile-xcoin-credit-member' })
 }
+
+function goXCoinCreditAgent() {
+  router.push({ name: 'mobile-xcoin-credit-agent' })
+}
+
+function goXCoinRecords() {
+  router.push({ name: 'mobile-xcoin-records' })
+}
+
+function goXCoinReport() {
+  router.push({ name: 'mobile-xcoin-report' })
+}
+
+function switchTab(tab: BottomTab) {
+  if (tab === 'report') {
+    router.push({ name: 'mobile-agent-report' })
+    return
+  }
+  activeTab.value = tab
+  router.replace({ name: 'mobile-agent', query: tab === 'overview' ? {} : { tab } })
+}
+
+const xCoinCreditTotal = computed(() =>
+  MOCK_AGENT_CREDIT_SUMMARY.reduce((sum, row) => sum + row.creditUpTotal, 0),
+)
 </script>
 
 <template>
-  <div class="agent-root relative min-h-svh bg-[#121212] text-white antialiased">
-    <!-- 细颗粒噪点（接近截图质感） -->
-    <div class="agent-grain pointer-events-none absolute inset-0 opacity-[0.14]" aria-hidden="true" />
+  <div
+    class="relative flex h-full min-h-0 w-full flex-col antialiased"
+    :class="showTeamSection ? 'agent-team-root' : 'agent-root bg-[#121212] text-white'"
+  >
+    <!-- 细颗粒噪点（概况模式） -->
+    <div
+      v-if="!showTeamSection"
+      class="agent-grain pointer-events-none absolute inset-0 opacity-[0.14]"
+      aria-hidden="true"
+    />
 
-    <div class="relative z-10 mx-auto flex min-h-svh max-w-[420px] flex-col">
+    <!-- 团队管理：全屏浅色页 -->
+    <template v-if="showTeamSection">
+      <header class="agent-team-header">
+        <button
+          type="button"
+          class="agent-team-header__back"
+          aria-label="返回"
+          @click="router.back()"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <h1 class="agent-team-header__title">团队管理</h1>
+        <div class="agent-team-header__actions">
+          <button type="button" class="agent-team-header__icon-btn" aria-label="添加成员">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button type="button" class="agent-team-header__icon-btn" aria-label="搜索">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
+              <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="agent-team-toolbar">
+        <div class="agent-team-toolbar__tabs">
+          <button
+            v-for="tab in TEAM_FILTER_TABS"
+            :key="tab.key"
+            type="button"
+            class="agent-team-filter-pill"
+            :class="{ 'agent-team-filter-pill--active': teamFilterTab === tab.key }"
+            @click="teamFilterTab = tab.key"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
+
+      <main class="agent-team-list">
+        <!-- 当前用户行 -->
+        <div class="agent-team-row">
+          <div class="agent-team-row__avatar">
+            {{ MOCK_TEAM_SELF.avatarEmoji }}
+          </div>
+          <div class="agent-team-row__main">
+            <button
+              type="button"
+              class="agent-team-row__name agent-team-row__name--link"
+              @click="goTeamDetailByNickname(MOCK_TEAM_SELF)"
+            >
+              {{ MOCK_TEAM_SELF.nickname }}
+            </button>
+            <div class="agent-team-row__tags">
+              <span class="agent-team-tag agent-team-tag--me">我</span>
+              <span v-if="MOCK_TEAM_SELF.vipLevel" class="agent-team-tag agent-team-tag--vip">
+                <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M6 1l1.2 3.6H11L8.4 7.2l1.2 3.6L6 9.6 2.4 10.8 3.6 7.2 1 4.6h3.8L6 1Z" fill="currentColor" />
+                </svg>
+                V{{ MOCK_TEAM_SELF.vipLevel }}
+              </span>
+              <span
+                v-if="showAgentSubordinateTag(MOCK_TEAM_SELF)"
+                class="agent-team-tag agent-team-tag--agent"
+              >
+                {{ agentSubordinateLabel(MOCK_TEAM_SELF.subordinateCount) }}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="agent-team-row__expand"
+            :class="{ 'agent-team-row__expand--open': teamSelfExpanded }"
+            aria-label="展开下级"
+            @click.stop="toggleTeamExpand"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 下级成员行 -->
+        <template v-if="teamSelfExpanded">
+          <div
+            v-for="row in teamChildRows"
+            :key="row.id"
+            class="agent-team-row agent-team-row--child"
+          >
+            <div class="agent-team-row__avatar agent-team-row__avatar--placeholder" aria-hidden="true" />
+            <div class="agent-team-row__main">
+              <button
+                type="button"
+                class="agent-team-row__name agent-team-row__name--link"
+                @click="goTeamDetailByNickname(row)"
+              >
+                {{ row.nickname }}
+              </button>
+              <div class="agent-team-row__tags">
+                <span
+                  v-if="showMemberBadge(row.kind)"
+                  class="agent-team-tag agent-team-tag--xcoin"
+                >
+                  {{ teamRowBadge(row) }}
+                </span>
+                <span v-if="row.vipLevel" class="agent-team-tag agent-team-tag--vip">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M6 1l1.2 3.6H11L8.4 7.2l1.2 3.6L6 9.6 2.4 10.8 3.6 7.2 1 4.6h3.8L6 1Z" fill="currentColor" />
+                  </svg>
+                  V{{ row.vipLevel }}
+                </span>
+                <span
+                  v-if="showAgentSubordinateTag(row)"
+                  class="agent-team-tag agent-team-tag--agent"
+                >
+                  {{ agentSubordinateLabel(row.subordinateCount) }}
+                </span>
+              </div>
+            </div>
+            <button type="button" class="agent-team-row__menu" aria-label="更多操作" @click.stop>···</button>
+          </div>
+        </template>
+      </main>
+    </template>
+
+    <!-- 概况 / 报表 / 我的：深色代理中心 -->
+    <div v-else class="relative z-10 mx-auto flex h-full min-h-0 w-full flex-col">
       <!-- 顶栏：左返回 / 居中标题 -->
       <header class="relative flex h-11 items-center px-3 pt-1">
+        <button
+          type="button"
+          class="absolute left-1 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-[#D4A373]"
+          aria-label="返回"
+          @click="router.back()"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
         <h1 class="w-full text-center text-[15px] font-semibold tracking-wide text-[#D4A373]">
           代理中心
         </h1>
       </header>
 
-      <main class="flex flex-1 flex-col px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1">
+      <main class="flex flex-1 flex-col overflow-y-auto px-3 pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-1 min-h-0">
         <!-- 账号卡 -->
         <section
           class="rounded-[14px] border border-[#D4A373]/35 bg-gradient-to-b from-[#1a1816] to-[#141210] p-3.5 shadow-[0_18px_40px_-22px_rgba(0,0,0,0.95)]"
@@ -249,56 +441,47 @@ async function copyInvite() {
               </div>
             </div>
           </div>
-        </section>
-
-        <!-- 其它 Tab：非截图页，保持同背景下的次级面板 -->
-        <section v-else-if="showTeamSection" class="mt-4 space-y-3 rounded-t-[22px] bg-[#FDFCF0] p-3 text-[#2a2420]">
-          <div class="rounded-[12px] border border-[#e8ddd4] bg-white p-3">
-            <div class="flex items-center justify-between">
-              <p class="text-sm font-semibold">我的邀请码</p>
-              <button
-                type="button"
-                class="rounded-full bg-[#2a2420] px-3 py-1.5 text-xs font-semibold text-[#FDFCF0]"
-                @click="copyInvite"
-              >
-                {{ copied ? '已复制' : '复制' }}
-              </button>
-            </div>
-            <p class="mt-2 font-mono text-sm tracking-widest">{{ inviteCode }}</p>
-          </div>
-          <div class="rounded-[12px] border border-[#e8ddd4] bg-white p-3">
-            <div class="flex items-center justify-between text-sm font-semibold">
-              <span>团队列表</span>
-              <span class="text-xs font-medium text-black/45">共 {{ subAgents.length }} 人</span>
-            </div>
-            <ul class="mt-2 space-y-2">
-              <li
-                v-for="row in subAgents"
-                :key="row.id"
-                class="flex items-center justify-between gap-2 rounded-[10px] border border-[#efe4dc] bg-[#FDFCF0] px-2.5 py-2"
-              >
-                <div class="flex min-w-0 flex-1 items-center gap-2">
-                  <span
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#efe4dc] text-xs font-bold"
-                  >
-                    {{ row.nickname.slice(0, 1) }}
-                  </span>
-                  <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold">{{ row.nickname }}</p>
-                    <p class="text-[11px] text-black/45">{{ row.level }} · {{ row.monthGmv }}</p>
-                  </div>
-                </div>
-                <span class="shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold" :class="statusClass(row.status)">
-                  {{ row.status }}
-                </span>
-              </li>
-            </ul>
+          <div class="mh5-xcoin-entry-grid mt-4">
+            <button type="button" class="mh5-xcoin-entry" @click="goXCoinCreditMember">给会员上分</button>
+            <button type="button" class="mh5-xcoin-entry" @click="goXCoinCreditAgent">给代理上分</button>
+            <button type="button" class="mh5-xcoin-entry" @click="goXCoinReport">X币报表</button>
+            <button type="button" class="mh5-xcoin-entry" @click="goXCoinRecords">上下分记录</button>
           </div>
         </section>
 
+        <!-- 其它 Tab：报表 / 我的 -->
         <section v-else-if="showReportSection" class="mt-4 rounded-t-[22px] bg-[#FDFCF0] p-4 text-[#2a2420]">
-          <p class="text-sm font-semibold">我的报表</p>
-          <p class="mt-2 text-sm text-black/50">原型占位：图表与明细可接接口后替换。</p>
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm font-semibold">我的报表</p>
+            <span class="rounded-full bg-[#fff5eb] px-2.5 py-1 text-xs font-semibold text-[#c2410c]">X 币</span>
+          </div>
+          <p class="mt-1 text-xs text-black/45">{{ dateRangeText }}</p>
+
+          <div class="mt-3 rounded-[12px] border border-[#e8ddd4] bg-white p-3">
+            <p class="text-xs text-black/45">本期收到代理上分合计</p>
+            <p class="mt-1 text-2xl font-bold tabular-nums text-[#ff7a2b]">+{{ xCoinCreditTotal.toFixed(2) }} X币</p>
+          </div>
+
+          <div class="mh5-xcoin-report-block !bg-white !border !border-[#e8ddd4]">
+            <h3 class="mh5-xcoin-report-block__title">代理上分明细（按来源）</h3>
+            <div v-for="row in MOCK_AGENT_CREDIT_SUMMARY" :key="row.agentId" class="mh5-xcoin-report-row">
+              <div>
+                <p class="mh5-xcoin-report-row__name">{{ row.agentName }}</p>
+                <span :class="relationTagClass(row.relation)" class="mt-1">{{ RELATION_LABEL[row.relation] }}</span>
+              </div>
+              <div class="text-right">
+                <p class="mh5-xcoin-report-row__amount">+{{ row.creditUpTotal.toFixed(2) }}</p>
+                <p class="text-[11px] text-black/45">上分 {{ row.creditUpTotal.toFixed(2) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="mt-3 w-full text-center text-sm font-semibold text-[#ff7a2b]" @click="goXCoinReport">
+            打开 X币报表（完整页） →
+          </button>
+          <button type="button" class="mt-2 w-full text-center text-sm font-semibold text-[#ff7a2b]/80" @click="goXCoinRecords">
+            查看全部上下分记录 →
+          </button>
         </section>
 
         <section v-else-if="showMeSection" class="mt-4 rounded-t-[22px] bg-[#FDFCF0] p-4 text-[#2a2420]">
@@ -306,17 +489,18 @@ async function copyInvite() {
           <p class="mt-2 text-sm text-black/50">原型占位：账号与设置入口。</p>
         </section>
       </main>
+    </div>
 
-      <!-- 底栏：白底 + 四图标（概况为饼图高亮） -->
-      <nav
-        class="safe-pb fixed bottom-0 left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 border-t border-black/6 bg-white"
-      >
+    <!-- 底栏：白底 + 四图标 -->
+    <nav
+      class="safe-pb absolute bottom-0 left-0 right-0 z-20 w-full border-t border-black/6 bg-white"
+    >
         <div class="grid grid-cols-4 px-1 pt-2">
           <button
             type="button"
             class="flex flex-col items-center gap-1 pb-2 text-[11px] font-medium transition"
             :class="activeTab === 'overview' ? 'text-[#e07a2b]' : 'text-[#9a9a9a]'"
-            @click="activeTab = 'overview'"
+            @click="switchTab('overview')"
           >
             <span class="flex h-6 w-6 items-center justify-center">
               <svg v-if="activeTab === 'overview'" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
@@ -348,7 +532,7 @@ async function copyInvite() {
             type="button"
             class="flex flex-col items-center gap-1 pb-2 text-[11px] font-medium transition"
             :class="activeTab === 'team' ? 'text-[#e07a2b]' : 'text-[#9a9a9a]'"
-            @click="activeTab = 'team'"
+            @click="switchTab('team')"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -364,7 +548,7 @@ async function copyInvite() {
             type="button"
             class="flex flex-col items-center gap-1 pb-2 text-[11px] font-medium transition"
             :class="activeTab === 'report' ? 'text-[#e07a2b]' : 'text-[#9a9a9a]'"
-            @click="activeTab = 'report'"
+            @click="switchTab('report')"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M4 18V6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -379,7 +563,7 @@ async function copyInvite() {
             type="button"
             class="flex flex-col items-center gap-1 pb-2 text-[11px] font-medium transition"
             :class="activeTab === 'me' ? 'text-[#e07a2b]' : 'text-[#9a9a9a]'"
-            @click="activeTab = 'me'"
+            @click="switchTab('me')"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
@@ -398,7 +582,6 @@ async function copyInvite() {
           </button>
         </div>
       </nav>
-    </div>
   </div>
 </template>
 

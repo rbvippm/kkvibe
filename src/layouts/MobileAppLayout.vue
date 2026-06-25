@@ -7,17 +7,34 @@ const route = useRoute()
 
 const tabs = [
   {
-    name: 'mobile-live',
-    path: '/mobile/live',
-    label: '直播',
-    match: (path: string) => path.startsWith('/mobile/live'),
+    name: 'mobile-home',
+    path: '/mobile/home',
+    label: '首页',
+    match: (path: string) => path === '/mobile/home' || path === '/mobile',
   },
-  { name: 'mobile-agent', path: '/mobile/agent', label: '代理', match: (path: string) => path.startsWith('/mobile/agent') },
-  { name: 'mobile-games', path: '/mobile/games', label: '游戏', match: (path: string) => path.startsWith('/mobile/games') },
-  { name: 'mobile-mine', path: '/mobile/mine', label: '我的', match: (path: string) => path.startsWith('/mobile/mine') },
+  {
+    name: 'mobile-community',
+    path: '/mobile/community',
+    label: '社区',
+    match: (path: string) => path.startsWith('/mobile/community'),
+  },
+  {
+    name: 'mobile-chat',
+    path: '/mobile/chat',
+    label: '会话',
+    match: (path: string) => path.startsWith('/mobile/chat'),
+  },
+  {
+    name: 'mobile-mine',
+    path: '/mobile/mine',
+    label: '我的',
+    match: (path: string) => path.startsWith('/mobile/mine'),
+  },
 ]
 
-const hideTabBar = computed(() => Boolean(route.meta.hideTabBar))
+const hideTabBar = computed(
+  () => Boolean(route.meta.hideTabBar) || route.path.startsWith('/mobile/agent'),
+)
 
 function isActive(tab: (typeof tabs)[number]) {
   return tab.match(route.path)
@@ -25,16 +42,17 @@ function isActive(tab: (typeof tabs)[number]) {
 </script>
 
 <template>
-  <div class="mh5-app-shell">
-    <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
-      <RouterView v-slot="{ Component }">
-        <Transition name="mh5-tab" mode="out-in">
-          <component :is="Component" />
-        </Transition>
-      </RouterView>
-    </div>
+  <div class="mh5-viewport-canvas">
+    <div class="mh5-app-shell">
+      <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
+        <RouterView v-slot="{ Component }">
+          <Transition name="mh5-tab" mode="out-in">
+            <component :is="Component" class="mh5-route-view" />
+          </Transition>
+        </RouterView>
+      </div>
 
-    <nav v-if="!hideTabBar" class="mh5-app-tabbar" aria-label="底部导航">
+      <nav v-if="!hideTabBar" class="mh5-app-tabbar" aria-label="底部导航">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.name"
@@ -42,20 +60,24 @@ function isActive(tab: (typeof tabs)[number]) {
         class="mh5-app-tabbar__item"
         :class="{ 'mh5-app-tabbar__item--active': isActive(tab) }"
       >
-        <!-- 直播 -->
+        <!-- 首页 -->
         <svg
-          v-if="tab.label === '直播'"
+          v-if="tab.label === '首页'"
           class="mh5-app-tabbar__icon"
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden="true"
         >
-          <rect x="3" y="5" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
-          <path d="M17 9l4-2v10l-4-2" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          <path
+            d="M4 10.5 12 4l8 6.5V19a2 2 0 01-2 2h-4v-6H10v6H6a2 2 0 01-2-2v-8.5Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
         </svg>
-        <!-- 代理 -->
+        <!-- 社区 -->
         <svg
-          v-else-if="tab.label === '代理'"
+          v-else-if="tab.label === '社区'"
           class="mh5-app-tabbar__icon"
           viewBox="0 0 24 24"
           fill="none"
@@ -65,18 +87,20 @@ function isActive(tab: (typeof tabs)[number]) {
           <circle cx="17" cy="9" r="2.5" stroke="currentColor" stroke-width="1.8" />
           <path d="M4 19c0-2.8 2.2-5 5-5M15 19c0-2.2 1.8-4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
         </svg>
-        <!-- 游戏 -->
+        <!-- 会话 -->
         <svg
-          v-else-if="tab.label === '游戏'"
+          v-else-if="tab.label === '会话'"
           class="mh5-app-tabbar__icon"
           viewBox="0 0 24 24"
           fill="none"
           aria-hidden="true"
         >
-          <rect x="4" y="8" width="16" height="10" rx="3" stroke="currentColor" stroke-width="1.8" />
-          <path d="M9 12v4M7 14h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          <circle cx="16" cy="12" r="1" fill="currentColor" />
-          <circle cx="18" cy="14" r="1" fill="currentColor" />
+          <path
+            d="M5 6.5A3.5 3.5 0 018.5 3h7A3.5 3.5 0 0119 6.5v6A3.5 3.5 0 0115.5 16H10l-4 3.5V16H8.5A3.5 3.5 0 015 12.5v-6Z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
         </svg>
         <!-- 我的 -->
         <svg
@@ -98,6 +122,7 @@ function isActive(tab: (typeof tabs)[number]) {
         <span>{{ tab.label }}</span>
       </RouterLink>
     </nav>
+    </div>
   </div>
 </template>
 

@@ -5,8 +5,9 @@
  */
 
 :root {
-  /* App 壳页（浅色/随系统暗色，依赖 style.css 的 --bg / --text-h） */
-  --mh5-max-width: 430px;
+  /* 设计稿基准：iPhone X 逻辑分辨率 */
+  --mh5-max-width: 375px;
+  --mh5-viewport-height: 812px;
   --mh5-page-px: 1rem;
   --mh5-radius-card: 1rem;
   --mh5-radius-btn: 0.75rem;
@@ -244,11 +245,10 @@
 .mh5-live-room {
   position: relative;
   display: flex;
-  min-height: 100svh;
-  max-width: var(--mh5-max-width);
+  height: 100%;
+  min-height: 0;
+  width: 100%;
   flex-direction: column;
-  margin-left: auto;
-  margin-right: auto;
   background: var(--mh5-live-bg);
   color: #fff;
   -webkit-font-smoothing: antialiased;
@@ -263,14 +263,13 @@
 }
 
 .mh5-live-footer-fixed {
-  position: fixed;
+  position: absolute;
   bottom: 0;
-  left: 50%;
+  left: 0;
+  right: 0;
   z-index: 20;
   display: flex;
   width: 100%;
-  max-width: var(--mh5-max-width);
-  transform: translateX(-50%);
   align-items: center;
   gap: 0.5rem;
   border-top: 1px solid rgb(255 255 255 / 0.1);

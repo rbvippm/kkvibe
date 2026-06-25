@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
 
 type TabKey = '动态' | '短视频' | '直播记录' | '评论和@' | '收藏'
@@ -35,10 +36,6 @@ const visiblePosts = computed(() => {
   return posts.value.filter((p) => p.status === postFilter.value)
 })
 
-function goBack() {
-  router.back()
-}
-
 function goVip() {
   router.push({ name: 'mobile-vip' })
 }
@@ -46,8 +43,8 @@ function goVip() {
 
 <template>
   <div class="mh5-userhome-page">
-    <header class="mh5-userhome-head">
-      <button type="button" class="mh5-userhome-back" aria-label="返回" @click="goBack">←</button>
+    <Mh5SubPageHeader title="个人主页" />
+    <div class="mh5-userhome-head">
       <div class="mh5-userhome-profile">
         <div class="mh5-userhome-avatar">{{ user.avatar }}</div>
         <div class="min-w-0 flex-1">
@@ -65,7 +62,7 @@ function goVip() {
         </div>
         <button type="button" class="mh5-userhome-edit">编辑资料</button>
       </div>
-    </header>
+    </div>
 
     <div class="mh5-userhome-tabs" role="tablist" aria-label="个人主页导航">
       <button

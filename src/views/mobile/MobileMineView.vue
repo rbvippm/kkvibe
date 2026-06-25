@@ -32,6 +32,10 @@ function goUserHome() {
 function goVip() {
   router.push({ name: 'mobile-vip' })
 }
+
+function goMoreFunctions() {
+  router.push({ name: 'mobile-mine-more' })
+}
 </script>
 
 <template>
@@ -140,6 +144,19 @@ function goVip() {
         </div>
         <span class="mh5-mine-asset__value">{{ mask(asset.available) }}</span>
       </div>
+    </section>
+
+    <section class="mh5-mine-more-entry">
+      <button type="button" class="mh5-mine-more-entry__btn" @click="goMoreFunctions">
+        <span class="mh5-mine-more-entry__icon" aria-hidden="true">⚙️</span>
+        <span class="mh5-mine-more-entry__text">
+          <span class="mh5-mine-more-entry__title">更多功能</span>
+          <span class="mh5-mine-more-entry__desc">代理中心、语聊直播、X币上下分等</span>
+        </span>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" class="mh5-mine-more-entry__arrow" aria-hidden="true">
+          <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
     </section>
   </div>
 </template>

@@ -178,7 +178,7 @@ const onlineHint = computed(() => `${viewerCount.value} 在看`)
 
 <template>
   <div
-    class="live-room relative mx-auto flex min-h-svh max-w-[430px] flex-col bg-[#1e2a5e] text-white antialiased"
+    class="live-room relative flex h-full min-h-0 w-full flex-col bg-[#1e2a5e] text-white antialiased"
   >
     <!-- 状态栏 -->
     <div
@@ -422,7 +422,7 @@ const onlineHint = computed(() => `${viewerCount.value} 在看`)
 
     <!-- 底栏 -->
     <footer
-      class="safe-pb fixed bottom-0 left-1/2 z-20 flex w-full max-w-[430px] -translate-x-1/2 items-center gap-2 border-t border-white/10 bg-[#151d40]/95 px-3 py-2 backdrop-blur-sm"
+      class="safe-pb absolute bottom-0 left-0 right-0 z-20 flex w-full items-center gap-2 border-t border-white/10 bg-[#151d40]/95 px-3 py-2 backdrop-blur-sm"
     >
       <div class="flex min-w-0 flex-1 items-center gap-2 rounded-full bg-[#0f142e]/90 px-3 py-2 ring-1 ring-white/10">
         <input

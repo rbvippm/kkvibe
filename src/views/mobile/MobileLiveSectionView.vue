@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import MicControlStatesView from '../MicControlStatesView.vue'
 import VoiceRoomAppJoinMicView from '../VoiceRoomAppJoinMicView.vue'
 import LiveStartNoticeDemoView from './LiveStartNoticeDemoView.vue'
+import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
 
 type LiveSubTab = 'lobby' | 'mic' | 'join' | 'notice'
@@ -42,6 +43,7 @@ function enterRoom(room: LobbyRoom) {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
+    <Mh5SubPageHeader title="语聊直播" />
     <div class="mh5-sub-tabs" role="tablist" aria-label="直播二级导航">
       <button
         v-for="tab in subTabs"
