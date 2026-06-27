@@ -73,12 +73,12 @@ function goRecords() {
       </div>
 
       <section class="mh5-xcoin-report-highlight">
-        <p class="mh5-xcoin-report-highlight__label">本期收到代理上分合计</p>
+        <p class="mh5-xcoin-report-highlight__label">本期收到代理收入合计</p>
         <p class="mh5-xcoin-report-highlight__value">+{{ xCoinCreditTotal.toFixed(2) }} X币</p>
       </section>
 
       <section class="mh5-xcoin-report-block">
-        <h2 class="mh5-xcoin-report-block__title">代理上分明细（按来源）</h2>
+        <h2 class="mh5-xcoin-report-block__title">代理收入明细（按来源）</h2>
         <p class="mh5-xcoin-report-block__desc">清晰展示哪个代理给你上了多少分，含非直属代理</p>
 
         <div v-for="row in MOCK_AGENT_CREDIT_SUMMARY" :key="row.agentId" class="mh5-xcoin-report-row">
@@ -88,12 +88,12 @@ function goRecords() {
           </div>
           <div class="text-right">
             <p class="mh5-xcoin-report-row__amount">+{{ row.creditUpTotal.toFixed(2) }} X币</p>
-            <p class="text-[11px] text-[var(--mh5-app-text-secondary)]">上分 {{ row.creditUpTotal.toFixed(2) }}</p>
+            <p class="text-[11px] text-[var(--mh5-app-text-secondary)]">收入 {{ row.creditUpTotal.toFixed(2) }}</p>
           </div>
         </div>
       </section>
 
-      <button type="button" class="mh5-xcoin-report-link" @click="goRecords">查看全部上下分记录 →</button>
+      <button type="button" class="mh5-xcoin-report-link" @click="goRecords">查看全部信用额度记录 →</button>
       <button type="button" class="mh5-xcoin-report-link mh5-xcoin-report-link--muted" @click="router.push({ name: 'mobile-mine-more' })">
         返回更多功能
       </button>

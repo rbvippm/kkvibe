@@ -8,7 +8,11 @@ export const AGENT_DETAIL_TABS: { key: AgentDetailTab; label: string }[] = [
   { key: 'login', label: '登录日志' },
 ]
 
-export const AGENT_DETAIL_CURRENCIES = ['KKC', 'USDT', 'KKV', 'X币'] as const
+export const AGENT_DETAIL_CURRENCIES = ['KKC', 'USDT', 'KKV'] as const
+
+export const AGENT_WALLET_CURRENCY_OPTIONS = ['KKC', 'KKV', 'USDT', '信用额度'] as const
+
+export type AgentWalletCurrency = (typeof AGENT_WALLET_CURRENCY_OPTIONS)[number]
 
 export type AgentDetailProfile = {
   id: string
@@ -23,9 +27,12 @@ export type AgentDetailProfile = {
     directMembers: number
   }
   wallets: { currency: string; balance: string }[]
-  xcoinStats: {
+  creditLimit: {
+    creditBalance: number
     creditUpTotal: number
     creditDownTotal: number
+    /** 占成比例 0-100 */
+    shareRatio: number
   }
 }
 
@@ -45,11 +52,12 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
     { currency: 'KKC', balance: '1,000' },
     { currency: 'USDT', balance: '1,000' },
     { currency: 'KKV', balance: '1,000' },
-    { currency: 'X币', balance: '1,000' },
   ],
-  xcoinStats: {
+  creditLimit: {
+    creditBalance: 866,
     creditUpTotal: 58000,
     creditDownTotal: 42000,
+    shareRatio: 65,
   },
 }
 
@@ -72,11 +80,12 @@ function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
       { currency: 'KKC', balance: '500' },
       { currency: 'USDT', balance: '320' },
       { currency: 'KKV', balance: '180' },
-      { currency: 'X币', balance: '2,400' },
     ],
-    xcoinStats: {
+    creditLimit: {
+      creditBalance: item.subordinateCount * 200,
       creditUpTotal: item.subordinateCount * 1550,
       creditDownTotal: item.subordinateCount * 1030,
+      shareRatio: Math.min(90, 45 + level * 5),
     },
   }
 }

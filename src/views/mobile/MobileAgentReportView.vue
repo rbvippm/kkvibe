@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { AGENT_WALLET_CURRENCY_OPTIONS, type AgentWalletCurrency } from '../../constants/agentDetail'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_DETAIL_ROWS,
@@ -20,6 +21,8 @@ const router = useRouter()
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
+const currencyPickerOpen = ref(false)
+const currency = ref<AgentWalletCurrency>('信用额度')
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
@@ -27,6 +30,11 @@ const totalProfit = '+0.86'
 
 function pickPreset(v: ReportRangePreset) {
   preset.value = v
+}
+
+function pickCurrency(value: AgentWalletCurrency) {
+  currency.value = value
+  currencyPickerOpen.value = false
 }
 
 function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
@@ -43,9 +51,14 @@ function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
   <div class="mh5-agent-report-page">
     <header class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">我的报表</h1>
-      <button type="button" class="mh5-agent-report-header__currency" aria-label="切换币种">
-        <span>X</span>
-        <span class="mh5-agent-report-header__chevron">▾</span>
+      <button
+        type="button"
+        class="mh5-agent-detail-currency mh5-agent-report-header__currency"
+        aria-label="切换币种"
+        @click="currencyPickerOpen = true"
+      >
+        <span>{{ currency }}</span>
+        <span class="mh5-agent-detail-currency__chevron">▾</span>
       </button>
     </header>
 
@@ -182,5 +195,49 @@ function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
         <span>我的</span>
       </button>
     </nav>
+
+    <Transition name="mh5-agent-report-sheet">
+      <div
+        v-if="currencyPickerOpen"
+        class="mh5-xcoin-sheet-mask"
+        @click.self="currencyPickerOpen = false"
+      >
+        <div class="mh5-xcoin-sheet">
+          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+          <button
+            v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
+            :key="opt"
+            type="button"
+            class="mh5-xcoin-sheet__option"
+            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
+            @click="pickCurrency(opt)"
+          >
+            {{ opt }}
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.mh5-agent-report-sheet-enter-active,
+.mh5-agent-report-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-agent-report-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-agent-report-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-agent-report-sheet-enter-from,
+.mh5-agent-report-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-agent-report-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-agent-report-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
+}
+</style>

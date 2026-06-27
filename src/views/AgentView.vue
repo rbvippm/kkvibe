@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   MOCK_AGENT_CREDIT_SUMMARY,
@@ -9,11 +9,14 @@ import {
 import {
   TEAM_FILTER_TABS,
   MOCK_TEAM_SELF,
+  CREATE_ACCOUNT_OPTIONS,
+  DEFAULT_CREATE_ACCOUNT_OPTION,
   agentSubordinateLabel,
   getTeamChildren,
   memberKindLabel,
   showAgentSubordinateTag,
   showMemberBadge,
+  type CreateAccountOption,
   type TeamFilterTab,
   type TeamListItem,
 } from '../constants/agentTeam'
@@ -77,6 +80,16 @@ const showMeSection = computed(() => activeTab.value === 'me')
 const teamFilterTab = ref<TeamFilterTab>('all')
 const teamSelfExpanded = ref(true)
 
+type TeamQuickAction = 'profit_ratio' | 'remark' | 'agent_credit' | 'member_credit'
+
+const teamQuickMenuRow = ref<TeamListItem | null>(null)
+const teamQuickMenuPos = ref({ top: 0, right: 0 })
+let skipTeamMenuClose = false
+
+const createAccountSheetOpen = ref(false)
+const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
+const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
+
 const teamChildRows = computed(() => getTeamChildren(teamFilterTab.value))
 
 function goTeamDetailByNickname(item: TeamListItem) {
@@ -95,6 +108,124 @@ function toggleTeamExpand() {
 function teamRowBadge(item: TeamListItem) {
   return memberKindLabel(item.kind)
 }
+
+function openTeamQuickMenu(row: TeamListItem, event: MouseEvent) {
+  event.stopPropagation()
+  skipTeamMenuClose = true
+
+  if (teamQuickMenuRow.value?.id === row.id) {
+    closeTeamQuickMenu()
+    requestAnimationFrame(() => {
+      skipTeamMenuClose = false
+    })
+    return
+  }
+
+  const btn = event.currentTarget as HTMLElement
+  const rect = btn.getBoundingClientRect()
+  teamQuickMenuPos.value = {
+    top: rect.bottom + 8,
+    right: window.innerWidth - rect.right,
+  }
+  teamQuickMenuRow.value = row
+
+  requestAnimationFrame(() => {
+    skipTeamMenuClose = false
+  })
+}
+
+function closeTeamQuickMenu() {
+  teamQuickMenuRow.value = null
+}
+
+function onTeamDocumentClick() {
+  if (skipTeamMenuClose) return
+  if (teamQuickMenuRow.value) closeTeamQuickMenu()
+}
+
+function onTeamQuickAction(action: TeamQuickAction) {
+  const row = teamQuickMenuRow.value
+  if (!row) return
+  closeTeamQuickMenu()
+
+  if (action === 'profit_ratio') {
+    window.alert(`设置「${row.nickname}」的收益比例（原型占位）`)
+    return
+  }
+
+  if (action === 'remark') {
+    const next = window.prompt(`为「${row.nickname}」添加备注`, '')
+    if (next === null) return
+    window.alert(next.trim() ? `备注已保存：${next.trim()}` : '备注已清空')
+    return
+  }
+
+  if (action === 'member_credit') {
+    if (!showMemberBadge(row.kind)) {
+      window.alert('会员授信仅支持 x 币会员')
+      return
+    }
+
+    router.push({
+      name: 'mobile-member-credit',
+      query: { targetId: row.id, targetName: row.nickname },
+    })
+    return
+  }
+
+  if (action === 'agent_credit') {
+    if (row.kind !== 'agent') {
+      window.alert('代理授信仅支持代理账号')
+      return
+    }
+
+    router.push({
+      name: 'mobile-agent-credit',
+      query: { targetId: row.id, targetName: row.nickname },
+    })
+  }
+}
+
+function openCreateAccountSheet() {
+  closeTeamQuickMenu()
+  createAccountDraft.value = createAccountSelection.value
+  createAccountSheetOpen.value = true
+}
+
+function closeCreateAccountSheet() {
+  createAccountSheetOpen.value = false
+}
+
+function resetCreateAccountDraft() {
+  createAccountDraft.value = DEFAULT_CREATE_ACCOUNT_OPTION
+}
+
+function confirmCreateAccount() {
+  createAccountSelection.value = createAccountDraft.value
+  createAccountSheetOpen.value = false
+
+  if (createAccountDraft.value === 'member_credit') {
+    router.push({ name: 'mobile-member-credit' })
+    return
+  }
+
+  if (createAccountDraft.value === 'agent') {
+    window.alert('创建代理账户（原型占位）')
+    return
+  }
+
+  window.alert('创建会员账户（原型占位）')
+}
+
+onMounted(() => {
+  document.addEventListener('click', onTeamDocumentClick)
+  document.addEventListener('scroll', closeTeamQuickMenu, true)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onTeamDocumentClick)
+  document.removeEventListener('scroll', closeTeamQuickMenu, true)
+})
 
 function pickPreset(v: RangePreset) {
   preset.value = v
@@ -157,7 +288,7 @@ const xCoinCreditTotal = computed(() =>
         </button>
         <h1 class="agent-team-header__title">团队管理</h1>
         <div class="agent-team-header__actions">
-          <button type="button" class="agent-team-header__icon-btn" aria-label="添加成员">
+          <button type="button" class="agent-team-header__icon-btn" aria-label="添加成员" @click="openCreateAccountSheet">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
@@ -266,10 +397,139 @@ const xCoinCreditTotal = computed(() =>
                 </span>
               </div>
             </div>
-            <button type="button" class="agent-team-row__menu" aria-label="更多操作" @click.stop>···</button>
+            <button
+              type="button"
+              class="agent-team-row__menu"
+              :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.id }"
+              aria-label="更多操作"
+              :aria-expanded="teamQuickMenuRow?.id === row.id"
+              @click.stop="openTeamQuickMenu(row, $event)"
+            >
+              ···
+            </button>
           </div>
         </template>
       </main>
+
+      <Teleport to="body">
+        <div
+          v-if="teamQuickMenuRow"
+          class="agent-team-quick-menu"
+          :style="{ top: `${teamQuickMenuPos.top}px`, right: `${teamQuickMenuPos.right}px` }"
+          role="menu"
+          @click.stop
+        >
+          <p class="agent-team-quick-menu__title">
+            <span class="agent-team-quick-menu__accent" aria-hidden="true" />
+            对
+            <strong>{{ teamQuickMenuRow.nickname }}</strong>
+            的更多快捷操作
+          </p>
+          <div class="agent-team-quick-menu__actions">
+            <button
+              type="button"
+              class="agent-team-quick-menu__btn"
+              role="menuitem"
+              @click="onTeamQuickAction('profit_ratio')"
+            >
+              收益比例
+            </button>
+            <button
+              type="button"
+              class="agent-team-quick-menu__btn"
+              role="menuitem"
+              @click="onTeamQuickAction('remark')"
+            >
+              备注
+            </button>
+            <button
+              v-if="teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
+              type="button"
+              class="agent-team-quick-menu__btn"
+              role="menuitem"
+              @click="onTeamQuickAction('member_credit')"
+            >
+              会员授信
+            </button>
+            <button
+              v-else-if="teamQuickMenuRow?.kind === 'agent'"
+              type="button"
+              class="agent-team-quick-menu__btn"
+              role="menuitem"
+              @click="onTeamQuickAction('agent_credit')"
+            >
+              代理授信
+            </button>
+          </div>
+        </div>
+      </Teleport>
+
+      <Transition name="agent-team-create-sheet">
+        <div
+          v-if="createAccountSheetOpen"
+          class="agent-team-create-sheet-mask"
+          @click.self="closeCreateAccountSheet"
+        >
+          <div class="agent-team-create-sheet" role="dialog" aria-modal="true" aria-labelledby="create-account-title">
+            <div class="agent-team-create-sheet__head">
+              <h2 id="create-account-title" class="agent-team-create-sheet__title">创建账户</h2>
+              <button
+                type="button"
+                class="agent-team-create-sheet__close"
+                aria-label="关闭"
+                @click="closeCreateAccountSheet"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="agent-team-create-sheet__options">
+              <button
+                v-for="option in CREATE_ACCOUNT_OPTIONS"
+                :key="option.key"
+                type="button"
+                class="agent-team-create-sheet__option"
+                :class="{ 'agent-team-create-sheet__option--active': createAccountDraft === option.key }"
+                @click="createAccountDraft = option.key"
+              >
+                <span>{{ option.label }}</span>
+                <span
+                  class="agent-team-create-sheet__check"
+                  :class="{ 'agent-team-create-sheet__check--active': createAccountDraft === option.key }"
+                  aria-hidden="true"
+                >
+                  <svg
+                    v-if="createAccountDraft === option.key"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                  >
+                    <path
+                      d="M2.5 6.2 4.8 8.5 9.5 3.8"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
+
+            <div class="agent-team-create-sheet__footer">
+              <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--ghost" @click="resetCreateAccountDraft">
+                重置
+              </button>
+              <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--primary" @click="confirmCreateAccount">
+                确定
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </template>
 
     <!-- 概况 / 报表 / 我的：深色代理中心 -->
@@ -445,7 +705,7 @@ const xCoinCreditTotal = computed(() =>
             <button type="button" class="mh5-xcoin-entry" @click="goXCoinCreditMember">给会员上分</button>
             <button type="button" class="mh5-xcoin-entry" @click="goXCoinCreditAgent">给代理上分</button>
             <button type="button" class="mh5-xcoin-entry" @click="goXCoinReport">X币报表</button>
-            <button type="button" class="mh5-xcoin-entry" @click="goXCoinRecords">上下分记录</button>
+            <button type="button" class="mh5-xcoin-entry" @click="goXCoinRecords">信用额度记录</button>
           </div>
         </section>
 
@@ -458,12 +718,12 @@ const xCoinCreditTotal = computed(() =>
           <p class="mt-1 text-xs text-black/45">{{ dateRangeText }}</p>
 
           <div class="mt-3 rounded-[12px] border border-[#e8ddd4] bg-white p-3">
-            <p class="text-xs text-black/45">本期收到代理上分合计</p>
+            <p class="text-xs text-black/45">本期收到代理收入合计</p>
             <p class="mt-1 text-2xl font-bold tabular-nums text-[#ff7a2b]">+{{ xCoinCreditTotal.toFixed(2) }} X币</p>
           </div>
 
           <div class="mh5-xcoin-report-block !bg-white !border !border-[#e8ddd4]">
-            <h3 class="mh5-xcoin-report-block__title">代理上分明细（按来源）</h3>
+            <h3 class="mh5-xcoin-report-block__title">代理收入明细（按来源）</h3>
             <div v-for="row in MOCK_AGENT_CREDIT_SUMMARY" :key="row.agentId" class="mh5-xcoin-report-row">
               <div>
                 <p class="mh5-xcoin-report-row__name">{{ row.agentName }}</p>
@@ -471,7 +731,7 @@ const xCoinCreditTotal = computed(() =>
               </div>
               <div class="text-right">
                 <p class="mh5-xcoin-report-row__amount">+{{ row.creditUpTotal.toFixed(2) }}</p>
-                <p class="text-[11px] text-black/45">上分 {{ row.creditUpTotal.toFixed(2) }}</p>
+                <p class="text-[11px] text-black/45">收入 {{ row.creditUpTotal.toFixed(2) }}</p>
               </div>
             </div>
           </div>
@@ -480,7 +740,7 @@ const xCoinCreditTotal = computed(() =>
             打开 X币报表（完整页） →
           </button>
           <button type="button" class="mt-2 w-full text-center text-sm font-semibold text-[#ff7a2b]/80" @click="goXCoinRecords">
-            查看全部上下分记录 →
+            查看全部信用额度记录 →
           </button>
         </section>
 

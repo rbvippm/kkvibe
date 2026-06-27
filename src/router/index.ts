@@ -108,10 +108,22 @@ export const router = createRouter({
           meta: { title: '代理详情', hideTabBar: true },
         },
         {
+          path: 'agent/credit',
+          name: 'mobile-agent-credit',
+          component: () => import('../views/mobile/MobileAgentCreditView.vue'),
+          meta: { title: '代理授信', hideTabBar: true },
+        },
+        {
+          path: 'agent/member/credit',
+          name: 'mobile-member-credit',
+          component: () => import('../views/mobile/MobileMemberCreditView.vue'),
+          meta: { title: '会员授信', hideTabBar: true },
+        },
+        {
           path: 'agent/xcoin/records',
           name: 'mobile-xcoin-records',
           component: () => import('../views/mobile/MobileXCoinRecordsView.vue'),
-          meta: { title: '上下分记录', hideTabBar: true },
+          meta: { title: '信用额度记录', hideTabBar: true },
         },
         {
           path: 'agent/report',
@@ -153,13 +165,13 @@ export const router = createRouter({
           path: 'agent/xcoin/select/member',
           name: 'mobile-xcoin-select-member',
           component: () => import('../views/mobile/MobileXCoinSelectView.vue'),
-          meta: { title: '选择会员', hideTabBar: true, xcoinMode: 'member' },
+          meta: { title: '选择信用会员', hideTabBar: true, xcoinMode: 'member' },
         },
         {
           path: 'agent/xcoin/select/agent',
           name: 'mobile-xcoin-select-agent',
           component: () => import('../views/mobile/MobileXCoinSelectView.vue'),
-          meta: { title: '选择代理', hideTabBar: true, xcoinMode: 'agent' },
+          meta: { title: '选择信用代理', hideTabBar: true, xcoinMode: 'agent' },
         },
         {
           path: 'games',

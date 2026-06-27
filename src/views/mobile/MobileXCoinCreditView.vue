@@ -27,7 +27,7 @@ const pageTitle = computed(() => {
   return direction.value === 'credit_up' ? '给会员上分' : '给会员下分'
 })
 const selectLabel = computed(() =>
-  selectedTarget.value ? selectedTarget.value.nickname : '选择代理',
+  selectedTarget.value ? selectedTarget.value.nickname : '选择信用代理',
 )
 const confirmText = computed(() => {
   if (!isMember.value) return '确认上分'
@@ -49,7 +49,6 @@ function goSelectMember() {
   const query: Record<string, string> = {}
   if (selectedTarget.value) {
     query.selected = selectedTarget.value.id
-    if (selectedTarget.value.relation === 'non_direct_member') query.tab = 'other'
   }
   router.push({ name: 'mobile-xcoin-select-member', query })
 }
@@ -87,7 +86,7 @@ if (route.query.targetId && route.query.targetName) {
   <div class="mh5-xcoin-page">
     <Mh5SubPageHeader :title="pageTitle">
       <template #right>
-        <button type="button" class="mh5-sub-header__icon" aria-label="上下分记录" @click="goRecords">
+        <button type="button" class="mh5-sub-header__icon" aria-label="信用额度记录" @click="goRecords">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.6" />
             <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
@@ -145,9 +144,6 @@ if (route.query.targetId && route.query.targetName) {
             <span :class="{ 'mh5-xcoin-select-row__placeholder': !selectedTarget }">{{ selectLabel }}</span>
             <span class="mh5-xcoin-select-row__arrow">›</span>
           </button>
-          <p class="mh5-xcoin-wallet-card__hint">
-            支持选择非直属代理上分，记录将标注来源代理与关系
-          </p>
         </template>
       </section>
 

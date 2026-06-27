@@ -3,9 +3,21 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_DETAIL_TABS,
+  AGENT_WALLET_CURRENCY_OPTIONS,
   findAgentDetail,
   type AgentDetailTab,
+  type AgentWalletCurrency,
 } from '../../constants/agentDetail'
+import {
+  AGENT_PROFIT_CATEGORY_TABS,
+  AGENT_PROFIT_SUMMARY_ROWS,
+  AGENT_PROFIT_VENDORS,
+  getAgentProfitDetail,
+  profitTotalClass,
+  profitValueClass,
+  type AgentProfitCategoryKey,
+  type AgentProfitVendorKey,
+} from '../../constants/agentDetailProfit'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
 
@@ -13,9 +25,25 @@ const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref<AgentDetailTab>('wallet')
-const currency = ref('KKC')
+const currencyPickerOpen = ref(false)
+
+const AGENT_DETAIL_CURRENCIES = AGENT_WALLET_CURRENCY_OPTIONS
+
+const currency = ref<AgentWalletCurrency>('KKC')
+
+const profitCategory = ref<AgentProfitCategoryKey>('sports')
+const profitVendor = ref<AgentProfitVendorKey>('im')
 
 const agent = computed(() => findAgentDetail(String(route.query.id ?? 'self')))
+
+const profitVendorOptions = computed(() => AGENT_PROFIT_VENDORS[profitCategory.value])
+
+const profitDetail = computed(() => getAgentProfitDetail(profitCategory.value, profitVendor.value))
+
+function selectProfitCategory(key: AgentProfitCategoryKey) {
+  profitCategory.value = key
+  profitVendor.value = AGENT_PROFIT_VENDORS[key][0]?.key ?? 'im'
+}
 
 const statItems = computed(() => {
   if (!agent.value) return []
@@ -28,12 +56,14 @@ const statItems = computed(() => {
   ]
 })
 
-const xcoinStatItems = computed(() => {
+const creditLimitItems = computed(() => {
   if (!agent.value) return []
-  const { creditUpTotal, creditDownTotal } = agent.value.xcoinStats
-  const net = creditUpTotal - creditDownTotal
+  const { creditBalance, creditUpTotal, creditDownTotal, shareRatio } = agent.value.creditLimit
   const format = (n: number) => n.toLocaleString('zh-CN')
+  const net = creditUpTotal - creditDownTotal
+  const actualNet = Math.round((net * shareRatio) / 100)
   return [
+    { label: '信用余额', value: format(creditBalance), positive: false },
     { label: '上分总额', value: format(creditUpTotal), positive: false },
     { label: '下分总额', value: format(creditDownTotal), positive: false },
     {
@@ -41,11 +71,22 @@ const xcoinStatItems = computed(() => {
       value: `${net >= 0 ? '+' : ''}${format(net)}`,
       positive: net >= 0,
     },
+    { label: '占成比例', value: `${shareRatio}%`, positive: false },
+    {
+      label: '实占上下分净额',
+      value: `${actualNet >= 0 ? '+' : ''}${format(actualNet)}`,
+      positive: actualNet >= 0,
+    },
   ]
 })
 
 function goCredit() {
   router.push({ name: 'mobile-xcoin-credit-member' })
+}
+
+function pickCurrency(value: AgentWalletCurrency) {
+  currency.value = value
+  currencyPickerOpen.value = false
 }
 </script>
 
@@ -53,7 +94,12 @@ function goCredit() {
   <div class="mh5-agent-detail-page">
     <Mh5SubPageHeader title="代理详情">
       <template #right>
-        <button type="button" class="mh5-agent-detail-currency" aria-label="切换币种">
+        <button
+          type="button"
+          class="mh5-agent-detail-currency"
+          aria-label="切换币种"
+          @click="currencyPickerOpen = true"
+        >
           <span>{{ currency }}</span>
           <span class="mh5-agent-detail-currency__chevron">▾</span>
         </button>
@@ -97,6 +143,20 @@ function goCredit() {
         <section class="mh5-agent-detail-wallet">
           <div class="mh5-agent-detail-wallet__head">
             <h3 class="mh5-agent-detail-wallet__title">现金钱包</h3>
+          </div>
+          <div
+            v-for="wallet in agent.wallets"
+            :key="wallet.currency"
+            class="mh5-agent-detail-wallet__row"
+          >
+            <span class="mh5-agent-detail-wallet__label">{{ wallet.currency }} 余额</span>
+            <span class="mh5-agent-detail-wallet__value">{{ wallet.balance }}</span>
+          </div>
+        </section>
+
+        <section class="mh5-agent-detail-wallet mh5-agent-detail-xcoin">
+          <div class="mh5-agent-detail-wallet__head">
+            <h3 class="mh5-agent-detail-wallet__title">信用额度</h3>
             <button type="button" class="mh5-agent-detail-wallet__action" @click="goCredit">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -111,21 +171,7 @@ function goCredit() {
             </button>
           </div>
           <div
-            v-for="wallet in agent.wallets"
-            :key="wallet.currency"
-            class="mh5-agent-detail-wallet__row"
-          >
-            <span class="mh5-agent-detail-wallet__label">{{ wallet.currency }} 余额</span>
-            <span class="mh5-agent-detail-wallet__value">{{ wallet.balance }}</span>
-          </div>
-        </section>
-
-        <section class="mh5-agent-detail-wallet mh5-agent-detail-xcoin">
-          <div class="mh5-agent-detail-wallet__head">
-            <h3 class="mh5-agent-detail-wallet__title">x币统计</h3>
-          </div>
-          <div
-            v-for="item in xcoinStatItems"
+            v-for="item in creditLimitItems"
             :key="item.label"
             class="mh5-agent-detail-wallet__row"
           >
@@ -140,9 +186,69 @@ function goCredit() {
         </section>
       </template>
 
-      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-placeholder">
-        <p>代理盈亏数据加载中…</p>
-        <span>按时间段汇总直属团队盈亏（原型占位）</span>
+      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-profit">
+        <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
+          <div
+            v-for="row in AGENT_PROFIT_SUMMARY_ROWS"
+            :key="row.label"
+            class="mh5-agent-detail-wallet__row"
+          >
+            <span class="mh5-agent-detail-wallet__label">{{ row.label }}</span>
+            <span class="mh5-agent-detail-wallet__value">{{ row.value }}</span>
+          </div>
+        </section>
+
+        <div class="mh5-agent-report-categories">
+          <div class="mh5-agent-report-cat-tabs">
+            <button
+              v-for="tab in AGENT_PROFIT_CATEGORY_TABS"
+              :key="tab.key"
+              type="button"
+              class="mh5-agent-report-cat-tab"
+              :class="{ 'mh5-agent-report-cat-tab--active': profitCategory === tab.key }"
+              @click="selectProfitCategory(tab.key)"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+          <div class="mh5-agent-report-vendors">
+            <button
+              v-for="pill in profitVendorOptions"
+              :key="pill.key"
+              type="button"
+              class="mh5-agent-report-vendor"
+              :class="{ 'mh5-agent-report-vendor--active': profitVendor === pill.key }"
+              @click="profitVendor = pill.key"
+            >
+              {{ pill.label }}
+            </button>
+          </div>
+        </div>
+
+        <section class="mh5-agent-report-detail">
+          <div class="mh5-agent-report-detail__head">
+            <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
+            <span class="mh5-agent-report-detail__profit">
+              总盈亏
+              <em :class="profitTotalClass(profitDetail.totalProfitTone)">
+                {{ profitDetail.totalProfit }}
+              </em>
+            </span>
+          </div>
+          <div
+            v-for="row in profitDetail.rows"
+            :key="row.label"
+            class="mh5-agent-report-detail__row"
+          >
+            <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
+            <span
+              class="mh5-agent-report-detail__row-value"
+              :class="profitValueClass(row.tone)"
+            >
+              {{ row.value }}
+            </span>
+          </div>
+        </section>
       </section>
 
       <section v-else class="mh5-agent-detail-placeholder">
@@ -154,5 +260,49 @@ function goCredit() {
     <main v-else class="mh5-agent-detail-main">
       <p class="mh5-agent-detail-empty">未找到该代理信息</p>
     </main>
+
+    <Transition name="mh5-agent-detail-sheet">
+      <div
+        v-if="currencyPickerOpen"
+        class="mh5-xcoin-sheet-mask"
+        @click.self="currencyPickerOpen = false"
+      >
+        <div class="mh5-xcoin-sheet">
+          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+          <button
+            v-for="opt in AGENT_DETAIL_CURRENCIES"
+            :key="opt"
+            type="button"
+            class="mh5-xcoin-sheet__option"
+            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
+            @click="pickCurrency(opt)"
+          >
+            {{ opt }}
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.mh5-agent-detail-sheet-enter-active,
+.mh5-agent-detail-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-agent-detail-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-agent-detail-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-agent-detail-sheet-enter-from,
+.mh5-agent-detail-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-agent-detail-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-agent-detail-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
+}
+</style>

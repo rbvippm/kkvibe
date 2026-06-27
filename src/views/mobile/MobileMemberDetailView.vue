@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { AGENT_WALLET_CURRENCY_OPTIONS, type AgentWalletCurrency } from '../../constants/agentDetail'
 import {
   MEMBER_DETAIL_TABS,
   MEMBER_FLOW_SUB_TABS,
@@ -13,9 +14,10 @@ import '../../styles/mobile-app-shell.css'
 const route = useRoute()
 const router = useRouter()
 
-const activeTab = ref<MemberDetailTab>('flow')
+const activeTab = ref<MemberDetailTab>('manage')
 const flowSubTab = ref<MemberFlowSubTab>('records')
-const currency = ref('KKC')
+const currencyPickerOpen = ref(false)
+const currency = ref<AgentWalletCurrency>('KKC')
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 
@@ -29,12 +31,13 @@ const summaryItems = computed(() => {
   ]
 })
 
-const xcoinStatItems = computed(() => {
+const creditLimitItems = computed(() => {
   if (!member.value) return []
-  const { creditUpTotal, creditDownTotal } = member.value.xcoinStats
-  const net = creditUpTotal - creditDownTotal
+  const { creditBalance, creditUpTotal, creditDownTotal } = member.value.creditLimit
   const format = (n: number) => n.toLocaleString('zh-CN')
+  const net = creditUpTotal - creditDownTotal
   return [
+    { label: '信用余额', value: format(creditBalance), positive: false },
     { label: '上分总额', value: format(creditUpTotal), positive: false },
     { label: '下分总额', value: format(creditDownTotal), positive: false },
     {
@@ -44,6 +47,15 @@ const xcoinStatItems = computed(() => {
     },
   ]
 })
+
+function goCredit() {
+  router.push({ name: 'mobile-xcoin-credit-member' })
+}
+
+function pickCurrency(value: AgentWalletCurrency) {
+  currency.value = value
+  currencyPickerOpen.value = false
+}
 </script>
 
 <template>
@@ -62,7 +74,12 @@ const xcoinStatItems = computed(() => {
           </svg>
         </button>
         <h1 class="mh5-member-detail-nav__title">会员详情</h1>
-        <button type="button" class="mh5-member-detail-nav__currency" aria-label="切换币种">
+        <button
+          type="button"
+          class="mh5-member-detail-nav__currency"
+          aria-label="切换币种"
+          @click="currencyPickerOpen = true"
+        >
           <span>{{ currency }}</span>
           <span class="mh5-member-detail-nav__chevron">▾</span>
         </button>
@@ -112,7 +129,70 @@ const xcoinStatItems = computed(() => {
         </button>
       </div>
 
-      <template v-if="activeTab === 'flow'">
+      <template v-if="activeTab === 'manage'">
+        <section class="mh5-member-detail-panel">
+          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
+            <h3 class="mh5-member-detail-panel__title">现金钱包</h3>
+          </div>
+          <div
+            v-for="wallet in member.wallets"
+            :key="wallet.currency"
+            class="mh5-member-detail-panel__row"
+          >
+            <span class="mh5-member-detail-panel__label">{{ wallet.currency }} 余额</span>
+            <span class="mh5-member-detail-panel__value">{{ wallet.balance }}</span>
+          </div>
+        </section>
+
+        <section class="mh5-member-detail-panel">
+          <div class="mh5-member-detail-panel__head">
+            <h3 class="mh5-member-detail-panel__title">信用额度</h3>
+            <button type="button" class="mh5-member-detail-panel__action" @click="goCredit">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linejoin="round"
+                />
+                <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              给他上下分
+            </button>
+          </div>
+          <div
+            v-for="item in creditLimitItems"
+            :key="item.label"
+            class="mh5-member-detail-panel__row"
+          >
+            <span class="mh5-member-detail-panel__label">{{ item.label }}</span>
+            <span
+              class="mh5-member-detail-panel__value"
+              :class="{ 'mh5-member-detail-panel__value--positive': item.positive }"
+            >
+              {{ item.value }}
+            </span>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="activeTab === 'login'">
+        <section class="mh5-member-detail-panel">
+          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
+            <h3 class="mh5-member-detail-panel__title">登录日志</h3>
+          </div>
+          <div class="mh5-member-detail-panel__row">
+            <span class="mh5-member-detail-panel__label">注册时间</span>
+            <span class="mh5-member-detail-panel__value">{{ member.loginLog.registeredAt }}</span>
+          </div>
+          <div class="mh5-member-detail-panel__row">
+            <span class="mh5-member-detail-panel__label">最后登录时间</span>
+            <span class="mh5-member-detail-panel__value">{{ member.loginLog.lastLoginAt }}</span>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="activeTab === 'flow'">
         <div class="mh5-member-detail-subtabs">
           <button
             v-for="sub in MEMBER_FLOW_SUB_TABS"
@@ -126,23 +206,7 @@ const xcoinStatItems = computed(() => {
           </button>
         </div>
 
-        <section v-if="flowSubTab === 'xcoin'" class="mh5-member-detail-xcoin">
-          <div
-            v-for="item in xcoinStatItems"
-            :key="item.label"
-            class="mh5-member-detail-xcoin__row"
-          >
-            <span class="mh5-member-detail-xcoin__label">{{ item.label }}</span>
-            <span
-              class="mh5-member-detail-xcoin__value"
-              :class="{ 'mh5-member-detail-xcoin__value--positive': item.positive }"
-            >
-              {{ item.value }}
-            </span>
-          </div>
-        </section>
-
-        <section v-else class="mh5-member-detail-summary">
+        <section class="mh5-member-detail-summary">
           <div
             v-for="(item, idx) in summaryItems"
             :key="item.label"
@@ -159,15 +223,54 @@ const xcoinStatItems = computed(() => {
           </div>
         </section>
       </template>
-
-      <section v-else class="mh5-member-detail-placeholder">
-        <p>会员管理功能</p>
-        <span>备注、状态与风控操作（原型占位）</span>
-      </section>
     </main>
 
     <main v-else class="mh5-member-detail-body">
       <p class="mh5-member-detail-empty">未找到该会员信息</p>
     </main>
+
+    <Transition name="mh5-member-detail-sheet">
+      <div
+        v-if="currencyPickerOpen"
+        class="mh5-xcoin-sheet-mask"
+        @click.self="currencyPickerOpen = false"
+      >
+        <div class="mh5-xcoin-sheet">
+          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+          <button
+            v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
+            :key="opt"
+            type="button"
+            class="mh5-xcoin-sheet__option"
+            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
+            @click="pickCurrency(opt)"
+          >
+            {{ opt }}
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.mh5-member-detail-sheet-enter-active,
+.mh5-member-detail-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-member-detail-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-member-detail-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-member-detail-sheet-enter-from,
+.mh5-member-detail-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-member-detail-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-member-detail-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
+}
+</style>

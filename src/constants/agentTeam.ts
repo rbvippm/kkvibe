@@ -159,3 +159,13 @@ export function agentSubordinateLabel(count: number) {
 export function getTeamChildren(tab: TeamFilterTab): TeamListItem[] {
   return filterTeamList(tab).filter((item) => item.id !== MOCK_TEAM_SELF.id)
 }
+
+export type CreateAccountOption = 'agent' | 'member' | 'member_credit'
+
+export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }[] = [
+  { key: 'agent', label: '创建代理账户' },
+  { key: 'member', label: '创建会员账户' },
+  { key: 'member_credit', label: '会员账户授信' },
+]
+
+export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'

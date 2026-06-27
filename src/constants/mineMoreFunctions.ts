@@ -64,7 +64,7 @@ export const MINE_MORE_MENU_GROUPS: MineMoreMenuGroup[] = [
       {
         key: 'agent-settlement',
         title: '代理结算对账',
-        desc: '上下分净额汇总与流水下钻',
+        desc: '收支净额汇总与流水下钻',
         icon: '💰',
         routeName: 'mobile-agent-settlement',
       },
@@ -103,7 +103,7 @@ export const MINE_MORE_MENU_GROUPS: MineMoreMenuGroup[] = [
       },
       {
         key: 'records',
-        title: '上下分记录',
+        title: '信用额度记录',
         desc: '查看来源代理与金额明细',
         icon: '📋',
         routeName: 'mobile-xcoin-records',
