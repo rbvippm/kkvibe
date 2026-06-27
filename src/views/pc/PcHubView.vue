@@ -87,6 +87,18 @@ const quickLinks = [
     title: '语音房上麦门槛',
     desc: '胜率优先上麦开关；分币种充值门槛与总资产规则。',
   },
+  {
+    to: '/pc/sticker-pack-manage',
+    icon: '📦',
+    title: '贴图包管理',
+    desc: '整套贴图资源（Cuppy 等），含托盘图标、批量上传与 Emoji 映射。',
+  },
+  {
+    to: '/pc/sticker-tag-manage',
+    icon: '🏷',
+    title: '贴图标签管理',
+    desc: 'App 顶部快捷筛选项，配置引导 Emoji 与关联搜索词。',
+  },
 ]
 </script>
 

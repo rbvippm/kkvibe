@@ -26,6 +26,8 @@ import PcVersionRecordV2View from '../views/pc/PcVersionRecordV2View.vue'
 import PcReconciliationRelatedView from '../views/pc/PcReconciliationRelatedView.vue'
 import PcVoiceRoomRolePermissionsView from '../views/pc/PcVoiceRoomRolePermissionsView.vue'
 import PcAvInteractionModesResearchView from '../views/pc/PcAvInteractionModesResearchView.vue'
+import PcStickerPackManageView from '../views/pc/PcStickerPackManageView.vue'
+import PcStickerTagManageView from '../views/pc/PcStickerTagManageView.vue'
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -319,6 +321,22 @@ export const router = createRouter({
           name: 'pc-reconciliation-related',
           component: PcReconciliationRelatedView,
           meta: { title: '对账相关' },
+        },
+        {
+          path: 'sticker-manage',
+          redirect: { name: 'pc-sticker-pack-manage' },
+        },
+        {
+          path: 'sticker-pack-manage',
+          name: 'pc-sticker-pack-manage',
+          component: PcStickerPackManageView,
+          meta: { title: '贴图包管理' },
+        },
+        {
+          path: 'sticker-tag-manage',
+          name: 'pc-sticker-tag-manage',
+          component: PcStickerTagManageView,
+          meta: { title: '贴图标签管理' },
         },
       ],
     },

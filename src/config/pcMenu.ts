@@ -142,6 +142,27 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'config',
+    title: '配置管理',
+    icon: '⚙️',
+    children: [
+      {
+        key: 'sticker-pack-manage',
+        title: '贴图包管理',
+        path: '/pc/sticker-pack-manage',
+        routeName: 'pc-sticker-pack-manage',
+        pagePath: ['管理后台', '配置管理', '贴图包管理'],
+      },
+      {
+        key: 'sticker-tag-manage',
+        title: '贴图标签管理',
+        path: '/pc/sticker-tag-manage',
+        routeName: 'pc-sticker-tag-manage',
+        pagePath: ['管理后台', '配置管理', '贴图标签管理'],
+      },
+    ],
+  },
+  {
     key: 'voice',
     title: '语聊管理',
     icon: '🎙',
