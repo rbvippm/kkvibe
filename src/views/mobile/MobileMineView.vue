@@ -85,14 +85,27 @@ const user = {
   ],
 }
 
-const walletShortcuts = [
+interface MineShortcutItem {
+  key: string
+  label: string
+  route?: string
+}
+
+interface MineMenuItem {
+  key: string
+  title: string
+  hot?: boolean
+  route?: string
+}
+
+const walletShortcuts: MineShortcutItem[] = [
   { key: 'bank', label: '银行' },
   { key: 'bill', label: '账单', route: 'mobile-billing-list' },
   { key: 'payment', label: '收款方式' },
   { key: 'live', label: '直播中心', route: 'mobile-live' },
 ]
 
-const menuItems = [
+const menuItems: MineMenuItem[] = [
   { key: 'micall-bank', title: 'MiCall银行' },
   { key: 'invite', title: '邀请好友' },
   { key: 'promo', title: '推广收益', hot: true },
