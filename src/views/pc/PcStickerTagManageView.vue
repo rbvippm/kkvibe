@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import { useStickerTags } from '../../composables/useStickerTags'
 import {
-  MOCK_STICKER_TAG_ROWS,
   STICKER_TAG_STATUS_LABEL,
   STICKER_TAG_STATUS_OPTIONS,
   parseEmojiKeywords,
@@ -11,7 +11,7 @@ import {
 } from '../../constants/stickerManage'
 import '../../styles/pc-wireframe.css'
 
-const rows = ref<StickerTagRow[]>(MOCK_STICKER_TAG_ROWS.map((row) => ({ ...row, searchKeywords: [...row.searchKeywords] })))
+const { tagRows } = useStickerTags()
 
 const filter = ref({
   label: '',
@@ -22,7 +22,7 @@ const appliedFilter = ref({ ...filter.value })
 
 const filteredRows = computed(() => {
   const f = appliedFilter.value
-  return rows.value
+  return tagRows.value
     .filter((row) => {
       if (f.label && !row.label.includes(f.label.trim()) && !row.guideEmoji.includes(f.label.trim())) {
         return false
@@ -44,7 +44,7 @@ function resetFilter() {
 
 function removeRow(row: StickerTagRow) {
   if (!window.confirm(`确定删除标签「${row.guideEmoji} ${row.label}」吗？`)) return
-  rows.value = rows.value.filter((item) => item.id !== row.id)
+  tagRows.value = tagRows.value.filter((item) => item.id !== row.id)
 }
 
 type ModalMode = 'add' | 'edit'
@@ -67,7 +67,7 @@ function resetForm() {
     guideEmoji: '',
     label: '',
     searchKeywordsRaw: '',
-    sortOrder: rows.value.length > 0 ? Math.max(...rows.value.map((r) => r.sortOrder)) - 10 : 50,
+    sortOrder: tagRows.value.length > 0 ? Math.max(...tagRows.value.map((r) => r.sortOrder)) - 10 : 50,
     status: 'enabled',
   }
   formError.value = ''
@@ -141,12 +141,12 @@ function confirmModal() {
   }
 
   if (modalMode.value === 'add') {
-    rows.value.push({
+    tagRows.value.push({
       id: `tag_${Date.now()}`,
       ...payload,
     })
   } else if (editingId.value) {
-    const target = rows.value.find((item) => item.id === editingId.value)
+    const target = tagRows.value.find((item) => item.id === editingId.value)
     if (target) Object.assign(target, payload)
   }
 

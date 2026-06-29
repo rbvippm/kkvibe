@@ -213,6 +213,39 @@ export function validateEmojiKeywords(raw: string): string | null {
   return null
 }
 
+export function stickerTagOptionLabel(tag: StickerTagRow): string {
+  return `${tag.guideEmoji} ${tag.label}`
+}
+
+/** 根据已选标签 ID 生成贴图 Emoji 映射（取各标签引导 Emoji） */
+export function keywordsFromTagIds(tagIds: string[], tags: StickerTagRow[]): string {
+  return tagIds
+    .map((id) => tags.find((tag) => tag.id === id))
+    .filter((tag): tag is StickerTagRow => Boolean(tag))
+    .map((tag) => tag.guideEmoji)
+    .join(',')
+}
+
+/** 从已有映射字符串反推标签 ID（编辑回显） */
+export function inferTagIdsFromKeywords(raw: string, tags: StickerTagRow[]): string[] {
+  const tokens = parseEmojiKeywords(raw)
+  if (!tokens.length) return []
+
+  const matched = tags.filter((tag) => {
+    if (tokens.includes(tag.guideEmoji)) return true
+    return tag.searchKeywords.some((kw) => tokens.includes(kw))
+  })
+
+  return matched.slice(0, 3).map((tag) => tag.id)
+}
+
+export function validateStickerTagIds(tagIds: string[]): string | null {
+  if (tagIds.length < 1 || tagIds.length > 3) {
+    return '每张贴图需选择 1～3 个贴图标签'
+  }
+  return null
+}
+
 export function cloneStickerPackRow(row: StickerPackRow): StickerPackRow {
   return {
     ...row,

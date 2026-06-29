@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import { useStickerTags } from '../../composables/useStickerTags'
 import {
   MOCK_STICKER_PACK_ROWS,
   STICKER_PACK_MAX_ITEMS,
@@ -8,13 +9,18 @@ import {
   STICKER_PACK_STATUS_OPTIONS,
   cloneStickerPackRow,
   formatStickerNow,
+  inferTagIdsFromKeywords,
+  keywordsFromTagIds,
   parseEmojiKeywords,
-  validateEmojiKeywords,
+  stickerTagOptionLabel,
+  validateStickerTagIds,
   type StickerPackItem,
   type StickerPackRow,
   type StickerPackStatus,
 } from '../../constants/stickerManage'
 import '../../styles/pc-wireframe.css'
+
+const { tagRows, enabledTags } = useStickerTags()
 
 const rows = ref<StickerPackRow[]>(MOCK_STICKER_PACK_ROWS.map(cloneStickerPackRow))
 
@@ -95,7 +101,87 @@ const form = ref({
   items: [] as StickerPackItem[],
 })
 
+/** 每张贴图已选标签 ID（表单态，保存时同步到 emojiKeywords） */
+const itemTagMap = ref<Record<string, string[]>>({})
+const openTagSelectId = ref<string | null>(null)
+
 const PREVIEW_EMOJIS = ['😀', '😊', '🥳', '😎', '🤩', '😍', '🤗', '😋', '🙂', '😉']
+
+function syncItemKeywords(itemId: string) {
+  const item = form.value.items.find((row) => row.id === itemId)
+  if (!item) return
+  const tagIds = itemTagMap.value[itemId] ?? []
+  item.emojiKeywords = keywordsFromTagIds(tagIds, tagRows.value)
+}
+
+function getItemTagIds(itemId: string) {
+  return itemTagMap.value[itemId] ?? []
+}
+
+function isTagSelected(itemId: string, tagId: string) {
+  return getItemTagIds(itemId).includes(tagId)
+}
+
+function toggleTagSelect(itemId: string) {
+  openTagSelectId.value = openTagSelectId.value === itemId ? null : itemId
+}
+
+function closeTagSelect() {
+  openTagSelectId.value = null
+}
+
+function toggleItemTag(itemId: string, tagId: string) {
+  const current = [...getItemTagIds(itemId)]
+  const index = current.indexOf(tagId)
+  if (index >= 0) {
+    current.splice(index, 1)
+  } else if (current.length < 3) {
+    current.push(tagId)
+  } else {
+    formError.value = '每张贴图最多选择 3 个贴图标签'
+    return
+  }
+  itemTagMap.value[itemId] = current
+  syncItemKeywords(itemId)
+  formError.value = ''
+}
+
+function initItemTagMap(items: StickerPackItem[]) {
+  const next: Record<string, string[]> = {}
+  for (const item of items) {
+    const inferred = inferTagIdsFromKeywords(item.emojiKeywords, tagRows.value)
+    next[item.id] = inferred.length ? inferred : pickRandomTagIds()
+  }
+  itemTagMap.value = next
+  for (const item of items) {
+    syncItemKeywords(item.id)
+  }
+}
+
+function getTagLabel(tagId: string) {
+  const tag = tagRows.value.find((row) => row.id === tagId)
+  return tag ? stickerTagOptionLabel(tag) : tagId
+}
+
+/** 从已启用标签中随机选取 1～2 个（新增贴图时默认填充） */
+function pickRandomTagIds(): string[] {
+  const pool = enabledTags.value.map((tag) => tag.id)
+  if (!pool.length) return []
+  const count = Math.random() < 0.5 ? 1 : 2
+  const shuffled = [...pool].sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, Math.min(count, shuffled.length, 3))
+}
+
+function assignRandomTags(itemId: string) {
+  const tagIds = pickRandomTagIds()
+  itemTagMap.value[itemId] = tagIds
+  syncItemKeywords(itemId)
+}
+
+function resetItemTagMap() {
+  itemTagMap.value = {}
+  openTagSelectId.value = null
+}
 
 function resetForm() {
   form.value = {
@@ -105,6 +191,7 @@ function resetForm() {
     sortWeight: 50,
     items: [],
   }
+  resetItemTagMap()
   formError.value = ''
 }
 
@@ -125,12 +212,14 @@ function openEditModal(row: StickerPackRow) {
     sortWeight: row.sortWeight,
     items: row.items.map((item) => ({ ...item })),
   }
+  initItemTagMap(form.value.items)
   formError.value = ''
   modalVisible.value = true
 }
 
 function closeModal() {
   modalVisible.value = false
+  closeTagSelect()
   formError.value = ''
 }
 
@@ -151,12 +240,14 @@ function addMockItems(count: number) {
   const addCount = Math.min(count, remaining)
   for (let i = 0; i < addCount; i += 1) {
     const idx = form.value.items.length + 1
+    const id = `si_new_${Date.now()}_${i}`
     form.value.items.push({
-      id: `si_new_${Date.now()}_${i}`,
+      id,
       fileName: `sticker_${idx}.png`,
       preview: PREVIEW_EMOJIS[idx % PREVIEW_EMOJIS.length],
-      emojiKeywords: PREVIEW_EMOJIS[idx % PREVIEW_EMOJIS.length],
+      emojiKeywords: '',
     })
+    assignRandomTags(id)
   }
   formError.value = ''
 }
@@ -174,12 +265,14 @@ function onFilesSelected(event: Event) {
   const take = Math.min(files.length, remaining)
   for (let i = 0; i < take; i += 1) {
     const file = files[i]
+    const id = `si_file_${Date.now()}_${i}`
     form.value.items.push({
-      id: `si_file_${Date.now()}_${i}`,
+      id,
       fileName: file.name,
       preview: PREVIEW_EMOJIS[(form.value.items.length + i) % PREVIEW_EMOJIS.length],
       emojiKeywords: '',
     })
+    assignRandomTags(id)
   }
   if (files.length > take) {
     formError.value = `已添加 ${take} 张，超出单包上限的部分已忽略`
@@ -201,18 +294,23 @@ function onDrop(event: DragEvent) {
   const take = Math.min(files.length, remaining)
   for (let i = 0; i < take; i += 1) {
     const file = files[i]
+    const id = `si_drop_${Date.now()}_${i}`
     form.value.items.push({
-      id: `si_drop_${Date.now()}_${i}`,
+      id,
       fileName: file.name,
       preview: PREVIEW_EMOJIS[(form.value.items.length + i) % PREVIEW_EMOJIS.length],
       emojiKeywords: '',
     })
+    assignRandomTags(id)
   }
   formError.value = take < files.length ? `已添加 ${take} 张，超出单包上限的部分已忽略` : ''
 }
 
 function removeItem(id: string) {
   form.value.items = form.value.items.filter((item) => item.id !== id)
+  const { [id]: _, ...rest } = itemTagMap.value
+  itemTagMap.value = rest
+  if (openTagSelectId.value === id) closeTagSelect()
 }
 
 function validateForm(publish: boolean): boolean {
@@ -239,14 +337,16 @@ function validateForm(publish: boolean): boolean {
     return false
   }
   for (const item of form.value.items) {
-    const err = validateEmojiKeywords(item.emojiKeywords)
+    const tagIds = getItemTagIds(item.id)
+    const err = validateStickerTagIds(tagIds)
     if (err) {
       formError.value = `「${item.fileName}」：${err}`
       return false
     }
+    syncItemKeywords(item.id)
   }
-  if (publish && form.value.items.some((item) => !item.emojiKeywords.trim())) {
-    formError.value = '上架前请为每张贴图配置 Emoji 映射'
+  if (publish && form.value.items.some((item) => getItemTagIds(item.id).length === 0)) {
+    formError.value = '上架前请为每张贴图选择贴图标签'
     return false
   }
   formError.value = ''
@@ -302,7 +402,7 @@ function statusClass(status: StickerPackStatus) {
 
     <p class="wf-notice">
       <span class="wf-notice-label">说明：</span>
-      贴图包用于管理整套贴图资源（如 Cuppy 系列）。每张贴图需绑定 1～3 个 Emoji，供 App 端「文字/表情符号搜索」使用；单包最多
+      贴图包用于管理整套贴图资源（如 Cuppy 系列）。每张贴图的 Emoji 映射请从「贴图标签管理」中多选 1～3 个标签；单包最多
       {{ STICKER_PACK_MAX_ITEMS }} 张。
     </p>
 
@@ -494,19 +594,55 @@ function statusClass(status: StickerPackStatus) {
                 />
               </div>
 
-              <div v-if="form.items.length === 0" class="sticker-items-empty">暂未上传贴图，请批量上传后配置 Emoji 映射</div>
+              <div v-if="form.items.length === 0" class="sticker-items-empty">暂未上传贴图，请批量上传后从贴图标签中选择映射</div>
 
-              <ul v-else class="sticker-item-list">
+              <ul v-else class="sticker-item-list" @click="closeTagSelect">
                 <li v-for="item in form.items" :key="item.id" class="sticker-item-row">
                   <span class="sticker-item-row__preview">{{ item.preview }}</span>
                   <span class="sticker-item-row__name" :title="item.fileName">{{ item.fileName }}</span>
                   <label class="sticker-item-row__label">Emoji 映射</label>
-                  <input
-                    v-model="item.emojiKeywords"
-                    type="text"
-                    class="wf-input sticker-item-row__input"
-                    placeholder="如 ☕,😋（1～3 个，逗号分隔）"
-                  />
+                  <div class="sticker-tag-select" @click.stop>
+                    <button
+                      type="button"
+                      class="sticker-tag-select__trigger"
+                      :class="{ 'sticker-tag-select__trigger--open': openTagSelectId === item.id }"
+                      @click="toggleTagSelect(item.id)"
+                    >
+                      <span v-if="getItemTagIds(item.id).length" class="sticker-tag-select__chips">
+                        <span
+                          v-for="tagId in getItemTagIds(item.id)"
+                          :key="tagId"
+                          class="sticker-kw-tag"
+                        >
+                          {{ getTagLabel(tagId) }}
+                        </span>
+                      </span>
+                      <span v-else class="sticker-tag-select__placeholder">请选择贴图标签（1～3 个）</span>
+                      <span class="sticker-tag-select__arrow" aria-hidden="true">▼</span>
+                    </button>
+                    <div v-if="openTagSelectId === item.id" class="sticker-tag-select__panel">
+                      <p v-if="enabledTags.length === 0" class="sticker-tag-select__empty">
+                        暂无启用的贴图标签，请先在「贴图标签管理」中添加并启用
+                      </p>
+                      <label
+                        v-for="tag in enabledTags"
+                        :key="tag.id"
+                        class="sticker-tag-select__option"
+                        :class="{
+                          'sticker-tag-select__option--disabled':
+                            !isTagSelected(item.id, tag.id) && getItemTagIds(item.id).length >= 3,
+                        }"
+                      >
+                        <input
+                          type="checkbox"
+                          :checked="isTagSelected(item.id, tag.id)"
+                          :disabled="!isTagSelected(item.id, tag.id) && getItemTagIds(item.id).length >= 3"
+                          @change="toggleItemTag(item.id, tag.id)"
+                        />
+                        <span class="sticker-tag-select__option-label">{{ stickerTagOptionLabel(tag) }}</span>
+                      </label>
+                    </div>
+                  </div>
                   <span class="sticker-item-row__tags">
                     <span v-for="kw in parseEmojiKeywords(item.emojiKeywords)" :key="kw" class="sticker-kw-tag">{{ kw }}</span>
                   </span>
@@ -654,7 +790,7 @@ function statusClass(status: StickerPackStatus) {
 
 .sticker-item-row {
   display: grid;
-  grid-template-columns: 48px 140px 72px 1fr auto 56px;
+  grid-template-columns: 48px 120px 72px minmax(200px, 1fr) auto 56px;
   gap: 8px;
   align-items: center;
   padding: 10px 12px;
@@ -692,6 +828,97 @@ function statusClass(status: StickerPackStatus) {
 
 .sticker-item-row__input {
   min-width: 0;
+}
+
+.sticker-tag-select {
+  position: relative;
+  min-width: 0;
+}
+
+.sticker-tag-select__trigger {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+}
+
+.sticker-tag-select__trigger--open,
+.sticker-tag-select__trigger:hover {
+  border-color: #1890ff;
+}
+
+.sticker-tag-select__placeholder {
+  color: #bfbfbf;
+}
+
+.sticker-tag-select__chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sticker-tag-select__arrow {
+  flex-shrink: 0;
+  font-size: 10px;
+  color: #8c8c8c;
+}
+
+.sticker-tag-select__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 10;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+}
+
+.sticker-tag-select__empty {
+  margin: 0;
+  padding: 12px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.sticker-tag-select__option {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.sticker-tag-select__option:last-child {
+  border-bottom: none;
+}
+
+.sticker-tag-select__option:hover {
+  background: #f5f7fa;
+}
+
+.sticker-tag-select__option--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.sticker-tag-select__option-label {
+  font-size: 13px;
+  color: #262626;
 }
 
 .sticker-item-row__tags {
