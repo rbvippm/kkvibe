@@ -5,16 +5,20 @@ import { useStickerTags } from '../../composables/useStickerTags'
 import {
   MOCK_STICKER_PACK_ROWS,
   STICKER_PACK_MAX_ITEMS,
+  STICKER_PACK_NAME_FIELDS,
   STICKER_PACK_STATUS_LABEL,
   STICKER_PACK_STATUS_OPTIONS,
   cloneStickerPackRow,
+  createEmptyPackNameI18n,
   formatStickerNow,
   inferTagIdsFromKeywords,
   keywordsFromTagIds,
+  matchPackName,
   parseEmojiKeywords,
   stickerTagOptionLabel,
   validateStickerTagIds,
   type StickerPackItem,
+  type StickerPackNameI18n,
   type StickerPackRow,
   type StickerPackStatus,
 } from '../../constants/stickerManage'
@@ -38,7 +42,7 @@ const filteredRows = computed(() => {
   const f = appliedFilter.value
   return rows.value
     .filter((row) => {
-      if (f.name && !row.name.includes(f.name.trim())) return false
+      if (f.name && !matchPackName(row, f.name)) return false
       if (f.status && row.status !== f.status) return false
       if (f.creator && !row.creator.includes(f.creator.trim())) return false
       if (f.publishedStart || f.publishedEnd) {
@@ -94,7 +98,7 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
 
 const form = ref({
-  name: '',
+  nameI18n: createEmptyPackNameI18n(),
   author: '',
   trayIcon: '',
   sortWeight: 50,
@@ -183,9 +187,19 @@ function resetItemTagMap() {
   openTagSelectId.value = null
 }
 
+function normalizePackNameI18n(raw: StickerPackNameI18n): StickerPackNameI18n {
+  return {
+    zhCn: raw.zhCn.trim(),
+    en: raw.en.trim(),
+    th: raw.th.trim(),
+    zhTw: raw.zhTw.trim(),
+    vi: raw.vi.trim(),
+  }
+}
+
 function resetForm() {
   form.value = {
-    name: '',
+    nameI18n: createEmptyPackNameI18n(),
     author: '',
     trayIcon: '',
     sortWeight: 50,
@@ -206,7 +220,7 @@ function openEditModal(row: StickerPackRow) {
   modalMode.value = 'edit'
   editingId.value = row.id
   form.value = {
-    name: row.name,
+    nameI18n: { ...row.nameI18n },
     author: row.author,
     trayIcon: row.trayIcon,
     sortWeight: row.sortWeight,
@@ -314,15 +328,18 @@ function removeItem(id: string) {
 }
 
 function validateForm(publish: boolean): boolean {
-  const name = form.value.name.trim()
+  const nameI18n = normalizePackNameI18n(form.value.nameI18n)
   const author = form.value.author.trim()
-  if (!name) {
-    formError.value = '请输入贴图包名称'
-    return false
-  }
-  if (name.length > 50) {
-    formError.value = '贴图包名称不能超过 50 个字符'
-    return false
+  for (const field of STICKER_PACK_NAME_FIELDS) {
+    const value = nameI18n[field.key]
+    if (!value) {
+      formError.value = `请输入贴图包名称（${field.label}）`
+      return false
+    }
+    if (value.length > 50) {
+      formError.value = `贴图包名称（${field.label}）不能超过 50 个字符`
+      return false
+    }
   }
   if (!author) {
     formError.value = '请输入发行者/作者'
@@ -358,8 +375,10 @@ function savePack(status: StickerPackStatus) {
   if (!validateForm(publish)) return
 
   const now = formatStickerNow()
+  const nameI18n = normalizePackNameI18n(form.value.nameI18n)
   const payload = {
-    name: form.value.name.trim(),
+    name: nameI18n.zhCn,
+    nameI18n,
     author: form.value.author.trim(),
     trayIcon: form.value.trayIcon.trim(),
     sortWeight: form.value.sortWeight || 0,
@@ -522,17 +541,30 @@ function statusClass(status: StickerPackStatus) {
 
             <section class="sticker-form-section">
               <h4 class="sticker-form-section__title">基础信息</h4>
-              <div class="wf-form-row">
-                <label class="wf-form-row__label wf-form-row__label--required">贴图包名称</label>
-                <div>
-                  <input
-                    v-model="form.name"
-                    type="text"
-                    class="wf-input wf-input--full"
-                    maxlength="50"
-                    placeholder="如 Cuppy、节日限定，最多 50 字"
-                  />
-                  <p class="wf-form-row__hint">{{ form.name.length }}/50</p>
+              <div class="sticker-name-i18n">
+                <p class="sticker-name-i18n__heading wf-form-row__label wf-form-row__label--required">贴图包名称</p>
+                <div
+                  v-for="field in STICKER_PACK_NAME_FIELDS"
+                  :key="field.key"
+                  class="wf-form-row sticker-name-i18n__row"
+                >
+                  <label
+                    class="wf-form-row__label"
+                    :class="{ 'wf-form-row__label--required': field.required }"
+                  >
+                    {{ field.label }}
+                  </label>
+                  <div>
+                    <input
+                      v-model="form.nameI18n[field.key]"
+                      type="text"
+                      class="wf-input wf-input--full"
+                      maxlength="50"
+                      required
+                      :placeholder="`请输入${field.label}名称`"
+                    />
+                    <p class="wf-form-row__hint">{{ form.nameI18n[field.key].length }}/50</p>
+                  </div>
                 </div>
               </div>
               <div class="wf-form-row">
@@ -724,6 +756,26 @@ function statusClass(status: StickerPackStatus) {
 
 .sticker-form-section {
   margin-bottom: 20px;
+}
+
+.sticker-name-i18n {
+  margin-bottom: 16px;
+  padding: 12px 12px 16px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 2px;
+}
+
+.sticker-name-i18n__heading {
+  margin: 0 0 12px;
+}
+
+.sticker-name-i18n__row {
+  margin-bottom: 12px;
+}
+
+.sticker-name-i18n__row:last-child {
+  margin-bottom: 0;
 }
 
 .sticker-form-section__title {

@@ -14,9 +14,32 @@ export type StickerPackItem = {
   emojiKeywords: string
 }
 
+/** 贴图包名称 · 多语言 */
+export type StickerPackNameI18n = {
+  zhCn: string
+  en: string
+  th: string
+  zhTw: string
+  vi: string
+}
+
+export const STICKER_PACK_NAME_FIELDS = [
+  { key: 'zhCn' as const, label: '中文', required: true },
+  { key: 'en' as const, label: '英文', required: true },
+  { key: 'th' as const, label: '泰文', required: true },
+  { key: 'zhTw' as const, label: '繁体', required: true },
+  { key: 'vi' as const, label: '越南文', required: true },
+]
+
+export function createEmptyPackNameI18n(): StickerPackNameI18n {
+  return { zhCn: '', en: '', th: '', zhTw: '', vi: '' }
+}
+
 export type StickerPackRow = {
   id: string
+  /** 列表展示名（与中文同步） */
   name: string
+  nameI18n: StickerPackNameI18n
   author: string
   trayIcon: string
   stickerCount: number
@@ -79,6 +102,13 @@ export const MOCK_STICKER_PACK_ROWS: StickerPackRow[] = [
   {
     id: 'pack_001',
     name: 'Cuppy',
+    nameI18n: {
+      zhCn: 'Cuppy',
+      en: 'Cuppy',
+      th: 'คัปปี้',
+      zhTw: 'Cuppy',
+      vi: 'Cuppy',
+    },
     author: 'KK 官方',
     trayIcon: '🧁',
     stickerCount: cuppyItems.length,
@@ -93,6 +123,13 @@ export const MOCK_STICKER_PACK_ROWS: StickerPackRow[] = [
   {
     id: 'pack_002',
     name: '节日限定',
+    nameI18n: {
+      zhCn: '节日限定',
+      en: 'Holiday Special',
+      th: 'ชุดวันหยุด',
+      zhTw: '節日限定',
+      vi: 'Giới hạn ngày lễ',
+    },
     author: 'KK 官方',
     trayIcon: '🎄',
     stickerCount: 4,
@@ -112,6 +149,13 @@ export const MOCK_STICKER_PACK_ROWS: StickerPackRow[] = [
   {
     id: 'pack_003',
     name: '萌宠日常',
+    nameI18n: {
+      zhCn: '萌宠日常',
+      en: 'Pet Daily',
+      th: 'ชีวิตสัตว์เลี้ยง',
+      zhTw: '萌寵日常',
+      vi: 'Thú cưng hàng ngày',
+    },
     author: '插画师 Amy',
     trayIcon: '🐱',
     stickerCount: 5,
@@ -132,6 +176,13 @@ export const MOCK_STICKER_PACK_ROWS: StickerPackRow[] = [
   {
     id: 'pack_004',
     name: '职场加油',
+    nameI18n: {
+      zhCn: '职场加油',
+      en: 'Work Cheer',
+      th: 'สู้ๆ ที่ทำงาน',
+      zhTw: '職場加油',
+      vi: 'Cố lên công việc',
+    },
     author: 'KK 官方',
     trayIcon: '💼',
     stickerCount: 3,
@@ -246,9 +297,24 @@ export function validateStickerTagIds(tagIds: string[]): string | null {
   return null
 }
 
+export function matchPackName(row: StickerPackRow, keyword: string): boolean {
+  const q = keyword.trim()
+  if (!q) return true
+  const fields = [
+    row.name,
+    row.nameI18n.zhCn,
+    row.nameI18n.en,
+    row.nameI18n.th,
+    row.nameI18n.zhTw,
+    row.nameI18n.vi,
+  ]
+  return fields.some((value) => value.includes(q))
+}
+
 export function cloneStickerPackRow(row: StickerPackRow): StickerPackRow {
   return {
     ...row,
+    nameI18n: { ...row.nameI18n },
     items: row.items.map((item) => ({ ...item })),
   }
 }
