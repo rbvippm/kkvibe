@@ -108,7 +108,7 @@ const walletShortcuts: MineShortcutItem[] = [
 const menuItems: MineMenuItem[] = [
   { key: 'micall-bank', title: 'MiCall银行' },
   { key: 'invite', title: '邀请好友' },
-  { key: 'promo', title: '推广收益', hot: true },
+  { key: 'agent', title: '代理中心' },
 ]
 
 function mask(value: string) {
@@ -120,7 +120,7 @@ function goUserHome() {
 }
 
 function goSettings() {
-  router.push({ name: 'mobile-mine-more' })
+  router.push({ name: 'mobile-mine-settings' })
 }
 
 function goAllWallets() {
@@ -170,6 +170,14 @@ function handleRefresh() {
 
 function goRoute(routeName?: string) {
   if (routeName) router.push({ name: routeName })
+}
+
+function goMenuItem(item: MineMenuItem) {
+  if (item.key === 'agent') {
+    router.push({ name: 'mobile-agent', query: { from: 'mine' } })
+    return
+  }
+  goRoute(item.route)
 }
 </script>
 
@@ -425,7 +433,7 @@ function goRoute(routeName?: string) {
         :key="item.key"
         type="button"
         class="mh5-mine-menu__item"
-        @click="goRoute(item.route)"
+        @click="goMenuItem(item)"
       >
         <span class="mh5-mine-menu__icon" aria-hidden="true">
           <svg v-if="item.key === 'micall-bank'" width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -440,6 +448,15 @@ function goRoute(routeName?: string) {
           <svg v-else-if="item.key === 'invite'" width="20" height="20" viewBox="0 0 24 24" fill="none">
             <circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6" />
             <path d="M4 19c0-2.8 2.2-5 5-5M16 11v6M13 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
+          <svg v-else-if="item.key === 'agent'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 3l8 4v6c0 4.4-3.6 8-8 8s-8-3.6-8-8V7l8-4z"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+            <path d="M9 12h6M12 9v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
           </svg>
           <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path

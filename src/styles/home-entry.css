@@ -18,6 +18,8 @@ html.theme-home-light #app {
   --home-border: #eef0f3;
   --home-mobile: #ff7a2b;
   --home-mobile-light: #fff5eb;
+  --home-agent: #c45c26;
+  --home-agent-light: #fff4ed;
   --home-pc: #1890ff;
   --home-pc-light: #e6f7ff;
   --home-radius: 16px;
@@ -109,6 +111,11 @@ html.theme-home-light #app {
   box-shadow: 0 8px 24px rgb(255 122 43 / 12%);
 }
 
+.home-entry__card--agent:hover {
+  border-color: rgb(196 92 38 / 35%);
+  box-shadow: 0 8px 24px rgb(196 92 38 / 12%);
+}
+
 .home-entry__card--pc:hover {
   border-color: rgb(24 144 255 / 35%);
   box-shadow: 0 8px 24px rgb(24 144 255 / 12%);
@@ -132,6 +139,10 @@ html.theme-home-light #app {
 
 .home-entry__card-icon--mobile {
   background: var(--home-mobile-light);
+}
+
+.home-entry__card-icon--agent {
+  background: var(--home-agent-light);
 }
 
 .home-entry__card-icon--pc {
@@ -175,6 +186,11 @@ html.theme-home-light #app {
   color: var(--home-mobile);
 }
 
+.home-entry__tag--agent {
+  background: var(--home-agent-light);
+  color: var(--home-agent);
+}
+
 .home-entry__tag--pc {
   background: var(--home-pc-light);
   color: var(--home-pc);
@@ -190,6 +206,10 @@ html.theme-home-light #app {
 
 .home-entry__card-action--mobile {
   color: var(--home-mobile);
+}
+
+.home-entry__card-action--agent {
+  color: var(--home-agent);
 }
 
 .home-entry__card-action--pc {

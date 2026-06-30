@@ -1,0 +1,17 @@
+<svg width="166" height="166" viewBox="0 0 166 166" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="166" height="166" rx="12" fill="url(#bg)"/>
+  <text x="83" y="40" text-anchor="middle" fill="#FFD700" font-size="20" font-weight="800">2026</text>
+  <path d="M60 90l23-35 23 35-23 20-23-20Z" fill="url(#gold)"/>
+  <circle cx="120" cy="100" r="22" fill="#fff" fill-opacity=".2"/>
+  <circle cx="120" cy="100" r="14" fill="#E0E0E0"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="166" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4A3728"/>
+      <stop offset="1" stop-color="#2A1F18"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="60" y1="55" x2="106" y2="110" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE566"/>
+      <stop offset="1" stop-color="#C9A227"/>
+    </linearGradient>
+  </defs>
+</svg>

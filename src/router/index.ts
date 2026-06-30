@@ -47,35 +47,20 @@ export const router = createRouter({
         {
           path: 'home',
           name: 'mobile-home',
-          component: () => import('../views/mobile/MobileTabPlaceholderView.vue'),
-          meta: {
-            title: '首页',
-            placeholderTitle: '首页',
-            placeholderDesc: '推荐动态、快捷入口等内容将在此展示。',
-            placeholderEmoji: '🏠',
-          },
+          component: () => import('../views/mobile/MobileLobbyView.vue'),
+          meta: { title: '大厅' },
         },
         {
           path: 'community',
           name: 'mobile-community',
-          component: () => import('../views/mobile/MobileTabPlaceholderView.vue'),
-          meta: {
-            title: '社区',
-            placeholderTitle: '社区',
-            placeholderDesc: '圈子、话题与互动内容将在此展示。',
-            placeholderEmoji: '🌐',
-          },
+          component: () => import('../views/mobile/MobileCommunityView.vue'),
+          meta: { title: '社区' },
         },
         {
           path: 'chat',
           name: 'mobile-chat',
-          component: () => import('../views/mobile/MobileTabPlaceholderView.vue'),
-          meta: {
-            title: '会话',
-            placeholderTitle: '会话',
-            placeholderDesc: '私信与群聊消息将在此展示。',
-            placeholderEmoji: '💬',
-          },
+          component: () => import('../views/mobile/MobileChatView.vue'),
+          meta: { title: '会话' },
         },
         {
           path: 'live',
@@ -90,10 +75,20 @@ export const router = createRouter({
           meta: { title: '语聊房', hideTabBar: true },
         },
         {
+          path: 'agent/mine/more',
+          name: 'mobile-agent-mine-more',
+          component: () => import('../views/mobile/MobileAgentMoreFunctionsView.vue'),
+          meta: { title: '更多功能', hideTabBar: true },
+        },
+        {
+          path: 'agent-portal',
+          redirect: { name: 'mobile-agent' },
+        },
+        {
           path: 'agent',
           name: 'mobile-agent',
           component: AgentView,
-          meta: { title: '代理' },
+          meta: { title: '代理中心', hideTabBar: true },
         },
         {
           path: 'agent/member/detail',
@@ -127,9 +122,7 @@ export const router = createRouter({
         },
         {
           path: 'agent/report',
-          name: 'mobile-agent-report',
-          component: () => import('../views/mobile/MobileAgentReportView.vue'),
-          meta: { title: '我的报表', hideTabBar: true },
+          redirect: { name: 'mobile-agent', query: { tab: 'report' } },
         },
         {
           path: 'agent/xcoin/report',
@@ -186,6 +179,12 @@ export const router = createRouter({
           meta: { title: '我的' },
         },
         {
+          path: 'mine/settings',
+          name: 'mobile-mine-settings',
+          component: () => import('../views/mobile/MobileSettingsView.vue'),
+          meta: { title: '设置', hideTabBar: true },
+        },
+        {
           path: 'mine/more',
           name: 'mobile-mine-more',
           component: () => import('../views/mobile/MobileMoreFunctionsView.vue'),
@@ -193,9 +192,7 @@ export const router = createRouter({
         },
         {
           path: 'mine/bet-orders',
-          name: 'mobile-bet-order-query',
-          component: () => import('../views/mobile/MobileBetOrderQueryView.vue'),
-          meta: { title: '注单查询', hideTabBar: true },
+          redirect: { name: 'mobile-agent', query: { tab: 'bet-order' } },
         },
         {
           path: 'mine/billing',

@@ -26,6 +26,13 @@ import {
 } from '../../constants/betOrderQuery'
 import '../../styles/mobile-app-shell.css'
 
+withDefaults(
+  defineProps<{
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
 function createDefaultFilter(): BetOrderFilter {
   return {
     keyword: '',
@@ -201,8 +208,12 @@ function toggleGameNameExpanded() {
 </script>
 
 <template>
-  <div class="mh5-bet-order-page">
-    <Mh5SubPageHeader title="注单查询">
+  <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded }">
+    <header v-if="embedded" class="mh5-agent-report-header">
+      <h1 class="mh5-agent-report-header__title">注单查询</h1>
+      <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
+    </header>
+    <Mh5SubPageHeader v-else title="注单查询">
       <template #right>
         <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
       </template>

@@ -1,8 +1,13 @@
 /** 代理中心 · 团队管理 Mock */
 
-export type TeamFilterTab = 'all' | 'direct_agent' | 'direct_member' | 'xcoin_member'
+export type TeamFilterTab =
+  | 'all'
+  | 'direct_agent'
+  | 'direct_member'
+  | 'credit_agent'
+  | 'credit_member'
 
-export type TeamMemberKind = 'me' | 'agent' | 'member' | 'xcoin_member'
+export type TeamMemberKind = 'me' | 'agent' | 'member' | 'credit_agent' | 'credit_member'
 
 export type TeamListItem = {
   id: string
@@ -18,7 +23,8 @@ export const TEAM_FILTER_TABS: { key: TeamFilterTab; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'direct_agent', label: '直属代理' },
   { key: 'direct_member', label: '直属会员' },
-  { key: 'xcoin_member', label: 'x币会员' },
+  { key: 'credit_agent', label: '信用代理' },
+  { key: 'credit_member', label: '信用会员' },
 ]
 
 export const MOCK_TEAM_SELF: TeamListItem = {
@@ -82,23 +88,40 @@ export const MOCK_TEAM_MEMBERS: TeamListItem[] = [
   },
 ]
 
-export const MOCK_XCOIN_TEAM_MEMBERS: TeamListItem[] = [
+export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
   {
-    id: 'x1',
+    id: 'ca1',
+    nickname: '小红来了EZ1',
+    kind: 'credit_agent',
+    subordinateCount: 3,
+    vipLevel: 2,
+  },
+  {
+    id: 'ca2',
+    nickname: 'mid_eyv4menuoax',
+    kind: 'credit_agent',
+    subordinateCount: 0,
+    vipLevel: 1,
+  },
+]
+
+export const MOCK_CREDIT_MEMBERS: TeamListItem[] = [
+  {
+    id: 'cm1',
     nickname: 'openapi31axy8',
-    kind: 'xcoin_member',
+    kind: 'credit_member',
     subordinateCount: 0,
   },
   {
-    id: 'x2',
-    nickname: '小红来了EZ1',
-    kind: 'xcoin_member',
-    subordinateCount: 3,
+    id: 'cm2',
+    nickname: 'wa_da_da888',
+    kind: 'credit_member',
+    subordinateCount: 0,
   },
   {
-    id: 'x3',
-    nickname: 'mid_eyv4menuoax',
-    kind: 'xcoin_member',
+    id: 'cm3',
+    nickname: 'langxing888',
+    kind: 'credit_member',
     subordinateCount: 0,
   },
 ]
@@ -121,13 +144,16 @@ export const MOCK_DIRECT_AGENTS: TeamListItem[] = [
 ]
 
 export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
-  const members =
-    tab === 'xcoin_member'
-      ? MOCK_XCOIN_TEAM_MEMBERS
-      : MOCK_TEAM_MEMBERS.map((m) => ({ ...m, kind: 'member' as const }))
+  const members = MOCK_TEAM_MEMBERS.map((m) => ({ ...m, kind: 'member' as const }))
 
   if (tab === 'all') {
-    return [MOCK_TEAM_SELF, ...MOCK_DIRECT_AGENTS, ...members.slice(0, 4), ...MOCK_XCOIN_TEAM_MEMBERS.slice(0, 2)]
+    return [
+      MOCK_TEAM_SELF,
+      ...MOCK_DIRECT_AGENTS,
+      ...members.slice(0, 4),
+      ...MOCK_CREDIT_AGENTS.slice(0, 1),
+      ...MOCK_CREDIT_MEMBERS.slice(0, 2),
+    ]
   }
   if (tab === 'direct_agent') {
     return [MOCK_TEAM_SELF, ...MOCK_DIRECT_AGENTS]
@@ -135,20 +161,28 @@ export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
   if (tab === 'direct_member') {
     return [MOCK_TEAM_SELF, ...members]
   }
-  return [MOCK_TEAM_SELF, ...MOCK_XCOIN_TEAM_MEMBERS]
+  if (tab === 'credit_agent') {
+    return [MOCK_TEAM_SELF, ...MOCK_CREDIT_AGENTS]
+  }
+  return [MOCK_TEAM_SELF, ...MOCK_CREDIT_MEMBERS]
 }
 
 export function memberKindLabel(kind: TeamMemberKind) {
-  if (kind === 'xcoin_member' || kind === 'member') return 'x币'
+  if (kind === 'credit_member' || kind === 'member') return '信用'
   return ''
 }
 
 export function showMemberBadge(kind: TeamMemberKind) {
-  return kind === 'member' || kind === 'xcoin_member'
+  return kind === 'member' || kind === 'credit_member'
 }
 
 export function showAgentSubordinateTag(item: TeamListItem) {
-  return item.kind === 'me' || item.kind === 'agent' || item.subordinateCount > 0
+  return (
+    item.kind === 'me' ||
+    item.kind === 'agent' ||
+    item.kind === 'credit_agent' ||
+    item.subordinateCount > 0
+  )
 }
 
 export function agentSubordinateLabel(count: number) {

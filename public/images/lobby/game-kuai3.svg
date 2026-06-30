@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="166" height="166" viewBox="0 0 166 166" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="166" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2D1B4E"/>
+      <stop offset="1" stop-color="#1A0F2E"/>
+    </linearGradient>
+  </defs>
+  <rect width="166" height="166" rx="12" fill="url(#bg)"/>
+  <circle cx="83" cy="78" r="46" fill="#7B2CBF"/>
+  <circle cx="83" cy="78" r="36" fill="#9D4EDD"/>
+  <circle cx="68" cy="70" r="5" fill="#fff"/>
+  <circle cx="83" cy="62" r="5" fill="#FFD700"/>
+  <circle cx="98" cy="70" r="5" fill="#fff"/>
+  <circle cx="74" cy="88" r="5" fill="#FFD700"/>
+  <circle cx="92" cy="88" r="5" fill="#FFD700"/>
+  <text x="83" y="132" text-anchor="middle" fill="#FFD700" font-size="14" font-weight="800" font-family="Arial, sans-serif">1 MIN</text>
+</svg>

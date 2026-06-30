@@ -1,0 +1,253 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
+import {
+  chunkOverviewStats,
+  DIRECT_STAT_ROW_SIZES,
+  MOCK_DIRECT_STATS,
+  MOCK_PROFIT_RANKINGS,
+  MOCK_SUB_AGENT_STATS,
+  PROFIT_RANK_TABS,
+  SUB_AGENT_STAT_ROW_SIZES,
+  type ProfitRankTab,
+} from '../../constants/agentOverview'
+import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
+
+const props = defineProps<{
+  nickname: string
+  avatarEmoji: string
+  balance: string
+  profit: string
+  currency: string
+  dateRangeText: string
+  preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
+  profitRankTab: ProfitRankTab
+}>()
+
+const emit = defineEmits<{
+  back: []
+  pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek']
+  pickProfitRankTab: [tab: ProfitRankTab]
+}>()
+
+const presetOptions = [
+  ['today', '今日'],
+  ['yesterday', '昨日'],
+  ['thisWeek', '本周'],
+  ['lastWeek', '上周'],
+] as const
+
+const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
+const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
+const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
+</script>
+
+<template>
+  <div class="agent-home" data-name="代理中心-首页-文字颜色调整">
+    <!-- 深色顶区：固定高度，不参与滚动 -->
+    <div class="agent-home__hero">
+      <div class="agent-home__hero-glow" aria-hidden="true" />
+
+      <header class="agent-home__header" data-name="header">
+        <div class="agent-home__nav-bar" data-name="nav_bar">
+          <div class="agent-home__nav-left" data-name="left">
+            <button
+              type="button"
+              class="agent-home__nav-back"
+              data-name="icon_backpage"
+              aria-label="返回"
+              @click="emit('back')"
+            >
+              <svg width="10" height="18" viewBox="0 0 10 18" fill="none" aria-hidden="true">
+                <path
+                  d="M9 1L1 9l8 8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <div class="agent-home__nav-title" data-name="title">
+            <p>代理中心</p>
+          </div>
+          <div class="agent-home__nav-right" data-name="right" />
+        </div>
+      </header>
+
+      <div class="agent-home__card" data-name="卡片">
+        <div class="agent-home__card-mask" aria-hidden="true" />
+        <div class="agent-home__card-stripe agent-home__card-stripe--1" aria-hidden="true" />
+        <div class="agent-home__card-stripe agent-home__card-stripe--2" aria-hidden="true" />
+        <div class="agent-home__card-stripe agent-home__card-stripe--3" aria-hidden="true" />
+        <img class="agent-home__card-deco-bottom" :src="AGENT_OVERVIEW_ASSETS.cardDeco" alt="" aria-hidden="true" />
+        <div class="agent-home__card-body">
+          <div class="agent-home__card-profile">
+            <div class="agent-home__avatar" data-name="头像">
+              <span class="agent-home__avatar-emoji">{{ avatarEmoji }}</span>
+            </div>
+            <div class="agent-home__profile-main">
+              <div class="agent-home__profile-top">
+                <div class="agent-home__profile-name" data-name="名字">
+                  <p>{{ nickname }}</p>
+                </div>
+                <button type="button" class="agent-home__withdraw-btn">
+                  <p>取款</p>
+                </button>
+              </div>
+              <div class="agent-home__profile-balance">
+                <button type="button" class="agent-home__currency-pill">
+                  <p>{{ currency }}</p>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                  </svg>
+                </button>
+                <p class="agent-home__balance-value">{{ balance }}</p>
+                <button type="button" class="agent-home__refresh-btn" data-name="ic:twotone-refresh" aria-label="刷新">
+                  <img :src="AGENT_OVERVIEW_ASSETS.refreshIcon" alt="" width="20" height="20" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="agent-home__profit-tabs">
+            <button type="button" class="agent-home__profit-tab agent-home__profit-tab--active" data-name="agent_tab/active">
+              <span class="agent-home__profit-tab-label">我的盈亏</span>
+              <span class="agent-home__profit-tab-value">{{ profit }}</span>
+              <span class="agent-home__profit-tab-arrow" aria-hidden="true">›</span>
+            </button>
+            <button type="button" class="agent-home__profit-tab agent-home__profit-tab--ratio" data-name="agent_tab_/inactive">
+              <span class="agent-home__profit-tab-label">占成比例</span>
+              <span class="agent-home__profit-tab-info" aria-hidden="true">
+                <img :src="AGENT_OVERVIEW_ASSETS.ratioInfoIcon" alt="" width="16" height="16" />
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="agent-home__date-block">
+        <div class="agent-home__date-row">
+          <p class="agent-home__date-label">数据时间段</p>
+          <div class="agent-home__date-picker">
+            <div class="agent-home__date-range">
+              <p>{{ dateRangeText }}</p>
+            </div>
+            <button type="button" class="agent-home__date-icon" aria-label="选择日期">
+              <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+                <rect x="6" y="8" width="22" height="20" rx="3" stroke="#fecda6" stroke-width="1.4" />
+                <path d="M11 5v5M23 5v5" stroke="#fecda6" stroke-width="1.4" stroke-linecap="round" />
+                <path d="M6 14h22" stroke="#fecda6" stroke-width="1.4" />
+                <circle cx="24" cy="22" r="3" fill="#ff9f4d" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="agent-home__preset-row">
+          <button
+            v-for="[key, label] in presetOptions"
+            :key="key"
+            type="button"
+            class="agent-home__preset-btn"
+            :class="{ 'agent-home__preset-btn--active': preset === key }"
+            @click="emit('pickPreset', key)"
+          >
+            <p>{{ label }}</p>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 浅色内容区：独立滚动 -->
+    <div class="agent-home__main">
+      <div class="agent-home__section">
+        <div class="agent-home__panel">
+          <p class="agent-home__panel-title">我的直属</p>
+          <div class="agent-home__stat-rows">
+            <div
+              v-for="(row, rowIndex) in directStatRows"
+              :key="`direct-row-${rowIndex}`"
+              class="agent-home__stat-row"
+            >
+              <AgentOverviewStatMask
+                v-for="item in row"
+                :key="item.key"
+                :label="item.label"
+                :value="item.value"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="agent-home__section agent-home__section--sub">
+        <div class="agent-home__panel">
+          <p class="agent-home__panel-title">下级代理</p>
+          <div class="agent-home__stat-rows">
+            <div
+              v-for="(row, rowIndex) in subAgentStatRows"
+              :key="`sub-row-${rowIndex}`"
+              class="agent-home__stat-row"
+            >
+              <AgentOverviewStatMask
+                v-for="item in row"
+                :key="item.key"
+                :label="item.label"
+                :value="item.value"
+                deep
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="agent-home__section agent-home__section--rank">
+        <div class="agent-home__rank-panel">
+          <p class="agent-home__panel-title">用户盈亏排行</p>
+
+          <div class="agent-home__rank-tabs" data-name="tab" role="tablist" aria-label="盈亏排行类型">
+            <button
+              v-for="tab in PROFIT_RANK_TABS"
+              :key="tab.key"
+              type="button"
+              role="tab"
+              class="agent-home__rank-tab"
+              :class="{ 'agent-home__rank-tab--active': profitRankTab === tab.key }"
+              :aria-selected="profitRankTab === tab.key"
+              @click="emit('pickProfitRankTab', tab.key)"
+            >
+              <p>{{ tab.label }}</p>
+            </button>
+          </div>
+
+          <div class="agent-home__rank-table-scroll">
+            <div class="agent-home__rank-table">
+              <div class="agent-home__rank-table-head">
+                <div class="agent-home__rank-cell agent-home__rank-cell--rank"><p>排名</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--id"><p>金刚号</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--name"><p>昵称</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--profit"><p>盈利</p></div>
+              </div>
+              <div
+                v-for="row in profitRankRows"
+                :key="`${profitRankTab}-${row.rank}`"
+                class="agent-home__rank-table-row"
+              >
+                <div class="agent-home__rank-cell agent-home__rank-cell--rank"><p>{{ row.rank }}</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--id"><p>{{ row.accountId }}</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--name"><p>{{ row.nickname }}</p></div>
+                <div
+                  class="agent-home__rank-cell agent-home__rank-cell--profit"
+                  :class="{ 'agent-home__rank-cell--loss': row.profit.startsWith('-') }"
+                >
+                  <p>{{ row.profit }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

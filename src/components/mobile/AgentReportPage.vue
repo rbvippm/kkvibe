@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { AGENT_WALLET_CURRENCY_OPTIONS, type AgentWalletCurrency } from '../../constants/agentDetail'
 import {
   REPORT_CATEGORY_TABS,
@@ -14,9 +13,6 @@ import {
   type ReportRangePreset,
   type ReportVendorKey,
 } from '../../constants/agentReport'
-import '../../styles/mobile-app-shell.css'
-
-const router = useRouter()
 
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
@@ -35,15 +31,6 @@ function pickPreset(v: ReportRangePreset) {
 function pickCurrency(value: AgentWalletCurrency) {
   currency.value = value
   currencyPickerOpen.value = false
-}
-
-function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
-  if (tab === 'report') return
-  if (tab === 'overview') {
-    router.push({ name: 'mobile-agent' })
-    return
-  }
-  router.push({ name: 'mobile-agent', query: { tab } })
 }
 </script>
 
@@ -145,78 +132,29 @@ function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
       </section>
     </main>
 
-    <nav class="mh5-agent-report-tabbar" aria-label="代理中心导航">
-      <button type="button" class="mh5-agent-report-tabbar__item" @click="switchAgentTab('overview')">
-        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9Z"
-            stroke="#bdbdbd"
-            stroke-width="1.8"
-          />
-          <path d="M12 12 12 7a5 5 0 1 1-5 5" stroke="#bdbdbd" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-        <span>概况</span>
-      </button>
-      <button type="button" class="mh5-agent-report-tabbar__item" @click="switchAgentTab('team')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4.5 20a4.5 4.5 0 0 1 9 0M11 20a4.5 4.5 0 0 1 8.5-1"
-            stroke="#bdbdbd"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-        <span>团队管理</span>
-      </button>
-      <button type="button" class="mh5-agent-report-tabbar__item mh5-agent-report-tabbar__item--active">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 18V6" stroke="#e07a2b" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M8 15V9" stroke="#e07a2b" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M12 17v-8" stroke="#e07a2b" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M16 13V7" stroke="#e07a2b" stroke-width="1.8" stroke-linecap="round" />
-          <path d="M20 16V5" stroke="#e07a2b" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-        <span>我的报表</span>
-      </button>
-      <button type="button" class="mh5-agent-report-tabbar__item" @click="switchAgentTab('me')">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M12 13.2a4.2 4.2 0 1 0-4.2-4.2A4.2 4.2 0 0 0 12 13.2Z"
-            stroke="#bdbdbd"
-            stroke-width="1.8"
-          />
-          <path
-            d="M5.5 20.3c.9-3.1 3.6-5.1 6.5-5.1s5.6 2 6.5 5.1"
-            stroke="#bdbdbd"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-        <span>我的</span>
-      </button>
-    </nav>
-
-    <Transition name="mh5-agent-report-sheet">
-      <div
-        v-if="currencyPickerOpen"
-        class="mh5-xcoin-sheet-mask"
-        @click.self="currencyPickerOpen = false"
-      >
-        <div class="mh5-xcoin-sheet">
-          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
-          <button
-            v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
-            :key="opt"
-            type="button"
-            class="mh5-xcoin-sheet__option"
-            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
-            @click="pickCurrency(opt)"
-          >
-            {{ opt }}
-          </button>
+    <Teleport to=".mh5-app-shell">
+      <Transition name="mh5-agent-report-sheet">
+        <div
+          v-if="currencyPickerOpen"
+          class="mh5-agent-overlay-mask"
+          @click.self="currencyPickerOpen = false"
+        >
+          <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet">
+            <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+            <button
+              v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
+              :key="opt"
+              type="button"
+              class="mh5-xcoin-sheet__option"
+              :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
+              @click="pickCurrency(opt)"
+            >
+              {{ opt }}
+            </button>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -227,7 +165,9 @@ function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
 }
 
 .mh5-agent-report-sheet-enter-active .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-leave-active .mh5-xcoin-sheet {
+.mh5-agent-report-sheet-enter-active .mh5-agent-overlay-sheet,
+.mh5-agent-report-sheet-leave-active .mh5-xcoin-sheet,
+.mh5-agent-report-sheet-leave-active .mh5-agent-overlay-sheet {
   transition: transform 0.25s ease;
 }
 
@@ -237,7 +177,9 @@ function switchAgentTab(tab: 'overview' | 'team' | 'report' | 'me') {
 }
 
 .mh5-agent-report-sheet-enter-from .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-leave-to .mh5-xcoin-sheet {
+.mh5-agent-report-sheet-enter-from .mh5-agent-overlay-sheet,
+.mh5-agent-report-sheet-leave-to .mh5-xcoin-sheet,
+.mh5-agent-report-sheet-leave-to .mh5-agent-overlay-sheet {
   transform: translateY(100%);
 }
 </style>

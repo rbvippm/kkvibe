@@ -1,0 +1,14 @@
+<svg width="166" height="166" viewBox="0 0 166 166" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="166" height="166" rx="12" fill="url(#bg)"/>
+  <rect x="30" y="40" width="40" height="56" rx="4" fill="#fff" stroke="#C0392B" stroke-width="2"/>
+  <text x="50" y="78" text-anchor="middle" fill="#C0392B" font-size="22" font-weight="800">K</text>
+  <rect x="96" y="40" width="40" height="56" rx="4" fill="#fff" stroke="#1A1A1A" stroke-width="2"/>
+  <text x="116" y="78" text-anchor="middle" fill="#1A1A1A" font-size="22" font-weight="800">K</text>
+  <text x="83" y="120" text-anchor="middle" fill="#FF6B1A" font-size="28" font-weight="900">VS</text>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="166" y2="166" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF5E6"/>
+      <stop offset="1" stop-color="#FFD9A8"/>
+    </linearGradient>
+  </defs>
+</svg>

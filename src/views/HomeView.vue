@@ -17,7 +17,7 @@ onUnmounted(() => {
     <header class="home-entry__header">
       <span class="home-entry__brand">K</span>
       <h1 class="home-entry__title">KK Vibe 原型</h1>
-      <p class="home-entry__desc">移动端与 PC 管理后台分入口演示，便于评审与联调。</p>
+      <p class="home-entry__desc">移动端、代理端与 PC 管理后台分入口演示，便于评审与联调。</p>
     </header>
 
     <main class="home-entry__main">
@@ -27,7 +27,7 @@ onUnmounted(() => {
           <div class="home-entry__card-body">
             <h2 class="home-entry__card-title">移动端 H5</h2>
             <p class="home-entry__card-text">
-              首页、社区、会话、我的；语聊直播与代理中心等能力演示。
+              首页、社区、会话、我的；语聊直播等 C 端能力演示。
             </p>
             <div class="home-entry__card-tags">
               <span class="home-entry__tag home-entry__tag--mobile">首页</span>
@@ -39,6 +39,30 @@ onUnmounted(() => {
         </div>
         <span class="home-entry__card-action home-entry__card-action--mobile">
           进入移动端
+          <span class="ml-1">→</span>
+        </span>
+      </RouterLink>
+
+      <RouterLink
+        :to="{ name: 'mobile-agent', query: { from: 'home' } }"
+        class="home-entry__card home-entry__card--agent"
+      >
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--agent">🤝</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">代理端 H5</h2>
+            <p class="home-entry__card-text">
+              代理中心、团队管理与报表等 B 端能力演示。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--agent">概况</span>
+              <span class="home-entry__tag home-entry__tag--agent">团队</span>
+              <span class="home-entry__tag home-entry__tag--agent">报表</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--agent">
+          进入代理端
           <span class="ml-1">→</span>
         </span>
       </RouterLink>

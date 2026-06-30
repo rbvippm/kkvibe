@@ -1,0 +1,6 @@
+<svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="26" cy="26" r="26" fill="#3D2818"/>
+  <path d="M18 34l8-14 8 14-8-4-8 4Z" fill="#FFD700"/>
+  <circle cx="34" cy="30" r="8" fill="#E8E8E8"/>
+  <text x="26" y="20" text-anchor="middle" fill="#FFD700" font-size="8" font-weight="800">2026</text>
+</svg>

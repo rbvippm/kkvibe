@@ -80,13 +80,13 @@ const MOCK_DEFAULT_MEMBER: MemberDetailProfile = {
 }
 
 function mockDetailFromTeam(item: TeamListItem): MemberDetailProfile {
-  const isXcoin = item.kind === 'xcoin_member'
+  const isCreditMember = item.kind === 'credit_member'
   return {
     id: item.id,
     nickname: item.nickname,
     avatarEmoji: item.avatarEmoji ?? '👤',
     lastLogin: '2026-04-12',
-    memberTag: isXcoin ? 'x币会员' : '直属会员',
+    memberTag: isCreditMember ? '信用会员' : '直属会员',
     memberAccount: item.nickname,
     superiorAgent: 'PP231233',
     wallets: DEFAULT_WALLETS,
@@ -113,7 +113,7 @@ export function findMemberDetail(id: string): MemberDetailProfile | null {
 
   const found = filterTeamList('all').find((item) => item.id === id)
   if (!found) return MOCK_DEFAULT_MEMBER
-  if (found.kind !== 'member' && found.kind !== 'xcoin_member') return null
+  if (found.kind !== 'member' && found.kind !== 'credit_member') return null
 
   if (found.id === 'm1') return { ...MOCK_DEFAULT_MEMBER, id: found.id }
 
@@ -121,5 +121,5 @@ export function findMemberDetail(id: string): MemberDetailProfile | null {
 }
 
 export function isMemberTeamItem(item: TeamListItem) {
-  return item.kind === 'member' || item.kind === 'xcoin_member'
+  return item.kind === 'member' || item.kind === 'credit_member'
 }

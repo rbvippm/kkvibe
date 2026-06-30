@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="24" cy="24" r="24" fill="#FFE8D6"/>
+  <rect x="12" y="14" width="12" height="20" rx="2" fill="#E74C3C"/>
+  <rect x="24" y="14" width="12" height="20" rx="2" fill="#C0392B"/>
+  <text x="18" y="28" fill="#fff" font-size="6" font-weight="700">2024</text>
+  <text x="28" y="28" fill="#FFD700" font-size="5" font-weight="700" font-family="PingFang SC, Microsoft YaHei, sans-serif">你好</text>
+</svg>
