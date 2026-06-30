@@ -192,6 +192,12 @@ export const router = createRouter({
           meta: { title: '更多功能', hideTabBar: true },
         },
         {
+          path: 'mine/bet-orders',
+          name: 'mobile-bet-order-query',
+          component: () => import('../views/mobile/MobileBetOrderQueryView.vue'),
+          meta: { title: '注单查询', hideTabBar: true },
+        },
+        {
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),

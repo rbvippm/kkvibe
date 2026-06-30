@@ -71,6 +71,19 @@ export const MINE_MORE_MENU_GROUPS: MineMoreMenuGroup[] = [
     ],
   },
   {
+    key: 'game',
+    title: '游戏注单',
+    items: [
+      {
+        key: 'bet-order-query',
+        title: '注单查询',
+        desc: '按状态、游戏与账号查询投注记录',
+        icon: '🎯',
+        routeName: 'mobile-bet-order-query',
+      },
+    ],
+  },
+  {
     key: 'wallet',
     title: '资产账单',
     items: [
