@@ -14,8 +14,12 @@ alwaysApply: false
 2. 布局：顶部 `wf-tabs` + 可选 `wf-notice`；内容 `wf-block` → `wf-toolbar` → `wf-table` → `wf-pagination`。
 3. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除）、`wf-btn--add`（新增）。
 4. 弹框：`Teleport` + `wf-modal-*`；底部取消 `wf-btn--default` + 确定 `wf-btn--primary`。
-5. **禁止**：面包屑「一、直播管理/…」、Tailwind 圆角卡片主布局、无 Mock 空页。
-6. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`；路径条用 `<WfPagePathMenu />`，配置在 `pcMenuV2Children.pagePath`。
+5. **内容较高的弹框**（如授信、多品类配置）：根节点加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 内部滚动；`header` / `footer` 固定不滚。
+6. **Tab 需求标注**：`WfSpecAnnot`（「注」）不得放在 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧（参考 `PcShareAgentConfigView` 信用 Tab）。触发器无框线、无底色，仅橙色「注」字。
+7. **文档说明页**：业务页有「注」标注时，须配置 `docRouteName` + 文档子路由；详见 `docs/PC后台设计规范.md` §9；参考 `PcShareAgentConfigDocView.vue`。
+8. **「注」标记编号**：每页 `WfSpecAnnot` 须传 `:no`，与当页功能清单 `id` 对齐，各页从 1 起独立编号；常量表 `{MODULE}_SPEC_ANNOT_NO` 写在对应 `*Spec.ts`。
+9. **禁止**：面包屑「一、直播管理/…」、Tailwind 圆角卡片主布局、无 Mock 空页。
+10. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`；路径条用 `<WfPagePathMenu />`，配置在 `pcMenuV2Children.pagePath`。
 
 ## 禁止
 
@@ -24,4 +28,4 @@ alwaysApply: false
 
 ## 参考实现
 
-`src/views/LiveCommissionConfigView.vue` 为唯一标准样例；不确定 class 时对照该文件与 `pc-wireframe.css`。
+`src/views/LiveCommissionConfigView.vue` 为列表页标准样例；`PcShareAgentConfigDocView.vue` 为文档说明页标准样例。

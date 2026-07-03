@@ -353,6 +353,18 @@ export const router = createRouter({
           component: PcStickerTagManageView,
           meta: { title: '贴图标签管理' },
         },
+        {
+          path: 'share-agent-config',
+          name: 'pc-share-agent-config',
+          component: () => import('../views/pc/PcShareAgentConfigView.vue'),
+          meta: { title: '占成代理配置' },
+        },
+        {
+          path: 'share-agent-config/doc',
+          name: 'pc-share-agent-config-doc',
+          component: () => import('../views/pc/PcShareAgentConfigDocView.vue'),
+          meta: { title: '占成代理配置-文档说明' },
+        },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },

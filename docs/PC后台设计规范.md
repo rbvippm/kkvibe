@@ -81,6 +81,19 @@ import '../styles/pc-wireframe.css'
 
 - 仅一个 Tab 为 `wf-tab--active`（深灰底白字）。
 - 提示条与 Tab 同一行，窄屏自动换行。
+- **Tab 需求标注**：`WfSpecAnnot`（「注」）不得嵌套在 `wf-tab` 内；使用 `wf-tab-item` 包裹 Tab 按钮，标注放在按钮外侧。触发器**无框线、无底色**，仅显示橙色「注」字；悬停面板仍保留虚线边框。
+
+```html
+<div class="wf-tabs">
+  <button type="button" class="wf-tab wf-tab--active">现金</button>
+  <div class="wf-tab-item">
+    <button type="button" class="wf-tab">信用</button>
+    <WfShareAgentCreditTabAnnot />
+  </div>
+</div>
+```
+
+参考：`PcShareAgentConfigView.vue` 编辑弹框 Tab 区。
 
 ### 4.3 工具栏
 
@@ -118,6 +131,7 @@ import '../styles/pc-wireframe.css'
 - 结构：`wf-modal__header`（标题 + ×）→ `wf-modal__body` → `wf-modal__footer`（取消右对齐 + 确定）。
 - 表单分区：查询区 `wf-modal__hint` 报错；佣金等字段区 `wf-modal__commission`（顶部分割虚线）。
 - 未满足前置条件时：`wf-modal__commission--disabled` + `wf-modal__commission-tip`。
+- **内容较高的弹框**（授信、多品类配置等）：根节点加 `wf-modal--scroll`；弹框整体高度不超过视口 **70%**（`max-height: 70vh`），仅 `wf-modal__body` 区域内部滚动，`header` 与 `footer` 固定可见。
 
 #### 弹框两种模式
 
@@ -144,16 +158,21 @@ type CommissionMode = 'both' | 'game' | 'gift' | 'none'
 
 - [ ] 根节点 `pc-wireframe-page` 且已 `import` `pc-wireframe.css`
 - [ ] 未使用面包屑、大圆角卡片、Tailwind `rounded-xl` 主布局
-- [ ] Tab / 工具栏 / 表格 / 分页 class 符合上文
+- [ ] Tab 带需求标注时，「注」在 `wf-tab-item` 外侧，不在 `wf-tab` 按钮内
 - [ ] 主按钮、清除、新增按钮语义正确
 - [ ] 弹框有取消/确定，禁用态与错误文案齐全
+- [ ] 内容较高的弹框已加 `wf-modal--scroll`，不超出视口 70%
 - [ ] Mock 数据为中文且含边界样例（空列表、不可删行）
+- [ ] 有页面标注时，已配置 `docRouteName` 与文档说明子路由（见 §9）
+- [ ] 页面「注」已传 `:no`，与功能清单 `id` 对齐（见 §9.4）
 
 ## 7. 参考页面
 
 | 路径 | 说明 |
 |------|------|
 | `/pc/live-commission` | Tab 三模块、双弹框、佣金模式（标准样例） |
+| `/pc/share-agent-config` | 列表 + 授信弹框 + 路径条【文档说明】入口 |
+| `/pc/share-agent-config/doc` | 文档说明页（PRD 概要 + 功能清单） |
 | `/pc` | PC 入口聚合 |
 | `/pc/reward` | 旧版 Tailwind，待迁移 |
 
@@ -169,3 +188,65 @@ type CommissionMode = 'both' | 'game' | 'gift' | 'none'
   "user_id": "string"
 }
 ```
+
+## 9. 文档说明页（PRD / 功能清单）
+
+业务页存在 `WfSpecAnnot`（「注」）标注时，应同步提供**文档说明子页**，聚合 PRD 与功能清单。功能清单描述业务功能本身，**不包含**「文档说明入口」这一条。
+
+### 9.1 入口与路由
+
+路径条组件 `WfPagePath`：业务页配置 `docRouteName` 后，路径条右侧展示【文档说明】链接。
+
+```html
+<div class="wf-page-path">
+  <div class="wf-page-path__main">路径：推广返利-占成代理配置</div>
+  <a class="wf-page-path__doc-link">【文档说明】</a>
+</div>
+```
+
+页面内使用 `<WfPagePathMenu />`，路径与文档入口从 `pcMenu.ts` 自动读取。
+
+### 9.2 页面结构
+
+根节点：`pc-wireframe-page wf-doc-page`；Tab：**PRD 概要** / **功能清单**（默认）。
+
+### 9.3 PRD 六大核心维度
+
+功能清单每条须覆盖：功能逻辑、交互行为、视觉表现、数据规则、异常与边界、关联与跳转。类型见 `src/constants/pcPrdSpec.ts`。
+
+### 9.4 页面「注」标记编号
+
+每个业务页的 `WfSpecAnnot`（「注」）须带编号，**与当页功能清单 `id` 对齐**；各页独立从 **1** 起编，互不影响。
+
+| 规则 | 说明 |
+|------|------|
+| 显示 | 触发器 `注1`、`注2`…；浮层标题 `【1】功能名` |
+| 数据源 | `{模块}Spec.ts` 内 `{MODULE}_SPEC_ANNOT_NO` 常量表 |
+| 对齐 | 编号值 = `FEATURE_LIST` 对应条目的 `id` |
+| 无标注项 | 功能清单可有条目但页面无「注」，该 `id` 不占标注位 |
+
+**占成代理配置示例**（`shareAgentConfigSpec.ts`）：
+
+```ts
+export const SHARE_AGENT_SPEC_ANNOT_NO = {
+  filterAgentLevel: 1,   // 功能清单 #1
+  filterCreditAgent: 2,  // #2
+  creditBadge: 3,        // #3
+  grantAction: 5,        // #5（#4 无页面标注）
+  creditTab: 7,
+  share: 8,
+  rebate: 9,
+} as const
+```
+
+组件内传入：`<WfSpecAnnot :no="SHARE_AGENT_SPEC_ANNOT_NO.creditBadge" … />`。
+
+v2 账变模块参考：`VERSION_V2_SPEC_ANNOT_NO`（`versionRecordV2.ts`）。
+
+### 9.5 参考实现
+
+| 文件 | 说明 |
+|------|------|
+| `PcShareAgentConfigDocView.vue` | 文档说明页标准样例 |
+| `shareAgentConfigSpec.ts` | 业务 PRD 与标注文案 |
+| `WfPagePath.vue` | 【文档说明】入口 |

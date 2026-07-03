@@ -71,6 +71,23 @@
   border-right: none;
 }
 
+/* Tab 旁需求标注：注置于按钮外侧，勿嵌套在 wf-tab 内 */
+.wf-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 6px;
+  border-right: 1px solid var(--pc-border);
+}
+
+.wf-tab-item:last-child {
+  border-right: none;
+}
+
+.wf-tab-item .wf-tab {
+  border-right: none;
+}
+
 .wf-tab--active {
   background: var(--pc-tab-active-bg);
   color: #fff;
@@ -92,6 +109,10 @@
 }
 
 .wf-page-path {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
   padding: 8px 12px;
   border: 1px solid var(--pc-notice-border);
@@ -101,12 +122,46 @@
   line-height: 1.6;
 }
 
+.wf-page-path__main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
 .wf-page-path__label {
+  flex-shrink: 0;
   font-weight: 600;
 }
 
 .wf-page-path__value {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
   color: var(--pc-text-secondary);
+}
+
+.wf-page-path__sep {
+  margin: 0 4px;
+  color: var(--pc-text-muted);
+}
+
+.wf-page-path__segment:last-child {
+  color: var(--pc-text);
+  font-weight: 500;
+}
+
+.wf-page-path__doc-link {
+  flex-shrink: 0;
+  font-size: var(--pc-font-size-sm);
+  font-weight: 600;
+  color: var(--pc-primary, #1677ff);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wf-page-path__doc-link:hover {
+  text-decoration: underline;
 }
 
 /* ---------- 内容块 / 工具栏 ---------- */
@@ -157,23 +212,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
+  min-width: 18px;
   height: 18px;
   padding: 0;
   font-size: 11px;
   font-weight: 600;
   line-height: 1;
   color: #d48806;
-  background: var(--pc-notice-bg);
-  border: 1px solid var(--pc-notice-border);
-  border-radius: var(--pc-radius);
+  background: none;
+  border: none;
+  border-radius: 0;
   cursor: help;
 }
 
 .wf-spec-annot__trigger--numbered {
   width: auto;
   min-width: 18px;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .wf-spec-annot__panel-no {
@@ -184,9 +239,8 @@
 .wf-spec-annot__trigger:hover,
 .wf-spec-annot__trigger:focus-visible {
   color: #ad6800;
-  border-color: #d48806;
   outline: none;
-  box-shadow: 0 0 0 2px rgb(255 229 143 / 45%);
+  box-shadow: none;
 }
 
 .wf-spec-annot__panel {
@@ -445,6 +499,13 @@
 
 .wf-td--actions {
   font-size: var(--pc-font-size-sm);
+}
+
+.wf-action-with-spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
 }
 
 .wf-link-action {
@@ -754,6 +815,24 @@
   padding: 20px;
 }
 
+/* 内容较高的弹框：整体不超过视口 70%，仅 body 区域内部滚动 */
+.wf-modal--scroll {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+
+.wf-modal--scroll .wf-modal__header,
+.wf-modal--scroll .wf-modal__footer {
+  flex-shrink: 0;
+}
+
+.wf-modal--scroll .wf-modal__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .wf-modal__query {
   display: flex;
   flex-wrap: wrap;
@@ -896,4 +975,297 @@
 .wf-btn--lg {
   min-width: 120px;
   padding-inline: 32px;
+}
+
+/* ---------- 占成代理配置 ---------- */
+.wf-table--share-agent {
+  min-width: 1480px;
+}
+
+.wf-table--share-agent .wf-th--status,
+.wf-table--share-agent .wf-td--status {
+  min-width: 72px;
+  white-space: nowrap;
+}
+
+.wf-status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.wf-status-badge--enabled {
+  color: #389e0d;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.wf-status-badge--disabled {
+  color: #cf1322;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+}
+
+.wf-table--share-agent .wf-th--op,
+.wf-table--share-agent .wf-td--actions {
+  min-width: 200px;
+  white-space: nowrap;
+}
+
+.wf-share-agent-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-credit-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: #1890ff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.wf-btn--credit {
+  padding: 2px 10px;
+  border: 1px solid #fa8c16;
+  border-radius: var(--pc-radius);
+  background: #fff;
+  color: #fa541c;
+  font-size: var(--pc-font-size-sm);
+  cursor: pointer;
+}
+
+.wf-btn--credit:hover {
+  border-color: #fa541c;
+  background: #fff7e6;
+}
+
+.wf-link-action--danger {
+  color: var(--pc-danger);
+}
+
+.wf-modal--share-agent-credit {
+  max-width: 920px;
+}
+
+.wf-share-agent-credit-tabs {
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.wf-table--share-agent-info .wf-th,
+.wf-table--share-agent-info .wf-td {
+  white-space: normal;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+
+.wf-table--share-agent-info .wf-td--multiline {
+  white-space: pre-line;
+  font-size: var(--pc-font-size-sm);
+  line-height: 1.5;
+}
+
+.wf-share-agent-credit-panel {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #fa8c16;
+  border-radius: var(--pc-radius);
+  background: #fff;
+}
+
+.wf-share-agent-credit-panel__title {
+  margin: 0 0 12px;
+  font-size: var(--pc-font-size);
+  font-weight: 600;
+  color: var(--pc-text);
+}
+
+.wf-share-agent-credit-panel__title::before {
+  content: '*';
+  margin-right: 4px;
+  color: var(--pc-danger);
+}
+
+.wf-share-agent-credit-panel__title--with-spec {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-share-agent-credit-field__range {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--pc-text-muted);
+  line-height: 1.4;
+}
+
+.wf-share-agent-credit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.wf-share-agent-credit-field__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--pc-font-size-sm);
+  color: var(--pc-text-secondary);
+}
+
+.wf-share-agent-credit-field__error {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--pc-danger);
+  line-height: 1.4;
+}
+
+/* ---------- 文档说明页（PRD / 功能清单） ---------- */
+.wf-doc-page__header {
+  margin-bottom: 16px;
+}
+
+.wf-doc-page__module {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pc-primary, #1677ff);
+}
+
+.wf-doc-page__title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--pc-text, #262626);
+}
+
+.wf-doc-page__meta {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--pc-text-muted, #8c8c8c);
+}
+
+.wf-doc-page__hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--pc-text-secondary, #595959);
+}
+
+.wf-doc-page__back {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--pc-primary, #1677ff);
+  text-decoration: none;
+}
+
+.wf-doc-page__back:hover {
+  text-decoration: underline;
+}
+
+.wf-doc-page__tabs {
+  margin-bottom: 16px;
+}
+
+.wf-doc-page__section {
+  margin-bottom: 24px;
+}
+
+.wf-doc-page__section-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pc-text, #262626);
+}
+
+.wf-doc-page__list {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.8;
+  color: var(--pc-text-secondary, #595959);
+}
+
+.wf-doc-page__features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wf-doc-page__feature-card {
+  border: 1px solid var(--pc-border-light, #f0f0f0);
+  border-radius: 2px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.wf-doc-page__feature-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--pc-notice-bg);
+  border-bottom: 1px solid var(--pc-notice-border);
+}
+
+.wf-doc-page__feature-id {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pc-primary, #1677ff);
+  background: rgba(24, 144, 255, 0.08);
+}
+
+.wf-doc-page__feature-name {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pc-text, #262626);
+}
+
+.wf-doc-page__feature-loc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--pc-text-muted, #8c8c8c);
+}
+
+.wf-doc-page__dimension-list {
+  margin: 0;
+  padding: 0;
+}
+
+.wf-doc-page__dimension-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--pc-border-light, #f5f5f5);
+}
+
+.wf-doc-page__dimension-row:last-child {
+  border-bottom: none;
+}
+
+.wf-doc-page__dimension-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pc-primary, #1677ff);
+}
+
+.wf-doc-page__dimension-value {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--pc-text-secondary, #595959);
 }

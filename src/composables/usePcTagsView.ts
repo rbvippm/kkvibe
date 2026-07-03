@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { findPcMenuByRouteName } from '../config/pcMenu'
+import { findPcDocRoute, findPcMenuByRouteName } from '../config/pcMenu'
 
 export type PcTag = {
   path: string
@@ -23,15 +23,17 @@ export function usePcTagsView() {
 
   function addTag(routeName: string) {
     const menu = findPcMenuByRouteName(routeName)
-    if (!menu) return
+    const doc = findPcDocRoute(routeName)
+    const source = menu ?? doc
+    if (!source) return
 
     if (visitedTags.value.some((tag) => tag.routeName === routeName)) return
 
     visitedTags.value.push({
-      path: menu.path,
-      routeName: menu.routeName,
-      title: menu.title,
-      affix: menu.affix,
+      path: source.path,
+      routeName: source.routeName,
+      title: source.title,
+      affix: menu?.affix,
     })
   }
 

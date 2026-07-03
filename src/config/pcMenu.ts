@@ -10,8 +10,27 @@ export type PcMenuItem = {
   affix?: boolean
   /** 页面顶栏「路径：A-B-C」各层级（仅 v2 等业务页配置） */
   pagePath?: string[]
+  /** 关联「文档说明」页路由名（路径条展示【文档说明】入口） */
+  docRouteName?: string
   children?: PcMenuItem[]
 }
+
+export type PcDocRoute = {
+  path: string
+  routeName: string
+  title: string
+  pagePath: string[]
+}
+
+/** 不在侧栏展示、仅由路径条【文档说明】进入的页面 */
+export const pcDocRoutes: PcDocRoute[] = [
+  {
+    path: '/pc/share-agent-config/doc',
+    routeName: 'pc-share-agent-config-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '占成代理配置', '文档说明'],
+  },
+]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
 export const pcMenuV2Children: PcMenuItem[] = [
@@ -163,6 +182,21 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'promotion-rebate',
+    title: '推广返利',
+    icon: '💰',
+    children: [
+      {
+        key: 'share-agent-config',
+        title: '占成代理配置',
+        path: '/pc/share-agent-config',
+        routeName: 'pc-share-agent-config',
+        pagePath: ['推广返利', '占成代理配置'],
+        docRouteName: 'pc-share-agent-config-doc',
+      },
+    ],
+  },
+  {
     key: 'voice',
     title: '语聊管理',
     icon: '🎙',
@@ -206,13 +240,22 @@ export function flattenPcMenuLeaves(items: PcMenuItem[] = pcMenuTree): PcMenuLea
   return leaves
 }
 
+export function findPcDocRoute(routeName: string): PcDocRoute | undefined {
+  return pcDocRoutes.find((item) => item.routeName === routeName)
+}
+
 export function findPcMenuByRouteName(routeName: string): PcMenuLeaf | undefined {
   return flattenPcMenuLeaves().find((item) => item.routeName === routeName)
 }
 
-/** 页面顶栏路径条（来自 menu.pagePath） */
+/** 当前业务页关联的文档说明路由名 */
+export function getPcDocRouteName(routeName: string): string | undefined {
+  return findPcMenuByRouteName(routeName)?.docRouteName
+}
+
+/** 页面顶栏路径条（来自 menu.pagePath 或 doc 配置） */
 export function getPcPagePath(routeName: string): string[] | undefined {
-  return findPcMenuByRouteName(routeName)?.pagePath
+  return findPcMenuByRouteName(routeName)?.pagePath ?? findPcDocRoute(routeName)?.pagePath
 }
 
 export type BreadcrumbItem = {
