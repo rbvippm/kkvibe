@@ -118,7 +118,6 @@ onUnmounted(() => {
             <strong class="mh5-spec-annot__panel-title">
               <span class="mh5-spec-annot__panel-no">【{{ spec.no }}】</span>{{ spec.title }}
             </strong>
-            <p class="mh5-spec-annot__panel-sub">区别于 PC 简版「注」；含 PRD 六大结构，供原型评审与研发对齐。</p>
           </div>
 
           <section
