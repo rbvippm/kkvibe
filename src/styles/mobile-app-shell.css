@@ -6348,8 +6348,8 @@
 
 .agent-invite-member-card {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 8px;
   margin-top: 14px;
   padding: 12px;
 }
@@ -6371,7 +6371,13 @@
   min-width: 0;
 }
 
-.agent-invite-member-card__label,
+.agent-invite-member-card__label {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
 .agent-invite-member-card__account,
 .agent-invite-member-card__desc,
 .agent-invite-record__time {
