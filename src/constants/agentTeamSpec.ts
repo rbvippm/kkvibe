@@ -65,7 +65,7 @@ export const AGENT_TEAM_INVITE_RECORDS_SPEC: MobilePrdSpec = {
       '顶栏信封图标（团队管理）或邀请成功页按钮进入本列表。',
       '顶部摘要卡展示「待确认邀请 N 条」与 72 小时有效期说明。',
       '列表项：左「昵称：xxx」「金刚号：xxx」+ 时间，右侧状态标签；已同意额外显示「设置收益比例」链接。',
-      '点击「设置收益比例」→ 代理收益比例页（可再进设置比例编辑）。',
+      '点击「设置收益比例」→ 直接进入「设置比例」编辑页。',
     ],
     visual: [
       '列表全宽白底通栏，项间分割线；左侧昵称与金刚号分两行 12px 灰字展示。',
@@ -88,7 +88,7 @@ export const AGENT_TEAM_INVITE_RECORDS_SPEC: MobilePrdSpec = {
     routing: [
       '入口①：团队管理顶栏信封图标（带 pending 角标）。',
       '入口②：邀请成功页「查看邀请记录」。',
-      '已同意 → 设置收益比例 → mobile-agent-profit-ratio → 修改 → mobile-agent-profit-ratio/edit。',
+      '已同意 → 点击「设置收益比例」→ 直接进入「设置比例」页。',
       '会员端处理结果见注3「代理邀请」。',
       '返回 → router.back() 回到来源页。',
     ],

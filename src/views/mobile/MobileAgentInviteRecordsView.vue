@@ -21,7 +21,7 @@ const pendingCount = computed(
 
 function goProfitRatio(record: AgentSentInviteRecord) {
   router.push({
-    name: 'mobile-agent-profit-ratio',
+    name: 'mobile-agent-profit-ratio-edit',
     query: {
       targetId: record.memberId ?? record.id,
       targetName: record.memberNickname ?? record.memberAccount,
