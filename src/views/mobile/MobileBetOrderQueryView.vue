@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
 import {
   getBetOrderGameNameOptions,
   BET_ORDER_CATEGORY_OPTIONS,
@@ -211,11 +213,17 @@ function toggleGameNameExpanded() {
   <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded }">
     <header v-if="embedded" class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">注单查询</h1>
-      <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
+      <div class="mh5-agent-report-header__actions">
+        <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
+        <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
+      </div>
     </header>
     <Mh5SubPageHeader v-else title="注单查询">
       <template #right>
-        <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
+        <div class="mh5-sub-header__actions">
+          <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
+          <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
+        </div>
       </template>
     </Mh5SubPageHeader>
 

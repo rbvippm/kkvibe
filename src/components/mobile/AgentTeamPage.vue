@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   TEAM_FILTER_TABS,
   MOCK_TEAM_SELF,
@@ -15,7 +15,9 @@ import {
   type TeamFilterTab,
   type TeamListItem,
 } from '../../constants/agentTeam'
+import { agentSentInvites } from '../../constants/agentInvitation'
 
+const route = useRoute()
 const router = useRouter()
 
 const teamFilterTab = ref<TeamFilterTab>('all')
@@ -32,6 +34,10 @@ const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_O
 const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 
 const teamChildRows = computed(() => getTeamChildren(teamFilterTab.value))
+
+const pendingInviteCount = computed(
+  () => agentSentInvites.value.filter((item) => item.status === 'pending').length,
+)
 
 function goTeamDetailByNickname(item: TeamListItem) {
   if (showMemberBadge(item.kind)) {
@@ -89,7 +95,19 @@ function onTeamQuickAction(action: TeamQuickAction) {
   closeTeamQuickMenu()
 
   if (action === 'profit_ratio') {
-    window.alert(`设置「${row.nickname}」的收益比例（原型占位）`)
+    if (row.kind !== 'agent' && row.kind !== 'credit_agent') {
+      window.alert('收益比例仅支持代理账号')
+      return
+    }
+
+    router.push({
+      name: 'mobile-agent-profit-ratio',
+      query: {
+        targetId: row.id,
+        targetName: row.nickname,
+        relation: 'direct',
+      },
+    })
     return
   }
 
@@ -136,6 +154,23 @@ function closeCreateAccountSheet() {
   createAccountSheetOpen.value = false
 }
 
+function goInviteRecords() {
+  closeTeamQuickMenu()
+  router.push({ name: 'mobile-agent-invite-records' })
+}
+
+function closeAllSheets() {
+  createAccountSheetOpen.value = false
+  closeTeamQuickMenu()
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeAllSheets()
+  },
+)
+
 function resetCreateAccountDraft() {
   createAccountDraft.value = DEFAULT_CREATE_ACCOUNT_OPTION
 }
@@ -143,6 +178,11 @@ function resetCreateAccountDraft() {
 function confirmCreateAccount() {
   createAccountSelection.value = createAccountDraft.value
   createAccountSheetOpen.value = false
+
+  if (createAccountDraft.value === 'invite_existing') {
+    router.push({ name: 'mobile-agent-invite-member' })
+    return
+  }
 
   if (createAccountDraft.value === 'member_credit') {
     router.push({ name: 'mobile-member-credit' })
@@ -162,6 +202,10 @@ onMounted(() => {
   document.addEventListener('scroll', closeTeamQuickMenu, true)
 })
 
+onBeforeUnmount(() => {
+  closeAllSheets()
+})
+
 onUnmounted(() => {
   document.removeEventListener('click', onTeamDocumentClick)
   document.removeEventListener('scroll', closeTeamQuickMenu, true)
@@ -173,6 +217,29 @@ onUnmounted(() => {
     <header class="agent-team-header">
       <h1 class="agent-team-header__title">团队管理</h1>
       <div class="agent-team-header__actions">
+        <button
+          type="button"
+          class="agent-team-header__icon-btn agent-team-header__icon-btn--invite"
+          aria-label="我的邀请记录"
+          @click="goInviteRecords"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 6.5h16a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19.5 18h-15A1.5 1.5 0 0 1 3 16.5V8a1.5 1.5 0 0 1 1.5-1.5Z"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linejoin="round"
+            />
+            <path
+              d="m4 8 8 5.5L20 8"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span v-if="pendingInviteCount" class="agent-team-header__badge">{{ pendingInviteCount }}</span>
+        </button>
         <button type="button" class="agent-team-header__icon-btn" aria-label="添加成员" @click="openCreateAccountSheet">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -328,7 +395,7 @@ onUnmounted(() => {
       </div>
     </Teleport>
 
-    <Teleport to=".mh5-app-shell">
+    <Teleport to="body">
       <Transition name="agent-team-create-sheet">
         <div v-if="createAccountSheetOpen" class="agent-team-create-sheet-mask" @click.self="closeCreateAccountSheet">
           <div class="agent-team-create-sheet" role="dialog" aria-modal="true" aria-labelledby="create-account-title">

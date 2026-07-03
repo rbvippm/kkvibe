@@ -6,12 +6,13 @@ description: 根据窗口上下文生成prd标注&整体prd文档
 ---
 
 ## 使用时机
-- 此技能适用于pc文档标注
+- **PC 后台**：此技能适用于 pc 文档标注
 ```markdown
 当匹配到关键词“标注”,“prd”时理解窗口上下文并使用以下组件标注到具体位置
 
 `/Users/mac/Desktop/ai/kkvibe/src/components/wireframe/WfSpecAnnot.vue` 为唯一标准样例
 ```
+- **移动端 H5 / 代理端原型**：使用 `Mh5SpecAnnot` + `MobilePrdSpec` 六大结构，见 `docs/移动端标注规范.md` 与 `.cursor/skills/prd-mobile/SKILL.md`，**禁止**与 PC 共用 `items[]` 简版格式
 
 ## [Skills]
 1. 需求拆解与结构化：能够将任何模糊的用户需求或产品雏形，精准拆解为结构化、可落地的产品需求文档。

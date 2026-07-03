@@ -1,5 +1,7 @@
 /** 代理中心 · 团队管理 Mock */
 
+import { ref } from 'vue'
+
 export type TeamFilterTab =
   | 'all'
   | 'direct_agent'
@@ -143,20 +145,32 @@ export const MOCK_DIRECT_AGENTS: TeamListItem[] = [
   },
 ]
 
+/** 直属会员 · 原型共享状态（邀请同意后会追加） */
+export const teamDirectMembers = ref<TeamListItem[]>(
+  MOCK_TEAM_MEMBERS.map((item) => ({ ...item, kind: 'member' as const })),
+)
+
+export const teamDirectAgents = ref<TeamListItem[]>(MOCK_DIRECT_AGENTS.map((item) => ({ ...item })))
+
+export function addTeamDirectMember(member: TeamListItem) {
+  if (teamDirectMembers.value.some((item) => item.id === member.id)) return
+  teamDirectMembers.value.unshift({ ...member, kind: 'member' })
+}
+
 export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
-  const members = MOCK_TEAM_MEMBERS.map((m) => ({ ...m, kind: 'member' as const }))
+  const members = teamDirectMembers.value
 
   if (tab === 'all') {
     return [
       MOCK_TEAM_SELF,
-      ...MOCK_DIRECT_AGENTS,
+      ...teamDirectAgents.value,
       ...members.slice(0, 4),
       ...MOCK_CREDIT_AGENTS.slice(0, 1),
       ...MOCK_CREDIT_MEMBERS.slice(0, 2),
     ]
   }
   if (tab === 'direct_agent') {
-    return [MOCK_TEAM_SELF, ...MOCK_DIRECT_AGENTS]
+    return [MOCK_TEAM_SELF, ...teamDirectAgents.value]
   }
   if (tab === 'direct_member') {
     return [MOCK_TEAM_SELF, ...members]
@@ -194,12 +208,13 @@ export function getTeamChildren(tab: TeamFilterTab): TeamListItem[] {
   return filterTeamList(tab).filter((item) => item.id !== MOCK_TEAM_SELF.id)
 }
 
-export type CreateAccountOption = 'agent' | 'member' | 'member_credit'
+export type CreateAccountOption = 'agent' | 'member' | 'member_credit' | 'invite_existing'
 
 export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }[] = [
   { key: 'agent', label: '创建代理账户' },
   { key: 'member', label: '创建会员账户' },
   { key: 'member_credit', label: '会员账户授信' },
+  { key: 'invite_existing', label: '邀请现有会员为下级' },
 ]
 
 export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'

@@ -109,6 +109,30 @@ export const router = createRouter({
           meta: { title: '代理授信', hideTabBar: true },
         },
         {
+          path: 'agent/invite-member',
+          name: 'mobile-agent-invite-member',
+          component: () => import('../views/mobile/MobileAgentInviteMemberView.vue'),
+          meta: { title: '邀请现有会员', hideTabBar: true },
+        },
+        {
+          path: 'agent/invite-records',
+          name: 'mobile-agent-invite-records',
+          component: () => import('../views/mobile/MobileAgentInviteRecordsView.vue'),
+          meta: { title: '我的邀请记录', hideTabBar: true },
+        },
+        {
+          path: 'agent/profit-ratio',
+          name: 'mobile-agent-profit-ratio',
+          component: () => import('../views/mobile/MobileAgentProfitRatioView.vue'),
+          meta: { title: '代理收益比例', hideTabBar: true },
+        },
+        {
+          path: 'agent/profit-ratio/edit',
+          name: 'mobile-agent-profit-ratio-edit',
+          component: () => import('../views/mobile/MobileAgentProfitRatioEditView.vue'),
+          meta: { title: '设置比例', hideTabBar: true },
+        },
+        {
           path: 'agent/member/credit',
           name: 'mobile-member-credit',
           component: () => import('../views/mobile/MobileMemberCreditView.vue'),
@@ -189,6 +213,12 @@ export const router = createRouter({
           name: 'mobile-mine-more',
           component: () => import('../views/mobile/MobileMoreFunctionsView.vue'),
           meta: { title: '更多功能', hideTabBar: true },
+        },
+        {
+          path: 'mine/agent-invites',
+          name: 'mobile-agent-invites',
+          component: () => import('../views/mobile/MobileAgentInvitesView.vue'),
+          meta: { title: '代理邀请', hideTabBar: true },
         },
         {
           path: 'mine/bet-orders',

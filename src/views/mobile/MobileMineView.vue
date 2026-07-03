@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import '../../styles/mobile-app-shell.css'
 
 type WalletFilter = 'all' | 'fiat' | 'crypto' | 'credit'
@@ -95,6 +96,7 @@ interface MineMenuItem {
   key: string
   title: string
   hot?: boolean
+  badge?: number
   route?: string
 }
 
@@ -105,11 +107,30 @@ const walletShortcuts: MineShortcutItem[] = [
   { key: 'live', label: '直播中心', route: 'mobile-live' },
 ]
 
-const menuItems: MineMenuItem[] = [
-  { key: 'micall-bank', title: 'MiCall银行' },
-  { key: 'invite', title: '邀请好友' },
-  { key: 'agent', title: '代理中心' },
-]
+const pendingInviteCount = computed(
+  () => memberAgentInvites.value.filter((item) => item.status === 'pending').length,
+)
+
+const menuItems = computed<MineMenuItem[]>(() => {
+  const base: MineMenuItem[] = [
+    { key: 'micall-bank', title: 'MiCall银行' },
+    { key: 'invite', title: '邀请好友' },
+  ]
+
+  if (memberAgentMembershipJoined.value) {
+    return [...base, { key: 'agent', title: '代理中心' }]
+  }
+
+  return [
+    ...base,
+    {
+      key: 'agent-invite',
+      title: '代理邀请',
+      badge: pendingInviteCount.value > 0 ? pendingInviteCount.value : undefined,
+      route: 'mobile-agent-invites',
+    },
+  ]
+})
 
 function mask(value: string) {
   return balanceHidden.value ? '****' : value
@@ -458,6 +479,15 @@ function goMenuItem(item: MineMenuItem) {
             />
             <path d="M9 12h6M12 9v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
           </svg>
+          <svg v-else-if="item.key === 'agent-invite'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M5 7.5A2.5 2.5 0 017.5 5h9A2.5 2.5 0 0119 7.5v7A2.5 2.5 0 0116.5 17H13l-3 3v-3H7.5A2.5 2.5 0 015 14.5v-7z"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linejoin="round"
+            />
+            <path d="M8.5 10h7M8.5 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+          </svg>
           <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none">
             <path
               d="M4 11v2a2 2 0 002 2h1l1 3 3-2h4a2 2 0 002-2v-6a6 6 0 10-12 0z"
@@ -470,6 +500,7 @@ function goMenuItem(item: MineMenuItem) {
         </span>
         <span class="mh5-mine-menu__title">{{ item.title }}</span>
         <span class="mh5-mine-menu__tail">
+          <span v-if="item.badge" class="mh5-mine-menu__badge" :aria-label="`${item.badge}条待处理`">{{ item.badge }}</span>
           <span v-if="item.hot" class="mh5-mine-menu__hot" aria-label="热门">🔥</span>
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <path

@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import '../styles/mobile-app-shell.css'
 
 const route = useRoute()
+
+watch(
+  () => route.fullPath,
+  () => {
+    document.querySelectorAll('body > .agent-team-create-sheet-mask').forEach((el) => el.remove())
+  },
+)
 
 const tabs = [
   {
