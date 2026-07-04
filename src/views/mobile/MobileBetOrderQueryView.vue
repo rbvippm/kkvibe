@@ -10,7 +10,6 @@ import {
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
-  BET_ORDER_WINLOSE_OPTIONS,
   BET_TIME_PRESETS,
   MOCK_BET_ORDER_RECORDS,
   betOrderStatusClass,
@@ -456,22 +455,6 @@ function toggleGameNameExpanded() {
               </button>
             </div>
             <p class="mh5-xcoin-filter-hint">根据上方游戏分类联动展示可选游戏名称</p>
-          </section>
-
-          <section class="mh5-xcoin-filter-group">
-            <h3 class="mh5-xcoin-filter-group__label">输赢状态</h3>
-            <div class="mh5-xcoin-filter-chips">
-              <button
-                v-for="opt in BET_ORDER_WINLOSE_OPTIONS"
-                :key="`wl-${opt.value || 'all'}`"
-                type="button"
-                class="mh5-xcoin-chip"
-                :class="{ 'mh5-xcoin-chip--active': filterDraft.winLose === opt.value }"
-                @click="filterDraft.winLose = opt.value"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
           </section>
 
           <div class="mh5-xcoin-sheet__footer">
