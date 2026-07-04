@@ -1,6 +1,6 @@
 ---
 description: KK Vibe H5 移动端 App 壳层规范，基于 /mobile 路由、MobileAppLayout 与 mobile-app-shell.css
-globs: src/layouts/MobileAppLayout.vue,src/views/mobile/**/*.vue,src/views/AgentView.vue,src/components/mobile/**/*.vue,src/styles/mobile-app-shell.css,src/constants/mobilePrdSpec.ts,docs/H5移动端设计规范.md
+globs: src/router/index.ts,src/layouts/MobileAppLayout.vue,src/views/mobile/**/*.vue,src/views/AgentView.vue,src/components/mobile/**/*.vue,src/styles/mobile-app-shell.css,src/constants/mobilePrdSpec.ts,docs/H5移动端设计规范.md
 alwaysApply: false
 ---
 
@@ -8,22 +8,27 @@ alwaysApply: false
 
 开发 `/mobile/*` 页面时，遵循 `docs/H5移动端设计规范.md` 与 `src/styles/mobile-app-shell.css`。
 
-## 页面结构
+## 页面分层
 
-- `/mobile` 统一走 `MobileAppLayout`，业务页不要重复实现 `mh5-viewport-canvas`、`mh5-app-shell` 或一级底栏。
-- 一级 Tab：大厅、社区、会话、我的，由 `MobileAppLayout` 维护。
-- 二级业务页配置 `meta.hideTabBar: true`，优先使用 `Mh5SubPageHeader`。
-- `/mobile/agent` 使用 `AgentView` + `AgentBottomNav` 内部五 Tab。
+- `/mobile` 统一走 `MobileAppLayout`：`mh5-viewport-canvas` → `mh5-app-shell` → `mh5-app-body` → 路由页；业务页不要重复实现 App 外壳或一级底栏。
+- 一级 Tab 只包含大厅 / 社区 / 会话 / 我的，由 `MobileAppLayout` 维护；一级页面不要自己实现底部导航。
+- 二级业务页配置 `meta.hideTabBar: true`，根节点保持 `mh5-route-view`，顶栏优先用 `Mh5SubPageHeader`，主体用 `mh5-sub-content` 或等价 `flex-1 min-h-0 overflow-auto`。
+- `/mobile/agent` 自动隐藏 App 底栏，使用 `AgentView` + `AgentBottomNav` 内部五 Tab（概况、团队管理、注单查询、我的报表、我的）。
 
 ## 必做 / 禁止
 
-- 必做：触控热区 ≥44px、safe-area、中文 Mock、空态 / 异常态、页面文案与 Mock 一致。
-- 页面有「注N」标注时，必须同步维护 `MobilePrdSpec`，原型和 PRD 双向一致。
-- 禁止：PC 线框 `wf-*`、`WfSpecAnnot`、PC 的 `items[]` 简版标注结构。
+- 使用 `mobile-app-shell.css` 的现有 `mh5-*` / `agent-*` class，优先复用 `components/mobile/*`；不要新增一套主样式体系。
+- 触控热区建议 ≥44px；固定底部按钮、弹层和筛选面板必须处理 safe-area 与内容遮挡。
+- 列表、表单、详情、底部弹层、高级筛选都要有中文 Mock，并覆盖空态 / 禁用态 / 异常态。
+- 页面文案、Mock 数据、路由跳转和 PRD 标注必须一致；页面有「注N」时同步维护 `MobilePrdSpec`，原型和 PRD 双向一致。
+- 禁止在 `/mobile` 使用 PC 线框 `wf-*`、`WfSpecAnnot`、PC 的 `items[]` 简版标注结构。
+- 禁止把旧演示页、直播沉浸页或 PC 后台布局作为新移动端业务页基准。
 
 ## 标准样例
 
 - App 壳层：`src/layouts/MobileAppLayout.vue`
 - 大厅：`src/components/mobile/MobileLobbyPage.vue`
+- 社区：`src/components/mobile/MobileCommunityPage.vue`
+- 会话：`src/components/mobile/MobileChatPage.vue`
 - 代理中心：`src/views/AgentView.vue`
 - 二级页头：`src/components/mobile/Mh5SubPageHeader.vue`

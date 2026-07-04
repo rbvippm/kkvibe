@@ -1,6 +1,6 @@
 ---
-description: KK Vibe PC 后台规范，基于 PcAdminLayout、pcMenu.ts 与 pc-wireframe 业务线框
-globs: src/layouts/PcAdminLayout.vue,src/config/pcMenu.ts,src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/components/wireframe/**/*.vue,src/styles/pc-admin-layout.css,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
+description: KK Vibe PC 后台规范，以代理占成配置和文档说明页为主样例，统一 PcAdminLayout、pcMenu、wf 线框与 PRD 标注
+globs: src/layouts/PcAdminLayout.vue,src/config/pcMenu.ts,src/router/index.ts,src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/components/wireframe/**/*.vue,src/constants/pcPrdSpec.ts,src/constants/shareAgentConfigSpec.ts,src/styles/pc-admin-layout.css,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
 alwaysApply: false
 ---
 
@@ -8,19 +8,28 @@ alwaysApply: false
 
 开发 `/pc/*` 或 PC 管理页时，**必须**遵循 `docs/PC后台设计规范.md` 与 `src/styles/pc-wireframe.css`。
 
-## 必做
+## 结构
 
 1. 后台外壳由 `PcAdminLayout` 统一提供，业务页不要重复实现侧栏、顶部面包屑或 Tags。
-2. 菜单、页面路径条、文档说明入口统一维护在 `src/config/pcMenu.ts`。
-3. 业务页根：`class="pc-wireframe-page"`，并引入 `pc-wireframe.css`。
-4. 有 `pagePath` 的页面顶部使用 `<WfPagePathMenu />`，不要硬编码路径文本。
-5. 布局：`wf-block` → `wf-toolbar` → `wf-table` → `wf-pagination`；多模块用 `wf-tabs`。
-6. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除/危险操作）、`wf-btn--add`（新增）、`wf-btn--default`（取消）。
-7. 弹框：`Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
-8. **Tab 需求标注**：`WfSpecAnnot`（「注」）不得放在 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
-9. **文档说明页**：业务页有「注」标注时，配置 `docRouteName` + 文档子路由；功能清单不包含「文档说明入口」本身。
-10. **「注」标记编号**：每页 `WfSpecAnnot` 须传 `:no`，与当页功能清单 `id` 对齐；常量表 `{MODULE}_SPEC_ANNOT_NO` 写在对应 `*Spec.ts`。
-11. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`。
+2. 菜单、路由、页面路径条、文档说明入口统一维护在 `src/config/pcMenu.ts` 与 `/pc` children 路由中。
+3. 业务页根节点使用 `pc-wireframe-page`，引入 `pc-wireframe.css`；有 `pagePath` 时顶部放 `<WfPagePathMenu />`。
+4. 主要参考 `PcShareAgentConfigView.vue`：筛选工具栏、表格、状态、操作列、授信弹框、Tab 标注、PRD 编号都按它的模式做。
+
+## 线框组件
+
+1. 列表页布局：`wf-block` → `wf-toolbar` → `wf-table-wrap` / `wf-table` → `wf-pagination`。
+2. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除/危险）、`wf-btn--add`（新增）、`wf-btn--default`（取消）。
+3. 表格必须有空态 `wf-td--empty`；不可操作用 `wf-muted`；删除类操作用危险色文字链。
+4. 弹框使用 `Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
+5. Tab 标注不得放进 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
+
+## PRD 与文档说明
+
+1. 页面有「注N」标注时，必须维护对应 `*Spec.ts`、`{MODULE}_SPEC_ANNOT_NO` 与功能清单。
+2. `WfSpecAnnot :no` 必须与功能清单 `id` 对齐；修改原型要同步 PRD，修改 PRD 要同步原型。
+3. 需要文档页时，在 `pcMenu.ts` 配置 `docRouteName` 与 `pcDocRoutes`，文档页参考 `PcShareAgentConfigDocView.vue`。
+4. 功能清单描述业务功能本身，不包含「文档说明入口」。
+5. 旧 v2 分组不再使用独立 rule；账变 / 流水 / 对账等历史页面统一按本规则和最新 `docs/PC后台设计规范.md` 执行。
 
 ## 禁止
 
@@ -31,6 +40,6 @@ alwaysApply: false
 ## 参考实现
 
 - 后台壳层：`src/layouts/PcAdminLayout.vue`
-- 普通列表：`src/views/pc/PcAccountChangeManageView.vue`
-- 复杂标注页：`src/views/pc/PcShareAgentConfigView.vue`
+- 主样例：`src/views/pc/PcShareAgentConfigView.vue`
 - 文档说明页：`src/views/pc/PcShareAgentConfigDocView.vue`
+- PRD 数据：`src/constants/shareAgentConfigSpec.ts`
