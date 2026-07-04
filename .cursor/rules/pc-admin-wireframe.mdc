@@ -1,6 +1,6 @@
 ---
-description: KK Vibe PC 后台线框规范（Tab/表格/弹框），基于直播佣金配置页
-globs: src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
+description: KK Vibe PC 后台规范，基于 PcAdminLayout、pcMenu.ts 与 pc-wireframe 业务线框
+globs: src/layouts/PcAdminLayout.vue,src/config/pcMenu.ts,src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/components/wireframe/**/*.vue,src/styles/pc-admin-layout.css,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
 alwaysApply: false
 ---
 
@@ -10,22 +10,27 @@ alwaysApply: false
 
 ## 必做
 
-1. 页面根：`class="pc-wireframe-page"`，并 `import '../styles/pc-wireframe.css'`（路径按文件调整）。
-2. 布局：顶部 `wf-tabs` + 可选 `wf-notice`；内容 `wf-block` → `wf-toolbar` → `wf-table` → `wf-pagination`。
-3. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除）、`wf-btn--add`（新增）。
-4. 弹框：`Teleport` + `wf-modal-*`；底部取消 `wf-btn--default` + 确定 `wf-btn--primary`。
-5. **内容较高的弹框**（如授信、多品类配置）：根节点加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 内部滚动；`header` / `footer` 固定不滚。
-6. **Tab 需求标注**：`WfSpecAnnot`（「注」）不得放在 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧（参考 `PcShareAgentConfigView` 信用 Tab）。触发器无框线、无底色，仅橙色「注」字。
-7. **文档说明页**：业务页有「注」标注时，须配置 `docRouteName` + 文档子路由；详见 `docs/PC后台设计规范.md` §9；参考 `PcShareAgentConfigDocView.vue`。
-8. **「注」标记编号**：每页 `WfSpecAnnot` 须传 `:no`，与当页功能清单 `id` 对齐，各页从 1 起独立编号；常量表 `{MODULE}_SPEC_ANNOT_NO` 写在对应 `*Spec.ts`。
-9. **禁止**：面包屑「一、直播管理/…」、Tailwind 圆角卡片主布局、无 Mock 空页。
-10. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`；路径条用 `<WfPagePathMenu />`，配置在 `pcMenuV2Children.pagePath`。
+1. 后台外壳由 `PcAdminLayout` 统一提供，业务页不要重复实现侧栏、顶部面包屑或 Tags。
+2. 菜单、页面路径条、文档说明入口统一维护在 `src/config/pcMenu.ts`。
+3. 业务页根：`class="pc-wireframe-page"`，并引入 `pc-wireframe.css`。
+4. 有 `pagePath` 的页面顶部使用 `<WfPagePathMenu />`，不要硬编码路径文本。
+5. 布局：`wf-block` → `wf-toolbar` → `wf-table` → `wf-pagination`；多模块用 `wf-tabs`。
+6. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除/危险操作）、`wf-btn--add`（新增）、`wf-btn--default`（取消）。
+7. 弹框：`Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
+8. **Tab 需求标注**：`WfSpecAnnot`（「注」）不得放在 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
+9. **文档说明页**：业务页有「注」标注时，配置 `docRouteName` + 文档子路由；功能清单不包含「文档说明入口」本身。
+10. **「注」标记编号**：每页 `WfSpecAnnot` 须传 `:no`，与当页功能清单 `id` 对齐；常量表 `{MODULE}_SPEC_ANNOT_NO` 写在对应 `*Spec.ts`。
+11. **v2 版本模块**：侧栏分组「v2.x.x 账变细化和流水调整」内页面遵循 `.cursor/rules/pc-v2-version-module.mdc`。
 
 ## 禁止
 
-- 在 PC 后台新页使用 `admin-page` + 大圆角 `rounded-xl` + 深色顶栏（旧打赏后台风格）。
+- 在 PC 后台新页使用 `admin-page` + 大圆角 `rounded-xl` + 深色顶栏（旧页面风格）。
+- 在业务页硬编码旧式「一、直播管理/…」路径文本。
 - 移动端规范（Tailwind 移动优先）套用到 `/pc` 路由。
 
 ## 参考实现
 
-`src/views/LiveCommissionConfigView.vue` 为列表页标准样例；`PcShareAgentConfigDocView.vue` 为文档说明页标准样例。
+- 后台壳层：`src/layouts/PcAdminLayout.vue`
+- 普通列表：`src/views/pc/PcAccountChangeManageView.vue`
+- 复杂标注页：`src/views/pc/PcShareAgentConfigView.vue`
+- 文档说明页：`src/views/pc/PcShareAgentConfigDocView.vue`

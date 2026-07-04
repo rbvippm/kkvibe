@@ -1,30 +1,29 @@
 ---
-description: KK Vibe H5 移动端规范（壳页/直播/开播通知），基于 /mobile 路由
-globs: src/views/mobile/**/*.vue,src/views/LiveRoomView.vue,src/views/AgentView.vue,src/views/MicControlStatesView.vue,src/views/VoiceRoom*.vue,src/components/LiveStartTopNotice.vue,src/composables/useLiveStartNotice.ts,src/styles/mobile-h5.css,docs/H5移动端设计规范.md
+description: KK Vibe H5 移动端 App 壳层规范，基于 /mobile 路由、MobileAppLayout 与 mobile-app-shell.css
+globs: src/layouts/MobileAppLayout.vue,src/views/mobile/**/*.vue,src/views/AgentView.vue,src/components/mobile/**/*.vue,src/styles/mobile-app-shell.css,src/constants/mobilePrdSpec.ts,docs/H5移动端设计规范.md
 alwaysApply: false
 ---
 
 # H5 移动端规范
 
-开发 `/mobile/*` 或直播/语聊相关移动页时，遵循 `docs/H5移动端设计规范.md` 与 `src/styles/mobile-h5.css`。
+开发 `/mobile/*` 页面时，遵循 `docs/H5移动端设计规范.md` 与 `src/styles/mobile-app-shell.css`。
 
-## 页面分型
+## 页面结构
 
-1. **App 壳页**（Hub、演示控制台）：`mh5-page` + `mh5-header` / `mh5-main` / `mh5-card` / `mh5-btn-*`；使用 `var(--bg)`、`var(--text-h)`。
-2. **沉浸式房间**（`/mobile/live`）：`mh5-live-room` 或 `max-w-[430px] bg-[#1e2a5e]`；底栏 fixed + safe-area；不用浅色壳页背景。
-
-## 开播通知
-
-- 全局仅 `LiveStartTopNotice` + `useLiveStartNotice().push()`。
-- kind：`live_start` | `voice_mic_on`；禁止重复实现顶部浮层。
+- `/mobile` 统一走 `MobileAppLayout`，业务页不要重复实现 `mh5-viewport-canvas`、`mh5-app-shell` 或一级底栏。
+- 一级 Tab：大厅、社区、会话、我的，由 `MobileAppLayout` 维护。
+- 二级业务页配置 `meta.hideTabBar: true`，优先使用 `Mh5SubPageHeader`。
+- `/mobile/agent` 使用 `AgentView` + `AgentBottomNav` 内部五 Tab。
 
 ## 必做 / 禁止
 
-- 必做：触控热区 ≥44px、`active:scale` 反馈、safe-area、中文 Mock。
-- 禁止：PC 线框 `wf-*`；在壳页使用直播深色全屏背景；未处理底栏遮挡公屏。
+- 必做：触控热区 ≥44px、safe-area、中文 Mock、空态 / 异常态、页面文案与 Mock 一致。
+- 页面有「注N」标注时，必须同步维护 `MobilePrdSpec`，原型和 PRD 双向一致。
+- 禁止：PC 线框 `wf-*`、`WfSpecAnnot`、PC 的 `items[]` 简版标注结构。
 
 ## 标准样例
 
-- 壳页：`src/views/mobile/LiveStartNoticeDemoView.vue`
-- 直播：`src/views/LiveRoomView.vue`
-- Hub：`src/views/mobile/MobileHubView.vue`
+- App 壳层：`src/layouts/MobileAppLayout.vue`
+- 大厅：`src/components/mobile/MobileLobbyPage.vue`
+- 代理中心：`src/views/AgentView.vue`
+- 二级页头：`src/components/mobile/Mh5SubPageHeader.vue`
