@@ -723,6 +723,19 @@
   text-align: center;
 }
 
+/* 表格正文默认换行，禁止省略号截断；操作列、编号列等可单独 nowrap */
+.wf-table .wf-th,
+.wf-table .wf-td {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.wf-table .wf-th--no,
+.wf-table .wf-td--actions {
+  white-space: nowrap;
+}
+
 .wf-td--center {
   text-align: center;
 }
@@ -1011,6 +1024,27 @@
 .wf-table--share-agent .wf-th--op,
 .wf-table--share-agent .wf-td--actions {
   min-width: 200px;
+  white-space: nowrap;
+}
+
+/* ---------- 禁言列表 ---------- */
+.wf-table--mute-list {
+  min-width: 1180px;
+}
+
+.wf-table--mute-list .wf-th--no,
+.wf-table--mute-list .wf-td--center:not(.wf-td--actions) {
+  white-space: nowrap;
+}
+
+.wf-table--mute-list .wf-th--status,
+.wf-table--mute-list .wf-td--status {
+  white-space: nowrap;
+}
+
+.wf-table--mute-list .wf-th--op,
+.wf-table--mute-list .wf-td--actions {
+  min-width: 210px;
   white-space: nowrap;
 }
 

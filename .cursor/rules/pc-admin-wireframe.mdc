@@ -20,8 +20,9 @@ alwaysApply: false
 1. 列表页布局：`wf-block` → `wf-toolbar` → `wf-table-wrap` / `wf-table` → `wf-pagination`。
 2. 按钮：`wf-btn--primary`（搜索/确定）、`wf-btn--danger`（清除/危险）、`wf-btn--add`（新增）、`wf-btn--default`（取消）。
 3. 表格必须有空态 `wf-td--empty`；不可操作用 `wf-muted`；删除类操作用危险色文字链。
-4. 弹框使用 `Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
-5. Tab 标注不得放进 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
+4. 表格单元格内容默认换行展示，禁止用 `text-overflow: ellipsis`、`overflow: hidden` 或 `white-space: nowrap` 截断正文；长文本用 `word-break: break-word` / `overflow-wrap: break-word` 在单元格内折行。操作列、编号列等需保持单行时可单独加 `white-space: nowrap`。
+5. 弹框使用 `Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
+6. Tab 标注不得放进 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
 
 ## PRD 与文档说明
 

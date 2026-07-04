@@ -15,7 +15,7 @@ export const LIVE_DANMAKU_MUTE_META = {
   title: '禁言列表',
   module: '直播管理',
   updatedAt: '2026-07-04',
-  prdVersion: 'v1.0',
+  prdVersion: 'v1.1',
 } as const
 
 /** 1. 需求背景 */
@@ -28,11 +28,11 @@ export const LIVE_DANMAKU_MUTE_BACKGROUND = [
 /** 2. 需求目标 */
 export const LIVE_DANMAKU_MUTE_GOALS = [
   '提供禁言记录列表，支持按用户 ID、用户名、禁言来源、禁言类型、状态筛选。',
-  '列表展示禁言编号、来源、类型、时间、操作人、原因与当前状态，支持查看详情与解除/重新禁言。',
-  '详情弹窗展示禁言基础信息与关联弹幕、直播场次上下文，便于运营复核处置依据。',
+  '列表展示禁言编号、来源、类型、时间、操作人、原因与当前状态；操作列提供禁言详情、编辑、解除限制三个入口。',
+  '详情弹窗只读展示禁言与关联弹幕；编辑弹窗可改类型与原因；解除限制仅在禁言中展示。',
 ] as const
 
-/** 3. 需求功能清单（与页面「注」标注对应，不含文档入口本身） */
+/** 3. 需求功能清单（与页面「注N」标注一一对应，不含文档入口） */
 export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
   {
     id: 1,
@@ -43,7 +43,7 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
       functionalLogic: '按用户 ID 模糊匹配禁言记录，辅助运营定位指定用户的禁言历史。',
       interactiveBehavior:
         '输入用户 ID 片段后点击「搜索」-> 列表仅展示 userId 包含输入内容的行；点击「清除」-> 清空条件并恢复全量（原型为前端即时过滤）。',
-      visualPresentation: '标签「用户ID：」+ 文本输入框，占位符「请输入用户ID」。',
+      visualPresentation: '标签「用户ID：」+ 文本输入框，占位符「请输入用户ID」；旁侧「注1」标注。',
       dataRules: '非必填；匹配规则为包含关系（trim 后）；空值表示不过滤用户 ID。',
       exceptions: '无匹配记录 -> 表格展示「暂无禁言记录」空态，不报错。',
       routing: '筛选结果停留当前列表页，不跳转。',
@@ -58,7 +58,7 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
       functionalLogic: '按用户名模糊匹配禁言记录，便于运营通过昵称检索。',
       interactiveBehavior:
         '输入用户名片段后搜索 -> 列表仅展示 username 包含输入内容的行；清除后恢复全量。',
-      visualPresentation: '标签「用户名：」+ 文本输入框，占位符「请输入用户名」。',
+      visualPresentation: '标签「用户名：」+ 文本输入框，占位符「请输入用户名」；旁侧「注2」标注。',
       dataRules: '非必填；匹配规则为包含关系（trim 后）；空值表示不过滤用户名。',
       exceptions: '组合筛选无交集 -> 空列表 +「暂无禁言记录」。',
       routing: '停留列表页。',
@@ -73,7 +73,7 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
       functionalLogic: '区分禁言操作发起方：主播在直播中控台发起，运营在后台列表发起或处理。',
       interactiveBehavior:
         '选择「主播」或「运营」并搜索 -> 仅展示对应 muteSource 的记录；选「全部」-> 不过滤来源。',
-      visualPresentation: '标签「禁言来源：」+ 下拉（全部 / 主播 / 运营）；旁侧「注」标注。',
+      visualPresentation: '标签「禁言来源：」+ 下拉（全部 / 主播 / 运营）；旁侧「注3」标注。',
       dataRules: '枚举值：主播 | 运营；默认「全部」；与记录字段 muteSource 一致。',
       exceptions: '来源与类型组合筛选无结果 -> 空列表，保留已选条件不清空。',
       routing: '停留列表页；可从直播中控台禁言后通过顶部 Tab 或侧栏进入本列表查看新增记录。',
@@ -89,7 +89,7 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
         '区分禁言作用范围：房间禁言仅限制用户在对应直播间发言；全局禁言限制用户在所有直播间发言。',
       interactiveBehavior:
         '选择「房间禁言」或「全局禁言」并搜索 -> 仅展示对应 muteType 的记录；选「全部」-> 展示两类记录。',
-      visualPresentation: '标签「禁言类型：」+ 下拉（全部 / 房间禁言 / 全局禁言）；旁侧「注」标注。',
+      visualPresentation: '标签「禁言类型：」+ 下拉（全部 / 房间禁言 / 全局禁言）；旁侧「注4」标注。',
       dataRules:
         '枚举值：房间禁言 | 全局禁言；与记录 muteType 一致。主播端中控台禁言默认房间禁言；全局禁言通常由运营发起（联调期以权限配置为准）。',
       exceptions: '同一用户可同时存在房间禁言与全局禁言两条有效记录 -> 列表分别展示，解除时按各自类型独立处理。',
@@ -105,7 +105,7 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
       functionalLogic: '按当前禁言是否生效过滤记录，区分「禁言中」与「已解除」历史。',
       interactiveBehavior:
         '选择「禁言中」-> 仅 muted=true；选择「已解除」-> 仅 muted=false；「全部」-> 不过滤状态。',
-      visualPresentation: '标签「状态：」+ 下拉（全部 / 禁言中 / 已解除）。',
+      visualPresentation: '标签「状态：」+ 下拉（全部 / 禁言中 / 已解除）；旁侧「注5」标注。',
       dataRules: 'muted=true 展示「禁言中」（红色）；muted=false 展示「已解除」（灰色）；解除后写入 unmutedAt 时间。',
       exceptions: '已解除记录仍保留在列表供审计，不会物理删除。',
       routing: '停留列表页。',
@@ -115,12 +115,12 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
     id: 6,
     module: '列表筛选',
     feature: '搜索与清除',
-    pageLocation: '筛选区操作按钮',
+    pageLocation: '筛选区「搜索」「清除」按钮',
     prd: {
       functionalLogic: '触发筛选或重置全部筛选条件，刷新列表展示结果。',
       interactiveBehavior:
         '点击「搜索」-> 按当前筛选条件过滤列表（原型为前端 computed 即时过滤）；点击「清除」-> 重置五项筛选为空并展示全量记录。',
-      visualPresentation: '主色按钮「搜索」+ 危险色按钮「清除」，位于筛选区下方工具栏左侧。',
+      visualPresentation: '主色按钮「搜索」+ 危险色按钮「清除」，位于筛选区下方工具栏左侧；旁侧「注6」标注。',
       dataRules: '清除后五项筛选恢复默认空值；分页信息「共 N 条」随 filteredRows 数量更新。',
       exceptions: '接口失败时（联调期）保留筛选条件并提示，列表不清空已有数据。',
       routing: '停留列表页。',
@@ -130,17 +130,17 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
     id: 7,
     module: '列表展示',
     feature: '禁言记录列表',
-    pageLocation: '列表表格',
+    pageLocation: '列表表格区域',
     prd: {
       functionalLogic:
         '汇总展示禁言编号、用户信息、来源、类型、时间、操作人、原因与状态，供运营浏览与处置。',
-      interactiveBehavior: '进入页面或筛选后自动渲染；无额外点击；表格支持横向滚动（列较多时）。',
+      interactiveBehavior: '进入页面或筛选后自动渲染；单元格内容过长时换行展示，不截断省略。',
       visualPresentation:
-        '标准 wf-table：含编号、禁言编号、用户ID、用户名、禁言来源、禁言类型、禁言时间、操作人、禁言原因、状态、操作列；状态「禁言中」红色、「已解除」灰色；表格区旁侧「注」标注。',
+        '标准 wf-table：含编号、禁言编号、用户ID、用户名、禁言来源、禁言类型、禁言时间、操作人、禁言原因、状态、操作列；状态「禁言中」红色、「已解除」灰色；表格区「注7」标注。',
       dataRules:
-        '禁言编号格式 MU + 时间戳（Mock）；时间格式 yyyy-MM-dd HH:mm:ss；禁言类型列展示「房间禁言」或「全局禁言」。',
+        '禁言编号格式 MU + 时间戳（Mock）；时间格式 yyyy-MM-dd HH:mm:ss；单元格使用 word-break: break-word 换行。',
       exceptions: 'filteredRows 为空 -> 单行 colspan 展示「暂无禁言记录」。',
-      routing: '列表只读展示；操作列可打开详情或执行解除/禁言。',
+      routing: '列表只读展示；操作列含禁言详情、编辑、解除限制。',
     },
   },
   {
@@ -150,64 +150,71 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
     pageLocation: '操作列「禁言详情」',
     prd: {
       functionalLogic: '查看单条禁言记录的完整信息与关联弹幕、直播场次上下文，供运营复核。',
-      interactiveBehavior: '点击「禁言详情」-> 打开详情弹框；点击遮罩或「关闭」-> 关闭弹框。',
-      visualPresentation: '操作列蓝色链接「禁言详情」；弹框标题「禁言详情」，宽版 wf-modal--detail-wide；旁侧「注」标注。',
+      interactiveBehavior: '点击「禁言详情」-> 打开只读详情弹框；点击「关闭」或遮罩 -> 关闭弹框。',
+      visualPresentation: '操作列蓝色链接「禁言详情」，任意状态均展示；表头操作列「注8」标注；宽版只读弹框含禁言详情与关联弹幕。',
       dataRules:
         '展示禁言编号、用户、来源、类型、时间、操作人、原因、状态、解除时间；关联弹幕区展示弹幕内容、发送时间、主播、场次 ID、处理结果。',
-      exceptions: '关联弹幕或场次字段为空 -> 展示「—」或 Mock 占位，不阻断弹框打开。',
-      routing: '弹框内无跳转；用户 ID、主播 ID 以链接样式展示（原型暂不跳转用户详情，联调期可接）。',
+      exceptions: '关联字段为空 -> 展示 Mock 占位，不阻断弹框打开。',
+      routing: '弹框内无跳转；与「编辑」「解除限制」操作独立。',
     },
   },
   {
     id: 9,
     module: '列表操作',
-    feature: '解除/重新禁言',
-    pageLocation: '操作列「解除」/「禁言」',
+    feature: '编辑禁言',
+    pageLocation: '操作列「编辑」',
     prd: {
-      functionalLogic:
-        '对单条记录执行解除或重新生效；解除时按原禁言类型精确匹配记录，避免误解除其他类型。',
+      functionalLogic: '编辑禁言类型与禁言原因，对已解除记录重新禁言或对禁言中记录切换类型/更新原因。',
       interactiveBehavior:
-        '禁言中 -> 展示红色链接「解除」，点击后立即解除并刷新状态为「已解除」；已解除 -> 展示蓝色链接「禁言」，点击后按原记录的 muteSource、muteType 重新禁言。',
-      visualPresentation: '与「禁言详情」以竖线分隔；解除为红色 hover，重新禁言为蓝色 hover；旁侧「注」标注。',
-      dataRules:
-        '解除调用 unmuteUser(userId, { roomId, muteType })；重新禁言沿用原 reason、danmakuContent；全局禁言解除不影响同用户房间禁言记录。',
-      exceptions: '接口失败时（联调期）状态不变并提示；无二次确认弹框（原型阶段）。',
-      routing: '操作后停留列表页，行状态即时刷新；中控台弹幕区 isUserMuted 与全局/房间禁言状态联动。',
+        '任意状态均可点击「编辑」-> 打开编辑弹框；可切换禁言类型、修改原因后「保存」；类型变更且原记录禁言中时先解除原类型再写入新类型。',
+      visualPresentation: '操作列蓝色链接「编辑」，任意状态均展示；表头操作列「注9」标注；弹框含类型单选与原因输入。',
+      dataRules: '原因必填；muteSource 记为「运营」；保存后关闭弹框并刷新列表行。',
+      exceptions: '原因为空时不提交并提示「请输入禁言原因」。',
+      routing: '保存后停留列表页；与中控台 isUserMuted 联动。',
     },
   },
   {
     id: 10,
-    module: '详情弹窗',
-    feature: '禁言详情与关联弹幕',
-    pageLocation: '禁言详情弹框',
+    module: '列表操作',
+    feature: '解除限制',
+    pageLocation: '操作列「解除限制」',
     prd: {
-      functionalLogic: '分两块展示：禁言处置信息与触发禁言的弹幕及直播上下文，形成完整审计链路。',
-      interactiveBehavior: '弹框打开后只读浏览；底部仅「关闭」按钮；不支持在弹框内直接解除（需回列表操作列）。',
-      visualPresentation:
-        '两节 wf-detail-panel：「禁言详情」「关联弹幕」；禁言中状态值红色强调；弹幕内容可跨列展示。',
-      dataRules:
-        '处理结果：muted=true 为「已执行禁言」，false 为「已解除禁言」；解除时间为「—」表示仍在禁言中。',
-      exceptions: '超长弹幕内容在单元格内换行展示，不截断（原型）；联调期可按产品要求加展开。',
-      routing: '关闭弹框回到列表，不刷新筛选条件。',
+      functionalLogic: '对禁言中记录执行解除，恢复用户发言权限。',
+      interactiveBehavior: '仅禁言中展示「解除限制」链接；点击后立即按该条记录的 muteType 解除，无需弹框确认（原型阶段）。',
+      visualPresentation: '操作列红色链接「解除限制」，与「禁言详情」「编辑」以竖线分隔；已解除状态不展示；表头操作列「注10」标注。',
+      dataRules: '调用 unmuteUser(userId, { roomId, muteType })；解除后状态变为「已解除」并写入解除时间。',
+      exceptions: '接口失败时（联调期）状态不变并提示。',
+      routing: '操作后停留列表页，行状态即时刷新。',
     },
   },
 ]
 
-/**
- * 页面「注」标记编号 · 与 LIVE_DANMAKU_MUTE_FEATURE_LIST.id 对齐
- * 无页面标注的功能（如 #1、#2、#5、#6、#10）不在此列出
- */
+/** 页面「注」标记编号 · 与 LIVE_DANMAKU_MUTE_FEATURE_LIST.id 一一对应 */
 export const LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO = {
+  filterUserId: 1,
+  filterUsername: 2,
   filterMuteSource: 3,
   filterMuteType: 4,
+  filterStatus: 5,
+  searchReset: 6,
   tableRecord: 7,
   detailAction: 8,
-  toggleMute: 9,
+  editAction: 9,
+  unmuteAction: 10,
 } as const
 
 export type LiveDanmakuMuteAnnotContext = keyof typeof LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO
 
-/** 页面标注文案 · 供 WfSpecAnnot 组件引用 */
+export const LIVE_DANMAKU_MUTE_FILTER_USER_ID_SPEC = [
+  '按用户 ID 模糊筛选禁言记录，输入片段后配合「搜索」生效。',
+  '留空表示不过滤用户 ID；与「清除」联动重置。',
+] as const
+
+export const LIVE_DANMAKU_MUTE_FILTER_USERNAME_SPEC = [
+  '按用户名模糊筛选禁言记录，便于通过昵称检索。',
+  '留空表示不过滤用户名。',
+] as const
+
 export const LIVE_DANMAKU_MUTE_FILTER_MUTE_SOURCE_SPEC = [
   '禁言来源区分操作发起方：「主播」为直播中控台弹幕右键禁言；「运营」为后台禁言列表发起或处理。',
   '筛选为精确匹配，选「全部」时不过滤来源。',
@@ -215,30 +222,56 @@ export const LIVE_DANMAKU_MUTE_FILTER_MUTE_SOURCE_SPEC = [
 
 export const LIVE_DANMAKU_MUTE_FILTER_MUTE_TYPE_SPEC = [
   '禁言类型区分作用范围：「房间禁言」仅限制用户在对应直播间发言；「全局禁言」限制用户在所有直播间发言。',
-  '主播在直播中控台禁言时默认选中「房间禁言」；运营可在中控台或列表侧处理全局禁言。',
+  '主播在直播中控台禁言时默认选中「房间禁言」；运营可在列表编辑弹框处理全局禁言。',
   '同一用户可同时存在房间禁言与全局禁言两条记录，解除时需按各自类型分别操作。',
+] as const
+
+export const LIVE_DANMAKU_MUTE_FILTER_STATUS_SPEC = [
+  '按禁言是否生效筛选：「禁言中」或「已解除」。',
+  '选「全部」时展示两种状态的记录。',
+] as const
+
+export const LIVE_DANMAKU_MUTE_SEARCH_RESET_SPEC = [
+  '「搜索」按当前筛选条件过滤列表（原型为前端即时过滤）。',
+  '「清除」重置全部筛选项并恢复展示全量记录。',
 ] as const
 
 export const LIVE_DANMAKU_MUTE_TABLE_RECORD_SPEC = [
   '列表展示全量禁言记录，含禁言类型列；「禁言中」红色、「已解除」灰色。',
-  '数据与直播中控台禁言操作、解除操作共用同一份 Mock 数据源，新增禁言即时出现在列表顶部。',
+  '单元格内容过长时换行展示，不使用省略号截断。',
+  '数据与直播中控台共用同一份 Mock 数据源。',
 ] as const
 
 export const LIVE_DANMAKU_MUTE_DETAIL_ACTION_SPEC = [
-  '点击打开禁言详情弹框，展示禁言编号、来源、类型、操作人、原因、状态及关联弹幕与直播场次信息。',
-  '弹框内只读，解除禁言需返回列表操作列执行。',
+  '点击「禁言详情」打开只读弹框，展示禁言信息与关联弹幕、直播场次上下文。',
+  '任意状态均可查看，与编辑、解除限制相互独立。',
 ] as const
 
-export const LIVE_DANMAKU_MUTE_TOGGLE_MUTE_SPEC = [
-  '「解除」：按该条记录的禁言类型（房间/全局）精确解除，更新状态为「已解除」并写入解除时间。',
-  '「禁言」：对已解除记录按原来源与类型重新生效，沿用原禁言原因与关联弹幕信息。',
-  '全局禁言解除后，用户在其他直播间仍可能因房间禁言记录而受限，反之亦然。',
+export const LIVE_DANMAKU_MUTE_EDIT_ACTION_SPEC = [
+  '任意状态均可点击「编辑」，在弹框内修改禁言类型（房间/全局）与禁言原因。',
+  '保存时对已解除记录重新禁言；对禁言中记录可切换类型或更新原因。',
+  '解除限制请使用操作列「解除限制」，不在编辑弹框内操作。',
+] as const
+
+export const LIVE_DANMAKU_MUTE_UNMUTE_ACTION_SPEC = [
+  '仅「禁言中」状态展示「解除限制」链接，点击后立即解除该条记录对应类型的禁言。',
+  '已解除状态不展示此入口；解除后写入解除时间。',
 ] as const
 
 export const LIVE_DANMAKU_MUTE_ANNOT_MAP: Record<
   LiveDanmakuMuteAnnotContext,
   { no: number; title: string; items: readonly string[] }
 > = {
+  filterUserId: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.filterUserId,
+    title: '用户 ID',
+    items: LIVE_DANMAKU_MUTE_FILTER_USER_ID_SPEC,
+  },
+  filterUsername: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.filterUsername,
+    title: '用户名',
+    items: LIVE_DANMAKU_MUTE_FILTER_USERNAME_SPEC,
+  },
   filterMuteSource: {
     no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.filterMuteSource,
     title: '禁言来源',
@@ -248,6 +281,16 @@ export const LIVE_DANMAKU_MUTE_ANNOT_MAP: Record<
     no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.filterMuteType,
     title: '禁言类型',
     items: LIVE_DANMAKU_MUTE_FILTER_MUTE_TYPE_SPEC,
+  },
+  filterStatus: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.filterStatus,
+    title: '禁言状态',
+    items: LIVE_DANMAKU_MUTE_FILTER_STATUS_SPEC,
+  },
+  searchReset: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.searchReset,
+    title: '搜索与清除',
+    items: LIVE_DANMAKU_MUTE_SEARCH_RESET_SPEC,
   },
   tableRecord: {
     no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.tableRecord,
@@ -259,9 +302,14 @@ export const LIVE_DANMAKU_MUTE_ANNOT_MAP: Record<
     title: '禁言详情',
     items: LIVE_DANMAKU_MUTE_DETAIL_ACTION_SPEC,
   },
-  toggleMute: {
-    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.toggleMute,
-    title: '解除/重新禁言',
-    items: LIVE_DANMAKU_MUTE_TOGGLE_MUTE_SPEC,
+  editAction: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.editAction,
+    title: '编辑禁言',
+    items: LIVE_DANMAKU_MUTE_EDIT_ACTION_SPEC,
+  },
+  unmuteAction: {
+    no: LIVE_DANMAKU_MUTE_SPEC_ANNOT_NO.unmuteAction,
+    title: '解除限制',
+    items: LIVE_DANMAKU_MUTE_UNMUTE_ACTION_SPEC,
   },
 }

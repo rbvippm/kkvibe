@@ -247,7 +247,8 @@ import '../../styles/pc-wireframe.css'
 
 - 表头：`wf-th`，背景 `#fafafa`。
 - 编号列：`wf-th--no` / `wf-td--center`。
-- 操作列：`wf-th--op`。
+- 操作列：`wf-th--op` / `wf-td--actions`。
+- 单元格正文默认换行（`word-break: break-word`），禁止省略号截断；编号列、状态列、操作列可单独 `white-space: nowrap`。
 - 不可操作：`<span class="wf-muted">不可删除</span>`。
 - 无数据：`wf-td--empty`。
 - 比例输入：`wf-input wf-input--pct` + `wf-pct` 后缀。

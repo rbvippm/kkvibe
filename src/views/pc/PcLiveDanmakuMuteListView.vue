@@ -17,6 +17,11 @@ const filter = ref({
 
 const detailVisible = ref(false)
 const detailRow = ref<MuteRecord | null>(null)
+const editVisible = ref(false)
+const editRow = ref<MuteRecord | null>(null)
+const muteType = ref<MuteType>('房间禁言')
+const muteReason = ref('')
+const muteReasonHint = ref('')
 
 const filteredRows = computed(() => {
   const f = filter.value
@@ -35,22 +40,6 @@ function resetFilter() {
   filter.value = { userId: '', username: '', muteSource: '', muteType: '', status: '' }
 }
 
-function toggleMute(row: MuteRecord) {
-  if (row.muted) {
-    unmuteUser(row.userId, { roomId: row.roomId, muteType: row.muteType })
-    return
-  }
-  muteUser({
-    userId: row.userId,
-    username: row.username,
-    muteSource: row.muteSource,
-    muteType: row.muteType,
-    reason: row.reason,
-    danmakuContent: row.danmakuContent,
-    danmakuSentAt: row.danmakuSentAt,
-  })
-}
-
 function statusLabel(muted: boolean) {
   return muted ? '禁言中' : '已解除'
 }
@@ -64,6 +53,48 @@ function closeDetail() {
   detailVisible.value = false
   detailRow.value = null
 }
+
+function openEdit(row: MuteRecord) {
+  editRow.value = row
+  muteType.value = row.muteType
+  muteReason.value = row.reason
+  muteReasonHint.value = ''
+  editVisible.value = true
+}
+
+function closeEdit() {
+  editVisible.value = false
+  editRow.value = null
+  muteType.value = '房间禁言'
+  muteReason.value = ''
+  muteReasonHint.value = ''
+}
+
+function saveEdit() {
+  const row = editRow.value
+  if (!row) return
+  if (!muteReason.value.trim()) {
+    muteReasonHint.value = '请输入禁言原因'
+    return
+  }
+  if (row.muted && row.muteType !== muteType.value) {
+    unmuteUser(row.userId, { roomId: row.roomId, muteType: row.muteType })
+  }
+  muteUser({
+    userId: row.userId,
+    username: row.username,
+    muteSource: '运营',
+    muteType: muteType.value,
+    reason: muteReason.value.trim(),
+    danmakuContent: row.danmakuContent,
+    danmakuSentAt: row.danmakuSentAt,
+  })
+  closeEdit()
+}
+
+function confirmUnmute(row: MuteRecord) {
+  unmuteUser(row.userId, { roomId: row.roomId, muteType: row.muteType })
+}
 </script>
 
 <template>
@@ -74,9 +105,11 @@ function closeDetail() {
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">用户ID：</label>
         <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
+        <WfLiveDanmakuMuteAnnot context="filterUserId" placement="bottom" />
 
         <label class="wf-label">用户名：</label>
         <input v-model="filter.username" type="text" class="wf-input" placeholder="请输入用户名" />
+        <WfLiveDanmakuMuteAnnot context="filterUsername" placement="bottom" />
 
         <label class="wf-label">禁言来源：</label>
         <select v-model="filter.muteSource" class="wf-input wf-input--select">
@@ -100,18 +133,20 @@ function closeDetail() {
           <option value="muted">禁言中</option>
           <option value="unmuted">已解除</option>
         </select>
+        <WfLiveDanmakuMuteAnnot context="filterStatus" placement="bottom" />
       </div>
 
       <div class="wf-toolbar">
         <span class="wf-toolbar__actions wf-toolbar__actions--start">
           <button type="button" class="wf-btn wf-btn--primary">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="resetFilter">清除</button>
+          <WfLiveDanmakuMuteAnnot context="searchReset" placement="bottom" />
         </span>
       </div>
 
       <div class="wf-table-wrap live-mute-list__table-head">
         <WfLiveDanmakuMuteAnnot context="tableRecord" placement="bottom" />
-        <table class="wf-table">
+        <table class="wf-table wf-table--mute-list">
           <thead>
             <tr>
               <th class="wf-th wf-th--no">编号</th>
@@ -123,8 +158,15 @@ function closeDetail() {
               <th class="wf-th">禁言时间</th>
               <th class="wf-th">操作人</th>
               <th class="wf-th">禁言原因</th>
-              <th class="wf-th">状态</th>
-              <th class="wf-th wf-th--op">操作</th>
+              <th class="wf-th wf-th--status">状态</th>
+              <th class="wf-th wf-th--op">
+                <span class="live-mute-list__op-head">
+                  操作
+                  <WfLiveDanmakuMuteAnnot context="detailAction" placement="top" />
+                  <WfLiveDanmakuMuteAnnot context="editAction" placement="top" />
+                  <WfLiveDanmakuMuteAnnot context="unmuteAction" placement="top" />
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -141,28 +183,25 @@ function closeDetail() {
               <td class="wf-td">{{ row.mutedAt }}</td>
               <td class="wf-td">{{ row.operator }}</td>
               <td class="wf-td">{{ row.reason }}</td>
-              <td class="wf-td">
+              <td class="wf-td wf-td--status">
                 <span :class="row.muted ? 'live-mute-status--on' : 'live-mute-status--off'">
                   {{ statusLabel(row.muted) }}
                 </span>
               </td>
-              <td class="wf-td wf-td--center">
-                <span class="live-mute-list__op">
-                  <button type="button" class="wf-link-action" @click="openDetail(row)">禁言详情</button>
-                  <WfLiveDanmakuMuteAnnot context="detailAction" placement="top" />
-                </span>
+              <td class="wf-td wf-td--actions wf-td--center">
+                <button type="button" class="wf-link-action" @click="openDetail(row)">禁言详情</button>
                 <span class="wf-action-sep">|</span>
-                <span class="live-mute-list__op">
+                <button type="button" class="wf-link-action" @click="openEdit(row)">编辑</button>
+                <template v-if="row.muted">
+                  <span class="wf-action-sep">|</span>
                   <button
                     type="button"
-                    class="wf-link-action"
-                    :class="row.muted ? 'live-mute-action--unmute' : 'live-mute-action--mute'"
-                    @click="toggleMute(row)"
+                    class="wf-link-action live-mute-action--unmute"
+                    @click="confirmUnmute(row)"
                   >
-                    {{ row.muted ? '解除' : '禁言' }}
+                    解除限制
                   </button>
-                  <WfLiveDanmakuMuteAnnot context="toggleMute" placement="top" />
-                </span>
+                </template>
               </td>
             </tr>
           </tbody>
@@ -285,6 +324,64 @@ function closeDetail() {
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="editVisible && editRow"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="closeEdit"
+      >
+        <div class="wf-modal" role="dialog" aria-labelledby="mute-edit-title" aria-modal="true">
+          <div class="wf-modal__header">
+            <h3 id="mute-edit-title" class="wf-modal__title">编辑禁言</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeEdit">×</button>
+          </div>
+          <div class="wf-modal__body">
+            <p class="live-mute-modal__user">
+              用户：<strong>{{ editRow.username }}</strong>（{{ editRow.userId }}）
+            </p>
+            <p class="live-mute-modal__meta">
+              当前状态：<span :class="editRow.muted ? 'live-mute-status--on' : 'live-mute-status--off'">
+                {{ statusLabel(editRow.muted) }}
+              </span>
+            </p>
+            <div class="wf-form-row">
+              <span class="wf-form-row__label">禁言类型</span>
+              <div class="live-mute-modal__type-group">
+                <label class="live-mute-modal__type">
+                  <input v-model="muteType" type="radio" value="房间禁言" />
+                  房间禁言
+                </label>
+                <label class="live-mute-modal__type">
+                  <input v-model="muteType" type="radio" value="全局禁言" />
+                  全局禁言
+                </label>
+              </div>
+            </div>
+            <div class="wf-form-row">
+              <label class="wf-form-row__label wf-form-row__label--required" for="mute-edit-reason-input">
+                禁言原因
+              </label>
+              <input
+                id="mute-edit-reason-input"
+                v-model="muteReason"
+                type="text"
+                class="wf-input wf-input--full"
+                placeholder="请输入禁言原因"
+                maxlength="50"
+                @keydown.enter.prevent="saveEdit"
+              />
+            </div>
+            <p v-if="muteReasonHint" class="wf-modal__hint">{{ muteReasonHint }}</p>
+          </div>
+          <div class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeEdit">取消</button>
+            <button type="button" class="wf-btn wf-btn--primary" @click="saveEdit">保存</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -300,11 +397,12 @@ function closeDetail() {
   z-index: 1;
 }
 
-.live-mute-list__op {
+.live-mute-list__op-head {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  vertical-align: middle;
 }
 
 .live-mute-status--on {
@@ -315,19 +413,44 @@ function closeDetail() {
   color: var(--pc-text-muted, #999);
 }
 
-.live-mute-action--mute {
-  color: var(--pc-primary, #1890ff);
-}
-
-.live-mute-action--mute:hover {
-  color: var(--pc-focus, #40a9ff);
-}
-
 .live-mute-action--unmute {
   color: var(--pc-danger, #ff4d4f);
 }
 
 .live-mute-action--unmute:hover {
   color: #ff7875;
+}
+
+.live-mute-modal__user {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--pc-text, #333);
+}
+
+.live-mute-modal__meta {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--pc-text-secondary, #666);
+}
+
+.live-mute-modal__type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding-top: 6px;
+}
+
+.live-mute-modal__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--pc-text, #333);
+  cursor: pointer;
+}
+
+.live-mute-modal__type input {
+  margin: 0;
+  cursor: pointer;
 }
 </style>
