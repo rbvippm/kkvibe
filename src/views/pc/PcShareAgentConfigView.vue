@@ -3,7 +3,10 @@ import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfShareAgentFilterAnnot from '../../components/wireframe/WfShareAgentFilterAnnot.vue'
 import WfShareAgentCreditBadgeAnnot from '../../components/wireframe/WfShareAgentCreditBadgeAnnot.vue'
+import WfShareAgentCreditCredentialsAnnot from '../../components/wireframe/WfShareAgentCreditCredentialsAnnot.vue'
 import WfShareAgentGrantAnnot from '../../components/wireframe/WfShareAgentGrantAnnot.vue'
+import WfShareAgentGrantFlowAnnot from '../../components/wireframe/WfShareAgentGrantFlowAnnot.vue'
+import WfShareAgentRowActionsAnnot from '../../components/wireframe/WfShareAgentRowActionsAnnot.vue'
 import WfShareAgentCreditTabAnnot from '../../components/wireframe/WfShareAgentCreditTabAnnot.vue'
 import WfShareAgentRebateAnnot from '../../components/wireframe/WfShareAgentRebateAnnot.vue'
 import WfShareAgentShareAnnot from '../../components/wireframe/WfShareAgentShareAnnot.vue'
@@ -61,8 +64,8 @@ function matchRow(row: ShareAgentRow) {
   if (f.userId && !row.userId.includes(f.userId.trim())) return false
   if (f.superiorAgentId && !row.superiorAgentId.includes(f.superiorAgentId.trim())) return false
   if (f.agentLevel && String(row.agentLevel) !== f.agentLevel) return false
-  if (f.creditAgent === 'yes' && !row.isCreditAgent) return false
-  if (f.creditAgent === 'no' && row.isCreditAgent) return false
+  if (f.creditAgent === 'yes' && !(row.isCreditAgent && hasCreditAgentCredentials(row))) return false
+  if (f.creditAgent === 'no' && row.isCreditAgent && hasCreditAgentCredentials(row)) return false
   return true
 }
 
@@ -282,10 +285,16 @@ function confirmCreditModal() {
               <th class="wf-th">上级代理ID</th>
               <th class="wf-th">现金代理账号</th>
               <th class="wf-th">现金代理密码</th>
-              <th class="wf-th">信用代理账号</th>
+              <th class="wf-th wf-th--with-spec">
+                信用代理账号
+                <WfShareAgentCreditCredentialsAnnot placement="bottom" />
+              </th>
               <th class="wf-th">信用代理密码</th>
               <th class="wf-th wf-th--status">状态</th>
-              <th class="wf-th wf-th--op">操作</th>
+              <th class="wf-th wf-th--op wf-th--with-spec">
+                操作
+                <WfShareAgentRowActionsAnnot placement="top" />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -372,7 +381,10 @@ function confirmCreditModal() {
           aria-modal="true"
         >
           <div class="wf-modal__header">
-            <h3 id="share-agent-credit-title" class="wf-modal__title">{{ creditModalTitle }}</h3>
+            <h3 id="share-agent-credit-title" class="wf-modal__title wf-modal__title--with-spec">
+              {{ creditModalTitle }}
+              <WfShareAgentGrantFlowAnnot v-if="creditModalMode === 'grant'" placement="bottom" />
+            </h3>
             <button
               type="button"
               class="wf-modal__close"
@@ -443,12 +455,9 @@ function confirmCreditModal() {
             </div>
 
             <section class="wf-share-agent-credit-panel">
-              <h4
-                class="wf-share-agent-credit-panel__title"
-                :class="{ 'wf-share-agent-credit-panel__title--with-spec': creditModalMode === 'grant' }"
-              >
+              <h4 class="wf-share-agent-credit-panel__title wf-share-agent-credit-panel__title--with-spec">
                 {{ activeShareLabel }}
-                <WfShareAgentShareAnnot v-if="creditModalMode === 'grant'" placement="bottom" />
+                <WfShareAgentShareAnnot placement="bottom" />
               </h4>
               <div class="wf-share-agent-credit-grid">
                 <div

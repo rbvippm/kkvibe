@@ -15,7 +15,7 @@ export const SHARE_AGENT_CONFIG_META = {
   title: '占成代理配置',
   module: '推广返利',
   updatedAt: '2026-07-03',
-  prdVersion: 'v1.0',
+  prdVersion: 'v1.1',
 } as const
 
 /** 1. 需求背景 */
@@ -44,7 +44,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '选择 1～10 级代理后点击「搜索」-> 列表仅展示对应等级；点击「清除」-> 重置为「请选择」并恢复全量展示。',
       visualPresentation:
-        '标签「代理等级：」+ 下拉框，默认「请选择」；旁侧「注」标注触发器，悬停/点击展示需求说明。',
+        '标签「代理等级：」+ 下拉框，默认「请选择」；旁侧「注1」标注。',
       dataRules: '非必填；选项值 1～10 对应「N级代理」；空值表示不过滤等级。',
       exceptions: '无匹配数据 -> 表格展示「暂无数据」空状态，不报错。',
       routing: '筛选结果停留当前列表页，不跳转。',
@@ -59,7 +59,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       functionalLogic: '信用代理下拉：区分已授信与未授信代理，辅助运营定位信用体系用户。',
       interactiveBehavior:
         '选择「是」并搜索 -> 仅展示 isCreditAgent=true 且信用账密已存在的行；选择「否」-> 仅未授信；清除后恢复全量。',
-      visualPresentation: '标签「信用代理：」+ 三态下拉（请选择 / 是 / 否）；旁侧「注」标注。',
+      visualPresentation: '标签「信用代理：」+ 三态下拉（请选择 / 是 / 否）；旁侧「注2」标注。',
       dataRules: '「是」判定：已完成授信且 creditAgentAccount、creditAgentPassword 均非空；「否」：未授信。',
       exceptions: '组合筛选（等级+信用）无交集 -> 空列表 +「暂无数据」。',
       routing: '停留列表页。',
@@ -74,7 +74,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       functionalLogic: '「信」标识：标识该代理已纳入信用代理体系，与信用账密列数据联动展示。',
       interactiveBehavior: '列表加载后自动渲染；无需用户操作；鼠标悬停标识显示 title「信用代理」。',
       visualPresentation:
-        '「N级代理」文字后紧跟蓝色圆角小标签「信」（wf-credit-badge）；未授信不展示标识。',
+        '「N级代理」文字后紧跟蓝色圆角小标签「信」（wf-credit-badge）；未授信不展示标识；表头「代理级别」旁侧「注3」标注。',
       dataRules: '展示条件：isCreditAgent=true 且信用账号、密码均非空；与列表信用账密列一致。',
       exceptions: '仅授信未完成或账密缺失 -> 不展示「信」，避免误导。',
       routing: '无跳转；点击标识不触发弹框（仅辅助识别）。',
@@ -90,7 +90,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
         '信用代理账号/密码列：展示信用体系登录凭证；状态列：展示代理启用/禁用运营状态。',
       interactiveBehavior: '列表只读展示；禁用/启用通过操作列切换后即时刷新状态标签。',
       visualPresentation:
-        '未授信账密显示「-」；状态为绿色「启用」或灰色「禁用」标签（wf-status-badge）。',
+        '未授信账密显示「-」；状态为绿色「启用」或灰色「禁用」标签（wf-status-badge）；信用账密列与状态列表头区旁侧「注4」标注。',
       dataRules: '账密明文展示（后台场景）；状态字段 disabled：true=禁用，false=启用。',
       exceptions: '账密为空 -> 统一显示「-」，不占位错误信息。',
       routing: '状态变更不离开列表；后续可扩展跳转用户详情（本期无）。',
@@ -107,7 +107,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '点击「授信」-> 打开「代理授信」弹框；仅 agentLevel=1 且 isCreditAgent=false 时可见该按钮。',
       visualPresentation:
-        '主色描边按钮「授信」（wf-btn--credit）；旁侧「注」标注说明 x币上下分变更；与「编辑」「禁用」以竖线分隔。',
+        '主色描边按钮「授信」（wf-btn--credit）；旁侧「注5」标注；与「编辑」「禁用」以竖线分隔。',
       dataRules: '展示条件：一级代理 + 未授信；已授信或非一级不渲染按钮。',
       exceptions: '不满足授信条件 -> 不展示入口，防止误操作；接口失败时保留弹框数据并提示（联调期）。',
       routing: '授信成功 -> 关闭弹框，列表行更新 isCreditAgent、信用账密及「信」标识。',
@@ -124,7 +124,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '打开弹框 -> 顶部信息表只读展示；直接显示「信用占成」「信用退水」配置区（无 Tab）；点击「确认授信」校验通过后提交并关闭。',
       visualPresentation:
-        '标题「代理授信」；弹框 max-height 70vh，仅 body 内滚动；底部「取消」「确认授信」。',
+        '标题「代理授信」；弹框 max-height 70vh，仅 body 内滚动；标题旁侧「注6」标注；底部「取消」「确认授信」。',
       dataRules: '占成/退水根据数据源的品类数量必填有效数值；信用账密提交后 = 现金账密。',
       exceptions:
         '校验未通过 -> 字段标红 + 底部提示「请修正比例后再提交」，主按钮禁用；点击遮罩/×/取消 -> 放弃修改并关闭。',
@@ -142,7 +142,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '点击「编辑」-> 打开「编辑代理」弹框；已授信且账密存在 -> 展示「现金」「信用」Tab，默认激活「信用」；未授信 -> 仅现金配置区。',
       visualPresentation:
-        'Tab 条「现金 | 信用」；「信用」Tab 按钮外侧附「注」标注；切换 Tab 切换下方占成/退水表单内容。',
+        'Tab 条「现金 | 信用」；「信用」Tab 按钮外侧附「注7」标注；切换 Tab 切换下方占成/退水表单内容。',
       dataRules: '信用 Tab 展示条件：isCreditAgent=true 且信用账密非空；各 Tab 独立维护产品数组。',
       exceptions: '未授信代理编辑 -> 不展示 Tab，等同仅编辑现金方案。',
       routing: '保存成功 -> 关闭弹框；取消/关闭 -> 不保存。',
@@ -159,7 +159,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '输入占成数值 -> 实时校验；失焦/提交时标红错误文案；合法时清除错误。',
       visualPresentation:
-        '品类网格布局；每行输入框 +「%」后缀；下方灰色区间提示「区间 0~x%」；错误红色文案。',
+        '品类网格布局；每行输入框 +「%」后缀；下方灰色区间提示「区间 0~x%」；占成区标题旁侧「注8」标注；错误红色文案。',
       dataRules:
         '正则 ^\\d+(\\.\\d{1,2})?$；区间 [0, maxShare]，maxShare 为上级该品类最大值；根据数据源的品类数量（棋牌、趣投等）。',
       exceptions: '超区间/格式错误 -> 字段下红色提示 + 提交按钮禁用；空值视为校验失败。',
@@ -175,9 +175,9 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       functionalLogic:
         '退水配置区：设置向下级返还的退水比例（由原「赚水」口径调整）；授信为「信用退水」，编辑区分现金/信用。',
       interactiveBehavior:
-        '与占成区交互一致；「注」标注展示赚水→退水计算对比说明，辅助运营理解口径变更。',
+        '与占成区交互一致；点击「注9」标注展示赚水→退水计算对比说明，辅助运营理解口径变更。',
       visualPresentation:
-        '标题「设置退水」或「信用退水」等；布局同占成区；标注浮层含赚水/退水对比示例。',
+        '标题「设置退水」或「信用退水」等；布局同占成区；退水区标题旁侧「注9」标注。',
       dataRules:
         '正则 ^\\d+(\\.\\d{1,2})?$；区间 [0, maxRebate]；赚水时代理填赚取比例，退水时代理填向下级返还比例。',
       exceptions: '口径误解导致超填 -> 前端区间校验拦截；后端最终以 maxRebate 硬限制。',
@@ -194,7 +194,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
         '编辑：打开编辑弹框维护方案；禁用/启用：切换代理可用状态，控制下游是否可正常使用。',
       interactiveBehavior:
         '点击「编辑」-> 编辑弹框；点击「禁用」/「启用」-> 即时切换行内状态标签（原型本地切换）。',
-      visualPresentation: '「编辑」为蓝色文字链；「禁用」为红色文字链，已禁用时文案变为「启用」。',
+      visualPresentation: '「编辑」为蓝色文字链；「禁用」为红色文字链，已禁用时文案变为「启用」；表头操作列旁侧「注10」标注。',
       dataRules: '所有等级代理均可编辑；禁用状态 boolean 取反切换。',
       exceptions: '禁用代理仍可被搜索到，状态列展示「禁用」；接口失败应回滚状态（联调期）。',
       routing: '编辑 -> 弹框内完成；禁用无跳转。',
@@ -202,18 +202,18 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
   },
 ]
 
-/**
- * 页面「注」标记编号 · 与 SHARE_AGENT_CONFIG_FEATURE_LIST.id 对齐
- * 无页面标注的功能（如 #4、#6、#10）不在此列出
- */
+/** 页面「注」标记编号 · 与 SHARE_AGENT_CONFIG_FEATURE_LIST.id 一一对应 */
 export const SHARE_AGENT_SPEC_ANNOT_NO = {
   filterAgentLevel: 1,
   filterCreditAgent: 2,
   creditBadge: 3,
+  creditCredentials: 4,
   grantAction: 5,
+  grantFlow: 6,
   creditTab: 7,
   share: 8,
   rebate: 9,
+  rowActions: 10,
 } as const
 
 /** 页面标注文案 · 供 WfSpecAnnot 组件引用 */
@@ -257,4 +257,19 @@ export const SHARE_AGENT_FILTER_AGENT_LEVEL_SPEC = [
 export const SHARE_AGENT_FILTER_CREDIT_AGENT_SPEC = [
   '查询条件新增：按是否信用代理筛选。',
   '「是」：已完成授信且信用代理账密已存在；「否」：未授信代理。',
+] as const
+
+export const SHARE_AGENT_CREDIT_CREDENTIALS_SPEC = [
+  '信用代理账号/密码列展示授信后的登录凭证，未授信统一显示「-」。',
+  '状态列展示绿色「启用」或灰色「禁用」，通过操作列切换后即时刷新。',
+] as const
+
+export const SHARE_AGENT_GRANT_FLOW_SPEC = [
+  '一级未授信代理点击「授信」打开本弹框，直接配置信用占成/退水（无 Tab）。',
+  '顶部信息表只读展示代理与账密；确认授信后生成信用账密并与现金账密一致。',
+] as const
+
+export const SHARE_AGENT_ROW_ACTIONS_SPEC = [
+  '「编辑」打开编辑弹框维护现金/信用方案；「禁用」/「启用」切换代理可用状态。',
+  '所有等级均可编辑；禁用后状态列仍展示「禁用」，代理记录保留在列表中。',
 ] as const

@@ -814,6 +814,12 @@
   color: var(--pc-text);
 }
 
+.wf-modal__title--with-spec {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .wf-modal__close {
   border: none;
   background: none;

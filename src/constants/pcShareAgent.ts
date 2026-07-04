@@ -158,10 +158,18 @@ export { SHARE_AGENT_CREDIT_TAB_SPEC } from './shareAgentConfigSpec'
 /** 列表操作 · 授信按钮标注 */
 export const SHARE_AGENT_GRANT_ACTION_LABEL = '授信'
 
+export { SHARE_AGENT_GRANT_FLOW_SPEC } from './shareAgentConfigSpec'
+
+export const SHARE_AGENT_GRANT_FLOW_LABEL = '授信流程'
+
 export { SHARE_AGENT_GRANT_ACTION_SPEC } from './shareAgentConfigSpec'
 
 /** 列表 · 信用代理标识标注 */
 export const SHARE_AGENT_CREDIT_BADGE_LABEL = '信用代理标识'
+
+export { SHARE_AGENT_CREDIT_CREDENTIALS_SPEC } from './shareAgentConfigSpec'
+
+export const SHARE_AGENT_CREDIT_CREDENTIALS_LABEL = '信用代理账密与状态'
 
 export { SHARE_AGENT_CREDIT_BADGE_SPEC } from './shareAgentConfigSpec'
 
@@ -176,6 +184,10 @@ export { SHARE_AGENT_FILTER_AGENT_LEVEL_SPEC } from './shareAgentConfigSpec'
 export const SHARE_AGENT_FILTER_CREDIT_AGENT_LABEL = '信用代理'
 
 export { SHARE_AGENT_FILTER_CREDIT_AGENT_SPEC } from './shareAgentConfigSpec'
+
+export { SHARE_AGENT_ROW_ACTIONS_SPEC } from './shareAgentConfigSpec'
+
+export const SHARE_AGENT_ROW_ACTIONS_LABEL = '编辑 / 禁用·启用'
 
 export { SHARE_AGENT_SPEC_ANNOT_NO } from './shareAgentConfigSpec'
 
