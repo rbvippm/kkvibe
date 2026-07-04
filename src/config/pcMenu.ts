@@ -30,6 +30,18 @@ export const pcDocRoutes: PcDocRoute[] = [
     title: '文档说明',
     pagePath: ['推广返利', '占成代理配置', '文档说明'],
   },
+  {
+    path: '/pc/live-danmaku-mute-list/doc',
+    routeName: 'pc-live-danmaku-mute-list-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '直播管理', '禁言列表', '文档说明'],
+  },
+  {
+    path: '/pc/live-broadcast/doc',
+    routeName: 'pc-live-broadcast-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '直播管理', '直播中控台', '文档说明'],
+  },
 ]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
@@ -123,6 +135,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/live-broadcast',
         routeName: 'pc-live-broadcast',
         pagePath: ['管理后台', '直播管理', '直播中控台'],
+        docRouteName: 'pc-live-broadcast-doc',
       },
       {
         key: 'live-danmaku-mute-list',
@@ -130,6 +143,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/live-danmaku-mute-list',
         routeName: 'pc-live-danmaku-mute-list',
         pagePath: ['管理后台', '直播管理', '禁言列表'],
+        docRouteName: 'pc-live-danmaku-mute-list-doc',
       },
       {
         key: 'live-commission',

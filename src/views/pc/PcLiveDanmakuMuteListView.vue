@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
-import { useLiveDanmakuMute, type MuteRecord, type MuteSource } from '../../composables/useLiveDanmakuMute'
+import WfLiveDanmakuMuteAnnot from '../../components/wireframe/WfLiveDanmakuMuteAnnot.vue'
+import { useLiveDanmakuMute, type MuteRecord, type MuteSource, type MuteType } from '../../composables/useLiveDanmakuMute'
 import '../../styles/pc-wireframe.css'
 
 const { muteRecords, muteUser, unmuteUser } = useLiveDanmakuMute()
@@ -10,6 +11,7 @@ const filter = ref({
   userId: '',
   username: '',
   muteSource: '' as '' | MuteSource,
+  muteType: '' as '' | MuteType,
   status: '' as '' | 'muted' | 'unmuted',
 })
 
@@ -22,6 +24,7 @@ const filteredRows = computed(() => {
     if (f.userId && !row.userId.includes(f.userId.trim())) return false
     if (f.username && !row.username.includes(f.username.trim())) return false
     if (f.muteSource && row.muteSource !== f.muteSource) return false
+    if (f.muteType && row.muteType !== f.muteType) return false
     if (f.status === 'muted' && !row.muted) return false
     if (f.status === 'unmuted' && row.muted) return false
     return true
@@ -29,18 +32,19 @@ const filteredRows = computed(() => {
 })
 
 function resetFilter() {
-  filter.value = { userId: '', username: '', muteSource: '', status: '' }
+  filter.value = { userId: '', username: '', muteSource: '', muteType: '', status: '' }
 }
 
 function toggleMute(row: MuteRecord) {
   if (row.muted) {
-    unmuteUser(row.userId, row.roomId)
+    unmuteUser(row.userId, { roomId: row.roomId, muteType: row.muteType })
     return
   }
   muteUser({
     userId: row.userId,
     username: row.username,
-    muteSource: '运营',
+    muteSource: row.muteSource,
+    muteType: row.muteType,
     reason: row.reason,
     danmakuContent: row.danmakuContent,
     danmakuSentAt: row.danmakuSentAt,
@@ -80,6 +84,15 @@ function closeDetail() {
           <option value="主播">主播</option>
           <option value="运营">运营</option>
         </select>
+        <WfLiveDanmakuMuteAnnot context="filterMuteSource" placement="bottom" />
+
+        <label class="wf-label">禁言类型：</label>
+        <select v-model="filter.muteType" class="wf-input wf-input--select">
+          <option value="">全部</option>
+          <option value="房间禁言">房间禁言</option>
+          <option value="全局禁言">全局禁言</option>
+        </select>
+        <WfLiveDanmakuMuteAnnot context="filterMuteType" placement="bottom" />
 
         <label class="wf-label">状态：</label>
         <select v-model="filter.status" class="wf-input wf-input--select">
@@ -96,7 +109,8 @@ function closeDetail() {
         </span>
       </div>
 
-      <div class="wf-table-wrap">
+      <div class="wf-table-wrap live-mute-list__table-head">
+        <WfLiveDanmakuMuteAnnot context="tableRecord" placement="bottom" />
         <table class="wf-table">
           <thead>
             <tr>
@@ -105,6 +119,7 @@ function closeDetail() {
               <th class="wf-th">用户ID</th>
               <th class="wf-th">用户名</th>
               <th class="wf-th">禁言来源</th>
+              <th class="wf-th">禁言类型</th>
               <th class="wf-th">禁言时间</th>
               <th class="wf-th">操作人</th>
               <th class="wf-th">禁言原因</th>
@@ -114,7 +129,7 @@ function closeDetail() {
           </thead>
           <tbody>
             <tr v-if="filteredRows.length === 0">
-              <td colspan="10" class="wf-td wf-td--empty">暂无禁言记录</td>
+              <td colspan="11" class="wf-td wf-td--empty">暂无禁言记录</td>
             </tr>
             <tr v-for="(row, index) in filteredRows" :key="row.id">
               <td class="wf-td wf-td--center">{{ index + 1 }}</td>
@@ -122,6 +137,7 @@ function closeDetail() {
               <td class="wf-td">{{ row.userId }}</td>
               <td class="wf-td">{{ row.username }}</td>
               <td class="wf-td">{{ row.muteSource }}</td>
+              <td class="wf-td">{{ row.muteType }}</td>
               <td class="wf-td">{{ row.mutedAt }}</td>
               <td class="wf-td">{{ row.operator }}</td>
               <td class="wf-td">{{ row.reason }}</td>
@@ -131,16 +147,22 @@ function closeDetail() {
                 </span>
               </td>
               <td class="wf-td wf-td--center">
-                <button type="button" class="wf-link-action" @click="openDetail(row)">禁言详情</button>
+                <span class="live-mute-list__op">
+                  <button type="button" class="wf-link-action" @click="openDetail(row)">禁言详情</button>
+                  <WfLiveDanmakuMuteAnnot context="detailAction" placement="top" />
+                </span>
                 <span class="wf-action-sep">|</span>
-                <button
-                  type="button"
-                  class="wf-link-action"
-                  :class="row.muted ? 'live-mute-action--unmute' : 'live-mute-action--mute'"
-                  @click="toggleMute(row)"
-                >
-                  {{ row.muted ? '解除' : '禁言' }}
-                </button>
+                <span class="live-mute-list__op">
+                  <button
+                    type="button"
+                    class="wf-link-action"
+                    :class="row.muted ? 'live-mute-action--unmute' : 'live-mute-action--mute'"
+                    @click="toggleMute(row)"
+                  >
+                    {{ row.muted ? '解除' : '禁言' }}
+                  </button>
+                  <WfLiveDanmakuMuteAnnot context="toggleMute" placement="top" />
+                </span>
               </td>
             </tr>
           </tbody>
@@ -188,6 +210,10 @@ function closeDetail() {
                 <div class="wf-detail-panel__cell">
                   <span class="wf-detail-panel__label">禁言来源</span>
                   <span class="wf-detail-panel__value">{{ detailRow.muteSource }}</span>
+                </div>
+                <div class="wf-detail-panel__cell">
+                  <span class="wf-detail-panel__label">禁言类型</span>
+                  <span class="wf-detail-panel__value">{{ detailRow.muteType }}</span>
                 </div>
                 <div class="wf-detail-panel__cell">
                   <span class="wf-detail-panel__label">禁言时间</span>
@@ -263,6 +289,24 @@ function closeDetail() {
 </template>
 
 <style scoped>
+.live-mute-list__table-head {
+  position: relative;
+}
+
+.live-mute-list__table-head > :deep(.wf-spec-annot) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+.live-mute-list__op {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+}
+
 .live-mute-status--on {
   color: var(--pc-danger, #ff4d4f);
 }

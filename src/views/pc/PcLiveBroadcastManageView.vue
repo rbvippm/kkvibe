@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
-import { useLiveDanmakuMute, type DanmakuMessage } from '../../composables/useLiveDanmakuMute'
+import WfLiveBroadcastAnnot from '../../components/wireframe/WfLiveBroadcastAnnot.vue'
+import { useLiveDanmakuMute, type DanmakuMessage, type MuteType } from '../../composables/useLiveDanmakuMute'
 import '../../styles/pc-wireframe.css'
 
 const {
@@ -10,11 +11,6 @@ const {
   liveStats,
   danmakuMessages,
   mutedCount,
-  deleteDanmaku,
-  deleteUserDanmakuCurrentRoom,
-  deleteUserDanmakuAllRooms,
-  countUserDanmakuCurrentRoom,
-  countUserDanmakuAllRooms,
   muteUser,
   isUserMuted,
   sendLiveReminder,
@@ -28,44 +24,9 @@ const actionHint = ref('')
 const muteModalVisible = ref(false)
 const muteTargetMessage = ref<DanmakuMessage | null>(null)
 const muteReason = ref('')
+const muteType = ref<MuteType>('房间禁言')
 const muteReasonHint = ref('')
-type DeleteConfirmType = 'single' | 'userCurrentRoom' | 'userAll'
-const deleteConfirmVisible = ref(false)
-const deleteConfirmType = ref<DeleteConfirmType>('single')
-const deleteTargetMessage = ref<DanmakuMessage | null>(null)
 let skipNextDocumentClose = false
-
-const deleteConfirmTitle = computed(() => {
-  if (deleteConfirmType.value === 'single') return '删除该条消息'
-  if (deleteConfirmType.value === 'userCurrentRoom') return '删除该用户当前直播间的消息'
-  return '删除该用户所有直播间的消息'
-})
-
-const deleteUserMessageCount = computed(() => {
-  const message = deleteTargetMessage.value
-  if (!message) return 0
-  if (deleteConfirmType.value === 'userAll') {
-    return countUserDanmakuAllRooms(message.userId)
-  }
-  return countUserDanmakuCurrentRoom(message.userId)
-})
-
-const deleteConfirmScopeText = computed(() => {
-  const message = deleteTargetMessage.value
-  if (!message) return ''
-  if (deleteConfirmType.value === 'single') {
-    return `待删除弹幕：${displayContent(message)}`
-  }
-  if (deleteConfirmType.value === 'userCurrentRoom') {
-    return `将删除该用户在本直播间（${currentRoom.name}）的 ${deleteUserMessageCount.value} 条弹幕。`
-  }
-  const currentCount = countUserDanmakuCurrentRoom(message.userId)
-  const otherCount = deleteUserMessageCount.value - currentCount
-  if (otherCount > 0) {
-    return `将删除该用户在所有直播间的 ${deleteUserMessageCount.value} 条弹幕（含本直播间 ${currentCount} 条、其他直播间 ${otherCount} 条）。`
-  }
-  return `将删除该用户在所有直播间的 ${deleteUserMessageCount.value} 条弹幕。`
-})
 
 function openActionMenu(event: MouseEvent, message: DanmakuMessage) {
   event.preventDefault()
@@ -110,6 +71,7 @@ function openMuteModal() {
   if (!message || message.isSystem) return
   muteTargetMessage.value = message
   muteReason.value = ''
+  muteType.value = '房间禁言'
   muteReasonHint.value = ''
   closeActionMenu()
   muteModalVisible.value = true
@@ -119,6 +81,7 @@ function closeMuteModal() {
   muteModalVisible.value = false
   muteTargetMessage.value = null
   muteReason.value = ''
+  muteType.value = '房间禁言'
   muteReasonHint.value = ''
 }
 
@@ -132,61 +95,15 @@ async function confirmMute() {
   muteUser({
     userId: message.userId,
     username: message.username,
-    muteSource: '运营',
+    muteSource: '主播',
+    muteType: muteType.value,
     reason: muteReason.value.trim(),
     danmakuContent: message.isSystem ? '—' : message.content,
     danmakuSentAt: message.sentAt,
   })
-  actionHint.value = `已禁言用户 ${message.username}，可在禁言列表查看`
+  actionHint.value = `已${muteType.value}用户 ${message.username}，可在禁言列表查看`
   closeMuteModal()
   await nextTick()
-  setTimeout(() => {
-    actionHint.value = ''
-  }, 3000)
-}
-
-function openDeleteConfirm(type: DeleteConfirmType) {
-  const message = activeMessage.value
-  if (!message) return
-  if (
-    (type === 'userCurrentRoom' || type === 'userAll') &&
-    (message.isSystem || message.userId === 'system_admin')
-  ) {
-    return
-  }
-  deleteConfirmType.value = type
-  deleteTargetMessage.value = message
-  closeActionMenu()
-  deleteConfirmVisible.value = true
-}
-
-function closeDeleteConfirm() {
-  deleteConfirmVisible.value = false
-  deleteTargetMessage.value = null
-}
-
-function confirmDelete() {
-  const message = deleteTargetMessage.value
-  if (!message) return
-
-  if (deleteConfirmType.value === 'single') {
-    deleteDanmaku(message.id)
-    actionHint.value = '已删除该条弹幕'
-  } else if (deleteConfirmType.value === 'userCurrentRoom') {
-    const count = deleteUserDanmakuCurrentRoom(message.userId)
-    actionHint.value =
-      count > 0
-        ? `已删除用户 ${message.username} 在本直播间的 ${count} 条弹幕`
-        : `用户 ${message.username} 在本直播间暂无可删除的弹幕`
-  } else {
-    const count = deleteUserDanmakuAllRooms(message.userId)
-    actionHint.value =
-      count > 0
-        ? `已删除用户 ${message.username} 在所有直播间的 ${count} 条弹幕`
-        : `用户 ${message.username} 暂无可删除的弹幕`
-  }
-
-  closeDeleteConfirm()
   setTimeout(() => {
     actionHint.value = ''
   }, 3000)
@@ -221,9 +138,10 @@ function displayContent(message: DanmakuMessage) {
       <p class="live-broadcast-page__room">
         当前直播间：<strong>{{ currentRoom.name }}</strong>（{{ currentRoom.id }}）
       </p>
-      <RouterLink to="/pc/live-danmaku-mute-list" class="wf-link-action">
+      <RouterLink to="/pc/live-danmaku-mute-list" class="wf-link-action live-broadcast-page__mute-link">
         禁言列表（{{ mutedCount }}）
       </RouterLink>
+      <WfLiveBroadcastAnnot context="muteListLink" placement="bottom" />
     </div>
 
     <p v-if="actionHint" class="live-broadcast-page__hint">{{ actionHint }}</p>
@@ -248,6 +166,7 @@ function displayContent(message: DanmakuMessage) {
             @keydown.enter.prevent="submitReminder"
           />
           <button type="button" class="wf-btn wf-btn--primary" @click="submitReminder">发送</button>
+          <WfLiveBroadcastAnnot context="liveReminder" placement="bottom" />
         </div>
         <p class="live-broadcast-page__reminder-tip">直播提醒内容会发送至当前直播间弹幕消息中</p>
       </section>
@@ -255,9 +174,12 @@ function displayContent(message: DanmakuMessage) {
       <aside class="live-broadcast-page__danmaku-panel">
         <header class="live-broadcast-page__danmaku-header">
           <h2 class="live-broadcast-page__danmaku-title">弹幕消息</h2>
-          <div class="live-broadcast-page__stats">
-            <span class="live-broadcast-page__stat" title="点赞">👍 {{ liveStats.likes }}</span>
-            <span class="live-broadcast-page__stat" title="观看">👁 {{ liveStats.viewers }}</span>
+          <div class="live-broadcast-page__danmaku-header-right">
+            <div class="live-broadcast-page__stats">
+              <span class="live-broadcast-page__stat" title="点赞">👍 {{ liveStats.likes }}</span>
+              <span class="live-broadcast-page__stat" title="观看">👁 {{ liveStats.viewers }}</span>
+            </div>
+            <WfLiveBroadcastAnnot context="danmakuList" placement="bottom" />
           </div>
         </header>
         <p class="live-broadcast-page__danmaku-notice">提示：数据统计每 2 分钟自动更新一次</p>
@@ -296,6 +218,7 @@ function displayContent(message: DanmakuMessage) {
         <p class="live-danmaku-action-menu__title">
           {{ activeMessage.username }}
           <span v-if="activeMessage.isSystem" class="live-danmaku-action-menu__tag">系统</span>
+          <WfLiveBroadcastAnnot context="danmakuActionMenu" placement="top" />
         </p>
         <button
           type="button"
@@ -305,27 +228,6 @@ function displayContent(message: DanmakuMessage) {
           @click="openMuteModal"
         >
           禁言
-        </button>
-        <button type="button" class="live-danmaku-action-menu__item" role="menuitem" @click="openDeleteConfirm('single')">
-          删除该条消息
-        </button>
-        <button
-          type="button"
-          class="live-danmaku-action-menu__item live-danmaku-action-menu__item--danger"
-          :disabled="activeMessage.isSystem || activeMessage.userId === 'system_admin'"
-          role="menuitem"
-          @click="openDeleteConfirm('userCurrentRoom')"
-        >
-          删除该用户当前直播间的消息
-        </button>
-        <button
-          type="button"
-          class="live-danmaku-action-menu__item live-danmaku-action-menu__item--danger"
-          :disabled="activeMessage.isSystem || activeMessage.userId === 'system_admin'"
-          role="menuitem"
-          @click="openDeleteConfirm('userAll')"
-        >
-          删除该用户所有直播间的消息
         </button>
       </div>
     </Teleport>
@@ -350,18 +252,35 @@ function displayContent(message: DanmakuMessage) {
               触发弹幕：{{ displayContent(muteTargetMessage) }}
             </p>
             <div class="wf-form-row">
+              <span class="wf-form-row__label">禁言类型</span>
+              <div class="live-mute-modal__type-group">
+                <label class="live-mute-modal__type">
+                  <input v-model="muteType" type="radio" value="房间禁言" />
+                  房间禁言
+                </label>
+                <label class="live-mute-modal__type">
+                  <input v-model="muteType" type="radio" value="全局禁言" />
+                  全局禁言
+                </label>
+                <WfLiveBroadcastAnnot context="muteType" placement="top" />
+              </div>
+            </div>
+            <div class="wf-form-row live-mute-modal__reason-row">
               <label class="wf-form-row__label wf-form-row__label--required" for="mute-reason-input">
                 禁言原因
               </label>
-              <input
-                id="mute-reason-input"
-                v-model="muteReason"
-                type="text"
-                class="wf-input wf-input--full"
-                placeholder="请输入禁言原因"
-                maxlength="50"
-                @keydown.enter.prevent="confirmMute"
-              />
+              <div class="live-mute-modal__reason-field">
+                <input
+                  id="mute-reason-input"
+                  v-model="muteReason"
+                  type="text"
+                  class="wf-input wf-input--full"
+                  placeholder="请输入禁言原因"
+                  maxlength="50"
+                  @keydown.enter.prevent="confirmMute"
+                />
+                <WfLiveBroadcastAnnot context="muteReason" placement="top" />
+              </div>
             </div>
             <p v-if="muteReasonHint" class="wf-modal__hint">{{ muteReasonHint }}</p>
           </div>
@@ -373,32 +292,6 @@ function displayContent(message: DanmakuMessage) {
       </div>
     </Teleport>
 
-    <Teleport to="body">
-      <div
-        v-if="deleteConfirmVisible && deleteTargetMessage"
-        class="wf-modal-mask"
-        role="presentation"
-        @click.self="closeDeleteConfirm"
-      >
-        <div class="wf-modal" role="dialog" aria-labelledby="delete-confirm-title" aria-modal="true">
-          <div class="wf-modal__header">
-            <h3 id="delete-confirm-title" class="wf-modal__title">{{ deleteConfirmTitle }}</h3>
-            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeDeleteConfirm">×</button>
-          </div>
-          <div class="wf-modal__body">
-            <p class="live-delete-confirm__warning">此操作不可恢复，请确认后再执行。</p>
-            <p class="live-mute-modal__user">
-              用户：<strong>{{ deleteTargetMessage.username }}</strong>（{{ deleteTargetMessage.userId }}）
-            </p>
-            <p class="live-mute-modal__danmaku">{{ deleteConfirmScopeText }}</p>
-          </div>
-          <div class="wf-modal__footer">
-            <button type="button" class="wf-btn wf-btn--default" @click="closeDeleteConfirm">取消</button>
-            <button type="button" class="wf-btn wf-btn--danger" @click="confirmDelete">确定删除</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -410,6 +303,10 @@ function displayContent(message: DanmakuMessage) {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+
+.live-broadcast-page__mute-link {
+  margin-right: 4px;
 }
 
 .live-broadcast-page__room {
@@ -483,6 +380,12 @@ function displayContent(message: DanmakuMessage) {
   justify-content: space-between;
   padding: 12px 12px 8px;
   border-bottom: 1px solid var(--pc-border-light, #e8e8e8);
+}
+
+.live-broadcast-page__danmaku-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .live-broadcast-page__danmaku-title {
@@ -600,6 +503,10 @@ function displayContent(message: DanmakuMessage) {
 }
 
 .live-danmaku-action-menu__title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
   margin: 0;
   padding: 6px 12px 8px;
   border-bottom: 1px solid var(--pc-border-light, #e8e8e8);
@@ -638,14 +545,6 @@ function displayContent(message: DanmakuMessage) {
   cursor: not-allowed;
 }
 
-.live-danmaku-action-menu__item--danger {
-  color: var(--pc-danger, #ff4d4f);
-}
-
-.live-danmaku-action-menu__item--danger:hover:not(:disabled) {
-  background: #fff1f0;
-}
-
 .live-mute-modal__user {
   margin: 0 0 8px;
   font-size: 14px;
@@ -663,13 +562,41 @@ function displayContent(message: DanmakuMessage) {
   word-break: break-word;
 }
 
-.live-delete-confirm__warning {
-  margin: 0 0 12px;
-  padding: 8px 10px;
-  border: 1px solid #ffccc7;
-  background: #fff1f0;
-  font-size: 13px;
-  color: var(--pc-danger, #ff4d4f);
+.live-mute-modal__type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  padding-top: 6px;
+}
+
+.live-mute-modal__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--pc-text, #333);
+  cursor: pointer;
+}
+
+.live-mute-modal__type input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.live-mute-modal__reason-row {
+  align-items: flex-start;
+}
+
+.live-mute-modal__reason-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.live-mute-modal__reason-field .wf-input--full {
+  flex: 1;
 }
 
 @media (max-width: 900px) {

@@ -2,6 +2,8 @@ import { computed, ref } from 'vue'
 
 export type MuteSource = '主播' | '运营'
 
+export type MuteType = '房间禁言' | '全局禁言'
+
 export type DanmakuMessage = {
   id: string
   userId: string
@@ -22,6 +24,7 @@ export type MuteRecord = {
   hostId: string
   sessionId: string
   muteSource: MuteSource
+  muteType: MuteType
   mutedAt: string
   unmutedAt: string
   operator: string
@@ -103,6 +106,7 @@ const muteRecords = ref<MuteRecord[]>([
     hostId: CURRENT_ROOM.hostId,
     sessionId: CURRENT_ROOM.sessionId,
     muteSource: '运营',
+    muteType: '房间禁言',
     mutedAt: '2026-06-08 14:20:00',
     unmutedAt: '—',
     operator: 'admin_ruby',
@@ -122,6 +126,7 @@ const muteRecords = ref<MuteRecord[]>([
     hostId: CURRENT_ROOM.hostId,
     sessionId: 'sess_live_20260607_8829103',
     muteSource: '主播',
+    muteType: '房间禁言',
     mutedAt: '2026-06-07 10:30:12',
     unmutedAt: '2026-06-07 11:05:00',
     operator: 'EZ',
@@ -130,6 +135,26 @@ const muteRecords = ref<MuteRecord[]>([
     reason: '公屏发广告',
     danmakuContent: '点击链接领取红包',
     danmakuSentAt: '2026-06-07 10:29:58',
+  },
+  {
+    id: 'mute3',
+    recordNo: 'MU20260606153003',
+    userId: '3180664521199406',
+    username: '违规用户',
+    roomId: CURRENT_ROOM.id,
+    hostName: CURRENT_ROOM.hostName,
+    hostId: CURRENT_ROOM.hostId,
+    sessionId: 'sess_live_20260606_8829103',
+    muteSource: '运营',
+    muteType: '全局禁言',
+    mutedAt: '2026-06-06 15:30:00',
+    unmutedAt: '—',
+    operator: 'admin_ruby',
+    operatorId: '76',
+    muted: true,
+    reason: '多次跨直播间违规',
+    danmakuContent: '辱骂主播',
+    danmakuSentAt: '2026-06-06 15:29:10',
   },
 ])
 
@@ -192,24 +217,33 @@ export function useLiveDanmakuMute() {
     return currentCount + otherCount
   }
 
+  function findMuteRecord(userId: string, muteType: MuteType, roomId = CURRENT_ROOM.id) {
+    return muteRecords.value.find((item) => {
+      if (item.userId !== userId || item.muteType !== muteType) return false
+      if (muteType === '全局禁言') return true
+      return item.roomId === roomId
+    })
+  }
+
   function muteUser(payload: {
     userId: string
     username: string
     muteSource?: MuteSource
+    muteType?: MuteType
     reason?: string
     danmakuContent?: string
     danmakuSentAt?: string
   }) {
     const live = buildLiveContext()
-    const existing = muteRecords.value.find(
-      (item) => item.userId === payload.userId && item.roomId === live.roomId,
-    )
+    const muteType = payload.muteType ?? '房间禁言'
+    const existing = findMuteRecord(payload.userId, muteType, live.roomId)
     if (existing) {
       existing.muted = true
       existing.mutedAt = formatDateTime()
       existing.unmutedAt = '—'
       existing.reason = payload.reason ?? '弹幕违规'
       existing.muteSource = payload.muteSource ?? '运营'
+      existing.muteType = muteType
       if (payload.danmakuContent) existing.danmakuContent = payload.danmakuContent
       if (payload.danmakuSentAt) existing.danmakuSentAt = payload.danmakuSentAt
       return existing
@@ -221,6 +255,7 @@ export function useLiveDanmakuMute() {
       username: payload.username,
       ...live,
       muteSource: payload.muteSource ?? '运营',
+      muteType,
       mutedAt: formatDateTime(),
       unmutedAt: '—',
       operator: '当前管理员',
@@ -234,8 +269,10 @@ export function useLiveDanmakuMute() {
     return record
   }
 
-  function unmuteUser(userId: string, roomId = CURRENT_ROOM.id) {
-    const record = muteRecords.value.find((item) => item.userId === userId && item.roomId === roomId)
+  function unmuteUser(userId: string, options?: { roomId?: string; muteType?: MuteType }) {
+    const roomId = options?.roomId ?? CURRENT_ROOM.id
+    const muteType = options?.muteType ?? '房间禁言'
+    const record = findMuteRecord(userId, muteType, roomId)
     if (record) {
       record.muted = false
       record.unmutedAt = formatDateTime()
@@ -243,7 +280,12 @@ export function useLiveDanmakuMute() {
   }
 
   function isUserMuted(userId: string, roomId = CURRENT_ROOM.id) {
-    return muteRecords.value.some((item) => item.userId === userId && item.roomId === roomId && item.muted)
+    return muteRecords.value.some(
+      (item) =>
+        item.userId === userId &&
+        item.muted &&
+        (item.muteType === '全局禁言' || (item.muteType === '房间禁言' && item.roomId === roomId)),
+    )
   }
 
   function sendLiveReminder(content: string) {

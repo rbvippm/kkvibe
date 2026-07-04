@@ -308,10 +308,22 @@ export const router = createRouter({
           meta: { title: '直播中控台' },
         },
         {
+          path: 'live-broadcast/doc',
+          name: 'pc-live-broadcast-doc',
+          component: () => import('../views/pc/PcLiveBroadcastDocView.vue'),
+          meta: { title: '直播中控台-文档说明' },
+        },
+        {
           path: 'live-danmaku-mute-list',
           name: 'pc-live-danmaku-mute-list',
           component: PcLiveDanmakuMuteListView,
           meta: { title: '禁言列表' },
+        },
+        {
+          path: 'live-danmaku-mute-list/doc',
+          name: 'pc-live-danmaku-mute-list-doc',
+          component: () => import('../views/pc/PcLiveDanmakuMuteListDocView.vue'),
+          meta: { title: '禁言列表-文档说明' },
         },
         {
           path: 'live-commission',
