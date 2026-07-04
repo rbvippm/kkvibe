@@ -9,7 +9,6 @@ const { muteRecords, muteUser, unmuteUser } = useLiveDanmakuMute()
 
 const filter = ref({
   userId: '',
-  username: '',
   muteSource: '' as '' | MuteSource,
   muteType: '' as '' | MuteType,
   status: '' as '' | 'muted' | 'unmuted',
@@ -26,8 +25,7 @@ const muteReasonHint = ref('')
 const filteredRows = computed(() => {
   const f = filter.value
   return muteRecords.value.filter((row) => {
-    if (f.userId && !row.userId.includes(f.userId.trim())) return false
-    if (f.username && !row.username.includes(f.username.trim())) return false
+    if (f.userId && row.userId !== f.userId.trim()) return false
     if (f.muteSource && row.muteSource !== f.muteSource) return false
     if (f.muteType && row.muteType !== f.muteType) return false
     if (f.status === 'muted' && !row.muted) return false
@@ -37,7 +35,7 @@ const filteredRows = computed(() => {
 })
 
 function resetFilter() {
-  filter.value = { userId: '', username: '', muteSource: '', muteType: '', status: '' }
+  filter.value = { userId: '', muteSource: '', muteType: '', status: '' }
 }
 
 function statusLabel(muted: boolean) {
@@ -104,12 +102,8 @@ function confirmUnmute(row: MuteRecord) {
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">用户ID：</label>
-        <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
+        <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入完整用户ID" />
         <WfLiveDanmakuMuteAnnot context="filterUserId" placement="bottom" />
-
-        <label class="wf-label">用户名：</label>
-        <input v-model="filter.username" type="text" class="wf-input" placeholder="请输入用户名" />
-        <WfLiveDanmakuMuteAnnot context="filterUsername" placement="bottom" />
 
         <label class="wf-label">禁言来源：</label>
         <select v-model="filter.muteSource" class="wf-input wf-input--select">

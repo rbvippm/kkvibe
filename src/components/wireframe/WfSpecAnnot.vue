@@ -17,6 +17,7 @@ const triggerLabel = computed(() => (props.no != null ? `注${props.no}` : '注'
 
 const open = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
+const panelRef = ref<HTMLDivElement | null>(null)
 const panelStyle = ref<Record<string, string>>({})
 
 function updatePanelPosition() {
@@ -57,12 +58,24 @@ function unbindPositionListeners() {
   window.removeEventListener('resize', updatePanelPosition)
 }
 
-function showPanel() {
-  open.value = true
+function togglePanel(event: MouseEvent) {
+  event.stopPropagation()
+  open.value = !open.value
 }
 
-function hidePanel() {
+function closePanel() {
   open.value = false
+}
+
+function onDocumentPointerDown(event: PointerEvent) {
+  if (!open.value) return
+
+  const target = event.target as Node | null
+  if (!target) return
+  if (triggerRef.value?.contains(target)) return
+  if (panelRef.value?.contains(target)) return
+
+  closePanel()
 }
 
 watch(open, async (visible) => {
@@ -70,12 +83,18 @@ watch(open, async (visible) => {
     await nextTick()
     updatePanelPosition()
     bindPositionListeners()
+    window.setTimeout(() => {
+      document.addEventListener('pointerdown', onDocumentPointerDown, true)
+    }, 0)
     return
   }
+
+  document.removeEventListener('pointerdown', onDocumentPointerDown, true)
   unbindPositionListeners()
 })
 
 onUnmounted(() => {
+  document.removeEventListener('pointerdown', onDocumentPointerDown, true)
   unbindPositionListeners()
 })
 </script>
@@ -84,31 +103,33 @@ onUnmounted(() => {
   <span
     class="wf-spec-annot"
     :class="placement === 'top' ? 'wf-spec-annot--top' : 'wf-spec-annot--bottom'"
-    @mouseenter="showPanel"
-    @mouseleave="hidePanel"
-    @focusin="showPanel"
-    @focusout="hidePanel"
   >
     <button
       ref="triggerRef"
       type="button"
       class="wf-spec-annot__trigger"
-      :class="{ 'wf-spec-annot__trigger--numbered': no != null }"
-      :aria-label="`${no != null ? `【${no}】` : ''}${title}，查看需求说明`"
-      aria-haspopup="true"
+      :class="{
+        'wf-spec-annot__trigger--numbered': no != null,
+        'wf-spec-annot__trigger--open': open,
+      }"
+      :aria-label="`${no != null ? `【${no}】` : ''}${title}，点击展开或收起需求说明`"
+      aria-haspopup="dialog"
       :aria-expanded="open"
+      @click="togglePanel"
     >
       {{ triggerLabel }}
     </button>
     <Teleport to="body">
       <div
+        ref="panelRef"
         v-show="open"
         class="wf-spec-annot__panel wf-spec-annot__panel--portal"
         :class="
           placement === 'top' ? 'wf-spec-annot__panel--portal-top' : 'wf-spec-annot__panel--portal-bottom'
         "
         :style="panelStyle"
-        role="tooltip"
+        role="dialog"
+        :aria-label="`${no != null ? `【${no}】` : ''}${title}需求说明`"
       >
         <span class="wf-spec-annot__panel-tag">
           需求说明<template v-if="no != null"> #{{ no }}</template>

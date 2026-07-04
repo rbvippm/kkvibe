@@ -135,13 +135,18 @@ function displayContent(message: DanmakuMessage) {
     <WfPagePathMenu />
 
     <div class="live-broadcast-page__toolbar">
-      <p class="live-broadcast-page__room">
-        当前直播间：<strong>{{ currentRoom.name }}</strong>（{{ currentRoom.id }}）
-      </p>
-      <RouterLink to="/pc/live-danmaku-mute-list" class="wf-link-action live-broadcast-page__mute-link">
-        禁言列表（{{ mutedCount }}）
-      </RouterLink>
-      <WfLiveBroadcastAnnot context="muteListLink" placement="bottom" />
+      <div class="live-broadcast-page__room-wrap">
+        <p class="live-broadcast-page__room">
+          当前直播间：<strong>{{ currentRoom.name }}</strong>（{{ currentRoom.id }}）
+        </p>
+        <WfLiveBroadcastAnnot context="currentRoom" placement="bottom" />
+      </div>
+      <div class="live-broadcast-page__toolbar-right">
+        <RouterLink to="/pc/live-danmaku-mute-list" class="wf-link-action live-broadcast-page__mute-link">
+          禁言列表（{{ mutedCount }}）
+        </RouterLink>
+        <WfLiveBroadcastAnnot context="muteListLink" placement="bottom" />
+      </div>
     </div>
 
     <p v-if="actionHint" class="live-broadcast-page__hint">{{ actionHint }}</p>
@@ -149,6 +154,7 @@ function displayContent(message: DanmakuMessage) {
     <div class="live-broadcast-page__layout">
       <section class="live-broadcast-page__main">
         <div class="live-broadcast-page__player" aria-label="直播画面">
+          <WfLiveBroadcastAnnot context="livePlayer" placement="bottom" />
           <div class="live-broadcast-page__player-inner">
             <span class="live-broadcast-page__player-placeholder">直播画面</span>
           </div>
@@ -183,6 +189,10 @@ function displayContent(message: DanmakuMessage) {
           </div>
         </header>
         <p class="live-broadcast-page__danmaku-notice">提示：数据统计每 2 分钟自动更新一次</p>
+
+        <div class="live-broadcast-page__danmaku-list-head">
+          <WfLiveBroadcastAnnot context="mutedBadge" placement="bottom" />
+        </div>
 
         <ul class="live-broadcast-page__danmaku-list">
           <li
@@ -305,8 +315,15 @@ function displayContent(message: DanmakuMessage) {
   margin-bottom: 12px;
 }
 
+.live-broadcast-page__room-wrap,
+.live-broadcast-page__toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .live-broadcast-page__mute-link {
-  margin-right: 4px;
+  margin-right: 0;
 }
 
 .live-broadcast-page__room {
@@ -332,8 +349,16 @@ function displayContent(message: DanmakuMessage) {
 }
 
 .live-broadcast-page__player {
+  position: relative;
   background: #000;
   border: 1px solid var(--pc-border, #d9d9d9);
+}
+
+.live-broadcast-page__player :deep(.wf-spec-annot) {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
 }
 
 .live-broadcast-page__player-inner {
@@ -392,6 +417,7 @@ function displayContent(message: DanmakuMessage) {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
+  color: var(--pc-text, #333);
 }
 
 .live-broadcast-page__stats {
@@ -412,6 +438,10 @@ function displayContent(message: DanmakuMessage) {
   padding: 8px 12px;
   font-size: 12px;
   color: var(--pc-danger, #ff4d4f);
+}
+
+.live-broadcast-page__danmaku-list-head {
+  padding: 0 12px 4px;
 }
 
 .live-broadcast-page__danmaku-list {

@@ -222,7 +222,7 @@
   background: none;
   border: none;
   border-radius: 0;
-  cursor: help;
+  cursor: pointer;
 }
 
 .wf-spec-annot__trigger--numbered {
@@ -237,7 +237,8 @@
 }
 
 .wf-spec-annot__trigger:hover,
-.wf-spec-annot__trigger:focus-visible {
+.wf-spec-annot__trigger:focus-visible,
+.wf-spec-annot__trigger--open {
   color: #ad6800;
   outline: none;
   box-shadow: none;
@@ -263,6 +264,8 @@
   position: fixed;
   z-index: 1100;
   width: min(360px, calc(100vw - 16px));
+  pointer-events: auto;
+  user-select: text;
 }
 
 .wf-spec-annot__panel--portal::before {
