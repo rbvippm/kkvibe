@@ -217,6 +217,7 @@ syncAcceptedInvitesToTeam()
 
 export const AGENT_INVITE_MEMBER_STEPS = [
   { key: 'invite', label: '邀请会员' },
+  { key: 'ratio', label: '收益比例' },
   { key: 'success', label: '邀请成功' },
 ] as const
 

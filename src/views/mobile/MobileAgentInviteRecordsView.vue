@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
@@ -8,27 +7,13 @@ import {
   agentSentInvites,
   agentInviteStatusClass,
   inviteRecordDisplayNickname,
-  type AgentSentInviteRecord,
 } from '../../constants/agentInvitation'
 import { AGENT_TEAM_INVITE_RECORDS_SPEC } from '../../constants/agentTeamSpec'
 import '../../styles/mobile-app-shell.css'
 
-const router = useRouter()
-
 const pendingCount = computed(
   () => agentSentInvites.value.filter((item) => item.status === 'pending').length,
 )
-
-function goProfitRatio(record: AgentSentInviteRecord) {
-  router.push({
-    name: 'mobile-agent-profit-ratio-edit',
-    query: {
-      targetId: record.memberId ?? record.id,
-      targetName: record.memberNickname ?? record.memberAccount,
-      relation: 'direct',
-    },
-  })
-}
 </script>
 
 <template>
@@ -60,14 +45,6 @@ function goProfitRatio(record: AgentSentInviteRecord) {
               <span class="agent-invite-status" :class="agentInviteStatusClass(record.status)">
                 {{ AGENT_INVITE_STATUS_LABEL[record.status] }}
               </span>
-              <button
-                v-if="record.status === 'accepted'"
-                type="button"
-                class="agent-invite-record__profit-action"
-                @click="goProfitRatio(record)"
-              >
-                设置收益比例
-              </button>
             </div>
           </div>
         </article>
