@@ -343,13 +343,15 @@ function toggleGameNameExpanded() {
 
     <p v-if="copyTip" class="mh5-bet-order-copy-tip">{{ copyTip }}</p>
 
-    <!-- 高级筛选 -->
-    <Transition name="mh5-sheet">
-      <div v-if="filterOpen" class="mh5-xcoin-sheet-mask" @click.self="filterOpen = false">
-        <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
+    <!-- 高级筛选（Teleport 至 shell，避免被代理底栏 z-20 遮挡） -->
+    <Teleport to=".mh5-app-shell">
+      <Transition name="mh5-sheet">
+        <div v-if="filterOpen" class="mh5-agent-overlay-mask" @click.self="filterOpen = false">
+          <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
           <h2 class="mh5-xcoin-sheet__title">高级筛选</h2>
           <p v-if="filterError" class="mh5-bet-order-sheet__error">{{ filterError }}</p>
 
+          <div class="mh5-bet-order-sheet__body">
           <section class="mh5-xcoin-filter-group">
             <h3 class="mh5-xcoin-filter-group__label">时间区间</h3>
             <div class="mh5-bet-order-date-row">
@@ -456,8 +458,9 @@ function toggleGameNameExpanded() {
             </div>
             <p class="mh5-xcoin-filter-hint">根据上方游戏分类联动展示可选游戏名称</p>
           </section>
+          </div>
 
-          <div class="mh5-xcoin-sheet__footer">
+          <div class="mh5-xcoin-sheet__footer mh5-bet-order-sheet__footer">
             <button type="button" class="mh5-xcoin-btn mh5-xcoin-btn--ghost" @click="resetFilter">
               重置
             </button>
@@ -465,14 +468,16 @@ function toggleGameNameExpanded() {
               确定
             </button>
           </div>
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
 
     <!-- 注单详情 -->
-    <Transition name="mh5-sheet">
-      <div v-if="detailRow" class="mh5-xcoin-sheet-mask" @click.self="closeDetail">
-        <div class="mh5-xcoin-sheet mh5-bet-order-detail-sheet">
+    <Teleport to=".mh5-app-shell">
+      <Transition name="mh5-sheet">
+        <div v-if="detailRow" class="mh5-agent-overlay-mask" @click.self="closeDetail">
+          <div class="mh5-xcoin-sheet mh5-bet-order-detail-sheet">
           <div class="mh5-bet-order-detail-sheet__handle" aria-hidden="true" />
 
           <section class="mh5-bet-order-detail-hero">
@@ -549,7 +554,8 @@ function toggleGameNameExpanded() {
           <button type="button" class="mh5-bet-order-detail-close" @click="closeDetail">关闭</button>
         </div>
       </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
