@@ -631,6 +631,30 @@ export function summarizeBetOrders(rows: BetOrderRecord[]): BetOrderSummary {
   )
 }
 
+/** 汇总轮播顺序：KKC → KKV → USDT → 信用额度 */
+export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
+  'KKC',
+  'KKV',
+  'USDT',
+  'credit',
+]
+
+export type BetOrderCurrencySummary = BetOrderSummary & {
+  currency: Exclude<BetGameCurrency, ''>
+  label: string
+}
+
+export function summarizeBetOrdersByCurrency(
+  rows: BetOrderRecord[],
+  currencies: Exclude<BetGameCurrency, ''>[] = BET_ORDER_SUMMARY_CURRENCIES,
+): BetOrderCurrencySummary[] {
+  return currencies.map((currency) => ({
+    currency,
+    label: BET_ORDER_CURRENCY_LABEL[currency],
+    ...summarizeBetOrders(rows.filter((row) => row.currency === currency)),
+  }))
+}
+
 export function betOrderStatusClass(status: BetOrderStatus) {
   if (status === 'settled') return 'mh5-bet-order__status--settled'
   if (status === 'cancelled') return 'mh5-bet-order__status--cancelled'

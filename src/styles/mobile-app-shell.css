@@ -9095,6 +9095,73 @@
   border-bottom: 1px solid rgb(255 122 43 / 12%);
 }
 
+.mh5-bet-order-summary--slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  display: block;
+  padding-top: 28px;
+  border-bottom: none;
+}
+
+.mh5-bet-order-summary__currency {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 122 43 / 12%);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mh5-app-orange);
+  line-height: 1.4;
+}
+
+.mh5-bet-order-summary__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.mh5-bet-order-summary-carousel {
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #fff8f2 0%, #fff5eb 100%);
+  border-bottom: 1px solid rgb(255 122 43 / 12%);
+}
+
+.mh5-bet-order-summary-carousel__track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mh5-bet-order-summary-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-bet-order-summary-carousel__dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+
+.mh5-bet-order-summary-carousel__dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(255 122 43 / 22%);
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.mh5-bet-order-summary-carousel__dot--active {
+  width: 14px;
+  background: var(--mh5-app-orange);
+}
+
 .mh5-bet-order-summary__item {
   display: flex;
   flex-direction: column;

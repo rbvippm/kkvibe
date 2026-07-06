@@ -19,6 +19,7 @@ import {
   formatBetOrderCurrency,
   formatMoney,
   summarizeBetOrders,
+  summarizeBetOrdersByCurrency,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
   type BetOrderFilter,
@@ -43,7 +44,7 @@ function createDefaultFilter(): BetOrderFilter {
     status: '',
     category: '',
     gameName: '',
-    gameCurrency: 'KKC',
+    gameCurrency: '',
     winLose: '',
   }
 }
@@ -67,6 +68,33 @@ const filteredRecords = computed(() =>
 )
 
 const summary = computed(() => summarizeBetOrders(filteredRecords.value))
+
+const isCurrencyCarousel = computed(() => appliedFilter.value.gameCurrency === '')
+
+const currencySummaries = computed(() => summarizeBetOrdersByCurrency(filteredRecords.value))
+
+const summaryCarouselRef = ref<HTMLElement | null>(null)
+const summarySlideIndex = ref(0)
+
+function onSummaryCarouselScroll() {
+  const el = summaryCarouselRef.value
+  if (!el || !el.clientWidth) return
+  summarySlideIndex.value = Math.round(el.scrollLeft / el.clientWidth)
+}
+
+function resetSummaryCarousel() {
+  summarySlideIndex.value = 0
+  nextTick(() => {
+    summaryCarouselRef.value?.scrollTo({ left: 0 })
+  })
+}
+
+watch(
+  () => appliedFilter.value.gameCurrency,
+  () => {
+    resetSummaryCarousel()
+  },
+)
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
 
@@ -206,6 +234,17 @@ function selectCategory(category: string) {
 function toggleGameNameExpanded() {
   gameNameExpanded.value = !gameNameExpanded.value
 }
+
+function formatSummaryWinLose(value: number) {
+  return value > 0 ? `+${formatMoney(value)}` : formatMoney(value)
+}
+
+function summaryWinLoseClass(value: number) {
+  return {
+    'mh5-bet-order__amount--win': value > 0,
+    'mh5-bet-order__amount--lose': value < 0,
+  }
+}
 </script>
 
 <template>
@@ -257,7 +296,51 @@ function toggleGameNameExpanded() {
       </div>
     </div>
 
-    <div class="mh5-bet-order-summary">
+    <div v-if="isCurrencyCarousel" class="mh5-bet-order-summary-carousel">
+      <div
+        ref="summaryCarouselRef"
+        class="mh5-bet-order-summary-carousel__track"
+        @scroll.passive="onSummaryCarouselScroll"
+      >
+        <div
+          v-for="slide in currencySummaries"
+          :key="slide.currency"
+          class="mh5-bet-order-summary mh5-bet-order-summary--slide"
+        >
+          <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
+          <div class="mh5-bet-order-summary__metrics">
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总单数</span>
+              <strong>{{ slide.count }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总下注</span>
+              <strong>{{ formatMoney(slide.betAmount) }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总有效投注</span>
+              <strong>{{ formatMoney(slide.validBet) }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总输赢</span>
+              <strong :class="summaryWinLoseClass(slide.winLose)">
+                {{ formatSummaryWinLose(slide.winLose) }}
+              </strong>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
+        <span
+          v-for="(slide, idx) in currencySummaries"
+          :key="`dot-${slide.currency}`"
+          class="mh5-bet-order-summary-carousel__dot"
+          :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
+        />
+      </div>
+    </div>
+
+    <div v-else class="mh5-bet-order-summary">
       <div class="mh5-bet-order-summary__item">
         <span class="mh5-bet-order-summary__label">总单数</span>
         <strong>{{ summary.count }}</strong>
@@ -272,13 +355,8 @@ function toggleGameNameExpanded() {
       </div>
       <div class="mh5-bet-order-summary__item">
         <span class="mh5-bet-order-summary__label">总输赢</span>
-        <strong
-          :class="{
-            'mh5-bet-order__amount--win': summary.winLose > 0,
-            'mh5-bet-order__amount--lose': summary.winLose < 0,
-          }"
-        >
-          {{ summary.winLose > 0 ? `+${formatMoney(summary.winLose)}` : formatMoney(summary.winLose) }}
+        <strong :class="summaryWinLoseClass(summary.winLose)">
+          {{ formatSummaryWinLose(summary.winLose) }}
         </strong>
       </div>
     </div>
