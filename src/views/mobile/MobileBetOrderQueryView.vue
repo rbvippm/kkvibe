@@ -17,6 +17,7 @@ import {
   filterBetOrders,
   formatBetWinLose,
   formatBetOrderCurrency,
+  formatBetOrderMemberLabel,
   formatMoney,
   summarizeBetOrders,
   summarizeBetOrdersByCurrency,
@@ -280,7 +281,7 @@ function summaryWinLoseClass(value: number) {
           v-model="searchInput"
           type="search"
           class="mh5-bet-order-search__input"
-          placeholder="下级会员账号 / 注单号"
+          placeholder="下级会员 / 注单号"
           enterkeyhint="search"
         />
         <button type="submit" class="mh5-bet-order-search__btn">搜索</button>
@@ -382,7 +383,7 @@ function summaryWinLoseClass(value: number) {
       >
         <div class="mh5-bet-order-card__head">
           <div class="mh5-bet-order-card__member">
-            <strong>{{ row.memberAccount }}</strong>
+            <strong>{{ formatBetOrderMemberLabel(row) }}</strong>
             <span class="mh5-bet-order-card__currency">{{ formatBetOrderCurrency(row.currency) }}</span>
           </div>
           <span class="mh5-bet-order-card__status" :class="betOrderStatusClass(row.status)">
@@ -576,10 +577,14 @@ function summaryWinLoseClass(value: number) {
           <section class="mh5-bet-order-detail-block">
             <h3 class="mh5-bet-order-detail-block__title">投注明细</h3>
             <div class="mh5-bet-order-detail-row">
-              <span>会员账号</span>
+              <span>会员</span>
               <span class="mh5-bet-order-detail-row__value">
-                {{ detailRow.memberAccount }}
-                <button type="button" class="mh5-bet-order-copy" @click.stop="copyText(detailRow.memberAccount, '账号')">
+                {{ formatBetOrderMemberLabel(detailRow) }}
+                <button
+                  type="button"
+                  class="mh5-bet-order-copy"
+                  @click.stop="copyText(formatBetOrderMemberLabel(detailRow), '会员')"
+                >
                   复制
                 </button>
               </span>

@@ -22,7 +22,16 @@ export type BetOrderRecord = {
   transactionId: string
   /** 第三方游戏编号 */
   thirdPartyGameId: string
+  /** 会员账号（登录名） */
   memberAccount: string
+  /** 账号 ID */
+  memberAccountId?: string
+  /** 金刚号 */
+  memberKingkongId?: string
+  /** 会员昵称 */
+  memberNickname?: string
+  /** 代理备注 */
+  memberRemark?: string
   currency: string
   productName: string
   /** 游戏名称（与游戏分类联动） */
@@ -88,6 +97,45 @@ export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, stri
 export function formatBetOrderCurrency(currency: string) {
   if (currency === 'credit') return '信用额度'
   return currency
+}
+
+/** 会员展示：备注 → 昵称 → 金刚号（无则回退账号） */
+export function formatBetOrderMemberLabel(
+  row: Pick<
+    BetOrderRecord,
+    'memberAccount' | 'memberKingkongId' | 'memberNickname' | 'memberRemark'
+  >,
+) {
+  const remark = row.memberRemark?.trim()
+  if (remark) return remark
+  const nickname = row.memberNickname?.trim()
+  if (nickname) return nickname
+  const kingkongId = row.memberKingkongId?.trim()
+  if (kingkongId) return kingkongId
+  return row.memberAccount
+}
+
+/** 下级会员搜索：备注 / 昵称 / 账号 / 账号 ID / 金刚号 */
+export function getBetOrderMemberSearchHaystack(
+  row: Pick<
+    BetOrderRecord,
+    | 'memberRemark'
+    | 'memberNickname'
+    | 'memberAccount'
+    | 'memberAccountId'
+    | 'memberKingkongId'
+  >,
+) {
+  return [
+    row.memberRemark,
+    row.memberNickname,
+    row.memberAccount,
+    row.memberAccountId,
+    row.memberKingkongId,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
 }
 
 export const BET_ORDER_CATEGORY_OPTIONS = [
@@ -186,13 +234,68 @@ function mockBetAt(daysAgo: number, hour: number, minute: number, second = 0) {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`
 }
 
-export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
+const BET_ORDER_MEMBER_PROFILES: Record<
+  string,
+  {
+    memberNickname?: string
+    memberRemark?: string
+    memberAccountId?: string
+    memberKingkongId?: string
+  }
+> = {
+  lin111: {
+    memberNickname: '林哥',
+    memberAccountId: 'mid_lin111',
+    memberKingkongId: '11223344',
+  },
+  openapi31axy8: {
+    memberRemark: '体育大户',
+    memberNickname: 'openapi31',
+    memberAccountId: 'mid_openapi31',
+    memberKingkongId: '66880031',
+  },
+  fafa8888888: {
+    memberRemark: 'VIP客户',
+    memberAccountId: 'mid_fafa888',
+    memberKingkongId: '88888888',
+  },
+  '小红来了EZ1': {
+    memberNickname: '小红',
+    memberAccountId: 'mid_ez1',
+    memberKingkongId: '88661234',
+  },
+  mid_eyv4menuoax: {
+    memberNickname: '中间层代理',
+    memberAccountId: 'mid_eyv4menuoax',
+    memberKingkongId: '88661202',
+  },
+  '华南合伙人会员': {
+    memberRemark: '华南合伙人',
+    memberAccountId: 'mid_hn_partner',
+    memberKingkongId: '77550099',
+  },
+}
+
+function enrichBetOrderMemberFields(row: BetOrderRecord): BetOrderRecord {
+  const profile = BET_ORDER_MEMBER_PROFILES[row.memberAccount]
+  if (!profile) return row
+  return {
+    ...row,
+    memberAccountId: row.memberAccountId ?? profile.memberAccountId,
+    memberKingkongId: row.memberKingkongId ?? profile.memberKingkongId,
+    memberNickname: row.memberNickname ?? profile.memberNickname,
+    memberRemark: row.memberRemark ?? profile.memberRemark,
+  }
+}
+
+const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
   {
     id: 'bo1',
     gameOrderNo: '0034-20260630014645001',
     transactionId: 'e505a033f8c24a1b9d2e6c7a1b3d4e5f',
     thirdPartyGameId: '882910334521',
     memberAccount: 'lin111',
+    memberNickname: '林哥',
     currency: 'KKC',
     productName: '皇者-彩票',
     gameName: 'hz-lottery',
@@ -215,6 +318,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'a102b203c304d405e506f607a708b809',
     thirdPartyGameId: '882910334522',
     memberAccount: 'lin111',
+    memberNickname: '林哥',
     currency: 'KKC',
     productName: '皇者-彩票',
     gameName: 'hz-lottery',
@@ -237,6 +341,8 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'c203d304e405f506a607b708c809d910',
     thirdPartyGameId: '882910334523',
     memberAccount: 'openapi31axy8',
+    memberRemark: '体育大户',
+    memberNickname: 'openapi31',
     currency: 'KKV',
     productName: '皇者-体育',
     gameName: 'hz-sports',
@@ -259,6 +365,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'd304e405f506a607b708c809d910e021',
     thirdPartyGameId: '882910334524',
     memberAccount: '小红来了EZ1',
+    memberNickname: '小红',
     currency: 'USDT',
     productName: '皇者-真人',
     gameName: 'hz-live',
@@ -281,6 +388,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'e405f506a607b708c809d910e021f132',
     thirdPartyGameId: '882910334525',
     memberAccount: 'fafa8888888',
+    memberRemark: 'VIP客户',
     currency: 'credit',
     productName: '皇者-电子',
     gameName: 'hz-slots',
@@ -303,6 +411,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'f506a607b708c809d910e021f132a243',
     thirdPartyGameId: '882910334526',
     memberAccount: 'mid_eyv4menuoax',
+    memberNickname: '中间层代理',
     currency: 'USDT',
     productName: '皇者-体育',
     gameName: 'hz-sports',
@@ -325,6 +434,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'a607b708c809d910e021f132a243b354',
     thirdPartyGameId: '882910334527',
     memberAccount: 'lin111',
+    memberNickname: '林哥',
     currency: 'USDT',
     productName: '重庆时时彩',
     gameName: 'cqssc',
@@ -347,6 +457,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'b708c809d910e021f132a243b354c465',
     thirdPartyGameId: '882910334528',
     memberAccount: '华南合伙人会员',
+    memberRemark: '华南合伙人',
     currency: 'USDT',
     productName: '联盟PC28',
     gameName: 'pc28',
@@ -369,6 +480,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'c809d910e021f132a243b354c465d576',
     thirdPartyGameId: '882910334529',
     memberAccount: 'lin111',
+    memberNickname: '林哥',
     currency: 'USDT',
     productName: '皇者-体育',
     gameName: 'hz-sports',
@@ -391,6 +503,8 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'd910e021f132a243b354c465d576e687',
     thirdPartyGameId: '882910334530',
     memberAccount: 'openapi31axy8',
+    memberRemark: '体育大户',
+    memberNickname: 'openapi31',
     currency: 'KKV',
     productName: '皇者-体育',
     gameName: 'hz-sports',
@@ -413,6 +527,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'e021f132a243b354c465d576e687f798',
     thirdPartyGameId: '882910334531',
     memberAccount: 'fafa8888888',
+    memberRemark: 'VIP客户',
     currency: 'USDT',
     productName: '皇者-体育',
     gameName: 'hz-sports',
@@ -435,6 +550,7 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'f132a243b354c465d576e687f809a910',
     thirdPartyGameId: '882910334532',
     memberAccount: 'lin111',
+    memberNickname: '林哥',
     currency: 'USDT',
     productName: 'BOLE - 棋牌',
     gameName: 'bole',
@@ -457,6 +573,8 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     transactionId: 'a243b354c465d576e687f809a910b021',
     thirdPartyGameId: '882910334533',
     memberAccount: 'openapi31axy8',
+    memberRemark: '体育大户',
+    memberNickname: 'openapi31',
     currency: 'USDT',
     productName: 'CQ9 - 棋牌',
     gameName: 'cq9',
@@ -493,12 +611,14 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
       live: '皇者-真人',
       chess: getBetOrderGameNameLabel('chess', gameNames.chess),
     }
+    const memberAccount = ['lin111', 'openapi31axy8', 'fafa8888888'][i % 3]
     return {
       id: `bo${idx}`,
       gameOrderNo: `0034-20260612000${String(idx).padStart(3, '0')}`,
       transactionId: `mock${idx}tx${'a'.repeat(28)}`.slice(0, 32),
       thirdPartyGameId: `88291033${4500 + idx}`,
-      memberAccount: ['lin111', 'openapi31axy8', 'fafa8888888'][i % 3],
+      memberAccount,
+      ...BET_ORDER_MEMBER_PROFILES[memberAccount],
       currency: (['USDT', 'KKC', 'KKV', 'credit'] as const)[i % 4],
       productName: productNames[gameCategory],
       gameName: gameNames[gameCategory],
@@ -517,6 +637,8 @@ export const MOCK_BET_ORDER_RECORDS: BetOrderRecord[] = [
     }
   }),
 ]
+
+export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOrderMemberFields)
 
 export type BetOrderFilter = {
   keyword: string
@@ -604,7 +726,14 @@ export function filterBetOrders(rows: BetOrderRecord[], filter: BetOrderFilter) 
       if (filter.winLose === 'draw' && row.winLose !== 0) return false
     }
     if (!keyword) return true
-    const haystack = [row.memberAccount, row.gameOrderNo, row.betContent, row.productName, row.gameName]
+    const haystack = [
+      getBetOrderMemberSearchHaystack(row),
+      row.gameOrderNo,
+      row.betContent,
+      row.productName,
+      row.gameName,
+    ]
+      .filter(Boolean)
       .join(' ')
       .toLowerCase()
     return haystack.includes(keyword)
