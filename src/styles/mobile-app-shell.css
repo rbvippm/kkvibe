@@ -3457,9 +3457,9 @@
   opacity: 0.75;
 }
 
-/* 代理中心 · Teleport 至 mh5-app-shell 的底部弹层 */
+/* 代理中心 · Teleport 至 body 的底部弹层 */
 .mh5-agent-overlay-mask {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 2000;
   display: flex;
@@ -9451,6 +9451,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  width: 100%;
+  max-width: var(--mh5-max-width, 375px);
+  margin: 0 auto;
   padding-bottom: 0;
   max-height: min(78%, calc(100% - 48px));
   box-sizing: border-box;

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
@@ -147,6 +147,11 @@ watch(
   },
   { deep: true },
 )
+
+onUnmounted(() => {
+  filterOpen.value = false
+  detailRow.value = null
+})
 
 function runSearch() {
   appliedFilter.value = { ...appliedFilter.value, keyword: searchInput.value.trim() }
@@ -421,8 +426,8 @@ function summaryWinLoseClass(value: number) {
 
     <p v-if="copyTip" class="mh5-bet-order-copy-tip">{{ copyTip }}</p>
 
-    <!-- 高级筛选（Teleport 至 shell，避免被代理底栏 z-20 遮挡） -->
-    <Teleport to=".mh5-app-shell">
+    <!-- 高级筛选（Teleport 至 body，避免 shell 内定位导致弹层无法挂载） -->
+    <Teleport to="body">
       <Transition name="mh5-sheet">
         <div v-if="filterOpen" class="mh5-agent-overlay-mask" @click.self="filterOpen = false">
           <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
@@ -552,7 +557,7 @@ function summaryWinLoseClass(value: number) {
     </Teleport>
 
     <!-- 注单详情 -->
-    <Teleport to=".mh5-app-shell">
+    <Teleport to="body">
       <Transition name="mh5-sheet">
         <div v-if="detailRow" class="mh5-agent-overlay-mask" @click.self="closeDetail">
           <div class="mh5-xcoin-sheet mh5-bet-order-detail-sheet">

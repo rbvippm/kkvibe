@@ -132,7 +132,7 @@ function pickCurrency(value: AgentWalletCurrency) {
       </section>
     </main>
 
-    <Teleport to=".mh5-app-shell">
+    <Teleport to="body">
       <Transition name="mh5-agent-report-sheet">
         <div
           v-if="currencyPickerOpen"
