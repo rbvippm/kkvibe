@@ -9486,8 +9486,12 @@
   margin-bottom: 0;
 }
 
-.mh5-bet-order-detail-sheet {
+.mh5-xcoin-sheet.mh5-bet-order-detail-sheet {
+  width: 100%;
+  max-width: var(--mh5-max-width, 375px);
+  margin: 0 auto;
   max-height: 88%;
+  box-sizing: border-box;
 }
 
 .mh5-bet-order-detail-sheet__handle {

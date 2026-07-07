@@ -17,6 +17,7 @@ import {
   filterBetOrders,
   formatBetWinLose,
   formatBetOrderCurrency,
+  formatBetOrderMemberKingkongId,
   formatBetOrderMemberLabel,
   formatMoney,
   summarizeBetOrders,
@@ -578,12 +579,16 @@ function summaryWinLoseClass(value: number) {
             <h3 class="mh5-bet-order-detail-block__title">投注明细</h3>
             <div class="mh5-bet-order-detail-row">
               <span>会员</span>
+              <span>{{ formatBetOrderMemberLabel(detailRow) }}</span>
+            </div>
+            <div class="mh5-bet-order-detail-row">
+              <span>金刚号</span>
               <span class="mh5-bet-order-detail-row__value">
-                {{ formatBetOrderMemberLabel(detailRow) }}
+                {{ formatBetOrderMemberKingkongId(detailRow) }}
                 <button
                   type="button"
                   class="mh5-bet-order-copy"
-                  @click.stop="copyText(formatBetOrderMemberLabel(detailRow), '会员')"
+                  @click.stop="copyText(formatBetOrderMemberKingkongId(detailRow), '金刚号')"
                 >
                   复制
                 </button>

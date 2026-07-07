@@ -115,6 +115,14 @@ export function formatBetOrderMemberLabel(
   return row.memberAccount
 }
 
+export function formatBetOrderMemberKingkongId(
+  row: Pick<BetOrderRecord, 'memberAccount' | 'memberKingkongId'>,
+) {
+  const kingkongId = row.memberKingkongId?.trim()
+  if (kingkongId) return kingkongId
+  return row.memberAccount
+}
+
 /** 下级会员搜索：备注 / 昵称 / 账号 / 账号 ID / 金刚号 */
 export function getBetOrderMemberSearchHaystack(
   row: Pick<
