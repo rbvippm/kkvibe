@@ -211,6 +211,20 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'aidemo',
+    title: 'aidemo',
+    icon: '🧪',
+    children: [
+      {
+        key: 'aidemo-email-account-register',
+        title: '邮箱和账号注册',
+        path: '/pc/aidemo/email-account-register',
+        routeName: 'pc-aidemo-email-account-register',
+        pagePath: ['aidemo', '邮箱和账号注册'],
+      },
+    ],
+  },
+  {
     key: 'voice',
     title: '语聊管理',
     icon: '🎙',
