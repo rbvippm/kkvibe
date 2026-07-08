@@ -407,12 +407,6 @@ export const router = createRouter({
           component: () => import('../views/pc/PcShareAgentConfigDocView.vue'),
           meta: { title: '占成代理配置-文档说明' },
         },
-        {
-          path: 'aidemo/email-account-register',
-          name: 'pc-aidemo-email-account-register',
-          component: () => import('../views/pc/PcAidemoEmailAccountRegisterView.vue'),
-          meta: { title: '邮箱和账号注册' },
-        },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
