@@ -87,6 +87,28 @@ onUnmounted(() => {
           <span class="ml-1">→</span>
         </span>
       </RouterLink>
+
+      <RouterLink to="/workspace" class="home-entry__card home-entry__card--workspace">
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--workspace">📋</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">版本管理</h2>
+            <p class="home-entry__card-text">
+              按版本组织文件夹与页面副本。页面库选页内联预览，确认后保留副本；修订记录可增删改并保存本地草稿，支持 Cursor 设计模式选区。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--workspace">版本树</span>
+              <span class="home-entry__tag home-entry__tag--workspace">页面库</span>
+              <span class="home-entry__tag home-entry__tag--workspace">保留副本</span>
+              <span class="home-entry__tag home-entry__tag--workspace">修订记录</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--workspace">
+          进入工作台
+          <span class="ml-1">→</span>
+        </span>
+      </RouterLink>
     </main>
 
     <footer class="home-entry__footer">原型环境 · 数据均为演示</footer>

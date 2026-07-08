@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/mobile-app-shell.css'
 
 const route = useRoute()
+const { isWorkspacePreview } = useWorkspaceInlinePreview()
 
 watch(
   () => route.fullPath,
@@ -41,7 +43,10 @@ const tabs = [
 ]
 
 const hideTabBar = computed(
-  () => Boolean(route.meta.hideTabBar) || route.path.startsWith('/mobile/agent'),
+  () =>
+    Boolean(route.meta.hideTabBar) ||
+    route.path.startsWith('/mobile/agent') ||
+    isWorkspacePreview.value,
 )
 
 function isActive(tab: (typeof tabs)[number]) {
@@ -53,7 +58,8 @@ function isActive(tab: (typeof tabs)[number]) {
   <div class="mh5-viewport-canvas">
     <div class="mh5-app-shell">
       <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
-        <RouterView v-slot="{ Component }">
+        <slot v-if="$slots.default" />
+        <RouterView v-else v-slot="{ Component }">
           <Transition name="mh5-tab" mode="out-in">
             <component :is="Component" class="mh5-route-view" />
           </Transition>

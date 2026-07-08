@@ -1,0 +1,40 @@
+/**
+ * 版本管理工作台 · 设计令牌（对齐 PC 后台 pc-wireframe / pc-admin-layout）
+ */
+.ws-shell {
+  --ws-bg: #f0f2f5;
+  --ws-surface: #fff;
+  --ws-text: #333;
+  --ws-text-secondary: #666;
+  --ws-text-muted: #999;
+  --ws-text-placeholder: #bfbfbf;
+  --ws-border: #d9d9d9;
+  --ws-border-light: #e8e8e8;
+  --ws-primary: #1890ff;
+  --ws-primary-hover: #40a9ff;
+  --ws-primary-active: #096dd9;
+  --ws-primary-bg: #e6f7ff;
+  --ws-primary-border: #91d5ff;
+  --ws-notice-bg: #fffbe6;
+  --ws-notice-border: #ffe58f;
+  --ws-notice-text: #614700;
+  --ws-danger: #ff4d4f;
+  --ws-disabled-bg: #f5f5f5;
+  --ws-disabled-text: #bfbfbf;
+  --ws-radius: 2px;
+  --ws-font: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --ws-font-size: 14px;
+  --ws-font-size-sm: 12px;
+  --ws-control-h: 32px;
+  --ws-font-size-title: 16px;
+  --ws-header-h: 48px;
+  --ws-sidebar-w: 260px;
+  --ws-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ws-duration: 0.2s;
+
+  color-scheme: light only;
+}
+
+body:has(.ws-shell) {
+  overflow: hidden;
+}

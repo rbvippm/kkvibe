@@ -2,6 +2,7 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
 import {
   getBetOrderGameNameOptions,
@@ -36,6 +37,13 @@ withDefaults(
   }>(),
   { embedded: false },
 )
+
+const { uiText, fork } = useWorkspaceFork()
+const pageTitle = computed(() => uiText('pageTitle', '注单查询'))
+const forkBanner = computed(() => {
+  const banner = fork.value?.mockPatches?.overviewBanner
+  return typeof banner === 'string' ? banner : ''
+})
 
 function createDefaultFilter(): BetOrderFilter {
   return {
@@ -257,13 +265,13 @@ function summaryWinLoseClass(value: number) {
 <template>
   <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded }">
     <header v-if="embedded" class="mh5-agent-report-header">
-      <h1 class="mh5-agent-report-header__title">注单查询</h1>
+      <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
       <div class="mh5-agent-report-header__actions">
         <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
         <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
       </div>
     </header>
-    <Mh5SubPageHeader v-else title="注单查询">
+    <Mh5SubPageHeader v-else :title="pageTitle">
       <template #right>
         <div class="mh5-sub-header__actions">
           <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
@@ -271,6 +279,10 @@ function summaryWinLoseClass(value: number) {
         </div>
       </template>
     </Mh5SubPageHeader>
+
+    <p v-if="forkBanner" class="mx-4 mt-2 rounded-lg bg-violet-50 px-3 py-2 text-xs text-violet-700">
+      {{ forkBanner }}
+    </p>
 
     <div class="mh5-bet-order-toolbar">
       <form class="mh5-bet-order-search" @submit.prevent="runSearch">

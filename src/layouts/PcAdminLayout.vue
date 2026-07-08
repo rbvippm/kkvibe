@@ -3,10 +3,12 @@ import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import { getPcBreadcrumb, pcMenuTree, type PcMenuItem } from '../config/pcMenu'
 import { usePcTagsView } from '../composables/usePcTagsView'
+import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/pc-admin-layout.css'
 
 const route = useRoute()
 const sidebarCollapsed = ref(false)
+const { isWorkspacePreview } = useWorkspaceInlinePreview()
 const { visitedTags, closeTag, activateTag } = usePcTagsView()
 
 const breadcrumbs = computed(() => {
@@ -28,8 +30,9 @@ function isMenuActive(item: PcMenuItem) {
 </script>
 
 <template>
-  <div class="pc-admin-layout">
+  <div class="pc-admin-layout" :class="{ 'pc-admin-layout--preview': isWorkspacePreview }">
     <aside
+      v-if="!isWorkspacePreview"
       class="pc-admin-sidebar"
       :class="{ 'pc-admin-sidebar--collapsed': sidebarCollapsed }"
     >
@@ -76,7 +79,7 @@ function isMenuActive(item: PcMenuItem) {
     </aside>
 
     <div class="pc-admin-main">
-      <header class="pc-admin-header">
+      <header v-if="!isWorkspacePreview" class="pc-admin-header">
         <div class="pc-admin-breadcrumb-row">
           <button
             type="button"
@@ -137,8 +140,9 @@ function isMenuActive(item: PcMenuItem) {
         </div>
       </header>
 
-      <main class="pc-admin-content">
-        <RouterView v-slot="{ Component }">
+      <main class="pc-admin-content" :class="{ 'pc-admin-content--preview': isWorkspacePreview }">
+        <slot v-if="$slots.default" />
+        <RouterView v-else v-slot="{ Component }">
           <Transition name="pc-page" mode="out-in">
             <component :is="Component" />
           </Transition>
@@ -157,5 +161,14 @@ function isMenuActive(item: PcMenuItem) {
 .pc-page-enter-from,
 .pc-page-leave-to {
   opacity: 0;
+}
+
+:global(.pc-admin-layout--preview .pc-admin-main) {
+  margin-left: 0;
+}
+
+:global(.pc-admin-content--preview) {
+  overflow: auto !important;
+  height: 100vh;
 }
 </style>

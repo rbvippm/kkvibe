@@ -29,6 +29,7 @@ import {
   type PcShareAgentProduct,
   type ShareAgentRow,
 } from '../../constants/pcShareAgent'
+import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import '../../styles/pc-wireframe.css'
 
 type ShareFilter = {
@@ -45,10 +46,17 @@ const defaultFilter = (): ShareFilter => ({
   creditAgent: '',
 })
 
+const { patchMock } = useWorkspaceFork()
+
+function buildInitialRows(): ShareAgentRow[] {
+  const base = { rows: MOCK_SHARE_AGENT_ROWS.map((row) => ({ ...row })) }
+  return (patchMock(base) as { rows: ShareAgentRow[] }).rows
+}
+
 const filter = ref<ShareFilter>(defaultFilter())
 const appliedFilter = ref<ShareFilter>(defaultFilter())
 
-const rows = ref<ShareAgentRow[]>(MOCK_SHARE_AGENT_ROWS.map((row) => ({ ...row })))
+const rows = ref<ShareAgentRow[]>(buildInitialRows())
 
 function applyFilter() {
   appliedFilter.value = { ...filter.value }

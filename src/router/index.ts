@@ -409,6 +409,18 @@ export const router = createRouter({
         },
       ],
     },
+    {
+      path: '/workspace',
+      name: 'workspace-hub',
+      component: () => import('../views/workspace/WorkspaceHubView.vue'),
+      meta: { title: '版本管理' },
+    },
+    {
+      path: '/workspace/:versionId',
+      name: 'workspace-editor',
+      component: () => import('../views/workspace/WorkspaceEditorView.vue'),
+      meta: { title: '版本编辑' },
+    },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

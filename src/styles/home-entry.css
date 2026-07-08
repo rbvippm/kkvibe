@@ -22,12 +22,19 @@ html.theme-home-light #app {
   --home-agent-light: #fff4ed;
   --home-pc: #1890ff;
   --home-pc-light: #e6f7ff;
+  --home-workspace: #7c3aed;
+  --home-workspace-light: #f3e8ff;
   --home-radius: 16px;
   --home-shadow: 0 2px 12px rgb(0 0 0 / 6%);
+  --home-gutter: 100px;
+  --home-card-min: 300px;
 
   display: flex;
   min-height: 100svh;
   flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: var(--home-gutter);
   color-scheme: light only;
   background: var(--home-bg);
   color: var(--home-text-secondary);
@@ -43,10 +50,12 @@ html.theme-home-light #app {
 
 .home-entry__header {
   flex-shrink: 0;
-  padding: 2rem 1.25rem 1.5rem;
+  padding: 2rem 0 1.5rem;
   text-align: center;
   background: #fff;
   border-bottom: 1px solid var(--home-border);
+  margin-inline: calc(-1 * var(--home-gutter));
+  padding-inline: var(--home-gutter);
 }
 
 .home-entry__brand {
@@ -72,26 +81,26 @@ html.theme-home-light #app {
 
 .home-entry__desc {
   margin: 8px auto 0;
-  max-width: 280px;
+  max-width: min(640px, 100%);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .home-entry__main {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 14px;
-  padding: 0 1.25rem 2rem;
-  max-width: 420px;
-  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--home-card-min)), 1fr));
+  align-content: center;
+  gap: 16px;
   width: 100%;
+  padding: 2rem 0;
   box-sizing: border-box;
 }
 
 .home-entry__card {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 20px;
   border-radius: var(--home-radius);
   background: var(--home-card);
@@ -121,8 +130,14 @@ html.theme-home-light #app {
   box-shadow: 0 8px 24px rgb(24 144 255 / 12%);
 }
 
+.home-entry__card--workspace:hover {
+  border-color: rgb(124 58 237 / 35%);
+  box-shadow: 0 8px 24px rgb(124 58 237 / 12%);
+}
+
 .home-entry__card-top {
   display: flex;
+  flex: 1;
   align-items: flex-start;
   gap: 14px;
 }
@@ -147,6 +162,10 @@ html.theme-home-light #app {
 
 .home-entry__card-icon--pc {
   background: var(--home-pc-light);
+}
+
+.home-entry__card-icon--workspace {
+  background: var(--home-workspace-light);
 }
 
 .home-entry__card-body {
@@ -196,10 +215,16 @@ html.theme-home-light #app {
   color: var(--home-pc);
 }
 
+.home-entry__tag--workspace {
+  background: var(--home-workspace-light);
+  color: var(--home-workspace);
+}
+
 .home-entry__card-action {
   display: inline-flex;
   align-items: center;
-  margin-top: 14px;
+  margin-top: auto;
+  padding-top: 14px;
   font-size: 14px;
   font-weight: 600;
 }
@@ -216,9 +241,20 @@ html.theme-home-light #app {
   color: var(--home-pc);
 }
 
+.home-entry__card-action--workspace {
+  color: var(--home-workspace);
+}
+
 .home-entry__footer {
   flex-shrink: 0;
-  padding: 0 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+  padding: 0 0 max(1.5rem, env(safe-area-inset-bottom));
   text-align: center;
   font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .home-entry {
+    --home-gutter: 1.25rem;
+    --home-card-min: 260px;
+  }
 }
