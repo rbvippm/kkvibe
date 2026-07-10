@@ -65,7 +65,7 @@ function acceptInvite(invite: MemberAgentInvite) {
             <div class="agent-invite-card__avatar">{{ invite.agentAvatar }}</div>
             <div class="agent-invite-card__body">
               <h3>{{ invite.agentName }}</h3>
-              <p>{{ invite.agentCode }} · {{ invite.invitedAt }}</p>
+              <p>金刚号：{{ invite.agentAccountId }}</p>
             </div>
             <span class="agent-invite-status" :class="agentInviteStatusClass(invite.status)">
               {{ AGENT_INVITE_STATUS_LABEL[invite.status] }}
@@ -76,6 +76,7 @@ function acceptInvite(invite: MemberAgentInvite) {
             <span v-if="invite.status === 'pending'">剩余 {{ invite.remainHours }} 小时</span>
             <span v-else-if="invite.status === 'invalid'">因已同意其他代理邀请而失效</span>
             <span v-else>{{ AGENT_INVITE_STATUS_LABEL[invite.status] }}</span>
+            <span class="agent-invite-card__time">{{ invite.invitedAt }}</span>
           </div>
 
           <div v-if="invite.status === 'pending'" class="agent-invite-card__actions">

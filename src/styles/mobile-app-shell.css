@@ -1453,10 +1453,20 @@
 }
 
 .agent-invite-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-top: 12px;
   padding: 9px 10px;
   border-radius: 12px;
   background: #f8fafc;
+}
+
+.agent-invite-card__time {
+  flex-shrink: 0;
+  color: #8a93a3;
+  font-size: 12px;
 }
 
 .agent-invite-card__actions {

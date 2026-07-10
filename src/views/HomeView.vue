@@ -25,7 +25,7 @@ onUnmounted(() => {
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--mobile">📱</span>
           <div class="home-entry__card-body">
-            <h2 class="home-entry__card-title">移动端 H5</h2>
+            <h2 class="home-entry__card-title">移动端(APP&H5)</h2>
             <p class="home-entry__card-text">
               首页、社区、会话、我的；语聊直播等 C 端能力演示。
             </p>

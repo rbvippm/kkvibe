@@ -32,7 +32,8 @@ export type AgentSentInviteRecord = {
 export type MemberAgentInvite = {
   id: string
   agentName: string
-  agentCode: string
+  /** 代理金刚号（账号 ID，mid_ 前缀） */
+  agentAccountId: string
   agentAvatar: string
   invitedAt: string
   remainHours: number
@@ -63,6 +64,13 @@ export const MOCK_AGENT_SENT_INVITES: AgentSentInviteRecord[] = [
     memberAccount: 'ezhao009',
     memberNickname: 'ezhao009',
     invitedAt: '2026-07-01 10:12',
+    status: 'expired',
+  },
+  {
+    id: 'sent-4',
+    memberAccount: 'wang9527',
+    memberNickname: '棋王阿杰',
+    invitedAt: '2026-06-30 09:30',
     status: 'invalid',
   },
 ]
@@ -71,7 +79,7 @@ export const MOCK_MEMBER_AGENT_INVITES: MemberAgentInvite[] = [
   {
     id: 'invite-1',
     agentName: '星钻合伙人',
-    agentCode: 'AGT-8891',
+    agentAccountId: 'mid_star_partner',
     agentAvatar: '星',
     invitedAt: '2026-07-03 18:20',
     remainHours: 71,
@@ -80,7 +88,7 @@ export const MOCK_MEMBER_AGENT_INVITES: MemberAgentInvite[] = [
   {
     id: 'invite-2',
     agentName: '皇家会所运营',
-    agentCode: 'AGT-6688',
+    agentAccountId: 'mid_royal_ops',
     agentAvatar: '皇',
     invitedAt: '2026-07-03 16:45',
     remainHours: 69,
@@ -89,7 +97,7 @@ export const MOCK_MEMBER_AGENT_INVITES: MemberAgentInvite[] = [
   {
     id: 'invite-3',
     agentName: '红黑电竞馆',
-    agentCode: 'AGT-1024',
+    agentAccountId: 'mid_redblack',
     agentAvatar: '竞',
     invitedAt: '2026-07-01 20:00',
     remainHours: 0,
@@ -99,7 +107,7 @@ export const MOCK_MEMBER_AGENT_INVITES: MemberAgentInvite[] = [
 
 export const CURRENT_AGENT_INVITE_PROFILE = {
   agentName: 'gg12345678',
-  agentCode: 'AGT-001',
+  agentAccountId: 'mid_gg12345678',
   agentAvatar: 'G',
 } as const
 
@@ -148,7 +156,7 @@ export function createAgentMemberInvite(member: {
   memberAgentInvites.value.unshift({
     id: inviteId,
     agentName: CURRENT_AGENT_INVITE_PROFILE.agentName,
-    agentCode: CURRENT_AGENT_INVITE_PROFILE.agentCode,
+    agentAccountId: CURRENT_AGENT_INVITE_PROFILE.agentAccountId,
     agentAvatar: CURRENT_AGENT_INVITE_PROFILE.agentAvatar,
     invitedAt,
     remainHours: 72,
@@ -238,6 +246,7 @@ const MOCK_INVITE_MEMBER_NICKNAMES: Record<string, string> = {
   ming88888: '明哥888',
   lin11121: '小林棋王',
   ezhao009: 'ezhao009',
+  wang9527: '棋王阿杰',
 }
 
 function resolveInviteMemberNickname(normalized: string, account: string) {
