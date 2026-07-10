@@ -16,12 +16,12 @@ import {
   betOrderStatusClass,
   betWinLoseClass,
   filterBetOrders,
+  filterBetOrdersForSummary,
   formatBetWinLose,
   formatBetOrderCurrency,
   formatBetOrderMemberKingkongId,
   formatBetOrderMemberLabel,
   formatMoney,
-  summarizeBetOrders,
   summarizeBetOrdersByCurrency,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
@@ -54,7 +54,7 @@ function createDefaultFilter(): BetOrderFilter {
     status: '',
     category: '',
     gameName: '',
-    gameCurrency: '',
+    gameCurrency: 'KKC',
     winLose: '',
   }
 }
@@ -77,11 +77,13 @@ const filteredRecords = computed(() =>
   ),
 )
 
-const summary = computed(() => summarizeBetOrders(filteredRecords.value))
+const summaryRecords = computed(() =>
+  filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value).sort((a, b) =>
+    b.betAt.localeCompare(a.betAt),
+  ),
+)
 
-const isCurrencyCarousel = computed(() => appliedFilter.value.gameCurrency === '')
-
-const currencySummaries = computed(() => summarizeBetOrdersByCurrency(filteredRecords.value))
+const currencySummaries = computed(() => summarizeBetOrdersByCurrency(summaryRecords.value))
 
 const summaryCarouselRef = ref<HTMLElement | null>(null)
 const summarySlideIndex = ref(0)
@@ -100,10 +102,11 @@ function resetSummaryCarousel() {
 }
 
 watch(
-  () => appliedFilter.value.gameCurrency,
+  summaryRecords,
   () => {
     resetSummaryCarousel()
   },
+  { deep: true },
 )
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
@@ -315,7 +318,7 @@ function summaryWinLoseClass(value: number) {
       </div>
     </div>
 
-    <div v-if="isCurrencyCarousel" class="mh5-bet-order-summary-carousel">
+    <div class="mh5-bet-order-summary-carousel">
       <div
         ref="summaryCarouselRef"
         class="mh5-bet-order-summary-carousel__track"
@@ -356,27 +359,6 @@ function summaryWinLoseClass(value: number) {
           class="mh5-bet-order-summary-carousel__dot"
           :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
         />
-      </div>
-    </div>
-
-    <div v-else class="mh5-bet-order-summary">
-      <div class="mh5-bet-order-summary__item">
-        <span class="mh5-bet-order-summary__label">总单数</span>
-        <strong>{{ summary.count }}</strong>
-      </div>
-      <div class="mh5-bet-order-summary__item">
-        <span class="mh5-bet-order-summary__label">总下注</span>
-        <strong>{{ formatMoney(summary.betAmount) }}</strong>
-      </div>
-      <div class="mh5-bet-order-summary__item">
-        <span class="mh5-bet-order-summary__label">总有效投注</span>
-        <strong>{{ formatMoney(summary.validBet) }}</strong>
-      </div>
-      <div class="mh5-bet-order-summary__item">
-        <span class="mh5-bet-order-summary__label">总输赢</span>
-        <strong :class="summaryWinLoseClass(summary.winLose)">
-          {{ formatSummaryWinLose(summary.winLose) }}
-        </strong>
       </div>
     </div>
 

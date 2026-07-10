@@ -80,7 +80,6 @@ export const BET_ORDER_WINLOSE_OPTIONS = [
 ] as const
 
 export const BET_ORDER_CURRENCY_OPTIONS = [
-  { value: '', label: '全部' },
   { value: 'KKC', label: 'KKC' },
   { value: 'KKV', label: 'KKV' },
   { value: 'USDT', label: 'USDT' },
@@ -648,6 +647,8 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
 
 export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOrderMemberFields)
 
+export type BetOrderCurrencyFilter = Exclude<BetGameCurrency, ''>
+
 export type BetOrderFilter = {
   keyword: string
   timePreset: BetTimePreset
@@ -656,7 +657,7 @@ export type BetOrderFilter = {
   status: '' | BetOrderStatus
   category: string
   gameName: string
-  gameCurrency: BetGameCurrency
+  gameCurrency: BetOrderCurrencyFilter
   winLose: BetWinLoseFilter
 }
 
@@ -716,7 +717,10 @@ export function validateBetOrderDateRange(filter: Pick<BetOrderFilter, 'timePres
   return null
 }
 
-export function filterBetOrders(rows: BetOrderRecord[], filter: BetOrderFilter) {
+export function filterBetOrders(
+  rows: BetOrderRecord[],
+  filter: Omit<BetOrderFilter, 'gameCurrency'> & { gameCurrency: BetGameCurrency },
+) {
   const keyword = filter.keyword.trim().toLowerCase()
   const { start, end } = getBetOrderDateRange(filter)
 
@@ -734,18 +738,17 @@ export function filterBetOrders(rows: BetOrderRecord[], filter: BetOrderFilter) 
       if (filter.winLose === 'draw' && row.winLose !== 0) return false
     }
     if (!keyword) return true
-    const haystack = [
-      getBetOrderMemberSearchHaystack(row),
-      row.gameOrderNo,
-      row.betContent,
-      row.productName,
-      row.gameName,
-    ]
+    const haystack = [getBetOrderMemberSearchHaystack(row), row.gameOrderNo]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
     return haystack.includes(keyword)
   })
+}
+
+/** 汇总区统计：忽略游戏币种筛选，按各币种分别汇总 */
+export function filterBetOrdersForSummary(rows: BetOrderRecord[], filter: BetOrderFilter) {
+  return filterBetOrders(rows, { ...filter, gameCurrency: '' })
 }
 
 export type BetOrderSummary = {
