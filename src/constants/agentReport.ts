@@ -28,11 +28,21 @@ export const REPORT_VENDOR_PILLS: { key: ReportVendorKey; label: string }[] = [
   { key: 'hacksaw', label: 'HACKS...' },
 ]
 
-export const REPORT_SUMMARY_CARDS = [
+export const REPORT_SUMMARY_CARDS_CREDIT = [
   { key: 'net', label: '上下分净额', value: '0.00' },
   { key: 'creditUp', label: '会员上分总额', value: '0.00' },
   { key: 'creditDown', label: '会员下分总额', value: '0.00' },
 ] as const
+
+export const REPORT_SUMMARY_CARDS_CASH = [
+  { key: 'fee', label: '充值后续费', value: '0.00' },
+  { key: 'deposit', label: '会员充值总额', value: '0.00' },
+  { key: 'withdraw', label: '会员提款总额', value: '0.00' },
+] as const
+
+export function getReportSummaryCards(isCreditCurrency: boolean) {
+  return isCreditCurrency ? REPORT_SUMMARY_CARDS_CREDIT : REPORT_SUMMARY_CARDS_CASH
+}
 
 export const REPORT_DETAIL_ROWS = [
   { key: 'validBet', label: '下注有效金额（不参与计算）', value: '0.00' },

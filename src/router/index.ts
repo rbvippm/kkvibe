@@ -240,13 +240,25 @@ export const router = createRouter({
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),
-          meta: { title: '账单', hideTabBar: true },
+          meta: { title: '银行账单', hideTabBar: true },
+        },
+        {
+          path: 'mine/assets',
+          name: 'mobile-asset-detail',
+          component: () => import('../views/mobile/MobileAssetDetailView.vue'),
+          meta: { title: '资产明细', hideTabBar: true },
         },
         {
           path: 'mine/billing/search',
           name: 'mobile-billing-search',
           component: () => import('../views/mobile/MobileBillingSearchView.vue'),
           meta: { title: '搜索账单', hideTabBar: true },
+        },
+        {
+          path: 'mine/billing/stats',
+          name: 'mobile-billing-stats',
+          component: () => import('../views/mobile/MobileBillingStatsView.vue'),
+          meta: { title: '账单统计', hideTabBar: true },
         },
         {
           path: 'mine/billing/:id',

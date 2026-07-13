@@ -34,7 +34,7 @@ const router = useRouter()
 const activeTab = ref<AgentDetailTab>('wallet')
 const currencyPickerOpen = ref(false)
 const currency = ref<AgentWalletCurrency>('KKC')
-const creditCurrency = ref<AgentCreditCurrency>('信用额度-kkc')
+const creditCurrency = ref<AgentCreditCurrency>('信用额度-CNY')
 
 const profitCategory = ref<AgentProfitCategoryKey>('sports')
 const profitVendor = ref<AgentProfitVendorKey>('im')

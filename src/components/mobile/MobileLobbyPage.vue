@@ -5,11 +5,13 @@ import {
   LOBBY_ANNOUNCEMENT,
   LOBBY_CATEGORIES,
   LOBBY_CATEGORY_EMPTY,
+  LOBBY_CURRENCY_OPTIONS,
   LOBBY_FEATURED_BANNER,
   LOBBY_MODES,
-  LOBBY_WALLET,
+  formatLobbyCurrencyBalance,
   gamesForCategory,
   type LobbyCategory,
+  type LobbyCurrencyId,
   type LobbyMode,
 } from '../../constants/mobileLobby'
 import { LOBBY_ASSETS } from '../../constants/mobileLobbyAssets'
@@ -19,10 +21,18 @@ const activeMode = ref<LobbyMode>('social')
 const activeCategory = ref<LobbyCategory>('hot')
 const favorites = ref<Set<string>>(new Set())
 const floatCollapsed = ref(false)
+const currencyPickerOpen = ref(false)
+const selectedCurrencyId = ref<LobbyCurrencyId>('kkc')
 
 const filteredGames = computed(() => gamesForCategory(activeCategory.value))
 const categoryEmpty = computed(() => LOBBY_CATEGORY_EMPTY[activeCategory.value])
 const showBanner = computed(() => activeCategory.value === 'hot')
+
+const selectedCurrency = computed(
+  () => LOBBY_CURRENCY_OPTIONS.find((item) => item.id === selectedCurrencyId.value) ?? LOBBY_CURRENCY_OPTIONS[0],
+)
+
+const selectedBalanceText = computed(() => formatLobbyCurrencyBalance(selectedCurrency.value.balance))
 
 function toggleFavorite(id: string) {
   const next = new Set(favorites.value)
@@ -33,6 +43,11 @@ function toggleFavorite(id: string) {
 
 function goBilling() {
   router.push({ name: 'mobile-billing-list' })
+}
+
+function pickCurrency(id: LobbyCurrencyId) {
+  selectedCurrencyId.value = id
+  currencyPickerOpen.value = false
 }
 </script>
 
@@ -45,10 +60,30 @@ function goBilling() {
         <button type="button" class="mh5-lobby-wallet__add" aria-label="充值">
           <img :src="LOBBY_ASSETS.walletAdd" alt="" width="18" height="18" />
         </button>
-        <button type="button" class="mh5-lobby-wallet__pill" aria-label="切换币种">
-          <img class="mh5-lobby-wallet__coin" :src="LOBBY_ASSETS.walletKkc" alt="" width="22" height="22" />
-          <span class="mh5-lobby-wallet__currency">{{ LOBBY_WALLET.currency }}</span>
-          <span class="mh5-lobby-wallet__balance">{{ LOBBY_WALLET.balance }}</span>
+        <button
+          type="button"
+          class="mh5-lobby-wallet__pill"
+          aria-label="切换币种"
+          @click="currencyPickerOpen = true"
+        >
+          <img
+            v-if="selectedCurrency.id === 'kkc'"
+            class="mh5-lobby-wallet__coin"
+            :src="LOBBY_ASSETS.walletKkc"
+            alt=""
+            width="22"
+            height="22"
+          />
+          <span
+            v-else
+            class="mh5-lobby-wallet__coin-fallback"
+            :style="{ background: selectedCurrency.color }"
+            aria-hidden="true"
+          >
+            {{ selectedCurrency.symbol }}
+          </span>
+          <span class="mh5-lobby-wallet__currency">{{ selectedCurrency.name }}</span>
+          <span class="mh5-lobby-wallet__balance">{{ selectedBalanceText }}</span>
           <svg class="mh5-lobby-wallet__chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
             <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
           </svg>
@@ -183,5 +218,82 @@ function goBilling() {
         </button>
       </aside>
     </div>
+
+    <Teleport to="body">
+      <Transition name="mh5-wallet-sheet">
+        <div
+          v-if="currencyPickerOpen"
+          class="mh5-agent-overlay-mask"
+          @click.self="currencyPickerOpen = false"
+        >
+          <div
+            class="mh5-wallet-sheet agent-currency-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lobby-currency-sheet-title"
+          >
+            <div class="mh5-wallet-sheet__head">
+              <h2 id="lobby-currency-sheet-title" class="mh5-wallet-sheet__title">选择币种</h2>
+              <button
+                type="button"
+                class="mh5-wallet-sheet__close"
+                aria-label="关闭"
+                @click="currencyPickerOpen = false"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
+              <button
+                v-for="item in LOBBY_CURRENCY_OPTIONS"
+                :key="item.id"
+                type="button"
+                class="agent-currency-sheet__item"
+                :class="{
+                  'agent-currency-sheet__item--active': selectedCurrencyId === item.id,
+                  'agent-currency-sheet__item--credit': item.isCredit,
+                }"
+                @click="pickCurrency(item.id)"
+              >
+                <span
+                  class="agent-currency-sheet__icon"
+                  :style="{ background: item.color }"
+                  aria-hidden="true"
+                >
+                  {{ item.symbol }}
+                </span>
+                <span class="agent-currency-sheet__meta">
+                  <span class="agent-currency-sheet__name">{{ item.name }}</span>
+                  <span v-if="item.isCredit" class="mh5-lobby-currency-tip-inline">仅限特定游戏使用</span>
+                </span>
+                <span
+                  v-if="selectedCurrencyId === item.id"
+                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
+                  aria-hidden="true"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M2.5 6.2l2.4 2.4 4.6-5"
+                      stroke="#fff"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

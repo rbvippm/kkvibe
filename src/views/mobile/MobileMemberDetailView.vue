@@ -27,7 +27,7 @@ const activeTab = ref<MemberDetailTab>('manage')
 const flowSubTab = ref<MemberFlowSubTab>('records')
 const currencyPickerOpen = ref(false)
 const currency = ref<AgentWalletCurrency>('KKC')
-const creditCurrency = ref<AgentCreditCurrency>('信用额度-kkc')
+const creditCurrency = ref<AgentCreditCurrency>('信用额度-CNY')
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
@@ -45,14 +45,14 @@ const summaryItems = computed(() => {
   if (!member.value) return []
   const s = member.value.summary
   const cur = currency.value
-  if (cur === '信用额度-kkc') {
+  if (cur === '信用额度-CNY') {
     return [
       { label: '总投注单数', value: String(s.totalBets + 2), positive: false },
       { label: '有效投注额', value: '¥3,200', positive: false },
       { label: '累计输赢', value: '+1,100', positive: true },
     ]
   }
-  if (cur === '信用额度-usdt') {
+  if (cur === '信用额度-USD') {
     return [
       { label: '总投注单数', value: String(Math.max(1, s.totalBets - 1)), positive: false },
       { label: '有效投注额', value: '¥980', positive: false },

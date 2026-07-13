@@ -95,3 +95,30 @@ export const LOBBY_WALLET = {
   currency: 'KKC',
   balance: '0.00',
 }
+
+export type LobbyCurrencyId = 'kkc' | 'kkv' | 'usdt' | 'cny' | 'usd'
+
+export type LobbyCurrencyOption = {
+  id: LobbyCurrencyId
+  name: string
+  symbol: string
+  color: string
+  balance: number
+  /** 信用额度币种，仅限特定游戏使用 */
+  isCredit?: boolean
+}
+
+export const LOBBY_CURRENCY_OPTIONS: LobbyCurrencyOption[] = [
+  { id: 'kkc', name: 'KKC', symbol: 'K', color: '#22c55e', balance: 0 },
+  { id: 'kkv', name: 'KKV', symbol: 'V', color: '#ec4899', balance: 12880.5 },
+  { id: 'usdt', name: 'USDT', symbol: '₮', color: '#26a17b', balance: 8652.3 },
+  { id: 'cny', name: 'CNY', symbol: '¥', color: '#ff7a2b', balance: 50000, isCredit: true },
+  { id: 'usd', name: 'USD', symbol: '$', color: '#3b82f6', balance: 1280.5, isCredit: true },
+]
+
+export function formatLobbyCurrencyBalance(amount: number) {
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}

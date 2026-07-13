@@ -1,20 +1,19 @@
 /** 信用额度上下分 · 类型与来源枚举 */
 
 /**
- * 信用额度分币种（与现金 KKC / USDT 区分，枚举值即展示名）
- * 与详情顶栏「信用额度-kkc / 信用额度-usdt」一致
+ * 信用额度分币种（仅 信用额度-CNY / 信用额度-USD，与现金 KKC / KKV / USDT 区分）
  */
-export type XCoinCreditCurrency = '信用额度-kkc' | '信用额度-usdt'
+export type XCoinCreditCurrency = '信用额度-CNY' | '信用额度-USD'
 
 export const XCOIN_CREDIT_CURRENCY_TABS: { key: XCoinCreditCurrency; label: string }[] = [
-  { key: '信用额度-kkc', label: '信用额度-kkc' },
-  { key: '信用额度-usdt', label: '信用额度-usdt' },
+  { key: '信用额度-CNY', label: '信用额度-CNY' },
+  { key: '信用额度-USD', label: '信用额度-USD' },
 ]
 
 export const TRANSFER_CREDIT_CURRENCY_OPTIONS = [
   { value: '', label: '币种' },
-  { value: '信用额度-kkc', label: '信用额度-kkc' },
-  { value: '信用额度-usdt', label: '信用额度-usdt' },
+  { value: '信用额度-CNY', label: '信用额度-CNY' },
+  { value: '信用额度-USD', label: '信用额度-USD' },
 ] as const
 
 export type TransferCreditCurrencyFilter = '' | XCoinCreditCurrency
@@ -22,8 +21,16 @@ export type TransferCreditCurrencyFilter = '' | XCoinCreditCurrency
 /** 从路由 query / 详情信用币种解析默认上下分币种 */
 export function parseXCoinCreditCurrency(raw: unknown): XCoinCreditCurrency {
   const v = String(raw || '').trim()
-  if (v === 'USDT' || v === '信用额度-usdt') return '信用额度-usdt'
-  return '信用额度-kkc'
+  if (
+    v === '信用额度-USD' ||
+    v === 'USD' ||
+    v === 'USDT' ||
+    v === '信用额度-usdt'
+  ) {
+    return '信用额度-USD'
+  }
+  // 兼容历史：KKC / CNY / 信用额度-kkc → 信用额度-CNY
+  return '信用额度-CNY'
 }
 
 export type TransferDirection = 'credit_up' | 'credit_down'
@@ -102,8 +109,8 @@ export function getSelectableCreditTotal(stats: XCoinCreditStats) {
 
 export function emptySelectableCredits(): Record<XCoinCreditCurrency, XCoinCreditStats> {
   return {
-    '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
-    '信用额度-usdt': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+    '信用额度-CNY': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+    '信用额度-USD': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
   }
 }
 
@@ -212,8 +219,8 @@ export function formatTransferSelfLabel() {
 export const MOCK_XCOIN_BALANCE = 518.22
 
 export const MOCK_XCOIN_BALANCES: Record<XCoinCreditCurrency, number> = {
-  '信用额度-kkc': 518.22,
-  '信用额度-usdt': 86.5,
+  '信用额度-CNY': 518.22,
+  '信用额度-USD': 86.5,
 }
 
 function mockTransferAt(daysAgo: number, hour: number, minute: number, second: number) {
@@ -238,7 +245,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '小红来了EZ1',
     amount: -10,
     createdAt: mockTransferAt(0, 21, 4, 2),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r1b',
     summary: '支出-给代理下分',
     relationLabel: '我 → 直属代理',
@@ -253,7 +260,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 10,
     createdAt: mockTransferAt(0, 21, 4, 3),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r1',
     summary: '收入-平台回退上分',
     relationLabel: '平台 → 我',
@@ -270,7 +277,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 200,
     createdAt: mockTransferAt(0, 18, 30, 11),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     summary: '收入-平台首次授信',
     relationLabel: '平台 → 我',
   },
@@ -290,7 +297,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 150,
     createdAt: mockTransferAt(1, 14, 22, 8),
-    creditCurrency: '信用额度-usdt',
+    creditCurrency: '信用额度-USD',
     summary: '收入-上级首次授信',
     relationLabel: '直属上级 mid_eyv4menuoax → 我',
   },
@@ -309,7 +316,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: 'openapi31axy8',
     amount: -30,
     createdAt: mockTransferAt(0, 11, 8, 19),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r6ub',
     summary: '支出-给会员上分',
     relationLabel: '我 → 直属会员',
@@ -324,7 +331,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: -30,
     createdAt: mockTransferAt(0, 11, 8, 20),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r6u',
     summary: '支出-平台下分',
     relationLabel: '平台 → 我',
@@ -344,7 +351,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: 'mid_eyv4menuoax',
     amount: -12.5,
     createdAt: mockTransferAt(2, 15, 20, 8),
-    creditCurrency: '信用额度-usdt',
+    creditCurrency: '信用额度-USD',
     relatedRecordId: 'r10b',
     summary: '支出-给会员下分',
     relationLabel: '我 → 直属会员',
@@ -359,7 +366,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 12.5,
     createdAt: mockTransferAt(2, 15, 20, 9),
-    creditCurrency: '信用额度-usdt',
+    creditCurrency: '信用额度-USD',
     relatedRecordId: 'r10',
     summary: '收入-平台回退上分',
     relationLabel: '平台 → 我',
@@ -380,7 +387,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 80,
     createdAt: mockTransferAt(1, 9, 15, 44),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     summary: '收入-华南合伙人·李',
     relationLabel: '非直属代理 华南合伙人·李 → 我',
   },
@@ -398,7 +405,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 50,
     createdAt: mockTransferAt(2, 16, 40, 33),
-    creditCurrency: '信用额度-usdt',
+    creditCurrency: '信用额度-USD',
     summary: '收入-城市渠道王哥',
     relationLabel: '非直属代理 城市渠道王哥 → 我',
   },
@@ -414,7 +421,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 8.6,
     createdAt: mockTransferAt(0, 0, 5, 12),
-    creditCurrency: '信用额度-kkc',
+    creditCurrency: '信用额度-CNY',
     summary: '退水-我',
     relationLabel: '平台 → 我',
   },
@@ -428,7 +435,7 @@ export const MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     memberName: '我',
     amount: 15.2,
     createdAt: mockTransferAt(0, 0, 5, 18),
-    creditCurrency: '信用额度-usdt',
+    creditCurrency: '信用额度-USD',
     summary: '退水-我',
     relationLabel: '平台 → 我',
   },
@@ -443,8 +450,8 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     accountId: 'mid_openapi31',
     relation: 'direct_member',
     credits: {
-      '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
-      '信用额度-usdt': { availableCredit: 0, creditUpTotal: 20, creditDownTotal: 20 },
+      '信用额度-CNY': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+      '信用额度-USD': { availableCredit: 0, creditUpTotal: 20, creditDownTotal: 20 },
     },
   },
   {
@@ -455,8 +462,8 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     accountId: 'mid_eyv4menuoax',
     relation: 'direct_member',
     credits: {
-      '信用额度-kkc': { availableCredit: 68.99, creditUpTotal: 320, creditDownTotal: 66 },
-      '信用额度-usdt': { availableCredit: 25.5, creditUpTotal: 80, creditDownTotal: 12.5 },
+      '信用额度-CNY': { availableCredit: 68.99, creditUpTotal: 320, creditDownTotal: 66 },
+      '信用额度-USD': { availableCredit: 25.5, creditUpTotal: 80, creditDownTotal: 12.5 },
     },
   },
   {
@@ -467,8 +474,8 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     accountId: 'mid_ez1',
     relation: 'non_direct_member',
     credits: {
-      '信用额度-kkc': { availableCredit: 12.5, creditUpTotal: 150, creditDownTotal: 50 },
-      '信用额度-usdt': { availableCredit: 8, creditUpTotal: 40, creditDownTotal: 10 },
+      '信用额度-CNY': { availableCredit: 12.5, creditUpTotal: 150, creditDownTotal: 50 },
+      '信用额度-USD': { availableCredit: 8, creditUpTotal: 40, creditDownTotal: 10 },
     },
   },
 ]
@@ -482,8 +489,8 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     accountId: 'mid_eyv4menuoax',
     relation: 'direct_agent',
     credits: {
-      '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
-      '信用额度-usdt': { availableCredit: 5, creditUpTotal: 30, creditDownTotal: 10 },
+      '信用额度-CNY': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+      '信用额度-USD': { availableCredit: 5, creditUpTotal: 30, creditDownTotal: 10 },
     },
   },
   {
@@ -494,8 +501,8 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     accountId: 'mid_ez1',
     relation: 'direct_agent',
     credits: {
-      '信用额度-kkc': { availableCredit: 413, creditUpTotal: 1200, creditDownTotal: 334 },
-      '信用额度-usdt': { availableCredit: 88, creditUpTotal: 260, creditDownTotal: 40 },
+      '信用额度-CNY': { availableCredit: 413, creditUpTotal: 1200, creditDownTotal: 334 },
+      '信用额度-USD': { availableCredit: 88, creditUpTotal: 260, creditDownTotal: 40 },
     },
   },
   {
@@ -506,8 +513,8 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     accountId: 'mid_hn_li',
     relation: 'non_direct_agent',
     credits: {
-      '信用额度-kkc': { availableCredit: 120, creditUpTotal: 700, creditDownTotal: 200 },
-      '信用额度-usdt': { availableCredit: 45, creditUpTotal: 180, creditDownTotal: 60 },
+      '信用额度-CNY': { availableCredit: 120, creditUpTotal: 700, creditDownTotal: 200 },
+      '信用额度-USD': { availableCredit: 45, creditUpTotal: 180, creditDownTotal: 60 },
     },
   },
 ]

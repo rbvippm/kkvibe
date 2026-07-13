@@ -25,13 +25,13 @@ export const AGENT_WALLET_CURRENCY_OPTIONS = [
   'KKC',
   'KKV',
   'USDT',
-  '信用额度-kkc',
-  '信用额度-usdt',
+  '信用额度-CNY',
+  '信用额度-USD',
 ] as const
 
 export type AgentWalletCurrency = (typeof AGENT_WALLET_CURRENCY_OPTIONS)[number]
 
-export type AgentCreditCurrency = '信用额度-kkc' | '信用额度-usdt'
+export type AgentCreditCurrency = '信用额度-CNY' | '信用额度-USD'
 
 export type AgentCreditLimitStats = {
   creditBalance: number
@@ -83,17 +83,17 @@ export function getAgentDisplayName(agent: {
 export const AGENT_CASH_CURRENCY_OPTIONS = ['KKC', 'KKV', 'USDT'] as const
 
 export const AGENT_CREDIT_CURRENCY_OPTIONS: readonly AgentCreditCurrency[] = [
-  '信用额度-kkc',
-  '信用额度-usdt',
+  '信用额度-CNY',
+  '信用额度-USD',
 ]
 
 export const AGENT_CREDIT_CURRENCY_TABS: { key: AgentCreditCurrency; label: string }[] = [
-  { key: '信用额度-kkc', label: 'KKC' },
-  { key: '信用额度-usdt', label: 'USDT' },
+  { key: '信用额度-CNY', label: 'CNY' },
+  { key: '信用额度-USD', label: 'USD' },
 ]
 
 export function isAgentCreditCurrency(currency: string): currency is AgentCreditCurrency {
-  return currency === '信用额度-kkc' || currency === '信用额度-usdt'
+  return currency === '信用额度-CNY' || currency === '信用额度-USD'
 }
 
 export function getAgentDetailCurrencyOptions(isCredited: boolean): readonly AgentWalletCurrency[] {
@@ -125,13 +125,13 @@ export function formatCreditLimitRows(stats: AgentCreditLimitStats) {
 function buildCreditLimits(scale: number, shareRatio: number): Record<AgentCreditCurrency, AgentCreditLimitStats> {
   const s = Math.max(1, scale)
   return {
-    '信用额度-kkc': {
+    '信用额度-CNY': {
       creditBalance: s * 200,
       creditUpTotal: s * 1550,
       creditDownTotal: s * 1030,
       shareRatio,
     },
-    '信用额度-usdt': {
+    '信用额度-USD': {
       creditBalance: s * 80,
       creditUpTotal: s * 620,
       creditDownTotal: s * 410,
@@ -161,13 +161,13 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
     { currency: 'KKV', balance: '1,000' },
   ],
   creditLimits: {
-    '信用额度-kkc': {
+    '信用额度-CNY': {
       creditBalance: 866,
       creditUpTotal: 58000,
       creditDownTotal: 42000,
       shareRatio: 65,
     },
-    '信用额度-usdt': {
+    '信用额度-USD': {
       creditBalance: 320,
       creditUpTotal: 12800,
       creditDownTotal: 9600,

@@ -2,7 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-  AGENT_OVERVIEW_CURRENCIES,
+  AGENT_OVERVIEW_CURRENCY_BALANCES,
+  type AgentOverviewCurrency,
   type ProfitRankTab,
 } from '../constants/agentOverview'
 import AgentOverviewPage from '../components/mobile/AgentOverviewPage.vue'
@@ -41,7 +42,9 @@ const account = ref({
   profit: '-3,000,000,000',
 })
 
-const currency = ref<(typeof AGENT_OVERVIEW_CURRENCIES)[number]>('KKC')
+const currency = ref<AgentOverviewCurrency>('KKC')
+
+const balance = computed(() => AGENT_OVERVIEW_CURRENCY_BALANCES[currency.value])
 const profitRankTab = ref<ProfitRankTab>('member_win')
 
 const dateRangeText = computed(() => {
@@ -54,6 +57,10 @@ const dateRangeText = computed(() => {
 
 function pickProfitRankTab(tab: ProfitRankTab) {
   profitRankTab.value = tab
+}
+
+function pickCurrency(value: AgentOverviewCurrency) {
+  currency.value = value
 }
 
 const showTeamSection = computed(() => activeTab.value === 'team')
@@ -116,7 +123,7 @@ function switchTab(tab: BottomTab) {
       class="relative z-10 flex h-full min-h-0 w-full flex-col"
       :nickname="user.nickname"
       :avatar-emoji="user.avatarEmoji"
-      :balance="account.balance"
+      :balance="balance"
       :profit="account.profit"
       :currency="currency"
       :date-range-text="dateRangeText"
@@ -125,6 +132,7 @@ function switchTab(tab: BottomTab) {
       @back="handleAgentBack"
       @pick-preset="pickPreset"
       @pick-profit-rank-tab="pickProfitRankTab"
+      @pick-currency="pickCurrency"
     />
 
     <!-- 注单查询 -->

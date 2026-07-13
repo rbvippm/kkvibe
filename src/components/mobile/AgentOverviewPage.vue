@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
 import {
+  AGENT_OVERVIEW_CURRENCY_OPTIONS,
   chunkOverviewStats,
   DIRECT_STAT_ROW_SIZES,
   MOCK_DIRECT_STATS,
@@ -9,6 +10,7 @@ import {
   MOCK_SUB_AGENT_STATS,
   PROFIT_RANK_TABS,
   SUB_AGENT_STAT_ROW_SIZES,
+  type AgentOverviewCurrency,
   type ProfitRankTab,
 } from '../../constants/agentOverview'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
@@ -18,7 +20,7 @@ const props = defineProps<{
   avatarEmoji: string
   balance: string
   profit: string
-  currency: string
+  currency: AgentOverviewCurrency
   dateRangeText: string
   preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
   profitRankTab: ProfitRankTab
@@ -28,7 +30,10 @@ const emit = defineEmits<{
   back: []
   pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek']
   pickProfitRankTab: [tab: ProfitRankTab]
+  pickCurrency: [currency: AgentOverviewCurrency]
 }>()
+
+const currencyPickerOpen = ref(false)
 
 const presetOptions = [
   ['today', '今日'],
@@ -40,6 +45,11 @@ const presetOptions = [
 const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
 const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
 const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
+
+function pickCurrency(value: AgentOverviewCurrency) {
+  emit('pickCurrency', value)
+  currencyPickerOpen.value = false
+}
 </script>
 
 <template>
@@ -97,7 +107,12 @@ const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
                 </button>
               </div>
               <div class="agent-home__profile-balance">
-                <button type="button" class="agent-home__currency-pill">
+                <button
+                  type="button"
+                  class="agent-home__currency-pill"
+                  aria-label="选择币种"
+                  @click="currencyPickerOpen = true"
+                >
                   <p>{{ currency }}</p>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
@@ -249,5 +264,76 @@ const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <Transition name="mh5-wallet-sheet">
+        <div
+          v-if="currencyPickerOpen"
+          class="mh5-agent-overlay-mask"
+          @click.self="currencyPickerOpen = false"
+        >
+          <div
+            class="mh5-wallet-sheet agent-currency-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-currency-sheet-title"
+          >
+            <div class="mh5-wallet-sheet__head">
+              <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">选择币种</h2>
+              <button
+                type="button"
+                class="mh5-wallet-sheet__close"
+                aria-label="关闭"
+                @click="currencyPickerOpen = false"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M6 6l12 12M18 6L6 18"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
+              <button
+                v-for="opt in AGENT_OVERVIEW_CURRENCY_OPTIONS"
+                :key="opt.value"
+                type="button"
+                class="agent-currency-sheet__item"
+                :class="{ 'agent-currency-sheet__item--active': currency === opt.value }"
+                @click="pickCurrency(opt.value)"
+              >
+                <span
+                  v-if="opt.symbol"
+                  class="agent-currency-sheet__icon"
+                  :style="{ background: opt.color }"
+                  aria-hidden="true"
+                >
+                  {{ opt.symbol }}
+                </span>
+                <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                <span
+                  v-if="currency === opt.value"
+                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
+                  aria-hidden="true"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M2.5 6.2l2.4 2.4 4.6-5"
+                      stroke="#fff"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>

@@ -11,13 +11,13 @@ export type AgentProfitSummaryRow = {
 
 /** 按顶栏币种切换盈亏汇总口径 */
 export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
-  if (currency === '信用额度-kkc') {
+  if (currency === '信用额度-CNY') {
     return [
       { label: '上分总额', value: '1,550' },
       { label: '下分总额', value: '1,030' },
     ]
   }
-  if (currency === '信用额度-usdt') {
+  if (currency === '信用额度-USD') {
     return [
       { label: '上分总额', value: '620' },
       { label: '下分总额', value: '410' },

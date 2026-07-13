@@ -1,27 +1,34 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { AGENT_WALLET_CURRENCY_OPTIONS, type AgentWalletCurrency } from '../../constants/agentDetail'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
+import {
+  AGENT_WALLET_CURRENCY_OPTIONS,
+  isAgentCreditCurrency,
+  type AgentWalletCurrency,
+} from '../../constants/agentDetail'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_DETAIL_ROWS,
   REPORT_RANGE_PRESETS,
-  REPORT_SUMMARY_CARDS,
   REPORT_VENDOR_PILLS,
+  getReportSummaryCards,
   reportCategoryTitle,
   reportDateRangeText,
   type ReportCategoryKey,
   type ReportRangePreset,
   type ReportVendorKey,
 } from '../../constants/agentReport'
+import { AGENT_REPORT_CURRENCY_SUMMARY_SPEC } from '../../constants/agentReportSpec'
 
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
-const currency = ref<AgentWalletCurrency>('信用额度-kkc')
+const currency = ref<AgentWalletCurrency>('信用额度-CNY')
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
+const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(currency.value)))
 const totalProfit = '+0.86'
 
 function pickPreset(v: ReportRangePreset) {
@@ -38,15 +45,18 @@ function pickCurrency(value: AgentWalletCurrency) {
   <div class="mh5-agent-report-page">
     <header class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">我的报表</h1>
-      <button
-        type="button"
-        class="mh5-agent-detail-currency mh5-agent-report-header__currency"
-        aria-label="切换币种"
-        @click="currencyPickerOpen = true"
-      >
-        <span>{{ currency }}</span>
-        <span class="mh5-agent-detail-currency__chevron">▾</span>
-      </button>
+      <div class="mh5-agent-report-header__actions">
+        <Mh5SpecAnnot :spec="AGENT_REPORT_CURRENCY_SUMMARY_SPEC" placement="bottom" />
+        <button
+          type="button"
+          class="mh5-agent-detail-currency"
+          aria-label="切换币种"
+          @click="currencyPickerOpen = true"
+        >
+          <span>{{ currency }}</span>
+          <span class="mh5-agent-detail-currency__chevron">▾</span>
+        </button>
+      </div>
     </header>
 
     <main class="mh5-agent-report-main">
@@ -77,7 +87,7 @@ function pickCurrency(value: AgentWalletCurrency) {
 
       <section class="mh5-agent-report-summary">
         <div
-          v-for="card in REPORT_SUMMARY_CARDS"
+          v-for="card in summaryCards"
           :key="card.key"
           class="mh5-agent-report-summary-card"
         >

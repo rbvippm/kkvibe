@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import {
+  formatBillingMonthLabel,
   formatBillingSummaryAmount,
   summarizeBillingMonth,
   type BillingRecord,
@@ -15,11 +16,12 @@ const props = defineProps<{
 
 const summary = computed(() => summarizeBillingMonth(props.rows))
 const showSummary = computed(() => Boolean(props.selectedCurrency))
+const monthLabel = computed(() => formatBillingMonthLabel(props.month))
 </script>
 
 <template>
   <div class="mh5-billing-group__head">
-    <span class="mh5-billing-group__month">{{ month }}</span>
+    <span class="mh5-billing-group__month">{{ monthLabel }}</span>
     <div v-if="showSummary" class="mh5-billing-group__summary">
       <span class="mh5-billing-group__summary-item">
         支出 {{ formatBillingSummaryAmount(summary.expense) }}

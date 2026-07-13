@@ -15,7 +15,39 @@ export type ProfitRankRow = {
   profit: string
 }
 
-export const AGENT_OVERVIEW_CURRENCIES = ['KKC', 'KKV', 'USDT'] as const
+export const AGENT_OVERVIEW_CURRENCIES = [
+  'KKC',
+  'KKV',
+  'USDT-TRON',
+  '信用额度-CNY',
+  '信用额度-USD',
+] as const
+
+export type AgentOverviewCurrency = (typeof AGENT_OVERVIEW_CURRENCIES)[number]
+
+export type AgentOverviewCurrencyOption = {
+  value: AgentOverviewCurrency
+  label: string
+  /** 左侧图标文案 */
+  symbol?: string
+  color?: string
+}
+
+export const AGENT_OVERVIEW_CURRENCY_OPTIONS: AgentOverviewCurrencyOption[] = [
+  { value: 'KKC', label: 'KKC', symbol: 'Z', color: '#22c55e' },
+  { value: 'KKV', label: 'KKV', symbol: 'Z', color: '#ec4899' },
+  { value: 'USDT-TRON', label: 'USDT-TRON', symbol: '₮', color: '#26a17b' },
+  { value: '信用额度-CNY', label: '信用额度-CNY', symbol: '¥', color: '#ff7a2b' },
+  { value: '信用额度-USD', label: '信用额度-USD', symbol: '$', color: '#0ea5e9' },
+]
+
+export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, string> = {
+  KKC: '236,188,666.00',
+  KKV: '12,880.50',
+  'USDT-TRON': '8,652.30',
+  '信用额度-CNY': '518.22',
+  '信用额度-USD': '86.50',
+}
 
 /** Figma 行分组：3 + 3 + 3 + 1 */
 export const DIRECT_STAT_ROW_SIZES = [3, 3, 3, 1] as const

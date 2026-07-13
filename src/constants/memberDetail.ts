@@ -77,12 +77,12 @@ const DEFAULT_WALLETS: MemberWalletRow[] = [
 function buildMemberCreditLimits(scale: number): Record<AgentCreditCurrency, MemberCreditLimitStats> {
   const s = Math.max(1, scale)
   return {
-    '信用额度-kkc': {
+    '信用额度-CNY': {
       creditBalance: s * 120,
       creditUpTotal: s * 820,
       creditDownTotal: s * 640,
     },
-    '信用额度-usdt': {
+    '信用额度-USD': {
       creditBalance: s * 45,
       creditUpTotal: s * 310,
       creditDownTotal: s * 240,

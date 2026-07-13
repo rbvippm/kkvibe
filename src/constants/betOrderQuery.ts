@@ -12,7 +12,7 @@ export type BetWinLoseFilter = '' | 'win' | 'lose' | 'draw'
 
 export type BetTimePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom'
 
-export type BetGameCurrency = '' | 'KKC' | 'KKV' | 'USDT' | 'credit'
+export type BetGameCurrency = '' | 'KKC' | 'KKV' | 'USDT' | '信用额度-CNY' | '信用额度-USD'
 
 export type BetOrderRecord = {
   id: string
@@ -83,19 +83,20 @@ export const BET_ORDER_CURRENCY_OPTIONS = [
   { value: 'KKC', label: 'KKC' },
   { value: 'KKV', label: 'KKV' },
   { value: 'USDT', label: 'USDT' },
-  { value: 'credit', label: '信用额度' },
+  { value: '信用额度-CNY', label: '信用额度-CNY' },
+  { value: '信用额度-USD', label: '信用额度-USD' },
 ] as const
 
 export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, string> = {
   KKC: 'KKC',
   KKV: 'KKV',
   USDT: 'USDT',
-  credit: '信用额度',
+  '信用额度-CNY': '信用额度-CNY',
+  '信用额度-USD': '信用额度-USD',
 }
 
 export function formatBetOrderCurrency(currency: string) {
-  if (currency === 'credit') return '信用额度'
-  return currency
+  return BET_ORDER_CURRENCY_LABEL[currency as Exclude<BetGameCurrency, ''>] ?? currency
 }
 
 /** 会员展示：备注 → 昵称 → 金刚号（无则回退账号） */
@@ -396,7 +397,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     thirdPartyGameId: '882910334525',
     memberAccount: 'fafa8888888',
     memberRemark: 'VIP客户',
-    currency: 'credit',
+    currency: '信用额度-CNY',
     productName: '皇者-电子',
     gameName: 'hz-slots',
     gameCategory: 'slots',
@@ -626,7 +627,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
       thirdPartyGameId: `88291033${4500 + idx}`,
       memberAccount,
       ...BET_ORDER_MEMBER_PROFILES[memberAccount],
-      currency: (['USDT', 'KKC', 'KKV', 'credit'] as const)[i % 4],
+      currency: (['USDT', 'KKC', 'KKV', '信用额度-CNY', '信用额度-USD'] as const)[i % 5],
       productName: productNames[gameCategory],
       gameName: gameNames[gameCategory],
       gameCategory,
@@ -771,12 +772,13 @@ export function summarizeBetOrders(rows: BetOrderRecord[]): BetOrderSummary {
   )
 }
 
-/** 汇总轮播顺序：KKC → KKV → USDT → 信用额度 */
+/** 汇总轮播顺序：KKC → KKV → USDT → 信用额度-CNY → 信用额度-USD */
 export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
   'KKC',
   'KKV',
   'USDT',
-  'credit',
+  '信用额度-CNY',
+  '信用额度-USD',
 ]
 
 export type BetOrderCurrencySummary = BetOrderSummary & {
