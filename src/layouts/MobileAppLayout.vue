@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import Mh5ConfirmDialog from '../components/mobile/Mh5ConfirmDialog.vue'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/mobile-app-shell.css'
 
@@ -176,6 +177,7 @@ function isActive(tab: (typeof tabs)[number]) {
       </RouterLink>
     </nav>
     </div>
+    <Mh5ConfirmDialog />
   </div>
 </template>
 

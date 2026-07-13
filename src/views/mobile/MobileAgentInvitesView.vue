@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { mh5Confirm } from '../../composables/useMh5Confirm'
 import {
   AGENT_INVITE_STATUS_LABEL,
   acceptMemberAgentInvite,
@@ -16,18 +17,24 @@ const successAgentName = ref('')
 
 const pendingCount = computed(() => memberAgentInvites.value.filter((item) => item.status === 'pending').length)
 
-function rejectInvite(invite: MemberAgentInvite) {
+async function rejectInvite(invite: MemberAgentInvite) {
   if (invite.status !== 'pending') return
-  const confirmed = window.confirm('是否拒绝该代理的邀请？')
+  const confirmed = await mh5Confirm({
+    title: '是否拒绝该代理的邀请？',
+    message: invite.agentName,
+  })
   if (!confirmed) return
   memberAgentInvites.value = memberAgentInvites.value.map((item) =>
     item.id === invite.id ? { ...item, status: 'rejected' } : item,
   )
 }
 
-function acceptInvite(invite: MemberAgentInvite) {
+async function acceptInvite(invite: MemberAgentInvite) {
   if (invite.status !== 'pending') return
-  const confirmed = window.confirm('同意后您将成为该代理的下级，确认操作？')
+  const confirmed = await mh5Confirm({
+    title: '同意后您将成为该代理的下级',
+    message: '确认操作？',
+  })
   if (!confirmed) return
 
   acceptMemberAgentInvite(invite.id)

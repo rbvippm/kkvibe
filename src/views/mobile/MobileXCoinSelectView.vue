@@ -50,9 +50,10 @@ function confirmSelect() {
     MOCK_SELECTABLE_MEMBERS.find((item) => item.id === selectedId.value) ??
     MOCK_SELECTABLE_AGENTS.find((item) => item.id === selectedId.value)
   if (!row) return
+  const currency = String(route.query.currency || '信用额度-kkc')
   router.push({
     name: isMember.value ? 'mobile-xcoin-credit-member' : 'mobile-xcoin-credit-agent',
-    query: { targetId: row.id, targetName: row.nickname },
+    query: { targetId: row.id, targetName: row.nickname, currency },
   })
 }
 </script>

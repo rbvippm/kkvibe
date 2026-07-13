@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { AGENT_WALLET_CURRENCY_OPTIONS, type AgentWalletCurrency } from '../../constants/agentDetail'
 import {
-  MEMBER_DETAIL_TABS,
+  AGENT_CREDIT_CURRENCY_TABS,
+  getAgentDetailCurrencyOptions,
+  isAgentCreditCurrency,
+  type AgentCreditCurrency,
+  type AgentWalletCurrency,
+} from '../../constants/agentDetail'
+import {
   MEMBER_FLOW_SUB_TABS,
   findMemberDetail,
+  formatMemberCreditLimitRows,
+  getMemberDetailTabs,
   type MemberDetailTab,
   type MemberFlowSubTab,
 } from '../../constants/memberDetail'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { MEMBER_DETAIL_CREDIT_CURRENCY_SPEC } from '../../constants/memberDetailSpec'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -18,12 +27,52 @@ const activeTab = ref<MemberDetailTab>('manage')
 const flowSubTab = ref<MemberFlowSubTab>('records')
 const currencyPickerOpen = ref(false)
 const currency = ref<AgentWalletCurrency>('KKC')
+const creditCurrency = ref<AgentCreditCurrency>('信用额度-kkc')
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
+const isCredited = computed(() => Boolean(member.value?.isCredited))
+const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
+
+watch(isCredited, (credited) => {
+  if (!credited) {
+    if (activeTab.value === 'credit') activeTab.value = 'manage'
+    if (isAgentCreditCurrency(currency.value)) currency.value = 'KKC'
+  }
+})
 
 const summaryItems = computed(() => {
   if (!member.value) return []
   const s = member.value.summary
+  const cur = currency.value
+  if (cur === '信用额度-kkc') {
+    return [
+      { label: '总投注单数', value: String(s.totalBets + 2), positive: false },
+      { label: '有效投注额', value: '¥3,200', positive: false },
+      { label: '累计输赢', value: '+1,100', positive: true },
+    ]
+  }
+  if (cur === '信用额度-usdt') {
+    return [
+      { label: '总投注单数', value: String(Math.max(1, s.totalBets - 1)), positive: false },
+      { label: '有效投注额', value: '¥980', positive: false },
+      { label: '累计输赢', value: '-120', positive: false },
+    ]
+  }
+  if (cur === 'USDT') {
+    return [
+      { label: '总投注单数', value: String(s.totalBets), positive: false },
+      { label: '有效投注额', value: '¥1,500', positive: false },
+      { label: '累计输赢', value: '+420', positive: true },
+    ]
+  }
+  if (cur === 'KKV') {
+    return [
+      { label: '总投注单数', value: String(s.totalBets + 1), positive: false },
+      { label: '有效投注额', value: '¥2,400', positive: false },
+      { label: '累计输赢', value: '+680', positive: true },
+    ]
+  }
   return [
     { label: '总投注单数', value: String(s.totalBets), positive: false },
     { label: '有效投注额', value: s.validBetAmount, positive: false },
@@ -31,29 +80,29 @@ const summaryItems = computed(() => {
   ]
 })
 
+const creditLimitTitle = '信用额度'
+
 const creditLimitItems = computed(() => {
   if (!member.value) return []
-  const { creditBalance, creditUpTotal, creditDownTotal } = member.value.creditLimit
-  const format = (n: number) => n.toLocaleString('zh-CN')
-  const net = creditUpTotal - creditDownTotal
-  return [
-    { label: '信用余额', value: format(creditBalance), positive: false },
-    { label: '上分总额', value: format(creditUpTotal), positive: false },
-    { label: '下分总额', value: format(creditDownTotal), positive: false },
-    {
-      label: '上下分净额',
-      value: `${net >= 0 ? '+' : ''}${format(net)}`,
-      positive: net >= 0,
-    },
-  ]
+  return formatMemberCreditLimitRows(member.value.creditLimits[creditCurrency.value])
 })
 
 function goCredit() {
-  router.push({ name: 'mobile-xcoin-credit-member' })
+  router.push({
+    name: 'mobile-xcoin-credit-member',
+    query: {
+      targetId: member.value?.id,
+      targetName: member.value?.nickname,
+      currency: creditCurrency.value,
+    },
+  })
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
   currency.value = value
+  if (isAgentCreditCurrency(value)) {
+    creditCurrency.value = value
+  }
   currencyPickerOpen.value = false
 }
 </script>
@@ -74,15 +123,18 @@ function pickCurrency(value: AgentWalletCurrency) {
           </svg>
         </button>
         <h1 class="mh5-member-detail-nav__title">会员详情</h1>
-        <button
-          type="button"
-          class="mh5-member-detail-nav__currency"
-          aria-label="切换币种"
-          @click="currencyPickerOpen = true"
-        >
-          <span>{{ currency }}</span>
-          <span class="mh5-member-detail-nav__chevron">▾</span>
-        </button>
+        <div class="mh5-member-detail-nav__actions">
+          <Mh5SpecAnnot :spec="MEMBER_DETAIL_CREDIT_CURRENCY_SPEC" placement="bottom" />
+          <button
+            type="button"
+            class="mh5-member-detail-nav__currency"
+            aria-label="切换币种"
+            @click="currencyPickerOpen = true"
+          >
+            <span>{{ currency }}</span>
+            <span class="mh5-member-detail-nav__chevron">▾</span>
+          </button>
+        </div>
       </div>
 
       <section v-if="member" class="mh5-member-detail-card">
@@ -116,13 +168,15 @@ function pickCurrency(value: AgentWalletCurrency) {
     </header>
 
     <main v-if="member" class="mh5-member-detail-body">
-      <div class="mh5-member-detail-tabs">
+      <div class="mh5-member-detail-tabs" role="tablist" aria-label="会员详情分类">
         <button
-          v-for="tab in MEMBER_DETAIL_TABS"
+          v-for="tab in detailTabs"
           :key="tab.key"
           type="button"
+          role="tab"
           class="mh5-member-detail-tab"
           :class="{ 'mh5-member-detail-tab--active': activeTab === tab.key }"
+          :aria-selected="activeTab === tab.key"
           @click="activeTab = tab.key"
         >
           {{ tab.label }}
@@ -143,10 +197,31 @@ function pickCurrency(value: AgentWalletCurrency) {
             <span class="mh5-member-detail-panel__value">{{ wallet.balance }}</span>
           </div>
         </section>
+      </template>
+
+      <template v-else-if="activeTab === 'credit'">
+        <nav
+          class="mh5-agent-profit-ratio-seg mh5-member-detail-credit-seg"
+          role="tablist"
+          aria-label="信用额度币种"
+        >
+          <button
+            v-for="tab in AGENT_CREDIT_CURRENCY_TABS"
+            :key="tab.key"
+            type="button"
+            role="tab"
+            class="mh5-agent-profit-ratio-seg__item"
+            :class="{ 'mh5-agent-profit-ratio-seg__item--active': creditCurrency === tab.key }"
+            :aria-selected="creditCurrency === tab.key"
+            @click="creditCurrency = tab.key"
+          >
+            {{ tab.label }}
+          </button>
+        </nav>
 
         <section class="mh5-member-detail-panel">
           <div class="mh5-member-detail-panel__head">
-            <h3 class="mh5-member-detail-panel__title">信用额度</h3>
+            <h3 class="mh5-member-detail-panel__title">{{ creditLimitTitle }}</h3>
             <button type="button" class="mh5-member-detail-panel__action" @click="goCredit">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
@@ -238,7 +313,7 @@ function pickCurrency(value: AgentWalletCurrency) {
         <div class="mh5-xcoin-sheet">
           <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
           <button
-            v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
+            v-for="opt in currencyOptions"
             :key="opt"
             type="button"
             class="mh5-xcoin-sheet__option"

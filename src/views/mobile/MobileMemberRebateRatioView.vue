@@ -3,48 +3,50 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { getAgentProfitRelationLabel } from '../../constants/agentProfitRatio'
 import {
-  AGENT_PROFIT_RATIO_TYPE_TABS,
-  formatProfitRatioPercent,
-  getAgentProfitRelationLabel,
-  getAgentProfitRatioProducts,
-  isAgentCreditEnabled,
-  parseAgentProfitRatioType,
-  resolveAgentKindHint,
-  type AgentProfitRatioType,
-} from '../../constants/agentProfitRatio'
-import { AGENT_PROFIT_RATIO_SPEC } from '../../constants/agentProfitRatioSpec'
+  formatMemberRebatePercent,
+  getMemberRebateProductIcon,
+  getMemberRebateProducts,
+  getMemberRebateUpdatedAt,
+  isMemberCreditEnabled,
+  MEMBER_REBATE_RATIO_TYPE_TABS,
+  parseMemberRebateRatioType,
+  resolveMemberKindHint,
+  type MemberRebateRatioType,
+} from '../../constants/memberRebateRatio'
+import { MEMBER_REBATE_RATIO_SPEC } from '../../constants/memberRebateRatioSpec'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 
 const targetId = computed(() => String(route.query.targetId || ''))
-const targetNickname = computed(() => String(route.query.targetName || 'Tom Cat%'))
+const targetNickname = computed(() => String(route.query.targetName || 'OO12300932'))
 const relationLabel = computed(() => getAgentProfitRelationLabel(String(route.query.relation || 'direct')))
 const kindHint = computed(() =>
-  resolveAgentKindHint(targetId.value, String(route.query.kind || '')),
+  resolveMemberKindHint(targetId.value, String(route.query.kind || '')),
 )
 const creditedHint = computed(() => String(route.query.credited || ''))
 
-/** 任意团队筛选入口（含「全部」）：只要授信过就展示 Tab */
 const showCreditTabs = computed(() =>
-  isAgentCreditEnabled(targetId.value, kindHint.value, creditedHint.value),
+  isMemberCreditEnabled(targetId.value, kindHint.value, creditedHint.value),
 )
 
-const ratioType = ref<AgentProfitRatioType>(
-  showCreditTabs.value ? parseAgentProfitRatioType(String(route.query.ratioType || 'cash')) : 'cash',
+const ratioType = ref<MemberRebateRatioType>(
+  showCreditTabs.value ? parseMemberRebateRatioType(String(route.query.ratioType || 'cash')) : 'cash',
 )
 
 watch(showCreditTabs, (enabled) => {
   if (!enabled) ratioType.value = 'cash'
 })
 
-const displayProducts = computed(() => getAgentProfitRatioProducts(ratioType.value).value)
+const displayProducts = computed(() => getMemberRebateProducts(ratioType.value).value)
+const updatedAt = computed(() => getMemberRebateUpdatedAt(ratioType.value).value)
 
 function goEdit() {
   router.push({
-    name: 'mobile-agent-profit-ratio-edit',
+    name: 'mobile-member-rebate-ratio-edit',
     query: {
       targetId: route.query.targetId,
       targetName: route.query.targetName,
@@ -58,17 +60,17 @@ function goEdit() {
 </script>
 
 <template>
-  <div class="mh5-agent-profit-ratio-page">
-    <Mh5SubPageHeader title="代理收益比例">
+  <div class="mh5-member-rebate-page">
+    <Mh5SubPageHeader title="会员退水比例">
       <template #right>
-        <Mh5SpecAnnot :spec="AGENT_PROFIT_RATIO_SPEC" placement="bottom" />
+        <Mh5SpecAnnot :spec="MEMBER_REBATE_RATIO_SPEC" placement="bottom" />
       </template>
     </Mh5SubPageHeader>
 
-    <main class="mh5-agent-profit-ratio-main">
-      <section class="mh5-agent-profit-ratio-profile">
-        <div class="mh5-agent-profit-ratio-profile__left">
-          <div class="mh5-agent-profit-ratio-profile__avatar" aria-hidden="true">
+    <main class="mh5-member-rebate-main">
+      <section class="mh5-member-rebate-profile">
+        <div class="mh5-member-rebate-profile__left">
+          <div class="mh5-member-rebate-profile__avatar" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8" />
               <path
@@ -79,12 +81,12 @@ function goEdit() {
               />
             </svg>
           </div>
-          <div class="mh5-agent-profit-ratio-profile__meta">
+          <div class="mh5-member-rebate-profile__meta">
             <h2>{{ targetNickname }}</h2>
-            <span class="mh5-agent-profit-ratio-profile__tag">{{ relationLabel }}</span>
+            <span class="mh5-member-rebate-profile__tag">{{ relationLabel }}</span>
           </div>
         </div>
-        <button type="button" class="mh5-agent-profit-ratio-profile__edit" @click="goEdit">
+        <button type="button" class="mh5-member-rebate-profile__edit" @click="goEdit">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -102,10 +104,10 @@ function goEdit() {
         v-if="showCreditTabs"
         class="mh5-agent-profit-ratio-seg"
         role="tablist"
-        aria-label="收益类型"
+        aria-label="退水类型"
       >
         <button
-          v-for="tab in AGENT_PROFIT_RATIO_TYPE_TABS"
+          v-for="tab in MEMBER_REBATE_RATIO_TYPE_TABS"
           :key="tab.key"
           type="button"
           role="tab"
@@ -118,32 +120,23 @@ function goEdit() {
         </button>
       </nav>
 
-      <section class="mh5-agent-profit-ratio-table-wrap">
-        <table class="mh5-agent-profit-ratio-table">
-          <thead>
-            <tr>
-              <th scope="col" />
-              <th scope="col">占成</th>
-              <th scope="col">退水</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in displayProducts" :key="`${ratioType}-${row.key}`">
-              <td class="mh5-agent-profit-ratio-table__product">{{ row.name }}</td>
-              <td>
-                <span class="mh5-agent-profit-ratio-table__value">
-                  {{ formatProfitRatioPercent(row.share) }}
-                </span>
-              </td>
-              <td>
-                <span class="mh5-agent-profit-ratio-table__value">
-                  {{ formatProfitRatioPercent(row.rebate) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <section class="mh5-member-rebate-list" aria-label="产品退水">
+        <div
+          v-for="row in displayProducts"
+          :key="`${ratioType}-${row.key}`"
+          class="mh5-member-rebate-list__row"
+        >
+          <div class="mh5-member-rebate-list__product">
+            <span class="mh5-member-rebate-list__icon" aria-hidden="true">
+              {{ getMemberRebateProductIcon(row.key) }}
+            </span>
+            <span class="mh5-member-rebate-list__name">{{ row.name }}</span>
+          </div>
+          <span class="mh5-member-rebate-list__value">{{ formatMemberRebatePercent(row.rebate) }}</span>
+        </div>
       </section>
+
+      <p class="mh5-member-rebate-updated">修改时间 {{ updatedAt }}</p>
     </main>
   </div>
 </template>

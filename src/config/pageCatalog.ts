@@ -43,6 +43,8 @@ const AGENT_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-agent-invite-records', platform: 'agent', routeName: 'mobile-agent-invite-records', path: '/mobile/agent/invite-records', title: '我的邀请记录', group: '邀请', pagePath: ['代理端', '邀请', '我的邀请记录'] },
   { id: 'mobile-agent-profit-ratio', platform: 'agent', routeName: 'mobile-agent-profit-ratio', path: '/mobile/agent/profit-ratio', title: '代理收益比例', group: '收益比例', pagePath: ['代理端', '收益比例', '代理收益比例'] },
   { id: 'mobile-agent-profit-ratio-edit', platform: 'agent', routeName: 'mobile-agent-profit-ratio-edit', path: '/mobile/agent/profit-ratio/edit', title: '设置比例', group: '收益比例', pagePath: ['代理端', '收益比例', '设置比例'] },
+  { id: 'mobile-member-rebate-ratio', platform: 'agent', routeName: 'mobile-member-rebate-ratio', path: '/mobile/agent/member/rebate-ratio', title: '会员退水比例', group: '收益比例', pagePath: ['代理端', '收益比例', '会员退水比例'] },
+  { id: 'mobile-member-rebate-ratio-edit', platform: 'agent', routeName: 'mobile-member-rebate-ratio-edit', path: '/mobile/agent/member/rebate-ratio/edit', title: '设置会员退水', group: '收益比例', pagePath: ['代理端', '收益比例', '设置会员退水'] },
   { id: 'mobile-agent-settlement', platform: 'agent', routeName: 'mobile-agent-settlement', path: '/mobile/agent/settlement', title: '代理结算对账', group: '结算', pagePath: ['代理端', '结算', '代理结算对账'] },
   { id: 'mobile-agent-settlement-detail', platform: 'agent', routeName: 'mobile-agent-settlement-detail', path: '/mobile/agent/settlement/detail', title: '流水明细', group: '结算', pagePath: ['代理端', '结算', '流水明细'] },
   { id: 'mobile-xcoin-report', platform: 'agent', routeName: 'mobile-xcoin-report', path: '/mobile/agent/xcoin/report', title: 'X币报表', group: '报表', pagePath: ['代理端', '报表', 'X币报表'] },

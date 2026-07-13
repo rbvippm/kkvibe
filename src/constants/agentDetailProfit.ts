@@ -9,6 +9,37 @@ export type AgentProfitSummaryRow = {
   value: string
 }
 
+/** 按顶栏币种切换盈亏汇总口径 */
+export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
+  if (currency === '信用额度-kkc') {
+    return [
+      { label: '上分总额', value: '1,550' },
+      { label: '下分总额', value: '1,030' },
+    ]
+  }
+  if (currency === '信用额度-usdt') {
+    return [
+      { label: '上分总额', value: '620' },
+      { label: '下分总额', value: '410' },
+    ]
+  }
+
+  const cashMock: Record<string, { deposit: string; withdraw: string }> = {
+    KKC: { deposit: '12,800', withdraw: '6,400' },
+    USDT: { deposit: '3,200', withdraw: '1,150' },
+    KKV: { deposit: '8,600', withdraw: '4,200' },
+  }
+  const stats = cashMock[currency] ?? { deposit: '0', withdraw: '0' }
+
+  return [
+    { label: '充值总金额', value: stats.deposit },
+    { label: '提款总金额', value: stats.withdraw },
+  ]
+}
+
+/** @deprecated 请使用 getAgentProfitSummaryRows */
+export const AGENT_PROFIT_SUMMARY_ROWS: AgentProfitSummaryRow[] = getAgentProfitSummaryRows('KKC')
+
 export type AgentProfitDetailRow = {
   label: string
   value: string
@@ -21,11 +52,6 @@ export type AgentProfitDetail = {
   totalProfitTone: ProfitValueTone
   rows: AgentProfitDetailRow[]
 }
-
-export const AGENT_PROFIT_SUMMARY_ROWS: AgentProfitSummaryRow[] = [
-  { label: '上分总额', value: '0' },
-  { label: '下分总额', value: '0' },
-]
 
 export const AGENT_PROFIT_CATEGORY_TABS: { key: AgentProfitCategoryKey; label: string }[] = [
   { key: 'sports', label: '体育' },

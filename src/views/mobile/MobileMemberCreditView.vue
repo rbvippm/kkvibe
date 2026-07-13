@@ -2,13 +2,18 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useOtherMemberQuery } from '../../composables/useOtherMemberQuery'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   DEFAULT_MEMBER_CREDIT_PRODUCTS,
   formatMemberCreditPercent,
   OTHER_MEMBER_CREDIT_STEPS,
   type MemberCreditProduct,
 } from '../../constants/memberCredit'
+import { MEMBER_CREDIT_DIRECT_SPEC, MEMBER_CREDIT_OTHER_SPEC } from '../../constants/memberCreditSpec'
+import { promoteToCreditMember } from '../../constants/agentTeam'
+import { syncCreditRebateFromMemberCredit } from '../../constants/memberRebateRatio'
 import { relationTagClass, relationTagText, type XCoinSelectableTarget } from '../../constants/xCoinTransfer'
 import '../../styles/mobile-app-shell.css'
 
@@ -31,7 +36,7 @@ const {
   lookupAccount,
 } = useOtherMemberQuery(selectedMemberId)
 
-const rebatePercent = ref(30)
+const rebatePercent = ref(0)
 const products = ref<MemberCreditProduct[]>(
   DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item })),
 )
@@ -85,6 +90,14 @@ function confirmMember() {
 }
 
 function confirmCredit() {
+  if (selectedMember.value) {
+    promoteToCreditMember({
+      id: selectedMember.value.id,
+      nickname: selectedMember.value.nickname,
+      avatarEmoji: '👤',
+    })
+  }
+  syncCreditRebateFromMemberCredit(products.value)
   flowStep.value = 'success'
 }
 
@@ -94,7 +107,7 @@ function backToAgentCenter() {
 
 function resetFlow() {
   flowStep.value = isOtherMemberFlow.value ? 'search' : 'rebate'
-  rebatePercent.value = 30
+  rebatePercent.value = 0
   products.value = DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item }))
   if (isOtherMemberFlow.value) {
     selectedMemberId.value = ''
@@ -115,18 +128,18 @@ function closeEdit() {
   editDraft.value = ''
 }
 
-function saveEdit() {
+async function saveEdit() {
   const product = editingProduct.value
   if (!product) return
 
   const next = Number(editDraft.value)
   if (Number.isNaN(next) || next < 0) {
-    window.alert('请输入有效比例')
+    await mh5Alert('请输入有效比例')
     return
   }
 
   if (next > product.maxRebate) {
-    window.alert(`不能超过最高 ${formatMemberCreditPercent(product.maxRebate)}`)
+    await mh5Alert(`不能超过最高 ${formatMemberCreditPercent(product.maxRebate)}`)
     return
   }
 
@@ -150,7 +163,20 @@ if (route.query.targetId && route.query.targetName) {
 
 <template>
   <div class="mh5-agent-credit-page">
-    <Mh5SubPageHeader :title="pageTitle" />
+    <Mh5SubPageHeader :title="pageTitle" :on-back="goPrevious">
+      <template #right>
+        <Mh5SpecAnnot
+          v-if="isOtherMemberFlow"
+          :spec="MEMBER_CREDIT_OTHER_SPEC"
+          placement="bottom"
+        />
+        <Mh5SpecAnnot
+          v-else
+          :spec="MEMBER_CREDIT_DIRECT_SPEC"
+          placement="bottom"
+        />
+      </template>
+    </Mh5SubPageHeader>
 
     <div
       v-if="isOtherMemberFlow && flowStep !== 'success'"

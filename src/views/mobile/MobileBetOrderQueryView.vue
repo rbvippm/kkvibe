@@ -318,51 +318,51 @@ function summaryWinLoseClass(value: number) {
       </div>
     </div>
 
-    <div class="mh5-bet-order-summary-carousel">
-      <div
-        ref="summaryCarouselRef"
-        class="mh5-bet-order-summary-carousel__track"
-        @scroll.passive="onSummaryCarouselScroll"
-      >
+    <main class="mh5-bet-order-main">
+      <div class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll">
         <div
-          v-for="slide in currencySummaries"
-          :key="slide.currency"
-          class="mh5-bet-order-summary mh5-bet-order-summary--slide"
+          ref="summaryCarouselRef"
+          class="mh5-bet-order-summary-carousel__track"
+          @scroll.passive="onSummaryCarouselScroll"
         >
-          <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
-          <div class="mh5-bet-order-summary__metrics">
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总单数</span>
-              <strong>{{ slide.count }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总下注</span>
-              <strong>{{ formatMoney(slide.betAmount) }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总有效投注</span>
-              <strong>{{ formatMoney(slide.validBet) }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总输赢</span>
-              <strong :class="summaryWinLoseClass(slide.winLose)">
-                {{ formatSummaryWinLose(slide.winLose) }}
-              </strong>
+          <div
+            v-for="slide in currencySummaries"
+            :key="slide.currency"
+            class="mh5-bet-order-summary mh5-bet-order-summary--slide"
+          >
+            <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
+            <div class="mh5-bet-order-summary__metrics">
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总单数</span>
+                <strong>{{ slide.count }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总下注</span>
+                <strong>{{ formatMoney(slide.betAmount) }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总有效投注</span>
+                <strong>{{ formatMoney(slide.validBet) }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总输赢</span>
+                <strong :class="summaryWinLoseClass(slide.winLose)">
+                  {{ formatSummaryWinLose(slide.winLose) }}
+                </strong>
+              </div>
             </div>
           </div>
         </div>
+        <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
+          <span
+            v-for="(slide, idx) in currencySummaries"
+            :key="`dot-${slide.currency}`"
+            class="mh5-bet-order-summary-carousel__dot"
+            :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
+          />
+        </div>
       </div>
-      <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
-        <span
-          v-for="(slide, idx) in currencySummaries"
-          :key="`dot-${slide.currency}`"
-          class="mh5-bet-order-summary-carousel__dot"
-          :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
-        />
-      </div>
-    </div>
 
-    <main class="mh5-bet-order-main">
       <div v-if="!filteredRecords.length" class="mh5-bet-order-empty">
         <span class="mh5-bet-order-empty__icon" aria-hidden="true">📭</span>
         <p class="mh5-bet-order-empty__title">暂无注单数据</p>

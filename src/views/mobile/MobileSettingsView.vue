@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import { MINE_SETTINGS_GROUPS, type MineSettingsItem } from '../../constants/mineSettings'
 import '../../styles/mobile-app-shell.css'
 
 function handleItemClick(item: MineSettingsItem) {
-  window.alert(`「${item.title}」功能开发中（原型占位）`)
+  void mh5Alert({
+    title: `「${item.title}」功能开发中`,
+    message: '原型占位',
+  })
 }
 </script>
 

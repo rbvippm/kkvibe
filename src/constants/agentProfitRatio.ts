@@ -1,6 +1,8 @@
 /** 代理收益比例 · Mock */
 
 import { ref } from 'vue'
+import { DEFAULT_AGENT_CREDIT_PRODUCTS, type AgentCreditProduct } from './agentCredit'
+import { teamCreditAgents, teamDirectAgents } from './agentTeam'
 
 export type AgentProfitRatioProduct = {
   key: string
@@ -12,6 +14,19 @@ export type AgentProfitRatioProduct = {
 }
 
 export type AgentProfitRelation = 'direct' | 'indirect'
+
+/** 现金 / 信用收益比例 */
+export type AgentProfitRatioType = 'cash' | 'credit'
+
+export const AGENT_PROFIT_RATIO_TYPE_TABS: { key: AgentProfitRatioType; label: string }[] = [
+  { key: 'cash', label: '现金' },
+  { key: 'credit', label: '信用' },
+]
+
+export const AGENT_PROFIT_RATIO_TYPE_LABEL: Record<AgentProfitRatioType, string> = {
+  cash: '现金',
+  credit: '信用',
+}
 
 export const AGENT_PROFIT_RELATION_LABEL: Record<AgentProfitRelation, string> = {
   direct: '直属',
@@ -32,9 +47,22 @@ export const DEFAULT_AGENT_PROFIT_RATIO_PRODUCTS: AgentProfitRatioProduct[] = [
   { key: 'marble', name: '弹珠', share: 1, rebate: 0, maxShare: 1, maxRebate: 0 },
 ]
 
-/** 代理收益比例 · 原型共享状态 */
+/** 信用收益比例默认 Mock（与授信产品表一致，数值略区分于现金便于演示） */
+export const DEFAULT_AGENT_CREDIT_PROFIT_RATIO_PRODUCTS: AgentProfitRatioProduct[] =
+  DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({
+    ...item,
+    share: item.key === 'live' ? 1 : 0,
+    rebate: item.key === 'live' ? 0.1 : 0,
+  }))
+
+/** 现金收益比例 · 原型共享状态 */
 export const agentProfitRatioProducts = ref<AgentProfitRatioProduct[]>(
   DEFAULT_AGENT_PROFIT_RATIO_PRODUCTS.map((item) => ({ ...item })),
+)
+
+/** 信用收益比例 · 原型共享状态（授信成功后可覆盖） */
+export const agentCreditProfitRatioProducts = ref<AgentProfitRatioProduct[]>(
+  DEFAULT_AGENT_CREDIT_PROFIT_RATIO_PRODUCTS.map((item) => ({ ...item })),
 )
 
 export const AGENT_PROFIT_RATIO_PRODUCT_ICONS: Record<string, string> = {
@@ -49,10 +77,33 @@ export const AGENT_PROFIT_RATIO_PRODUCT_ICONS: Record<string, string> = {
   live: '真',
   lottery: '彩',
   marble: '珠',
+  qutou: '趣',
+  cockfight: '鸡',
 }
 
 export function cloneAgentProfitRatioProducts(products: AgentProfitRatioProduct[]) {
   return products.map((item) => ({ ...item }))
+}
+
+export function getAgentProfitRatioProducts(type: AgentProfitRatioType) {
+  return type === 'credit' ? agentCreditProfitRatioProducts : agentProfitRatioProducts
+}
+
+export function saveAgentProfitRatioProducts(
+  type: AgentProfitRatioType,
+  products: AgentProfitRatioProduct[],
+) {
+  const next = cloneAgentProfitRatioProducts(products)
+  if (type === 'credit') {
+    agentCreditProfitRatioProducts.value = next
+    return
+  }
+  agentProfitRatioProducts.value = next
+}
+
+/** 授信成功：把本次信用产品比例写入「信用收益比例」 */
+export function syncCreditProfitRatioFromCredit(products: AgentCreditProduct[]) {
+  agentCreditProfitRatioProducts.value = products.map((item) => ({ ...item }))
 }
 
 export function getAgentProfitRatioProductIcon(key: string) {
@@ -66,4 +117,31 @@ export function formatProfitRatioPercent(value: number) {
 export function getAgentProfitRelationLabel(relation?: string) {
   if (relation === 'indirect') return AGENT_PROFIT_RELATION_LABEL.indirect
   return AGENT_PROFIT_RELATION_LABEL.direct
+}
+
+export function parseAgentProfitRatioType(raw?: string | null): AgentProfitRatioType {
+  return raw === 'credit' ? 'credit' : 'cash'
+}
+
+/**
+ * 目标代理是否已开通信用（可查看/修改信用收益比例）
+ * 与团队管理当前筛选 Tab 无关：只要在信用代理列表，或入口标明 credit_agent / credited，即展示现金/信用 Tab
+ */
+export function isAgentCreditEnabled(
+  targetId?: string,
+  kindHint?: string,
+  creditedHint?: string | boolean,
+) {
+  if (creditedHint === true || creditedHint === '1' || creditedHint === 'true') return true
+  if (kindHint === 'credit_agent') return true
+  if (!targetId) return false
+  return teamCreditAgents.value.some((item) => item.id === targetId)
+}
+
+export function resolveAgentKindHint(targetId?: string, kindHint?: string) {
+  if (kindHint === 'credit_agent' || kindHint === 'agent') return kindHint
+  if (!targetId) return 'agent'
+  if (teamCreditAgents.value.some((item) => item.id === targetId)) return 'credit_agent'
+  if (teamDirectAgents.value.some((item) => item.id === targetId)) return 'agent'
+  return 'agent'
 }

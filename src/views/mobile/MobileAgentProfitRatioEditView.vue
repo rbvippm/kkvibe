@@ -2,10 +2,14 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
-  agentProfitRatioProducts,
+  AGENT_PROFIT_RATIO_TYPE_LABEL,
   cloneAgentProfitRatioProducts,
   getAgentProfitRatioProductIcon,
+  getAgentProfitRatioProducts,
+  parseAgentProfitRatioType,
+  saveAgentProfitRatioProducts,
   type AgentProfitRatioProduct,
 } from '../../constants/agentProfitRatio'
 import '../../styles/mobile-app-shell.css'
@@ -13,11 +17,17 @@ import '../../styles/mobile-app-shell.css'
 const route = useRoute()
 const router = useRouter()
 
+const ratioType = computed(() => parseAgentProfitRatioType(String(route.query.ratioType || 'cash')))
+const ratioTypeLabel = computed(() => AGENT_PROFIT_RATIO_TYPE_LABEL[ratioType.value])
+
 const sharePercent = ref(0)
 const rebatePercent = ref(0)
-const products = ref<AgentProfitRatioProduct[]>(cloneAgentProfitRatioProducts(agentProfitRatioProducts.value))
+const products = ref<AgentProfitRatioProduct[]>(
+  cloneAgentProfitRatioProducts(getAgentProfitRatioProducts(ratioType.value).value),
+)
 
 const targetNickname = computed(() => String(route.query.targetName || 'Tom Cat%'))
+const pageTitle = computed(() => `设置${ratioTypeLabel.value}比例`)
 
 function clampProductValue(product: AgentProfitRatioProduct, field: 'share' | 'rebate', value: number) {
   const max = field === 'share' ? product.maxShare : product.maxRebate
@@ -46,19 +56,22 @@ function applyGlobalRebate() {
   })
 }
 
-function saveRatios() {
-  agentProfitRatioProducts.value = cloneAgentProfitRatioProducts(products.value)
-  window.alert('收益比例已保存')
+async function saveRatios() {
+  saveAgentProfitRatioProducts(ratioType.value, products.value)
+  await mh5Alert(`${ratioTypeLabel.value}收益比例已保存`)
   router.back()
 }
 </script>
 
 <template>
   <div class="mh5-agent-profit-ratio-edit-page">
-    <Mh5SubPageHeader title="设置比例" />
+    <Mh5SubPageHeader :title="pageTitle" />
 
     <main class="mh5-agent-profit-ratio-edit-main">
-      <p class="mh5-agent-profit-ratio-edit-account">代理账号：{{ targetNickname }}</p>
+      <p class="mh5-agent-profit-ratio-edit-account">
+        代理账号：{{ targetNickname }}
+        <span class="mh5-agent-profit-ratio-edit-account__type">{{ ratioTypeLabel }}收益</span>
+      </p>
 
       <section class="mh5-agent-credit-slider-card">
         <span class="mh5-agent-credit-slider-card__label">占成</span>

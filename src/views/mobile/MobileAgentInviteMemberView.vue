@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
   DEFAULT_AGENT_CREDIT_PRODUCTS,
   formatCreditPercent,
@@ -130,19 +131,19 @@ function closeEdit() {
   editDraft.value = ''
 }
 
-function saveEdit() {
+async function saveEdit() {
   const product = editingProduct.value
   if (!product) return
 
   const next = Number(editDraft.value)
   if (Number.isNaN(next) || next < 0) {
-    window.alert('请输入有效比例')
+    await mh5Alert('请输入有效比例')
     return
   }
 
   const max = editMax.value
   if (next > max) {
-    window.alert(`不能超过最高 ${formatCreditPercent(max)}`)
+    await mh5Alert(`不能超过最高 ${formatCreditPercent(max, editField.value)}`)
     return
   }
 
@@ -300,7 +301,7 @@ function saveEdit() {
                     class="mh5-agent-credit-table__value-btn"
                     @click="openEdit(row, 'share')"
                   >
-                    <span>{{ formatCreditPercent(row.share) }}</span>
+                    <span>{{ formatCreditPercent(row.share, 'share') }}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path
                         d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -311,7 +312,7 @@ function saveEdit() {
                       <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare) }}</span>
+                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare, 'share') }}</span>
                 </div>
               </td>
               <td>
@@ -321,7 +322,7 @@ function saveEdit() {
                     class="mh5-agent-credit-table__value-btn"
                     @click="openEdit(row, 'rebate')"
                   >
-                    <span>{{ formatCreditPercent(row.rebate) }}</span>
+                    <span>{{ formatCreditPercent(row.rebate, 'rebate') }}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path
                         d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -332,7 +333,7 @@ function saveEdit() {
                       <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate) }}</span>
+                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate, 'rebate') }}</span>
                 </div>
               </td>
             </tr>
@@ -422,7 +423,7 @@ function saveEdit() {
       <div v-if="editVisible" class="mh5-agent-credit-edit-mask" @click.self="closeEdit">
         <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" :aria-label="editTitle">
           <h3 class="mh5-agent-credit-edit-panel__title">{{ editTitle }}</h3>
-          <p class="mh5-agent-credit-edit-panel__hint">最高 {{ formatCreditPercent(editMax) }}</p>
+          <p class="mh5-agent-credit-edit-panel__hint">最高 {{ formatCreditPercent(editMax, editField) }}</p>
           <div class="mh5-agent-credit-edit-panel__field">
             <input
               v-model="editDraft"

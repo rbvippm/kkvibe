@@ -1,6 +1,7 @@
 import { filterTeamList, type TeamListItem } from './agentTeam'
+import type { AgentCreditCurrency } from './agentDetail'
 
-export type MemberDetailTab = 'manage' | 'flow' | 'login'
+export type MemberDetailTab = 'manage' | 'credit' | 'flow' | 'login'
 
 export type MemberFlowSubTab = 'instant' | 'records' | 'profit'
 
@@ -9,6 +10,22 @@ export const MEMBER_DETAIL_TABS: { key: MemberDetailTab; label: string }[] = [
   { key: 'flow', label: '账户流水' },
   { key: 'login', label: '登录日志' },
 ]
+
+/** 已授信时默认展示「信用额度」总 Tab */
+export const MEMBER_DETAIL_CREDIT_TAB: { key: MemberDetailTab; label: string } = {
+  key: 'credit',
+  label: '信用额度',
+}
+
+export function getMemberDetailTabs(isCredited: boolean): { key: MemberDetailTab; label: string }[] {
+  if (!isCredited) return MEMBER_DETAIL_TABS
+  return [
+    MEMBER_DETAIL_TABS[0],
+    MEMBER_DETAIL_CREDIT_TAB,
+    MEMBER_DETAIL_TABS[1],
+    MEMBER_DETAIL_TABS[2],
+  ]
+}
 
 export const MEMBER_FLOW_SUB_TABS: { key: MemberFlowSubTab; label: string }[] = [
   { key: 'instant', label: '即时注单' },
@@ -21,6 +38,12 @@ export type MemberWalletRow = {
   balance: string
 }
 
+export type MemberCreditLimitStats = {
+  creditBalance: number
+  creditUpTotal: number
+  creditDownTotal: number
+}
+
 export type MemberDetailProfile = {
   id: string
   nickname: string
@@ -29,12 +52,10 @@ export type MemberDetailProfile = {
   memberTag: string
   memberAccount: string
   superiorAgent: string
+  /** 是否已开通信用（授信过才展示信用额度） */
+  isCredited: boolean
   wallets: MemberWalletRow[]
-  creditLimit: {
-    creditBalance: number
-    creditUpTotal: number
-    creditDownTotal: number
-  }
+  creditLimits: Record<AgentCreditCurrency, MemberCreditLimitStats>
   loginLog: {
     registeredAt: string
     lastLoginAt: string
@@ -53,6 +74,37 @@ const DEFAULT_WALLETS: MemberWalletRow[] = [
   { currency: 'KKV', balance: '1,000' },
 ]
 
+function buildMemberCreditLimits(scale: number): Record<AgentCreditCurrency, MemberCreditLimitStats> {
+  const s = Math.max(1, scale)
+  return {
+    '信用额度-kkc': {
+      creditBalance: s * 120,
+      creditUpTotal: s * 820,
+      creditDownTotal: s * 640,
+    },
+    '信用额度-usdt': {
+      creditBalance: s * 45,
+      creditUpTotal: s * 310,
+      creditDownTotal: s * 240,
+    },
+  }
+}
+
+export function formatMemberCreditLimitRows(stats: MemberCreditLimitStats) {
+  const format = (n: number) => n.toLocaleString('zh-CN')
+  const net = stats.creditUpTotal - stats.creditDownTotal
+  return [
+    { label: '信用余额', value: format(stats.creditBalance), positive: false },
+    { label: '上分总额', value: format(stats.creditUpTotal), positive: false },
+    { label: '下分总额', value: format(stats.creditDownTotal), positive: false },
+    {
+      label: '上下分净额',
+      value: `${net >= 0 ? '+' : ''}${format(net)}`,
+      positive: net >= 0,
+    },
+  ]
+}
+
 const MOCK_DEFAULT_MEMBER: MemberDetailProfile = {
   id: 'default',
   nickname: 'fafa1231236789',
@@ -61,12 +113,9 @@ const MOCK_DEFAULT_MEMBER: MemberDetailProfile = {
   memberTag: '直属会员',
   memberAccount: 'fafa8888888',
   superiorAgent: 'PP231233',
+  isCredited: false,
   wallets: DEFAULT_WALLETS,
-  creditLimit: {
-    creditBalance: 866,
-    creditUpTotal: 12800,
-    creditDownTotal: 9600,
-  },
+  creditLimits: buildMemberCreditLimits(8),
   loginLog: {
     registeredAt: '2026-05-18 21:51:58',
     lastLoginAt: '2026-05-18 21:51:58',
@@ -89,12 +138,9 @@ function mockDetailFromTeam(item: TeamListItem): MemberDetailProfile {
     memberTag: isCreditMember ? '信用会员' : '直属会员',
     memberAccount: item.nickname,
     superiorAgent: 'PP231233',
+    isCredited: isCreditMember,
     wallets: DEFAULT_WALLETS,
-    creditLimit: {
-      creditBalance: (item.subordinateCount + 1) * 120,
-      creditUpTotal: (item.subordinateCount + 1) * 820,
-      creditDownTotal: (item.subordinateCount + 1) * 640,
-    },
+    creditLimits: buildMemberCreditLimits(item.subordinateCount + 1),
     loginLog: {
       registeredAt: '2026-05-18 21:51:58',
       lastLoginAt: '2026-05-18 21:51:58',
@@ -115,7 +161,9 @@ export function findMemberDetail(id: string): MemberDetailProfile | null {
   if (!found) return MOCK_DEFAULT_MEMBER
   if (found.kind !== 'member' && found.kind !== 'credit_member') return null
 
-  if (found.id === 'm1') return { ...MOCK_DEFAULT_MEMBER, id: found.id }
+  if (found.id === 'm1') {
+    return { ...MOCK_DEFAULT_MEMBER, id: found.id, nickname: found.nickname, isCredited: false }
+  }
 
   return mockDetailFromTeam(found)
 }

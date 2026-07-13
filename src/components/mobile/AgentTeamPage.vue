@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
   TEAM_FILTER_TABS,
-  MOCK_TEAM_SELF,
   CREATE_ACCOUNT_OPTIONS,
   DEFAULT_CREATE_ACCOUNT_OPTION,
-  agentSubordinateLabel,
-  getTeamChildren,
+  getTeamTreeRows,
+  isCreditTeamKind,
   memberKindLabel,
   showAgentSubordinateTag,
   showMemberBadge,
+  teamStatsLabel,
   type CreateAccountOption,
   type TeamFilterTab,
   type TeamListItem,
@@ -21,9 +22,9 @@ const route = useRoute()
 const router = useRouter()
 
 const teamFilterTab = ref<TeamFilterTab>('all')
-const teamSelfExpanded = ref(true)
+const expandedIds = ref<Set<string>>(new Set(['self', 'a1']))
 
-type TeamQuickAction = 'profit_ratio' | 'remark' | 'agent_credit' | 'member_credit'
+type TeamQuickAction = 'profit_ratio' | 'rebate_ratio' | 'remark' | 'agent_credit' | 'member_credit'
 
 const teamQuickMenuRow = ref<TeamListItem | null>(null)
 const teamQuickMenuPos = ref({ top: 0, right: 0 })
@@ -33,7 +34,7 @@ const createAccountSheetOpen = ref(false)
 const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 
-const teamChildRows = computed(() => getTeamChildren(teamFilterTab.value))
+const teamTreeRows = computed(() => getTeamTreeRows(teamFilterTab.value, expandedIds.value))
 
 const pendingInviteCount = computed(
   () => agentSentInvites.value.filter((item) => item.status === 'pending').length,
@@ -47,12 +48,15 @@ function goTeamDetailByNickname(item: TeamListItem) {
   router.push({ name: 'mobile-agent-detail', query: { id: item.id } })
 }
 
-function toggleTeamExpand() {
-  teamSelfExpanded.value = !teamSelfExpanded.value
+function isExpanded(id: string) {
+  return expandedIds.value.has(id)
 }
 
-function teamRowBadge(item: TeamListItem) {
-  return memberKindLabel(item.kind)
+function toggleExpand(id: string) {
+  const next = new Set(expandedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  expandedIds.value = next
 }
 
 function openTeamQuickMenu(row: TeamListItem, event: MouseEvent) {
@@ -89,14 +93,14 @@ function onTeamDocumentClick() {
   if (teamQuickMenuRow.value) closeTeamQuickMenu()
 }
 
-function onTeamQuickAction(action: TeamQuickAction) {
+async function onTeamQuickAction(action: TeamQuickAction) {
   const row = teamQuickMenuRow.value
   if (!row) return
   closeTeamQuickMenu()
 
   if (action === 'profit_ratio') {
     if (row.kind !== 'agent' && row.kind !== 'credit_agent') {
-      window.alert('收益比例仅支持代理账号')
+      await mh5Alert('收益比例仅支持代理账号')
       return
     }
 
@@ -106,6 +110,28 @@ function onTeamQuickAction(action: TeamQuickAction) {
         targetId: row.id,
         targetName: row.nickname,
         relation: 'direct',
+        kind: row.kind,
+        /** 全部 / 信用代理等任意入口：授信过即带标记，收益比例页展示现金/信用 Tab */
+        credited: row.kind === 'credit_agent' ? '1' : '0',
+      },
+    })
+    return
+  }
+
+  if (action === 'rebate_ratio') {
+    if (!showMemberBadge(row.kind)) {
+      await mh5Alert('退水比例仅支持会员账号')
+      return
+    }
+
+    router.push({
+      name: 'mobile-member-rebate-ratio',
+      query: {
+        targetId: row.id,
+        targetName: row.nickname,
+        relation: 'direct',
+        kind: row.kind,
+        credited: row.kind === 'credit_member' ? '1' : '0',
       },
     })
     return
@@ -114,13 +140,13 @@ function onTeamQuickAction(action: TeamQuickAction) {
   if (action === 'remark') {
     const next = window.prompt(`为「${row.nickname}」添加备注`, '')
     if (next === null) return
-    window.alert(next.trim() ? `备注已保存：${next.trim()}` : '备注已清空')
+    await mh5Alert(next.trim() ? `备注已保存：${next.trim()}` : '备注已清空')
     return
   }
 
   if (action === 'member_credit') {
     if (!showMemberBadge(row.kind)) {
-      window.alert('会员授信仅支持信用会员')
+      await mh5Alert('会员授信仅支持直属会员')
       return
     }
 
@@ -133,7 +159,7 @@ function onTeamQuickAction(action: TeamQuickAction) {
 
   if (action === 'agent_credit') {
     if (row.kind !== 'agent' && row.kind !== 'credit_agent') {
-      window.alert('代理授信仅支持代理账号')
+      await mh5Alert('代理授信仅支持代理账号')
       return
     }
 
@@ -175,7 +201,7 @@ function resetCreateAccountDraft() {
   createAccountDraft.value = DEFAULT_CREATE_ACCOUNT_OPTION
 }
 
-function confirmCreateAccount() {
+async function confirmCreateAccount() {
   createAccountSelection.value = createAccountDraft.value
   createAccountSheetOpen.value = false
 
@@ -190,11 +216,11 @@ function confirmCreateAccount() {
   }
 
   if (createAccountDraft.value === 'agent') {
-    window.alert('创建代理账户（原型占位）')
+    await mh5Alert('创建代理账户（原型占位）')
     return
   }
 
-  window.alert('创建会员账户（原型占位）')
+  await mh5Alert('创建会员账户（原型占位）')
 }
 
 onMounted(() => {
@@ -269,82 +295,93 @@ onUnmounted(() => {
           {{ tab.label }}
         </button>
       </div>
+      <button type="button" class="agent-team-toolbar__sort" aria-label="排序">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h12M4 12h8M4 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+        排序
+      </button>
     </div>
 
     <main class="agent-team-list">
-      <div class="agent-team-row agent-team-row--self">
-        <div class="agent-team-row__avatar">
-          {{ MOCK_TEAM_SELF.avatarEmoji }}
-        </div>
-        <div class="agent-team-row__main">
-          <button
-            type="button"
-            class="agent-team-row__name agent-team-row__name--link"
-            @click="goTeamDetailByNickname(MOCK_TEAM_SELF)"
-          >
-            {{ MOCK_TEAM_SELF.nickname }}
-          </button>
-          <div class="agent-team-row__tags">
-            <span class="agent-team-tag agent-team-tag--me">我</span>
-            <span v-if="MOCK_TEAM_SELF.vipLevel" class="agent-team-tag agent-team-tag--vip">
-              ★ V{{ MOCK_TEAM_SELF.vipLevel }}
-            </span>
-            <span
-              v-if="showAgentSubordinateTag(MOCK_TEAM_SELF)"
-              class="agent-team-tag agent-team-tag--agent"
-            >
-              {{ agentSubordinateLabel(MOCK_TEAM_SELF.subordinateCount) }}
-            </span>
-          </div>
-        </div>
-        <button
-          type="button"
-          class="agent-team-row__expand"
-          :class="{ 'agent-team-row__expand--open': teamSelfExpanded }"
-          aria-label="展开下级"
-          :aria-expanded="teamSelfExpanded"
-          @click.stop="toggleTeamExpand"
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-      </div>
-
-      <template v-if="teamSelfExpanded">
+      <template v-for="row in teamTreeRows" :key="row.item.id">
         <div
-          v-for="row in teamChildRows"
-          :key="row.id"
-          class="agent-team-row agent-team-row--child"
+          class="agent-team-row"
+          :class="{ 'agent-team-row--self': row.item.kind === 'me' }"
+          :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
         >
-          <div class="agent-team-row__avatar agent-team-row__avatar--placeholder" aria-hidden="true" />
+          <button
+            v-if="row.hasChildren"
+            type="button"
+            class="agent-team-row__caret"
+            :class="{ 'agent-team-row__caret--open': isExpanded(row.item.id) }"
+            aria-label="展开下级"
+            :aria-expanded="isExpanded(row.item.id)"
+            @click.stop="toggleExpand(row.item.id)"
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+              <path d="M2 1.2 8 5 2 8.8V1.2Z" />
+            </svg>
+          </button>
+          <span v-else class="agent-team-row__caret-spacer" aria-hidden="true" />
+
+          <div class="agent-team-row__avatar" :class="{ 'agent-team-row__avatar--online': row.item.online }">
+            <span>{{ row.item.avatarEmoji || '👤' }}</span>
+          </div>
+
           <div class="agent-team-row__main">
             <button
               type="button"
               class="agent-team-row__name agent-team-row__name--link"
-              @click="goTeamDetailByNickname(row)"
+              @click="goTeamDetailByNickname(row.item)"
             >
-              {{ row.nickname }}
+              {{ row.item.nickname }}
             </button>
             <div class="agent-team-row__tags">
-              <span v-if="showMemberBadge(row.kind)" class="agent-team-tag agent-team-tag--xcoin">
-                {{ teamRowBadge(row) }}
+              <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
+              <span
+                v-if="teamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
+                class="agent-team-tag agent-team-tag--credit"
+              >
+                信用
               </span>
-              <span v-if="row.vipLevel" class="agent-team-tag agent-team-tag--vip">
-                ★ V{{ row.vipLevel }}
+              <span v-if="row.item.vipLevel" class="agent-team-tag agent-team-tag--vip">
+                <span class="agent-team-tag__vip-gem" aria-hidden="true">◆</span>
+                V{{ row.item.vipLevel }}
               </span>
-              <span v-if="showAgentSubordinateTag(row)" class="agent-team-tag agent-team-tag--agent">
-                {{ agentSubordinateLabel(row.subordinateCount) }}
+              <span
+                v-if="showAgentSubordinateTag(row.item)"
+                class="agent-team-tag agent-team-tag--stats"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                  />
+                  <path
+                    d="M3.5 19c.6-2.6 2.8-4 4.5-4s3.9 1.4 4.5 4M11.5 19c.6-2.6 2.8-4 4.5-4s3.9 1.4 4.5 4"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                {{ teamStatsLabel(row.item) }}
+              </span>
+              <span v-else-if="showMemberBadge(row.item.kind)" class="agent-team-tag agent-team-tag--member">
+                {{ memberKindLabel(row.item.kind) }}
               </span>
             </div>
           </div>
+
           <button
+            v-if="row.item.kind !== 'me'"
             type="button"
             class="agent-team-row__menu"
-            :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.id }"
+            :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.item.id }"
             aria-label="更多操作"
-            :aria-expanded="teamQuickMenuRow?.id === row.id"
-            @click.stop="openTeamQuickMenu(row, $event)"
+            :aria-expanded="teamQuickMenuRow?.id === row.item.id"
+            @click.stop="openTeamQuickMenu(row.item, $event)"
           >
             ···
           </button>
@@ -367,7 +404,22 @@ onUnmounted(() => {
           的更多快捷操作
         </p>
         <div class="agent-team-quick-menu__actions">
-          <button type="button" class="agent-team-quick-menu__btn" role="menuitem" @click="onTeamQuickAction('profit_ratio')">
+          <button
+            v-if="teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
+            type="button"
+            class="agent-team-quick-menu__btn"
+            role="menuitem"
+            @click="onTeamQuickAction('rebate_ratio')"
+          >
+            退水比例
+          </button>
+          <button
+            v-else
+            type="button"
+            class="agent-team-quick-menu__btn"
+            role="menuitem"
+            @click="onTeamQuickAction('profit_ratio')"
+          >
             收益比例
           </button>
           <button type="button" class="agent-team-quick-menu__btn" role="menuitem" @click="onTeamQuickAction('remark')">
@@ -399,54 +451,54 @@ onUnmounted(() => {
       <Transition name="agent-team-create-sheet">
         <div v-if="createAccountSheetOpen" class="agent-team-create-sheet-mask" @click.self="closeCreateAccountSheet">
           <div class="agent-team-create-sheet" role="dialog" aria-modal="true" aria-labelledby="create-account-title">
-          <div class="agent-team-create-sheet__head">
-            <h2 id="create-account-title" class="agent-team-create-sheet__title">创建账户</h2>
-            <button type="button" class="agent-team-create-sheet__close" aria-label="关闭" @click="closeCreateAccountSheet">
-              ×
-            </button>
-          </div>
-          <div class="agent-team-create-sheet__options">
-            <button
-              v-for="option in CREATE_ACCOUNT_OPTIONS"
-              :key="option.key"
-              type="button"
-              class="agent-team-create-sheet__option"
-              :class="{ 'agent-team-create-sheet__option--active': createAccountDraft === option.key }"
-              @click="createAccountDraft = option.key"
-            >
-              <span class="agent-team-create-sheet__label">{{ option.label }}</span>
-              <span
-                class="agent-team-create-sheet__check"
-                :class="{ 'agent-team-create-sheet__check--active': createAccountDraft === option.key }"
-                aria-hidden="true"
+            <div class="agent-team-create-sheet__head">
+              <h2 id="create-account-title" class="agent-team-create-sheet__title">创建账户</h2>
+              <button type="button" class="agent-team-create-sheet__close" aria-label="关闭" @click="closeCreateAccountSheet">
+                ×
+              </button>
+            </div>
+            <div class="agent-team-create-sheet__options">
+              <button
+                v-for="option in CREATE_ACCOUNT_OPTIONS"
+                :key="option.key"
+                type="button"
+                class="agent-team-create-sheet__option"
+                :class="{ 'agent-team-create-sheet__option--active': createAccountDraft === option.key }"
+                @click="createAccountDraft = option.key"
               >
-                <svg
-                  v-if="createAccountDraft === option.key"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
+                <span class="agent-team-create-sheet__label">{{ option.label }}</span>
+                <span
+                  class="agent-team-create-sheet__check"
+                  :class="{ 'agent-team-create-sheet__check--active': createAccountDraft === option.key }"
+                  aria-hidden="true"
                 >
-                  <path
-                    d="M2.5 6.2 5 8.7 9.5 3.8"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </span>
-            </button>
+                  <svg
+                    v-if="createAccountDraft === option.key"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 12 12"
+                    fill="none"
+                  >
+                    <path
+                      d="M2.5 6.2 5 8.7 9.5 3.8"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div class="agent-team-create-sheet__footer">
+              <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--ghost" @click="resetCreateAccountDraft">
+                重置
+              </button>
+              <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--primary" @click="confirmCreateAccount">
+                确定
+              </button>
+            </div>
           </div>
-          <div class="agent-team-create-sheet__footer">
-            <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--ghost" @click="resetCreateAccountDraft">
-              重置
-            </button>
-            <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--primary" @click="confirmCreateAccount">
-              确定
-            </button>
-          </div>
-        </div>
         </div>
       </Transition>
     </Teleport>

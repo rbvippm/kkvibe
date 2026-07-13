@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   AGENT_CREDIT_STEPS,
-  buildAgentCreditCopyText,
   DEFAULT_AGENT_CREDIT_PRODUCTS,
   formatCreditPercent,
-  MOCK_AGENT_CREDIT_SUCCESS,
+  isValidRebatePercent,
+  isValidSharePercent,
+  normalizeRebatePercent,
   type AgentCreditProduct,
 } from '../../constants/agentCredit'
+import { AGENT_CREDIT_SPEC } from '../../constants/agentCreditSpec'
+import { syncCreditProfitRatioFromCredit } from '../../constants/agentProfitRatio'
+import { promoteToCreditAgent } from '../../constants/agentTeam'
 import '../../styles/mobile-app-shell.css'
 
 type CreditStep = 1 | 2
@@ -19,8 +24,8 @@ const route = useRoute()
 const router = useRouter()
 
 const step = ref<CreditStep>(1)
-const sharePercent = ref(30)
-const rebatePercent = ref(30)
+const sharePercent = ref(0)
+const rebatePercent = ref(0)
 const products = ref<AgentCreditProduct[]>(
   DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item })),
 )
@@ -29,21 +34,18 @@ const editVisible = ref(false)
 const editField = ref<EditField>('share')
 const editProductKey = ref('')
 const editDraft = ref('')
+const editError = ref('')
 
-const targetNickname = computed(() => String(route.query.targetName || '代理账号'))
+const targetNickname = computed(() => String(route.query.targetName || ''))
 
 const pageTitle = computed(() => (step.value === 2 ? '授信成功' : '代理授信'))
-
-const successInfo = MOCK_AGENT_CREDIT_SUCCESS
-
-const copyHint = ref('')
 
 const editingProduct = computed(() =>
   products.value.find((item) => item.key === editProductKey.value),
 )
 
 const editMax = computed(() => {
-  if (!editingProduct.value) return 0.1
+  if (!editingProduct.value) return 0
   return editField.value === 'share' ? editingProduct.value.maxShare : editingProduct.value.maxRebate
 })
 
@@ -51,6 +53,22 @@ const editTitle = computed(() => {
   if (!editingProduct.value) return '编辑比例'
   const label = editField.value === 'share' ? '占成' : '退水'
   return `编辑${editingProduct.value.name}${label}`
+})
+
+const editInputMode = computed(() => (editField.value === 'share' ? 'numeric' : 'decimal'))
+
+watch(sharePercent, (value) => {
+  const next = Math.round(Math.min(100, Math.max(0, value)))
+  products.value.forEach((row) => {
+    row.share = Math.min(next, row.maxShare)
+  })
+})
+
+watch(rebatePercent, (value) => {
+  const next = normalizeRebatePercent(Math.min(100, Math.max(0, value)))
+  products.value.forEach((row) => {
+    row.rebate = Math.min(next, row.maxRebate)
+  })
 })
 
 function stepStatus(index: number) {
@@ -67,6 +85,12 @@ function goPrevious() {
 }
 
 function confirmCredit() {
+  const targetId = String(route.query.targetId || '')
+  const targetName = String(route.query.targetName || '')
+  if (targetId) {
+    promoteToCreditAgent(targetId, targetName)
+  }
+  syncCreditProfitRatioFromCredit(products.value)
   step.value = 2
 }
 
@@ -76,28 +100,73 @@ function backToAgentCenter() {
 
 function continueCredit() {
   step.value = 1
-  sharePercent.value = 30
-  rebatePercent.value = 30
+  sharePercent.value = 0
+  rebatePercent.value = 0
   products.value = DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item }))
 }
 
-async function copySuccessInfo() {
-  const text = buildAgentCreditCopyText(successInfo, targetNickname.value)
-  try {
-    await navigator.clipboard.writeText(text)
-    copyHint.value = '已复制到剪贴板'
-  } catch {
-    copyHint.value = '复制失败，请手动复制'
+function validateEditDraft(showEmptyError = false): number | null {
+  const draft = editDraft.value.trim()
+  if (!draft) {
+    editError.value = showEmptyError ? '请输入有效比例' : ''
+    return null
   }
-  window.setTimeout(() => {
-    copyHint.value = ''
-  }, 1800)
+
+  const next = Number(draft)
+  if (Number.isNaN(next) || next < 0) {
+    editError.value = '请输入有效比例'
+    return null
+  }
+
+  if (editField.value === 'share') {
+    if (!isValidSharePercent(next)) {
+      editError.value = '占成须为整数'
+      return null
+    }
+  } else if (!isValidRebatePercent(next)) {
+    editError.value = '退水最多支持两位小数'
+    return null
+  }
+
+  const max = editMax.value
+  if (next > max) {
+    editError.value = `不能超过最高 ${formatCreditPercent(max, editField.value)}`
+    return null
+  }
+
+  editError.value = ''
+  return next
+}
+
+function onEditDraftInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const raw = target.value
+
+  if (editField.value === 'share') {
+    const next = raw.replace(/[^\d]/g, '')
+    editDraft.value = next
+    if (target.value !== next) target.value = next
+  } else {
+    let next = raw.replace(/[^\d.]/g, '')
+    const firstDot = next.indexOf('.')
+    if (firstDot !== -1) {
+      next = next.slice(0, firstDot + 1) + next.slice(firstDot + 1).replace(/\./g, '')
+      const [intPart, fracPart = ''] = next.split('.')
+      next = `${intPart}.${fracPart.slice(0, 2)}`
+    }
+    editDraft.value = next
+    if (target.value !== next) target.value = next
+  }
+
+  validateEditDraft(false)
 }
 
 function openEdit(product: AgentCreditProduct, field: EditField) {
   editProductKey.value = product.key
   editField.value = field
-  editDraft.value = String(field === 'share' ? product.share : product.rebate)
+  editDraft.value =
+    field === 'share' ? String(Math.round(product.share)) : String(Number(product.rebate.toFixed(2)))
+  editError.value = ''
   editVisible.value = true
 }
 
@@ -105,28 +174,20 @@ function closeEdit() {
   editVisible.value = false
   editProductKey.value = ''
   editDraft.value = ''
+  editError.value = ''
 }
 
 function saveEdit() {
   const product = editingProduct.value
   if (!product) return
 
-  const next = Number(editDraft.value)
-  if (Number.isNaN(next) || next < 0) {
-    window.alert('请输入有效比例')
-    return
-  }
-
-  const max = editMax.value
-  if (next > max) {
-    window.alert(`不能超过最高 ${formatCreditPercent(max)}`)
-    return
-  }
+  const next = validateEditDraft(true)
+  if (next === null) return
 
   if (editField.value === 'share') {
     product.share = next
   } else {
-    product.rebate = next
+    product.rebate = normalizeRebatePercent(next)
   }
   closeEdit()
 }
@@ -134,7 +195,11 @@ function saveEdit() {
 
 <template>
   <div class="mh5-agent-credit-page">
-    <Mh5SubPageHeader :title="pageTitle" />
+    <Mh5SubPageHeader :title="pageTitle" :on-back="goPrevious">
+      <template #right>
+        <Mh5SpecAnnot :spec="AGENT_CREDIT_SPEC" placement="bottom" />
+      </template>
+    </Mh5SubPageHeader>
 
     <div class="mh5-agent-credit-steps" aria-label="授信进度">
       <template v-for="(item, index) in AGENT_CREDIT_STEPS" :key="item.key">
@@ -189,7 +254,7 @@ function saveEdit() {
               aria-label="占成比例"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${sharePercent}%` }">
-              {{ sharePercent }}%
+              {{ Math.round(sharePercent) }}%
             </span>
           </div>
         </div>
@@ -206,11 +271,11 @@ function saveEdit() {
               type="range"
               min="0"
               max="100"
-              step="1"
+              step="0.01"
               aria-label="退水比例"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${rebatePercent}%` }">
-              {{ rebatePercent }}%
+              {{ Number(rebatePercent.toFixed(2)) }}%
             </span>
           </div>
         </div>
@@ -235,7 +300,7 @@ function saveEdit() {
                     class="mh5-agent-credit-table__value-btn"
                     @click="openEdit(row, 'share')"
                   >
-                    <span>{{ formatCreditPercent(row.share) }}</span>
+                    <span>{{ formatCreditPercent(row.share, 'share') }}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path
                         d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -246,7 +311,7 @@ function saveEdit() {
                       <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare) }}</span>
+                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare, 'share') }}</span>
                 </div>
               </td>
               <td>
@@ -256,7 +321,7 @@ function saveEdit() {
                     class="mh5-agent-credit-table__value-btn"
                     @click="openEdit(row, 'rebate')"
                   >
-                    <span>{{ formatCreditPercent(row.rebate) }}</span>
+                    <span>{{ formatCreditPercent(row.rebate, 'rebate') }}</span>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <path
                         d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -267,7 +332,7 @@ function saveEdit() {
                       <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                     </svg>
                   </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate) }}</span>
+                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate, 'rebate') }}</span>
                 </div>
               </td>
             </tr>
@@ -278,7 +343,7 @@ function saveEdit() {
 
     <main v-else class="mh5-agent-credit-success">
       <div class="mh5-agent-credit-success__hero">
-        <div class="mh5-agent-credit-success__icon" aria-hidden="true">
+        <div class="mh5-member-credit-success__icon" aria-hidden="true">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
             <path
               d="M6 12.5 10 16.5 18 8.5"
@@ -290,36 +355,10 @@ function saveEdit() {
           </svg>
         </div>
         <h2 class="mh5-agent-credit-success__title">代理授信成功</h2>
+        <p class="mh5-member-credit-success__member">
+          已为 <strong>{{ targetNickname }}</strong> 完成授信
+        </p>
       </div>
-
-      <section class="mh5-agent-credit-info-card">
-        <div class="mh5-agent-credit-info-card__row">
-          <span class="mh5-agent-credit-info-card__label">后台地址</span>
-          <p class="mh5-agent-credit-info-card__value">{{ successInfo.adminUrl }}</p>
-        </div>
-        <div class="mh5-agent-credit-info-card__row">
-          <span class="mh5-agent-credit-info-card__label">账号</span>
-          <p class="mh5-agent-credit-info-card__value">{{ successInfo.adminAccount }}</p>
-        </div>
-        <div class="mh5-agent-credit-info-card__row">
-          <span class="mh5-agent-credit-info-card__label">密码</span>
-          <p class="mh5-agent-credit-info-card__value">{{ successInfo.adminPassword }}</p>
-        </div>
-      </section>
-
-      <button type="button" class="mh5-agent-credit-copy-btn" @click="copySuccessInfo">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.8" />
-          <path
-            d="M6 16V6a2 2 0 0 1 2-2h10"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-          />
-        </svg>
-        复制信息
-      </button>
-      <p v-if="copyHint" class="mh5-agent-credit-copy-hint">{{ copyHint }}</p>
     </main>
 
     <footer class="mh5-agent-credit-footer safe-pb">
@@ -353,19 +392,23 @@ function saveEdit() {
       <div v-if="editVisible" class="mh5-agent-credit-edit-mask" @click.self="closeEdit">
         <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" :aria-label="editTitle">
           <h3 class="mh5-agent-credit-edit-panel__title">{{ editTitle }}</h3>
-          <p class="mh5-agent-credit-edit-panel__hint">最高 {{ formatCreditPercent(editMax) }}</p>
-          <div class="mh5-agent-credit-edit-panel__field">
+          <p class="mh5-agent-credit-edit-panel__hint">最高 {{ formatCreditPercent(editMax, editField) }}</p>
+          <div
+            class="mh5-agent-credit-edit-panel__field"
+            :class="{ 'mh5-agent-credit-edit-panel__field--error': !!editError }"
+          >
             <input
-              v-model="editDraft"
-              type="number"
-              min="0"
-              :max="editMax"
-              step="0.1"
+              :value="editDraft"
+              type="text"
               class="mh5-agent-credit-edit-panel__input"
-              inputmode="decimal"
+              :inputmode="editInputMode"
+              :placeholder="editField === 'share' ? '请输入整数' : '最多两位小数'"
+              :aria-invalid="!!editError"
+              @input="onEditDraftInput"
             />
             <span>%</span>
           </div>
+          <p v-if="editError" class="mh5-agent-credit-edit-panel__error">{{ editError }}</p>
           <div class="mh5-agent-credit-edit-panel__actions">
             <button type="button" class="mh5-agent-credit-edit-panel__btn" @click="closeEdit">取消</button>
             <button

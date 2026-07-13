@@ -18,7 +18,7 @@ const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
-const currency = ref<AgentWalletCurrency>('信用额度')
+const currency = ref<AgentWalletCurrency>('信用额度-kkc')
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))

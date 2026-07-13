@@ -133,6 +133,18 @@ export const router = createRouter({
           meta: { title: '设置比例', hideTabBar: true },
         },
         {
+          path: 'agent/member/rebate-ratio',
+          name: 'mobile-member-rebate-ratio',
+          component: () => import('../views/mobile/MobileMemberRebateRatioView.vue'),
+          meta: { title: '会员退水比例', hideTabBar: true },
+        },
+        {
+          path: 'agent/member/rebate-ratio/edit',
+          name: 'mobile-member-rebate-ratio-edit',
+          component: () => import('../views/mobile/MobileMemberRebateRatioEditView.vue'),
+          meta: { title: '设置会员退水', hideTabBar: true },
+        },
+        {
           path: 'agent/member/credit',
           name: 'mobile-member-credit',
           component: () => import('../views/mobile/MobileMemberCreditView.vue'),
