@@ -14,7 +14,12 @@ import {
 import { MEMBER_CREDIT_DIRECT_SPEC, MEMBER_CREDIT_OTHER_SPEC } from '../../constants/memberCreditSpec'
 import { promoteToCreditMember } from '../../constants/agentTeam'
 import { syncCreditRebateFromMemberCredit } from '../../constants/memberRebateRatio'
-import { relationTagClass, relationTagText, type XCoinSelectableTarget } from '../../constants/xCoinTransfer'
+import {
+  emptySelectableCredits,
+  relationTagClass,
+  relationTagText,
+  type XCoinSelectableTarget,
+} from '../../constants/xCoinTransfer'
 import '../../styles/mobile-app-shell.css'
 
 type FlowStep = 'search' | 'rebate' | 'success'
@@ -155,8 +160,7 @@ if (route.query.targetId && route.query.targetName) {
     userId: String(route.query.targetId),
     accountId: String(route.query.targetName),
     relation: 'direct_member',
-    availableCredit: 0,
-    totalCreditLine: 0,
+    credits: emptySelectableCredits(),
   }
 }
 </script>

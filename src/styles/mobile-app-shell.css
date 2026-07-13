@@ -3984,12 +3984,14 @@
 }
 
 .mh5-xcoin-select-card {
+  position: relative;
   display: flex;
   gap: 12px;
-  padding: 14px;
+  padding: 28px 14px 14px;
   border-radius: var(--mh5-app-radius);
   background: var(--mh5-app-card);
   border: 1px solid transparent;
+  overflow: hidden;
   cursor: pointer;
   transition: border-color 0.15s;
 }
@@ -3999,8 +4001,30 @@
   background: var(--mh5-app-orange-light);
 }
 
+.mh5-xcoin-select-card__currency {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 24px);
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 0 0 8px 0;
+  background: rgb(255 122 43 / 16%);
+  color: var(--mh5-app-orange);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
 .mh5-xcoin-select-card__radio {
-  margin-top: 4px;
+  margin-top: 2px;
   accent-color: var(--mh5-app-orange);
 }
 

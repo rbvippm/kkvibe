@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   MOCK_DIRECT_MEMBERS,
   MOCK_SELECTABLE_AGENTS,
   MOCK_SELECTABLE_MEMBERS,
+  getSelectableCreditTotal,
+  parseXCoinCreditCurrency,
+  type XCoinCreditCurrency,
+  type XCoinSelectableTarget,
 } from '../../constants/xCoinTransfer'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import '../../styles/mobile-app-shell.css'
@@ -15,6 +19,14 @@ const router = useRouter()
 const isMember = computed(() => route.meta.xcoinMode === 'member')
 const keyword = ref('')
 const selectedId = ref(String(route.query.selected || ''))
+const creditCurrency = ref<XCoinCreditCurrency>(parseXCoinCreditCurrency(route.query.currency))
+
+watch(
+  () => route.query.currency,
+  (v) => {
+    creditCurrency.value = parseXCoinCreditCurrency(v)
+  },
+)
 
 const pageTitle = computed(() => (isMember.value ? '选择信用会员' : '选择信用代理'))
 const confirmText = computed(() => (isMember.value ? '确认会员' : '确认代理'))
@@ -45,15 +57,22 @@ const canConfirm = computed(() => {
   )
 })
 
+function creditStats(row: XCoinSelectableTarget) {
+  return row.credits[creditCurrency.value]
+}
+
 function confirmSelect() {
   const row =
     MOCK_SELECTABLE_MEMBERS.find((item) => item.id === selectedId.value) ??
     MOCK_SELECTABLE_AGENTS.find((item) => item.id === selectedId.value)
   if (!row) return
-  const currency = String(route.query.currency || '信用额度-kkc')
   router.push({
     name: isMember.value ? 'mobile-xcoin-credit-member' : 'mobile-xcoin-credit-agent',
-    query: { targetId: row.id, targetName: row.nickname, currency },
+    query: {
+      targetId: row.id,
+      targetName: row.nickname,
+      currency: creditCurrency.value,
+    },
   })
 }
 </script>
@@ -71,7 +90,7 @@ function confirmSelect() {
         v-model="keyword"
         type="search"
         class="mh5-xcoin-search__input"
-        placeholder="请输入昵称、账号或账号ID"
+        placeholder="请输入备注，昵称、账号或账号ID"
       />
     </div>
 
@@ -84,6 +103,7 @@ function confirmSelect() {
         class="mh5-xcoin-select-card"
         :class="{ 'mh5-xcoin-select-card--active': selectedId === row.id }"
       >
+        <span class="mh5-xcoin-select-card__currency">{{ creditCurrency }}</span>
         <input v-model="selectedId" type="radio" class="mh5-xcoin-select-card__radio" :value="row.id" />
         <div class="mh5-xcoin-select-card__body">
           <div class="mh5-xcoin-select-card__title-row">
@@ -92,11 +112,15 @@ function confirmSelect() {
           <div class="mh5-xcoin-select-card__stats">
             <div>
               <p class="mh5-xcoin-select-card__stat-label">可用额度</p>
-              <p class="mh5-xcoin-select-card__stat-value">{{ row.availableCredit.toFixed(2) }}</p>
+              <p class="mh5-xcoin-select-card__stat-value">
+                {{ creditStats(row).availableCredit.toFixed(2) }}
+              </p>
             </div>
             <div>
               <p class="mh5-xcoin-select-card__stat-label">授信总额</p>
-              <p class="mh5-xcoin-select-card__stat-value">{{ row.totalCreditLine.toFixed(2) }}</p>
+              <p class="mh5-xcoin-select-card__stat-value">
+                {{ getSelectableCreditTotal(creditStats(row)).toFixed(2) }}
+              </p>
             </div>
           </div>
         </div>

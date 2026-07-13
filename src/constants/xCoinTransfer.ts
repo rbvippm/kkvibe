@@ -73,6 +73,15 @@ export type XCoinTransferRecord = {
   relationLabel: string
 }
 
+export type XCoinCreditStats = {
+  /** 可用额度 */
+  availableCredit: number
+  /** 上分总额 */
+  creditUpTotal: number
+  /** 下分总额 */
+  creditDownTotal: number
+}
+
 export type XCoinSelectableTarget = {
   id: string
   nickname: string
@@ -82,8 +91,20 @@ export type XCoinSelectableTarget = {
   userId: string
   accountId: string
   relation: 'direct_member' | 'direct_agent' | 'non_direct_agent' | 'non_direct_member'
-  availableCredit: number
-  totalCreditLine: number
+  /** 按信用币种区分的额度 */
+  credits: Record<XCoinCreditCurrency, XCoinCreditStats>
+}
+
+/** 授信总额 = 上分总额 - 下分总额 */
+export function getSelectableCreditTotal(stats: XCoinCreditStats) {
+  return stats.creditUpTotal - stats.creditDownTotal
+}
+
+export function emptySelectableCredits(): Record<XCoinCreditCurrency, XCoinCreditStats> {
+  return {
+    '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+    '信用额度-usdt': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+  }
 }
 
 export type AgentCreditSummary = {
@@ -421,8 +442,10 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     userId: '10031001',
     accountId: 'mid_openapi31',
     relation: 'direct_member',
-    availableCredit: 0,
-    totalCreditLine: 0,
+    credits: {
+      '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+      '信用额度-usdt': { availableCredit: 0, creditUpTotal: 20, creditDownTotal: 20 },
+    },
   },
   {
     id: 'm2',
@@ -431,8 +454,10 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     userId: '10032002',
     accountId: 'mid_eyv4menuoax',
     relation: 'direct_member',
-    availableCredit: 68.99,
-    totalCreditLine: 254,
+    credits: {
+      '信用额度-kkc': { availableCredit: 68.99, creditUpTotal: 320, creditDownTotal: 66 },
+      '信用额度-usdt': { availableCredit: 25.5, creditUpTotal: 80, creditDownTotal: 12.5 },
+    },
   },
   {
     id: 'm3',
@@ -441,8 +466,10 @@ export const MOCK_SELECTABLE_MEMBERS: XCoinSelectableTarget[] = [
     userId: '10033003',
     accountId: 'mid_ez1',
     relation: 'non_direct_member',
-    availableCredit: 12.5,
-    totalCreditLine: 100,
+    credits: {
+      '信用额度-kkc': { availableCredit: 12.5, creditUpTotal: 150, creditDownTotal: 50 },
+      '信用额度-usdt': { availableCredit: 8, creditUpTotal: 40, creditDownTotal: 10 },
+    },
   },
 ]
 
@@ -454,8 +481,10 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     userId: '20032002',
     accountId: 'mid_eyv4menuoax',
     relation: 'direct_agent',
-    availableCredit: 0,
-    totalCreditLine: 0,
+    credits: {
+      '信用额度-kkc': { availableCredit: 0, creditUpTotal: 0, creditDownTotal: 0 },
+      '信用额度-usdt': { availableCredit: 5, creditUpTotal: 30, creditDownTotal: 10 },
+    },
   },
   {
     id: 'a2',
@@ -464,8 +493,10 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     userId: '20033003',
     accountId: 'mid_ez1',
     relation: 'direct_agent',
-    availableCredit: 413,
-    totalCreditLine: 866,
+    credits: {
+      '信用额度-kkc': { availableCredit: 413, creditUpTotal: 1200, creditDownTotal: 334 },
+      '信用额度-usdt': { availableCredit: 88, creditUpTotal: 260, creditDownTotal: 40 },
+    },
   },
   {
     id: 'a3',
@@ -474,8 +505,10 @@ export const MOCK_SELECTABLE_AGENTS: XCoinSelectableTarget[] = [
     userId: '20034004',
     accountId: 'mid_hn_li',
     relation: 'non_direct_agent',
-    availableCredit: 120,
-    totalCreditLine: 500,
+    credits: {
+      '信用额度-kkc': { availableCredit: 120, creditUpTotal: 700, creditDownTotal: 200 },
+      '信用额度-usdt': { availableCredit: 45, creditUpTotal: 180, creditDownTotal: 60 },
+    },
   },
 ]
 

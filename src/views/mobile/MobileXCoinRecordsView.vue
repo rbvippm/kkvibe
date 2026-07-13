@@ -405,7 +405,7 @@ function summaryNetClass(value: number) {
               </section>
             </div>
 
-            <div class="mh5-bet-order-sheet__footer">
+            <div class="mh5-xcoin-sheet__footer mh5-bet-order-sheet__footer">
               <button type="button" class="mh5-xcoin-btn mh5-xcoin-btn--ghost" @click="resetFilter">
                 重置
               </button>

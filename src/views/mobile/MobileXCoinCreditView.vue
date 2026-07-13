@@ -9,6 +9,7 @@ import {
   MOCK_SELECTABLE_MEMBERS,
   MOCK_XCOIN_BALANCES,
   XCOIN_CREDIT_CURRENCY_TABS,
+  emptySelectableCredits,
   parseXCoinCreditCurrency,
   type TransferDirection,
   type XCoinCreditCurrency,
@@ -106,8 +107,7 @@ if (route.query.targetId && route.query.targetName) {
       relation: isMember.value
         ? list.find((item) => item.id === id)?.relation ?? 'non_direct_member'
         : 'direct_agent',
-      availableCredit: 0,
-      totalCreditLine: 0,
+      credits: emptySelectableCredits(),
     }
 }
 </script>

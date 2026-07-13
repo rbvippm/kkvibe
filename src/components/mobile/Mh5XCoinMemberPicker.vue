@@ -11,7 +11,7 @@ const emit = defineEmits<{
   selectMember: []
 }>()
 
-const memberLabel = computed(() => props.modelValue?.nickname ?? '请选择会员')
+const memberLabel = computed(() => props.modelValue?.nickname ?? '请选择信用会员')
 </script>
 
 <template>
