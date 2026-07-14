@@ -31,6 +31,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['推广返利', '占成代理配置', '文档说明'],
   },
   {
+    path: '/pc/credit-limit-transfer/doc',
+    routeName: 'pc-credit-limit-transfer-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '信用额度上下分记录', '文档说明'],
+  },
+  {
     path: '/pc/live-danmaku-mute-list/doc',
     routeName: 'pc-live-danmaku-mute-list-doc',
     title: '文档说明',
@@ -207,6 +213,14 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-share-agent-config',
         pagePath: ['推广返利', '占成代理配置'],
         docRouteName: 'pc-share-agent-config-doc',
+      },
+      {
+        key: 'credit-limit-transfer',
+        title: '信用额度上下分记录',
+        path: '/pc/credit-limit-transfer',
+        routeName: 'pc-credit-limit-transfer',
+        pagePath: ['推广返利', '信用额度上下分记录'],
+        docRouteName: 'pc-credit-limit-transfer-doc',
       },
     ],
   },

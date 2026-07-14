@@ -4,8 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
   TEAM_FILTER_TABS,
+  TEAM_TREE_DEFAULT_EXPANDED,
+  TEAM_TREE_DEFAULT_VISIBLE,
   CREATE_ACCOUNT_OPTIONS,
   DEFAULT_CREATE_ACCOUNT_OPTION,
+  canShowAgentCreditAction,
+  canShowMemberCreditAction,
+  collectTeamFullExpandState,
   getTeamTreeRows,
   isCreditTeamKind,
   memberKindLabel,
@@ -22,7 +27,17 @@ const route = useRoute()
 const router = useRouter()
 
 const teamFilterTab = ref<TeamFilterTab>('all')
-const expandedIds = ref<Set<string>>(new Set(['self', 'a1']))
+const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
+/** parentId → 该层已展开可见条数（「查看更多」累加） */
+const moreVisibleCount = ref<Record<string, number>>({})
+
+function applyAllTabFullExpand() {
+  const state = collectTeamFullExpandState('all')
+  expandedIds.value = state.expandedIds
+  moreVisibleCount.value = state.moreVisibleCount
+}
+
+applyAllTabFullExpand()
 
 type TeamQuickAction = 'profit_ratio' | 'rebate_ratio' | 'remark' | 'agent_credit' | 'member_credit'
 
@@ -34,7 +49,31 @@ const createAccountSheetOpen = ref(false)
 const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 
-const teamTreeRows = computed(() => getTeamTreeRows(teamFilterTab.value, expandedIds.value))
+const teamTreeRows = computed(() =>
+  getTeamTreeRows(teamFilterTab.value, expandedIds.value, moreVisibleCount.value),
+)
+
+function treeRowKey(row: (typeof teamTreeRows.value)[number]) {
+  if (row.type === 'more') return `more-${row.parentId}-${row.depth}`
+  return row.item.id
+}
+
+function showMoreChildren(parentId: string) {
+  const current = moreVisibleCount.value[parentId] ?? TEAM_TREE_DEFAULT_VISIBLE
+  moreVisibleCount.value = {
+    ...moreVisibleCount.value,
+    [parentId]: current + TEAM_TREE_DEFAULT_VISIBLE,
+  }
+}
+
+watch(teamFilterTab, (tab) => {
+  if (tab === 'all') {
+    applyAllTabFullExpand()
+    return
+  }
+  moreVisibleCount.value = {}
+  expandedIds.value = new Set(TEAM_TREE_DEFAULT_EXPANDED)
+})
 
 const pendingInviteCount = computed(
   () => agentSentInvites.value.filter((item) => item.status === 'pending').length,
@@ -145,8 +184,8 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   if (action === 'member_credit') {
-    if (!showMemberBadge(row.kind)) {
-      await mh5Alert('会员授信仅支持直属会员')
+    if (!canShowMemberCreditAction(row.kind)) {
+      await mh5Alert(row.kind === 'credit_member' ? '该会员已授信，无需再次授信' : '会员授信仅支持直属会员')
       return
     }
 
@@ -158,8 +197,8 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   if (action === 'agent_credit') {
-    if (row.kind !== 'agent' && row.kind !== 'credit_agent') {
-      await mh5Alert('代理授信仅支持代理账号')
+    if (!canShowAgentCreditAction(row.kind)) {
+      await mh5Alert(row.kind === 'credit_agent' ? '该代理已授信，无需再次授信' : '代理授信仅支持代理账号')
       return
     }
 
@@ -304,10 +343,32 @@ onUnmounted(() => {
     </div>
 
     <main class="agent-team-list">
-      <template v-for="row in teamTreeRows" :key="row.item.id">
+      <template v-for="row in teamTreeRows" :key="treeRowKey(row)">
+        <!-- 查看更多：对齐 Figma 两侧虚线 + 文案 -->
+        <button
+          v-if="row.type === 'more'"
+          type="button"
+          class="agent-team-more"
+          :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
+          @click="showMoreChildren(row.parentId)"
+        >
+          <span class="agent-team-more__line" aria-hidden="true" />
+          <span class="agent-team-more__label">
+            查看更多
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+          <span class="agent-team-more__line" aria-hidden="true" />
+        </button>
+
         <div
+          v-else
           class="agent-team-row"
-          :class="{ 'agent-team-row--self': row.item.kind === 'me' }"
+          :class="{
+            'agent-team-row--self': row.item.kind === 'me',
+            'agent-team-row--member': showMemberBadge(row.item.kind),
+          }"
           :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
         >
           <button
@@ -345,28 +406,38 @@ onUnmounted(() => {
               >
                 信用
               </span>
-              <span v-if="row.item.vipLevel" class="agent-team-tag agent-team-tag--vip">
-                <span class="agent-team-tag__vip-gem" aria-hidden="true">◆</span>
-                V{{ row.item.vipLevel }}
-              </span>
+              <!-- Figma 1433:19549：VIP 钻石切面 + 组织人数图标 + 代/会文案 -->
               <span
                 v-if="showAgentSubordinateTag(row.item)"
                 class="agent-team-tag agent-team-tag--stats"
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                  />
-                  <path
-                    d="M3.5 19c.6-2.6 2.8-4 4.5-4s3.9 1.4 4.5 4M11.5 19c.6-2.6 2.8-4 4.5-4s3.9 1.4 4.5 4"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    stroke-linecap="round"
-                  />
-                </svg>
-                {{ teamStatsLabel(row.item) }}
+                <span
+                  v-if="row.item.vipLevel"
+                  class="agent-team-vip-badge"
+                  :aria-label="`V${row.item.vipLevel}`"
+                >
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--1" src="/images/agent-team/vip-f1.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--2" src="/images/agent-team/vip-f2.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--3" src="/images/agent-team/vip-f3.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--4" src="/images/agent-team/vip-f4.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--5" src="/images/agent-team/vip-f5.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--6" src="/images/agent-team/vip-f6.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--7" src="/images/agent-team/vip-f7.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--8" src="/images/agent-team/vip-f8.svg" alt="" draggable="false" />
+                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--9" src="/images/agent-team/vip-f9.svg" alt="" draggable="false" />
+                  <span class="agent-team-vip-badge__text">
+                    <i>V</i>{{ row.item.vipLevel }}
+                  </span>
+                </span>
+                <img
+                  class="agent-team-org-icon"
+                  src="/images/agent-team/org-tree.svg"
+                  alt=""
+                  width="10"
+                  height="10"
+                  draggable="false"
+                />
+                <span class="agent-team-tag__stats-text">{{ teamStatsLabel(row.item) }}</span>
               </span>
               <span v-else-if="showMemberBadge(row.item.kind)" class="agent-team-tag agent-team-tag--member">
                 {{ memberKindLabel(row.item.kind) }}
@@ -383,7 +454,7 @@ onUnmounted(() => {
             :aria-expanded="teamQuickMenuRow?.id === row.item.id"
             @click.stop="openTeamQuickMenu(row.item, $event)"
           >
-            ···
+            <img src="/images/agent-team/more-dots.svg" alt="" width="20" height="4" draggable="false" />
           </button>
         </div>
       </template>
@@ -426,7 +497,7 @@ onUnmounted(() => {
             备注
           </button>
           <button
-            v-if="teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
+            v-if="teamQuickMenuRow && canShowMemberCreditAction(teamQuickMenuRow.kind)"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
@@ -435,7 +506,7 @@ onUnmounted(() => {
             会员授信
           </button>
           <button
-            v-else-if="teamQuickMenuRow?.kind === 'agent'"
+            v-else-if="teamQuickMenuRow && canShowAgentCreditAction(teamQuickMenuRow.kind)"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"

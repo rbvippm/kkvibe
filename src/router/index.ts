@@ -455,6 +455,18 @@ export const router = createRouter({
           component: () => import('../views/pc/PcShareAgentConfigDocView.vue'),
           meta: { title: '占成代理配置-文档说明' },
         },
+        {
+          path: 'credit-limit-transfer',
+          name: 'pc-credit-limit-transfer',
+          component: () => import('../views/pc/PcCreditLimitTransferView.vue'),
+          meta: { title: '信用额度上下分记录' },
+        },
+        {
+          path: 'credit-limit-transfer/doc',
+          name: 'pc-credit-limit-transfer-doc',
+          component: () => import('../views/pc/PcCreditLimitTransferDocView.vue'),
+          meta: { title: '信用额度上下分记录-文档说明' },
+        },
       ],
     },
     {
