@@ -63,6 +63,30 @@ export const router = createRouter({
           meta: { title: '会话' },
         },
         {
+          path: 'discover',
+          name: 'mobile-discover',
+          component: () => import('../views/mobile/MobileDiscoverView.vue'),
+          meta: { title: '发现', hideTabBar: true },
+        },
+        {
+          path: 'discover/channel',
+          name: 'mobile-discover-channel',
+          component: () => import('../views/mobile/MobileDiscoverChannelView.vue'),
+          meta: { title: '频道设置', hideTabBar: true },
+        },
+        {
+          path: 'live/stream',
+          name: 'mobile-live-stream',
+          component: () => import('../views/mobile/MobileLiveStreamRoomView.vue'),
+          meta: { title: '直播间', hideTabBar: true },
+        },
+        {
+          path: 'live/voice-room',
+          name: 'mobile-voice-room',
+          component: () => import('../views/mobile/MobileVoiceChatRoomView.vue'),
+          meta: { title: '语聊房', hideTabBar: true },
+        },
+        {
           path: 'live',
           name: 'mobile-live',
           component: MobileLiveSectionView,

@@ -3107,6 +3107,2950 @@
   font-size: 14px;
 }
 
+/* ---------- 发现页 · 社区直播（Figma 515:63521） ---------- */
+.mh5-discover-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  background: #fff;
+  color: #333;
+}
+
+.mh5-discover-header {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.mh5-discover-nav {
+  display: grid;
+  grid-template-columns: 60px 1fr 64px;
+  align-items: center;
+  height: 44px;
+}
+
+.mh5-discover-nav__back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-discover-tabs {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 100%;
+  min-width: 0;
+}
+
+.mh5-discover-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 48px;
+  height: 100%;
+  padding: 4px 0 0;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mh5-discover-tab::after {
+  content: '';
+  width: 37px;
+  height: 2px;
+  border-radius: 24px;
+  background: #ff8c00;
+  opacity: 0;
+}
+
+.mh5-discover-tab--active {
+  color: #454545;
+}
+
+.mh5-discover-tab--active::after {
+  opacity: 1;
+}
+
+.mh5-discover-nav__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding-right: 12px;
+}
+
+.mh5-discover-nav__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-discover-nav__icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-discover-filters {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 20px;
+}
+
+.mh5-discover-filters__scroll {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding-right: 36px;
+  scrollbar-width: none;
+}
+
+.mh5-discover-filters__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-discover-filter {
+  flex-shrink: 0;
+  min-width: 60px;
+  padding: 6px 12px;
+  border: 1px solid #e7e7e7;
+  border-radius: 26px;
+  background: #fff;
+  color: #888;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.mh5-discover-filter--active {
+  border-color: #ff8c00;
+  background: #ff8c00;
+  color: #fff;
+}
+
+.mh5-discover-filters__layer {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 46px;
+  padding: 0;
+  border: none;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0%) 0%, #fff 27%);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.mh5-discover-filters__layer img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-discover-main {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 12px 20px 28px;
+}
+
+.mh5-discover-banner {
+  position: relative;
+  height: 152px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #361303;
+}
+
+.mh5-discover-banner__bg {
+  position: absolute;
+  inset: -20% -10% auto auto;
+  width: 140%;
+  height: auto;
+  max-width: none;
+  object-fit: cover;
+  filter: blur(8px);
+  opacity: 0.55;
+  transform: scale(1.05);
+}
+
+.mh5-discover-banner__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #2a0e04 18%, rgb(54 19 3 / 55%) 58%, rgb(54 19 3 / 18%) 100%);
+}
+
+.mh5-discover-banner__person {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 188px;
+  height: 188px;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.mh5-discover-banner__mic {
+  position: absolute;
+  right: 148px;
+  bottom: 8px;
+  width: 28px;
+  height: auto;
+  pointer-events: none;
+  transform: rotate(180deg) scaleY(-1);
+  opacity: 0.95;
+}
+
+.mh5-discover-banner__copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  height: 100%;
+  padding: 22px 20px 16px;
+}
+
+.mh5-discover-banner__sub {
+  margin: 0;
+  color: #ffdba5;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+  text-shadow: 0 2px 4px rgb(116 5 37 / 82%);
+}
+
+.mh5-discover-banner__title {
+  margin: 0 0 8px;
+  background: linear-gradient(90deg, #ff810e 3%, #e9591b 26%, #ff8a66 52%, #f8711d 76%, #ff810e 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+.mh5-discover-banner__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 145px;
+  height: 30px;
+  padding: 0 16px;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 80px;
+  background: linear-gradient(180deg, #ffe662 0%, #bf6a01 73.5%, #d76700 100%);
+  box-shadow:
+    inset -2px 4px 6px rgb(175 45 4 / 25%),
+    inset 2px 4px 6px rgb(255 246 213 / 73%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 22px;
+  text-shadow: 0 2px 2px rgb(0 0 0 / 25%);
+  cursor: pointer;
+}
+
+.mh5-discover-banner__cta:active {
+  opacity: 0.9;
+  transform: scale(0.98);
+}
+
+.mh5-discover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
+}
+
+.mh5-discover-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  filter: drop-shadow(0 4px 5px rgb(217 217 217 / 25%));
+}
+
+.mh5-discover-card__cover {
+  position: relative;
+  height: 175px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #1a1a1a;
+}
+
+.mh5-discover-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.mh5-discover-card__cat {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 25px;
+  padding: 0 8px;
+  border-radius: 12px 0 12px 0;
+  background: linear-gradient(90deg, #ffa941 0%, #ff6d24 100%);
+  box-shadow: 0 4px 6px rgb(237 148 89 / 25%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-discover-card__cat img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.mh5-discover-card__voice {
+  position: absolute;
+  left: 8px;
+  bottom: 34px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 21px;
+  padding: 0 8px 0 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #9b5cff 0%, #6a3dff 100%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mh5-discover-card__voice img {
+  display: block;
+  width: 12px;
+  height: 12px;
+  filter: brightness(0) invert(1);
+}
+
+.mh5-discover-card__meta {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px 8px;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 56%) 100%);
+}
+
+.mh5-discover-card__host {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-discover-card__heat {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-discover-card__heat img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.mh5-discover-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 4px 4px;
+}
+
+.mh5-discover-card__title {
+  margin: 0;
+  overflow: hidden;
+  color: #4f4f4f;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-discover-card__tag {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 4px 12px;
+  overflow: hidden;
+  border-radius: 40px;
+  background: #fff4ec;
+  color: #ff8c00;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-discover-end {
+  margin: 16px 0 0;
+  color: #747474;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.mh5-discover-empty {
+  display: grid;
+  place-items: center;
+  min-height: 240px;
+  color: #888;
+  font-size: 14px;
+}
+
+.mh5-discover-main--feed {
+  padding: 8px 20px 28px;
+}
+
+.mh5-discover-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.mh5-discover-post {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 0;
+  border-bottom: 1px solid #f6f6f6;
+  animation: mh5-discover-post-in 0.28s ease both;
+}
+
+.mh5-discover-post:nth-child(2) {
+  animation-delay: 0.04s;
+}
+
+.mh5-discover-post:nth-child(3) {
+  animation-delay: 0.08s;
+}
+
+@keyframes mh5-discover-post-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mh5-discover-post__avatar {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 46px;
+  object-fit: cover;
+  background: #e1e5ec;
+}
+
+.mh5-discover-post__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.mh5-discover-post__head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.mh5-discover-post__user {
+  display: flex;
+  flex: 1;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mh5-discover-post__name {
+  color: #454545;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.mh5-discover-post__time {
+  color: #888;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-discover-post__more {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-discover-post__more img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.mh5-discover-post__text {
+  margin: 0;
+  overflow: hidden;
+  color: #454545;
+  font-size: 14px;
+  line-height: normal;
+  letter-spacing: 0.28px;
+  text-align: justify;
+  word-break: break-word;
+}
+
+.mh5-discover-post__topic {
+  color: #ff8c00;
+}
+
+.mh5-discover-post__video {
+  position: relative;
+  width: 100%;
+  max-width: 293px;
+  height: 165px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #1a1a1a;
+}
+
+.mh5-discover-post__video-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mh5-discover-post__controls {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: 32px;
+  padding: 6px 12px;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.mh5-discover-post__controls-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.mh5-discover-post__ctrl {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-discover-post__ctrl img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.mh5-discover-post__progress {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mh5-discover-post__bar {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 32px;
+  background: rgb(231 231 231 / 40%);
+}
+
+.mh5-discover-post__bar-fill {
+  width: 11%;
+  height: 100%;
+  border-radius: 32px;
+  background: #fff;
+}
+
+.mh5-discover-post__duration {
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mh5-discover-post__gallery {
+  width: 100%;
+  overflow: hidden;
+}
+
+.mh5-discover-post__gallery-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mh5-discover-post__gallery-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-discover-post__gallery-img {
+  flex-shrink: 0;
+  width: 220px;
+  height: 176px;
+  border-radius: 8px;
+  object-fit: cover;
+  scroll-snap-align: start;
+  background: #e1e5ec;
+}
+
+.mh5-discover-post__mention {
+  margin: 0;
+  color: #888;
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.8;
+  text-align: justify;
+  word-break: break-word;
+}
+
+.mh5-discover-post__actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.mh5-discover-post__action {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #454545;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.mh5-discover-post__action img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.mh5-discover-post__action:active {
+  opacity: 0.7;
+  transform: scale(0.96);
+}
+
+/* ---------- 发现 · 短视频（Figma 3626:72214） ---------- */
+.mh5-discover-page--short {
+  position: relative;
+  background: #000;
+}
+
+.mh5-discover-short-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mh5-discover-short-bg__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.mh5-discover-page--short .mh5-discover-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  background: transparent;
+}
+
+.mh5-discover-page--short .mh5-discover-tab {
+  color: #fff;
+}
+
+.mh5-discover-page--short .mh5-discover-tab--active {
+  color: #fff;
+}
+
+.mh5-discover-nav__actions--short {
+  align-self: center;
+  padding-right: 20px;
+}
+
+.mh5-discover-short-search {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 20px 0 16px;
+  margin-top: 8px;
+}
+
+.mh5-discover-main--short {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.mh5-discover-short {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.mh5-discover-short__side {
+  position: absolute;
+  top: 47%;
+  right: 20px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  width: 32px;
+  filter: drop-shadow(0 0 4px #000);
+  transform: translateY(-50%);
+  animation: mh5-discover-short-side-in 0.35s ease both;
+}
+
+@keyframes mh5-discover-short-side-in {
+  from {
+    opacity: 0;
+    transform: translateY(-46%) translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.mh5-discover-short__side-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.mh5-discover-short__side-item img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.mh5-discover-short__side-item:active {
+  opacity: 0.8;
+  transform: scale(0.94);
+}
+
+.mh5-discover-short__meta {
+  position: absolute;
+  right: 20px;
+  bottom: 36px;
+  left: 20px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: auto;
+  max-width: 353px;
+  animation: mh5-discover-short-meta-in 0.35s ease 0.05s both;
+}
+
+@keyframes mh5-discover-short-meta-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mh5-discover-short__user-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 32px;
+}
+
+.mh5-discover-short__user {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mh5-discover-short__avatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 46px;
+  object-fit: cover;
+  background: #e1e5ec;
+}
+
+.mh5-discover-short__name {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.mh5-discover-short__follow {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 5px 12px;
+  border: 1px solid #fff;
+  border-radius: 6px;
+  background: rgb(231 231 231 / 40%);
+  color: #fff;
+  font-size: 14px;
+  line-height: normal;
+  letter-spacing: 0.28px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+
+.mh5-discover-short__follow--on {
+  background: rgb(0 0 0 / 28%);
+  border-color: rgb(255 255 255 / 70%);
+}
+
+.mh5-discover-short__follow:active {
+  opacity: 0.88;
+  transform: scale(0.97);
+}
+
+.mh5-discover-short__caption {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.45;
+  letter-spacing: 0.28px;
+  text-align: justify;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  max-height: 41px;
+}
+
+.mh5-discover-card {
+  cursor: pointer;
+}
+
+.mh5-discover-card:active {
+  opacity: 0.92;
+  transform: scale(0.99);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* ---------- 发现 · 频道设置（Figma 3626:72247） ---------- */
+.mh5-channel-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  background: #f7f7f7;
+  color: #454545;
+}
+
+.mh5-channel-page .mh5-sub-header {
+  background: #f7f7f7;
+  border-bottom: none;
+  padding-top: 0;
+  padding-bottom: 0;
+  height: 44px;
+}
+
+.mh5-channel-page .mh5-sub-header__title {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #4f4f4f;
+}
+
+.mh5-channel-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 0 20px 40px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.mh5-channel-hint {
+  margin: 0;
+  color: #454545;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.mh5-channel-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #fff;
+  animation: mh5-channel-card-in 0.28s ease both;
+}
+
+@keyframes mh5-channel-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mh5-channel-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  min-width: 109px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f7f7f7;
+  background: #fff;
+  cursor: grab;
+  transition: background 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+}
+
+.mh5-channel-row:last-child {
+  border-bottom: none;
+}
+
+.mh5-channel-row--dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.mh5-channel-row--over {
+  background: #fff8f0;
+}
+
+.mh5-channel-row__left {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mh5-channel-row__icon {
+  display: block;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.mh5-channel-row__label {
+  flex: 1;
+  min-width: 0;
+  color: #454545;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mh5-channel-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 41px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: #d9d9d9;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.mh5-channel-switch--on {
+  background: #ff8c00;
+}
+
+.mh5-channel-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1.33px 4px rgb(0 0 0 / 20%);
+  transition: transform 0.2s ease;
+}
+
+.mh5-channel-switch--on .mh5-channel-switch__knob {
+  transform: translateX(17px);
+}
+
+.mh5-channel-switch:active {
+  opacity: 0.9;
+}
+
+.mh5-channel-row__handle {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+
+.mh5-channel-row__handle img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+/* ---------- 视频直播间（Figma 1494:53973） ---------- */
+.mh5-livestream-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+}
+
+.mh5-livestream-page__stage-frame {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  overflow: hidden;
+  background: #000;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mh5-livestream-page__stage-frame--original {
+  inset: 0;
+  left: auto;
+  top: auto;
+  width: 100%;
+  height: 100%;
+  transform: none;
+}
+
+/* 竖屏信箱：贴热度行下方，不垂直居中 */
+.mh5-livestream-page__stage-frame--16-9,
+.mh5-livestream-page__stage-frame--4-3 {
+  left: 0;
+  top: 80px;
+  transform: none;
+  width: 100%;
+  height: auto;
+}
+
+.mh5-livestream-page__stage-frame--16-9 {
+  aspect-ratio: 16 / 9;
+}
+
+.mh5-livestream-page__stage-frame--4-3 {
+  aspect-ratio: 4 / 3;
+}
+
+.mh5-livestream-page__stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  pointer-events: none;
+}
+
+.mh5-livestream-page__rotate-hint {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgb(255 140 0 / 92%);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.mh5-livestream-page__rotate-hint:active {
+  transform: scale(0.94);
+  opacity: 0.9;
+}
+
+.mh5-livestream-page__rotate-hint-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: no-repeat center / contain;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect x='7' y='3' width='10' height='18' rx='2' stroke='%23fff' stroke-width='1.8'/%3E%3Cpath d='M16.5 9.5c1.2.8 2 2.1 2 3.5 0 2.5-2 4.5-4.5 4.5' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M14.2 15.2l-.2 2.8 2.6-1.2' stroke='%23fff' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.mh5-livestream-header {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.mh5-livestream-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-left: 12px;
+}
+
+.mh5-livestream-host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(240px, 62%);
+  padding: 1px 6px 1px 1px;
+  border-radius: 57.6px;
+  background: rgb(93 93 93 / 40%);
+}
+
+.mh5-livestream-host__avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-livestream-host__meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-livestream-host__name {
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-livestream-host__likes {
+  margin: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mh5-livestream-host__follow {
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 22px;
+  background: linear-gradient(90deg, #ff8c00 0%, #ff6d24 100%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mh5-livestream-host__follow--on {
+  background: rgb(255 255 255 / 24%);
+}
+
+.mh5-livestream-header__right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.mh5-livestream-viewers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 12px 0 8px;
+  border-radius: 31px;
+  background: rgb(93 93 93 / 40%);
+}
+
+.mh5-livestream-viewers__avatars {
+  display: flex;
+  align-items: center;
+}
+
+.mh5-livestream-viewers__avatar {
+  width: 20px;
+  height: 20px;
+  margin-right: -7px;
+  border: 0.5px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-livestream-viewers__avatar:last-child {
+  margin-right: 0;
+}
+
+.mh5-livestream-viewers__count {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-livestream-close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 30px;
+  background: rgb(93 93 93 / 40%);
+  cursor: pointer;
+}
+
+.mh5-livestream-close img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-livestream-heat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgb(93 93 93 / 40%);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-livestream-heat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 0 12px;
+  min-width: 0;
+}
+
+.mh5-livestream-heat img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-livestream-footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.mh5-livestream-footer > * {
+  pointer-events: auto;
+}
+
+.mh5-livestream-side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 290px;
+  max-height: 324px;
+  overflow: hidden;
+}
+
+.mh5-livestream-gift-toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 189px;
+  padding: 3px 6px 3px 3px;
+  border-radius: 57.6px;
+  background: linear-gradient(90deg, rgb(255 59 48 / 80%) 0%, rgb(255 59 48 / 0%) 100%);
+}
+
+.mh5-livestream-gift-toast__avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-livestream-gift-toast__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-livestream-gift-toast__user {
+  margin: 0;
+  color: #ffc200;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-livestream-gift-toast__action {
+  margin: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mh5-livestream-gift-toast__thumb {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 3px;
+  background: #e1e5ec;
+  object-fit: contain;
+}
+
+.mh5-livestream-gift-toast__count {
+  flex-shrink: 0;
+  color: #ffc200;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.mh5-livestream-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.mh5-livestream-chat::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-livestream-bubble {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 290px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgb(93 93 93 / 40%);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.mh5-livestream-bubble--system {
+  color: #fff;
+  font-weight: 400;
+}
+
+.mh5-livestream-bubble__user {
+  color: #ffc200;
+  white-space: nowrap;
+}
+
+.mh5-livestream-bubble__text {
+  color: #fff;
+}
+
+.mh5-livestream-bubble__gift {
+  color: #ff8c00;
+  white-space: nowrap;
+}
+
+.mh5-livestream-bubble__gift-icon {
+  width: 14px;
+  height: 14px;
+  padding: 2px;
+  border-radius: 2px;
+  background: #e1e5ec;
+  object-fit: contain;
+}
+
+.mh5-livestream-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 36px;
+}
+
+/* 语聊房 / 直播间共用底栏 */
+.mh5-room-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 36px;
+}
+
+.mh5-room-bar__input {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 36px;
+  padding: 5px 18px;
+  border: none;
+  border-radius: 18px;
+  background: rgb(93 93 93 / 40%);
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0.28px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-room-bar__input--emoji {
+  padding-right: 6px;
+}
+
+.mh5-room-bar__input img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-room-bar__btn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 37px;
+  background: rgb(93 93 93 / 40%);
+  cursor: pointer;
+}
+
+.mh5-room-bar__btn img {
+  display: block;
+  max-width: 24px;
+  max-height: 24px;
+}
+
+.mh5-room-bar__share-icon {
+  filter: brightness(0) invert(1);
+}
+
+.mh5-livestream-input {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  height: 36px;
+  padding: 5px 6px 5px 18px;
+  border: none;
+  border-radius: 18px;
+  background: rgb(93 93 93 / 40%);
+  color: #fff;
+  font-size: 14px;
+  letter-spacing: 0.28px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-livestream-input img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-livestream-bar__btn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 37px;
+  background: rgb(93 93 93 / 40%);
+  cursor: pointer;
+}
+
+.mh5-livestream-bar__btn img {
+  display: block;
+  max-width: 24px;
+  max-height: 24px;
+}
+
+.mh5-livestream-bar__share-icon {
+  filter: brightness(0) invert(1);
+}
+
+/* 横屏全屏：画布旋转为横屏，UI 结构同竖屏；视频区按开播比例居中（非铺满） */
+.mh5-livestream-page--landscape {
+  position: absolute;
+  z-index: 5;
+  width: var(--mh5-viewport-height);
+  height: var(--mh5-max-width);
+  top: 50%;
+  left: 50%;
+  flex: none;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+}
+
+.mh5-livestream-page--landscape .mh5-livestream-page__stage-frame--16-9,
+.mh5-livestream-page--landscape .mh5-livestream-page__stage-frame--4-3 {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+}
+
+.mh5-livestream-page--landscape .mh5-livestream-page__stage-frame--16-9 {
+  aspect-ratio: 16 / 9;
+}
+
+.mh5-livestream-page--landscape .mh5-livestream-page__stage-frame--4-3 {
+  aspect-ratio: 4 / 3;
+}
+
+.mh5-livestream-bar__chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid rgb(255 255 255 / 28%);
+  border-radius: 14px;
+  background: rgb(0 0 0 / 35%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.mh5-livestream-bar__chip--off {
+  color: rgb(255 255 255 / 55%);
+  border-color: rgb(255 255 255 / 16%);
+}
+
+.mh5-livestream-quality {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mh5-livestream-quality__menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  min-width: 72px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgb(20 20 20 / 92%);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 35%);
+}
+
+.mh5-livestream-quality__item {
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: transparent;
+  color: rgb(255 255 255 / 78%);
+  font-size: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.mh5-livestream-quality__item:last-child {
+  border-bottom: none;
+}
+
+.mh5-livestream-quality__item--on {
+  color: #ff8c00;
+  font-weight: 600;
+}
+
+/* ---------- 直播间 · 更多功能/分享（Figma 52:20566） ---------- */
+.mh5-livestream-mute-tip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.mh5-live-share-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+
+.mh5-live-share {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 20px calc(30px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  background: #fff;
+  animation: mh5-live-share-in 0.28s ease both;
+}
+
+@keyframes mh5-live-share-in {
+  from {
+    opacity: 0.92;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mh5-live-share__head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.mh5-live-share__title {
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  color: #4f4f4f;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-live-share__close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-live-share__close img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-live-share__friends,
+.mh5-live-share__actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mh5-live-share__friends::-webkit-scrollbar,
+.mh5-live-share__actions::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-live-share__friend,
+.mh5-live-share__action {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-live-share__avatar-wrap {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border-radius: 48px;
+  background: #fff4ec;
+}
+
+.mh5-live-share__avatar-wrap--add {
+  background: #fff4ec;
+}
+
+.mh5-live-share__avatar {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+
+.mh5-live-share__friend-name,
+.mh5-live-share__action-label {
+  max-width: 80px;
+  overflow: hidden;
+  color: #4f4f4f;
+  font-size: 14px;
+  line-height: normal;
+  letter-spacing: 0.28px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-live-share__divider {
+  width: 100%;
+  height: 1px;
+  background: #f0f0f0;
+}
+
+.mh5-live-share__action-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 48px;
+  background: #fff4ec;
+}
+
+.mh5-live-share__action-icon img {
+  display: block;
+  width: 48px;
+  height: 48px;
+}
+
+.mh5-live-share__action:active,
+.mh5-live-share__friend:active {
+  opacity: 0.82;
+  transform: scale(0.97);
+}
+
+.mh5-live-share-enter-active,
+.mh5-live-share-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-live-share-enter-active .mh5-live-share,
+.mh5-live-share-leave-active .mh5-live-share {
+  transition: transform 0.25s ease;
+}
+
+.mh5-live-share-enter-from,
+.mh5-live-share-leave-to {
+  opacity: 0;
+}
+
+.mh5-live-share-enter-from .mh5-live-share,
+.mh5-live-share-leave-to .mh5-live-share {
+  transform: translateY(100%);
+}
+
+/* ---------- 转发 · 选择会话（浅色） ---------- */
+.mh5-live-share-mask:has(.mh5-live-forward) {
+  align-items: stretch;
+  background: #f7f8fa;
+}
+
+.mh5-live-forward {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #f7f8fa;
+  animation: mh5-live-forward-in 0.24s ease both;
+}
+
+@keyframes mh5-live-forward-in {
+  from {
+    opacity: 0.9;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.mh5-live-forward__head {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  padding: 0 12px;
+  background: #fff;
+}
+
+.mh5-live-forward__back {
+  position: absolute;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-live-forward__title {
+  margin: 0;
+  color: #1f1f1f;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mh5-live-forward__search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 10px 16px 0;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.mh5-live-forward__search-icon {
+  flex-shrink: 0;
+  color: #9aa0a6;
+}
+
+.mh5-live-forward__search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #1f1f1f;
+  font-size: 14px;
+}
+
+.mh5-live-forward__search-input::placeholder {
+  color: #b0b4ba;
+}
+
+.mh5-live-forward__section {
+  flex-shrink: 0;
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #eef0f3;
+  color: #8a8f98;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.mh5-live-forward__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.mh5-live-forward__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #f0f1f3;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-live-forward__row:active {
+  background: #f7f8fa;
+}
+
+.mh5-live-forward__check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #c8ccd2;
+  border-radius: 50%;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.mh5-live-forward__check--on {
+  border-color: #ff8c00;
+  background:
+    radial-gradient(circle at center, #ff8c00 0 5px, transparent 5.5px),
+    #fff;
+}
+
+.mh5-live-forward__avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f1f3;
+}
+
+.mh5-live-forward__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #1f1f1f;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-live-forward__group {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  color: #9aa0a6;
+}
+
+.mh5-live-forward__empty {
+  margin: 0;
+  padding: 40px 16px;
+  color: #9aa0a6;
+  font-size: 14px;
+  text-align: center;
+}
+
+.mh5-live-forward__footer {
+  flex-shrink: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #fff;
+  box-shadow: 0 -1px 0 #eef0f3;
+}
+
+.mh5-live-forward__confirm {
+  width: 100%;
+  height: 44px;
+  border: none;
+  border-radius: 22px;
+  background: #ff8c00;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.mh5-live-forward__confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mh5-live-forward__confirm:not(:disabled):active {
+  opacity: 0.88;
+}
+
+/* ---------- 语聊房房间（Figma 515:63984） ---------- */
+.mh5-voice-room {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1a0828;
+  color: #fff;
+}
+
+.mh5-voice-room__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+}
+
+.mh5-voice-room__shade {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 50%);
+  pointer-events: none;
+}
+
+.mh5-voice-room__header {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0 0 12px;
+}
+
+.mh5-voice-room__host {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(240px, 62%);
+  padding: 1px 6px 1px 1px;
+  border-radius: 57.6px;
+  background: rgb(93 93 93 / 40%);
+}
+
+.mh5-voice-room__host-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-voice-room__host-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-voice-room__host-name {
+  margin: 0;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-voice-room__host-likes {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.mh5-voice-room__follow {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 22px;
+  background: linear-gradient(90deg, #ff8c00, #ff6d24);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.mh5-voice-room__follow--on {
+  background: rgb(255 255 255 / 24%);
+}
+
+.mh5-voice-room__header-right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.mh5-voice-room__viewers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 12px 0 8px;
+  border-radius: 31px;
+  background: rgb(93 93 93 / 40%);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.mh5-voice-room__viewers img {
+  width: 20px;
+  height: 20px;
+  margin-right: -7px;
+  border: 0.5px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-voice-room__viewers img:last-of-type {
+  margin-right: 0;
+}
+
+.mh5-voice-room__close {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 12px;
+  padding: 0;
+  border: none;
+  border-radius: 30px;
+  background: rgb(93 93 93 / 40%);
+  cursor: pointer;
+}
+
+.mh5-voice-room__mics {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin: 12px 12px 0;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgb(93 93 93 / 40%);
+}
+
+.mh5-voice-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mh5-voice-seat__avatar-wrap {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.mh5-voice-seat__avatar-wrap--speak::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgb(255 140 0 / 55%);
+  animation: mh5-voice-ring 1.6s ease-out infinite;
+}
+
+@keyframes mh5-voice-ring {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+.mh5-voice-seat__avatar {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  object-fit: cover;
+  transform: translate(-50%, -50%);
+}
+
+.mh5-voice-seat__mic {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #ff8c00, #ff6d24);
+}
+
+.mh5-voice-seat__mic--mute {
+  background: #888;
+}
+
+.mh5-voice-seat__mic img {
+  width: 9px;
+  height: 9px;
+}
+
+.mh5-voice-seat__name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+.mh5-voice-seat__badge {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 20px;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.mh5-voice-seat__badge--host,
+.mh5-voice-seat__badge--admin {
+  background: linear-gradient(180deg, #f3693b, #f31f54);
+}
+
+.mh5-voice-seat__badge--god {
+  background: #c773ee;
+}
+
+.mh5-voice-seat__name {
+  overflow: hidden;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-voice-seat__empty {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: 4px 0;
+  border: 1px solid rgb(209 209 209 / 40%);
+  border-radius: 40px;
+  background: rgb(255 255 255 / 10%);
+  backdrop-filter: blur(5px);
+}
+
+.mh5-voice-seat__empty-text {
+  margin: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-voice-room__floats {
+  /* Figma 515:63984：游戏浮层 left:321 top:599/686（393×852） */
+  position: absolute;
+  right: 12px;
+  bottom: 102px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+}
+
+.mh5-voice-float {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 60px;
+  filter: drop-shadow(0 0 6px rgb(0 0 0 / 60%));
+}
+
+.mh5-voice-float__x {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-voice-float__x img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.mh5-voice-float__hit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-voice-float__img {
+  width: 60px;
+  height: 60px;
+  margin-bottom: -16px;
+  object-fit: cover;
+}
+
+.mh5-voice-float__img--game {
+  border: 1.5px solid #593005;
+  border-radius: 8px;
+}
+
+.mh5-voice-float__label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 20px;
+  overflow: hidden;
+  border-radius: 40px;
+  background: linear-gradient(180deg, #eccfa3 0%, #d7b17f 50%, #b9854d 100%);
+  color: #6e240f;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-voice-room__footer {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.mh5-voice-room__footer > * {
+  pointer-events: auto;
+}
+
+.mh5-voice-room__side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 290px;
+  max-height: 260px;
+  overflow: hidden;
+}
+
+.mh5-voice-gift {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 189px;
+  padding: 3px 6px 3px 3px;
+  border-radius: 57.6px;
+  background: linear-gradient(90deg, rgb(255 59 48 / 80%), rgb(255 59 48 / 0%));
+}
+
+.mh5-voice-gift__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mh5-voice-gift__text {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-voice-gift__user {
+  margin: 0;
+  color: #ffc200;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-voice-gift__action {
+  margin: 0;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.mh5-voice-gift__thumb {
+  width: 20px;
+  height: 20px;
+  padding: 3px;
+  border-radius: 3px;
+  background: #e1e5ec;
+  object-fit: contain;
+}
+
+.mh5-voice-gift__count {
+  color: #ffc200;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.mh5-voice-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.mh5-voice-chat::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-voice-bubble {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 290px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  background: rgb(93 93 93 / 40%);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.mh5-voice-bubble__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mh5-voice-bubble__tag--win {
+  background: linear-gradient(90deg, #ffd36a, #ffb020);
+  color: #6e240f;
+}
+
+.mh5-voice-bubble__tag--sys {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.mh5-voice-bubble__tag--vip {
+  background: linear-gradient(90deg, #c773ee, #8b5cf6);
+  color: #fff;
+}
+
+.mh5-voice-bubble__user {
+  color: #ffc200;
+  white-space: nowrap;
+}
+
+.mh5-voice-bubble__text {
+  color: #fff;
+}
+
+.mh5-voice-bubble__gift {
+  color: #ff8c00;
+}
+
+.mh5-voice-bubble__cta {
+  margin-left: 4px;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ff8c00, #ff6d24);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mh5-voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 0 36px;
+}
+
+.mh5-voice-bar__input {
+  flex: 1;
+  height: 36px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 18px;
+  background: rgb(93 93 93 / 40%);
+  color: #fff;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-voice-bar__btn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 37px;
+  background: rgb(93 93 93 / 40%);
+  cursor: pointer;
+}
+
+.mh5-voice-bar__btn img {
+  display: block;
+  max-width: 24px;
+  max-height: 24px;
+  border-radius: 4px;
+}
+
+/* ---------- 语聊房 · 游戏中心底栏（Figma 1729:19179） ---------- */
+.mh5-voice-gc-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+
+.mh5-voice-gc {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-height: min(720px, 86%);
+  padding: 20px 20px 40px;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  background: #161717;
+  animation: mh5-voice-gc-in 0.28s ease both;
+}
+
+@keyframes mh5-voice-gc-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0.92;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mh5-voice-gc__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.mh5-voice-gc__title {
+  flex: 1;
+  margin: 0;
+  color: #d1d1d1;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.mh5-voice-gc__close {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-voice-gc__close img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-voice-gc__tabs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mh5-voice-gc__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-voice-gc__tab {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  padding: 6px 12px;
+  border: 1px solid #2f2f2f;
+  border-radius: 26px;
+  background: transparent;
+  color: #747474;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.mh5-voice-gc__tab--active {
+  border-color: transparent;
+  background: #ff8c00;
+  color: #fff;
+}
+
+.mh5-voice-gc__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.mh5-voice-gc__row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.mh5-voice-gc__row--split {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #262626;
+}
+
+.mh5-voice-gc__icon {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #262626;
+}
+
+.mh5-voice-gc__meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.mh5-voice-gc__name {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: #f6f6f6;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  word-break: break-word;
+}
+
+.mh5-voice-gc__live {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #262626;
+  color: #ff8c00;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-voice-gc__live img {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.mh5-voice-gc__open {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #ff8c00 0%, #ff6d24 100%);
+  color: #fff;
+  font-size: 14px;
+  line-height: normal;
+  letter-spacing: 0.28px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.mh5-voice-gc__open:active {
+  opacity: 0.9;
+  transform: scale(0.97);
+}
+
+.mh5-voice-gc__empty {
+  margin: 24px 0 0;
+  color: #747474;
+  font-size: 14px;
+  text-align: center;
+}
+
+.mh5-voice-gc-enter-active,
+.mh5-voice-gc-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-voice-gc-enter-active .mh5-voice-gc,
+.mh5-voice-gc-leave-active .mh5-voice-gc {
+  transition: transform 0.25s ease;
+}
+
+.mh5-voice-gc-enter-from,
+.mh5-voice-gc-leave-to {
+  opacity: 0;
+}
+
+.mh5-voice-gc-enter-from .mh5-voice-gc,
+.mh5-voice-gc-leave-to .mh5-voice-gc {
+  transform: translateY(100%);
+}
+
 /* ---------- Tab 缺省占位页 ---------- */
 .mh5-tab-placeholder {
   display: flex;
@@ -5833,21 +8777,27 @@
   min-height: 0;
   overflow-y: auto;
   padding-bottom: var(--agent-bottom-nav-offset);
-  background: #f5f6f8;
+  background: #fff;
 }
 
 .agent-team-row {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 56px;
-  padding: 10px 12px 10px 12px;
+  gap: 4px;
+  min-height: 45px;
+  padding: 8px 12px;
   background: #fff;
-  border-bottom: 1px dashed #e5e7eb;
+  border-bottom: 1px dashed #dbdbdb;
 }
 
 .agent-team-row--self {
   background: #fff;
+}
+
+.agent-team-row--member .agent-team-row__name {
+  color: #888;
+  font-weight: 500;
 }
 
 .agent-team-row__caret {
@@ -5880,11 +8830,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: linear-gradient(145deg, #ffd18a 0%, #ff9a4d 55%, #ff7a2b 100%);
-  font-size: 18px;
+  font-size: 13px;
   line-height: 1;
   overflow: visible;
 }
@@ -5894,11 +8844,11 @@
   position: absolute;
   top: -1px;
   right: -1px;
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #22c55e;
-  border: 2px solid #fff;
+  border: 1.5px solid #fff;
   box-shadow: 0 0 0 1px rgb(34 197 94 / 18%);
 }
 
@@ -5907,7 +8857,7 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -5916,7 +8866,7 @@
   min-width: 0;
   max-width: 118px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5952,52 +8902,163 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-height: 18px;
+  min-height: 20px;
   padding: 0 6px;
   border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 400;
   white-space: nowrap;
 }
 
 .agent-team-tag--me {
   background: #fff1e8;
   color: #ff7a2b;
+  font-weight: 500;
 }
 
 .agent-team-tag--credit {
   background: #fff3e8;
   color: #e67a2e;
+  font-weight: 500;
 }
 
-.agent-team-tag--vip {
-  padding: 0 5px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #ffe9a8 0%, #ffd56a 100%);
-  color: #b45309;
-  font-weight: 700;
-}
-
-.agent-team-tag__vip-gem {
-  font-size: 8px;
-  line-height: 1;
-  color: #f59e0b;
-  transform: scaleY(0.9);
-}
-
+/* Figma 1433:19549 绿色统计徽章：VIP钻石 + 组织树 + 文案 */
 .agent-team-tag--stats {
-  gap: 3px;
-  background: #e8f8ef;
-  color: #16a34a;
+  gap: 2px;
+  min-height: 22px;
+  padding: 0 6px 0 4px;
+  background: #eafaef;
+  color: #28cb61;
 }
 
-.agent-team-tag--stats svg {
+.agent-team-tag__stats-text {
+  font-size: 12px;
+  line-height: 1.35;
+  color: #28cb61;
+}
+
+.agent-team-org-icon {
+  display: block;
   flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  object-fit: contain;
+}
+
+/* Figma Component2 VIP 钻石：9 切面绝对定位 + 等级字 */
+.agent-team-vip-badge {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 16px;
+  overflow: hidden;
+}
+
+.agent-team-vip-badge__f {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.agent-team-vip-badge__f--1 {
+  inset: 0.15% 20.99% 62.67% 20.98%;
+}
+
+.agent-team-vip-badge__f--2 {
+  inset: 0.15% 21.09% 64.74% 49.79%;
+}
+
+.agent-team-vip-badge__f--3 {
+  inset: 35.26% 6.65% 0.15% 49.89%;
+}
+
+.agent-team-vip-badge__f--4 {
+  inset: 35.26% 0.11% 0.15% 49.9%;
+}
+
+.agent-team-vip-badge__f--5 {
+  inset: 0.18% 0.11% 64.74% 67.66%;
+}
+
+.agent-team-vip-badge__f--6 {
+  inset: 35.26% 50.11% 0.27% 6.42%;
+}
+
+.agent-team-vip-badge__f--7 {
+  inset: 35.26% 50.11% 0.27% 0%;
+}
+
+.agent-team-vip-badge__f--8 {
+  inset: 0.15% 67.77% 64.74% 0%;
+}
+
+.agent-team-vip-badge__f--9 {
+  inset: 0% 32.34% 64.77% 32.23%;
+}
+
+.agent-team-vip-badge__text {
+  position: absolute;
+  inset: 11.11% 11.82% 22.22% 24.55%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #885600;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.agent-team-vip-badge__text i {
+  font-style: normal;
 }
 
 .agent-team-tag--member {
-  background: #f0f1f3;
-  color: #6b7280;
+  background: #eee;
+  color: #888;
+}
+
+/* 「查看更多」行：对齐 Figma 两侧虚线 + 居中文案 */
+.agent-team-more {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 12px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+}
+
+.agent-team-more:active {
+  opacity: 0.7;
+}
+
+.agent-team-more__line {
+  flex: 1;
+  min-width: 0;
+  height: 0;
+  border-top: 1px dashed #dbdbdb;
+}
+
+.agent-team-more__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  color: #747474;
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .agent-team-tag--agent {
@@ -6020,18 +9081,22 @@
   margin-left: auto;
   border: none;
   background: none;
-  color: #9ca3af;
-  font-size: 18px;
-  letter-spacing: 1px;
   cursor: pointer;
+}
+
+.agent-team-row__menu img {
+  display: block;
+  width: 20px;
+  height: 4px;
+  opacity: 0.9;
 }
 
 .agent-team-row__menu:active {
   opacity: 0.65;
 }
 
-.agent-team-row__menu--active {
-  color: var(--mh5-app-orange);
+.agent-team-row__menu--active img {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(86%) saturate(1800%) hue-rotate(346deg) brightness(102%) contrast(101%);
 }
 
 .agent-team-quick-menu {

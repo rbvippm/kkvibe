@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   CHAT_CONVERSATIONS,
   CHAT_FILTERS,
@@ -8,6 +9,7 @@ import {
 } from '../../constants/mobileChat'
 import { CHAT_ASSETS } from '../../constants/mobileChatAssets'
 
+const router = useRouter()
 const activeFilter = ref<ChatFilter>('all')
 
 const conversations = computed(() => conversationsForFilter(activeFilter.value))
@@ -15,6 +17,10 @@ const conversations = computed(() => conversationsForFilter(activeFilter.value))
 const totalUnread = computed(() =>
   CHAT_CONVERSATIONS.reduce((sum, c) => sum + c.unread, 0),
 )
+
+function goDiscover() {
+  router.push({ name: 'mobile-discover' })
+}
 </script>
 
 <template>
@@ -23,7 +29,7 @@ const totalUnread = computed(() =>
       <div class="mh5-chat-header__top">
         <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" alt="金刚 KING KONG" width="120" height="28" />
         <div class="mh5-chat-header__actions">
-          <button type="button" class="mh5-chat-header__icon-btn" aria-label="发现">
+          <button type="button" class="mh5-chat-header__icon-btn" aria-label="发现" @click="goDiscover">
             <img :src="CHAT_ASSETS.explore" alt="" width="22" height="22" />
           </button>
           <button type="button" class="mh5-chat-header__icon-btn" aria-label="添加联系人">
