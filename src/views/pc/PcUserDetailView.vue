@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   getTurnoverPairCurrencies,
   getTurnoverPairDisplayLabel,
@@ -22,6 +23,10 @@ import {
   type UserFundFlowRow,
   type UserFundFlowType,
 } from '../../constants/userDetail'
+import {
+  USER_DETAIL_CREDIT_TAB_SPEC,
+  USER_DETAIL_SPEC_ANNOT_NO,
+} from '../../constants/userDetailSpec'
 import { signedNumberClass } from '../../utils/formatSignedNumber'
 import '../../styles/pc-wireframe.css'
 
@@ -388,7 +393,7 @@ watch(
 
 <template>
   <div class="pc-wireframe-page user-detail-page">
-    <WfPagePathMenu :segments="PAGE_SEGMENTS" :doc-route-name="null" />
+    <WfPagePathMenu :segments="PAGE_SEGMENTS" doc-route-name="pc-user-detail-doc" />
 
     <div class="user-detail-page__modules">
       <button
@@ -430,14 +435,21 @@ watch(
           >
             法币账户
           </button>
-          <button
-            type="button"
-            class="user-detail-page__account-tab"
-            :class="{ 'user-detail-page__account-tab--active': accountTab === 'credit' }"
-            @click="accountTab = 'credit'"
-          >
-            信用额度
-          </button>
+          <div class="user-detail-page__account-tab-item">
+            <button
+              type="button"
+              class="user-detail-page__account-tab"
+              :class="{ 'user-detail-page__account-tab--active': accountTab === 'credit' }"
+              @click="accountTab = 'credit'"
+            >
+              信用额度
+            </button>
+            <WfSpecAnnot
+              :no="USER_DETAIL_SPEC_ANNOT_NO.creditTab"
+              title="信用额度账户"
+              :items="[...USER_DETAIL_CREDIT_TAB_SPEC]"
+            />
+          </div>
         </div>
 
         <div class="user-detail-page__summary">
@@ -972,9 +984,17 @@ watch(
 
 .user-detail-page__account-tabs {
   display: flex;
+  align-items: center;
   gap: 24px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--pc-border-light, #e8e8e8);
+}
+
+.user-detail-page__account-tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 0;
 }
 
 .user-detail-page__account-tab {
@@ -990,6 +1010,10 @@ watch(
   border-bottom-color: var(--pc-primary, #1890ff);
   color: var(--pc-primary, #1890ff);
   font-weight: 500;
+}
+
+.user-detail-page__account-tab-item .user-detail-page__account-tab--active {
+  margin-bottom: 0;
 }
 
 .user-detail-page__summary {

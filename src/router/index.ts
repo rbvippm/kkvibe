@@ -404,6 +404,12 @@ export const router = createRouter({
           meta: { title: '用户详情' },
         },
         {
+          path: 'user-list/detail/doc',
+          name: 'pc-user-detail-doc',
+          component: () => import('../views/pc/PcUserDetailDocView.vue'),
+          meta: { title: '用户详情-文档说明' },
+        },
+        {
           path: 'user-manage',
           name: 'pc-user-manage',
           component: PcUserManageView,

@@ -54,6 +54,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     title: '文档说明',
     pagePath: ['用户管理', '用户列表', '文档说明'],
   },
+  {
+    path: '/pc/user-list/detail/doc',
+    routeName: 'pc-user-detail-doc',
+    title: '文档说明',
+    pagePath: ['用户管理', '用户列表', '用户详情', '文档说明'],
+  },
 ]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
