@@ -48,6 +48,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     title: '文档说明',
     pagePath: ['管理后台', '直播管理', '直播中控台', '文档说明'],
   },
+  {
+    path: '/pc/user-list/doc',
+    routeName: 'pc-user-list-doc',
+    title: '文档说明',
+    pagePath: ['用户管理', '用户列表', '文档说明'],
+  },
 ]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
@@ -129,6 +135,21 @@ export const pcMenuTree: PcMenuItem[] = [
     title: 'v2.x.x 账变细化和流水调整',
     icon: '📋',
     children: pcMenuV2Children,
+  },
+  {
+    key: 'user',
+    title: '用户管理',
+    icon: '👤',
+    children: [
+      {
+        key: 'user-list',
+        title: '用户列表',
+        path: '/pc/user-list',
+        routeName: 'pc-user-list',
+        pagePath: ['用户管理', '用户列表'],
+        docRouteName: 'pc-user-list-doc',
+      },
+    ],
   },
   {
     key: 'live',

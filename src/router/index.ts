@@ -386,6 +386,24 @@ export const router = createRouter({
           meta: { title: '超级群管理' },
         },
         {
+          path: 'user-list',
+          name: 'pc-user-list',
+          component: () => import('../views/pc/PcUserListView.vue'),
+          meta: { title: '用户列表' },
+        },
+        {
+          path: 'user-list/doc',
+          name: 'pc-user-list-doc',
+          component: () => import('../views/pc/PcUserListDocView.vue'),
+          meta: { title: '用户列表-文档说明' },
+        },
+        {
+          path: 'user-list/detail',
+          name: 'pc-user-detail',
+          component: () => import('../views/pc/PcUserDetailView.vue'),
+          meta: { title: '用户详情' },
+        },
+        {
           path: 'user-manage',
           name: 'pc-user-manage',
           component: PcUserManageView,

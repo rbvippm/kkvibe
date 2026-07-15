@@ -15,19 +15,21 @@ export const CREDIT_LIMIT_TRANSFER_META = {
   title: '信用额度记录',
   module: '推广返利',
   updatedAt: '2026-07-15',
-  prdVersion: 'v1.2',
+  prdVersion: 'v1.3',
 } as const
 
 export const CREDIT_LIMIT_TRANSFER_BACKGROUND = [
   '信用代理体系上线后，运营需在后台查询信用额度上下分流水，核对代理给会员/下级代理的额度变动。',
   '本期新增「代理退水」上下分方式：由系统向代理上分信用额度，固定备注「系统代理退水」，且不产生关联记录。',
   '上下分弹框改为按会员ID精准搜索已授信一级代理；赚取退水已在占成代理配置中完成，弹框不再设置。',
+  '信用额度流水需区分信用币种（CNY / USD），支持按币种筛选与列表展示。',
 ] as const
 
 export const CREDIT_LIMIT_TRANSFER_GOALS = [
   '在上下分方式中支持筛选与展示「代理退水」。',
   '代理退水记录固定为：发起对象=系统、上下分对象=代理、备注=系统代理退水、无关联记录。',
   '上下分弹框支持会员ID精准检索一级代理信用代理，并去掉赚取退水表单项。',
+  '支持按信用币种（CNY / USD）筛选，并在列表展示币种列。',
 ] as const
 
 export const CREDIT_LIMIT_TRANSFER_FEATURE_LIST: CreditLimitTransferFeatureRow[] = [
@@ -67,11 +69,29 @@ export const CREDIT_LIMIT_TRANSFER_FEATURE_LIST: CreditLimitTransferFeatureRow[]
       routing: '提交成功关闭弹框并刷新列表；不跳转路由。',
     },
   },
+  {
+    id: 3,
+    module: '列表筛选/展示',
+    feature: '信用币种',
+    pageLocation: '筛选区「信用币种」、列表「信用币种」列、关联记录弹框「信用币种」列',
+    prd: {
+      functionalLogic:
+        '信用币种用于区分信用额度流水所属结算币种，支持按币种过滤并在列表、关联记录中对照金额阅读。',
+      interactiveBehavior:
+        '筛选选择 CNY 或 USD 后点「搜索」-> 仅展示对应币种记录；选择「全部」不过滤；点「重置」恢复全部；打开关联记录时原始/对侧行同步展示币种。',
+      visualPresentation:
+        '筛选下拉默认「全部」，选项 CNY / USD；旁侧「注3」标注；列表与关联记录弹框（原始记录、关联记录）均在「金额」右侧展示「信用币种」列，只读文案 CNY 或 USD。',
+      dataRules: '枚举仅 CNY、USD；非必填；每条流水有且仅有一个信用币种；关联记录与原始记录币种一致。',
+      exceptions: '选中币种无数据 -> 表格「暂无数据」；非法币种值不出现在下拉中。',
+      routing: '停留列表页，不跳转；关联记录弹框内无独立币种筛选。',
+    },
+  },
 ]
 
 export const CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO = {
   transferMode: 1,
   transferModal: 2,
+  currency: 3,
 } as const
 
 export const CREDIT_LIMIT_TRANSFER_MODE_SPEC = [
@@ -84,4 +104,10 @@ export const CREDIT_LIMIT_TRANSFER_MODAL_SPEC = [
   '按会员ID精准搜索已授信的一级代理信用代理（数据来自占成代理配置）。',
   '弹框已去掉「赚取退水」，该配置在占成代理配置页完成。',
   '表单仅填上下分方式、金额、备注后提交。',
+]
+
+export const CREDIT_LIMIT_TRANSFER_CURRENCY_SPEC = [
+  '信用币种枚举：CNY、USD。',
+  '筛选支持全部 / CNY / USD；列表与关联记录弹框「金额」旁均展示币种列。',
+  '关联记录与原始记录币种保持一致。',
 ]

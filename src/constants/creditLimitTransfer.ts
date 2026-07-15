@@ -10,6 +10,7 @@ export type CreditTargetType = 'member' | 'agent'
 export type CreditTransferMode = 'up' | 'down' | 'agent_rebate'
 export type CreditTransferModeBasic = 'up' | 'down'
 export type CreditTransferStatus = 'success' | 'failed'
+export type CreditCurrency = 'CNY' | 'USD'
 
 export type CreditLimitTransferRow = {
   id: string
@@ -17,6 +18,7 @@ export type CreditLimitTransferRow = {
   username: string
   userId: string
   amount: number
+  currency: CreditCurrency
   initiatorType: CreditInitiatorType
   transferMode: CreditTransferMode
   targetType: CreditTargetType
@@ -34,6 +36,7 @@ export type CreditRelatedRecord = {
   username: string
   userId: string
   amount: number
+  currency: CreditCurrency
   initiatorType: CreditInitiatorType | 'platform'
   transferMode: CreditTransferModeBasic
   targetType: CreditTargetType
@@ -81,6 +84,12 @@ export const CREDIT_STATUS_OPTIONS = [
   { value: 'failed', label: '失败' },
 ] as const
 
+export const CREDIT_CURRENCY_OPTIONS = [
+  { value: '', label: '全部' },
+  { value: 'CNY', label: 'CNY' },
+  { value: 'USD', label: 'USD' },
+] as const
+
 export const CREDIT_TRANSFER_MODE_FORM_OPTIONS = [
   { value: '', label: '请选择' },
   { value: 'up', label: '上分' },
@@ -123,6 +132,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: '测试',
     userId: '4635208113430024628',
     amount: 0.2,
+    currency: 'CNY',
     initiatorType: 'agent',
     transferMode: 'down',
     targetType: 'member',
@@ -139,6 +149,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: 'X币',
     userId: '2537586229811479813',
     amount: -0.2,
+    currency: 'CNY',
     initiatorType: 'agent',
     transferMode: 'up',
     targetType: 'member',
@@ -155,6 +166,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: '棋王阿杰',
     userId: '3180664521199420636',
     amount: 200,
+    currency: 'USD',
     initiatorType: 'system',
     transferMode: 'up',
     targetType: 'agent',
@@ -171,6 +183,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: '明哥888',
     userId: '3180664521199420701',
     amount: -50,
+    currency: 'USD',
     initiatorType: 'admin',
     transferMode: 'down',
     targetType: 'agent',
@@ -187,6 +200,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: '小林棋王',
     userId: '3180664521199420888',
     amount: 1000,
+    currency: 'CNY',
     initiatorType: 'agent',
     transferMode: 'up',
     targetType: 'member',
@@ -203,6 +217,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: 'rlzm2qi3',
     userId: '22210001',
     amount: 88.5,
+    currency: 'CNY',
     initiatorType: 'system',
     transferMode: 'agent_rebate',
     targetType: 'agent',
@@ -219,6 +234,7 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     username: 'hwdlz5ro',
     userId: '222187',
     amount: 36,
+    currency: 'USD',
     initiatorType: 'system',
     transferMode: 'agent_rebate',
     targetType: 'agent',
@@ -274,6 +290,7 @@ export function buildRelatedRecords(row: CreditLimitTransferRow): {
     username: row.username,
     userId: row.userId,
     amount: row.amount,
+    currency: row.currency,
     initiatorType: row.initiatorType,
     transferMode: mode,
     targetType: row.targetType,
@@ -285,6 +302,7 @@ export function buildRelatedRecords(row: CreditLimitTransferRow): {
     username: row.initiatorType === 'agent' ? row.initiatorName : '平台账户',
     userId: row.initiatorType === 'agent' ? row.initiatorId : '0',
     amount: -row.amount,
+    currency: row.currency,
     initiatorType: row.initiatorType === 'agent' ? 'platform' : 'system',
     transferMode: mode === 'up' ? 'down' : 'up',
     targetType: 'agent',

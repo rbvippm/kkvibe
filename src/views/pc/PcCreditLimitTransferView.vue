@@ -4,6 +4,7 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   buildRelatedRecords,
+  CREDIT_CURRENCY_OPTIONS,
   CREDIT_INITIATOR_TYPE_OPTIONS,
   CREDIT_STATUS_OPTIONS,
   CREDIT_TARGET_TYPE_OPTIONS,
@@ -18,6 +19,7 @@ import {
   statusLabel,
   targetTypeLabel,
   transferModeLabel,
+  type CreditCurrency,
   type CreditInitiatorType,
   type CreditLimitTransferRow,
   type CreditRelatedRecord,
@@ -27,6 +29,7 @@ import {
   type CreditTransferStatus,
 } from '../../constants/creditLimitTransfer'
 import {
+  CREDIT_LIMIT_TRANSFER_CURRENCY_SPEC,
   CREDIT_LIMIT_TRANSFER_MODE_SPEC,
   CREDIT_LIMIT_TRANSFER_MODAL_SPEC,
   CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO,
@@ -41,6 +44,7 @@ type ListFilter = {
   initiatorId: string
   targetType: '' | CreditTargetType
   transferMode: '' | CreditTransferMode
+  currency: '' | CreditCurrency
   startDate: string
   endDate: string
   status: '' | CreditTransferStatus
@@ -54,6 +58,7 @@ const defaultFilter = (): ListFilter => ({
   initiatorId: '',
   targetType: '',
   transferMode: '',
+  currency: '',
   startDate: '',
   endDate: '',
   status: '',
@@ -90,6 +95,7 @@ function matchRow(row: CreditLimitTransferRow) {
   if (f.initiatorId && !row.initiatorId.includes(f.initiatorId.trim())) return false
   if (f.targetType && row.targetType !== f.targetType) return false
   if (f.transferMode && row.transferMode !== f.transferMode) return false
+  if (f.currency && row.currency !== f.currency) return false
   if (f.status && row.status !== f.status) return false
   if (f.flowNo && !row.flowNo.includes(f.flowNo.trim())) return false
   const day = row.occurredAt.slice(0, 10)
@@ -207,6 +213,7 @@ function confirmTransfer() {
     username: agent.username,
     userId: agent.userId,
     amount: signed,
+    currency: 'CNY',
     initiatorType: 'admin',
     transferMode: transferMode.value as CreditTransferMode,
     targetType: 'agent',
@@ -303,6 +310,26 @@ function confirmTransfer() {
           </option>
         </select>
 
+        <label class="wf-label wf-label--with-spec">
+          信用币种：
+          <WfSpecAnnot
+            :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.currency"
+            title="信用币种"
+            :items="[...CREDIT_LIMIT_TRANSFER_CURRENCY_SPEC]"
+          />
+        </label>
+        <select v-model="filter.currency" class="wf-input wf-input--select">
+          <option
+            v-for="opt in CREDIT_CURRENCY_OPTIONS"
+            :key="opt.value || 'all'"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">流水号：</label>
         <input v-model="filter.flowNo" type="text" class="wf-input" placeholder="请输入流水号" />
       </div>
@@ -326,6 +353,7 @@ function confirmTransfer() {
               <th class="wf-th">用户</th>
               <th class="wf-th">用户ID</th>
               <th class="wf-th">金额</th>
+              <th class="wf-th">信用币种</th>
               <th class="wf-th">发起对象</th>
               <th class="wf-th">上下分方式</th>
               <th class="wf-th">上下分对象</th>
@@ -339,7 +367,7 @@ function confirmTransfer() {
           </thead>
           <tbody>
             <tr v-if="!filteredRows.length">
-              <td colspan="13" class="wf-td wf-td--empty">暂无数据</td>
+              <td colspan="14" class="wf-td wf-td--empty">暂无数据</td>
             </tr>
             <tr v-for="row in filteredRows" :key="row.id">
               <td class="wf-td wf-td--bill">{{ row.flowNo }}</td>
@@ -348,6 +376,7 @@ function confirmTransfer() {
               <td class="wf-td wf-td--center" :class="signedNumberClass(row.amount)">
                 {{ formatCreditAmount(row.amount) }}
               </td>
+              <td class="wf-td wf-td--center">{{ row.currency }}</td>
               <td class="wf-td wf-td--center">{{ initiatorTypeLabel(row.initiatorType) }}</td>
               <td class="wf-td wf-td--center">{{ transferModeLabel(row.transferMode) }}</td>
               <td class="wf-td wf-td--center">{{ targetTypeLabel(row.targetType) }}</td>
@@ -546,6 +575,7 @@ function confirmTransfer() {
                   <th class="wf-th">用户</th>
                   <th class="wf-th">用户ID</th>
                   <th class="wf-th">金额</th>
+                  <th class="wf-th">信用币种</th>
                   <th class="wf-th">发起对象</th>
                   <th class="wf-th">类型</th>
                   <th class="wf-th">上下分对象</th>
@@ -563,6 +593,7 @@ function confirmTransfer() {
                   >
                     {{ formatCreditAmount(relatedOriginal.amount) }}
                   </td>
+                  <td class="wf-td wf-td--center">{{ relatedOriginal.currency }}</td>
                   <td class="wf-td wf-td--center">
                     {{ initiatorTypeLabel(relatedOriginal.initiatorType) }}
                   </td>
@@ -587,6 +618,7 @@ function confirmTransfer() {
                   <th class="wf-th">用户</th>
                   <th class="wf-th">用户ID</th>
                   <th class="wf-th">金额</th>
+                  <th class="wf-th">信用币种</th>
                   <th class="wf-th">发起对象</th>
                   <th class="wf-th">类型</th>
                   <th class="wf-th">上下分对象</th>
@@ -601,6 +633,7 @@ function confirmTransfer() {
                   <td class="wf-td wf-td--center" :class="signedNumberClass(relatedPair.amount)">
                     {{ formatCreditAmount(relatedPair.amount) }}
                   </td>
+                  <td class="wf-td wf-td--center">{{ relatedPair.currency }}</td>
                   <td class="wf-td wf-td--center">
                     {{ initiatorTypeLabel(relatedPair.initiatorType) }}
                   </td>
@@ -613,7 +646,7 @@ function confirmTransfer() {
                   <td class="wf-td">{{ relatedPair.initiatorName }}</td>
                 </tr>
                 <tr v-else>
-                  <td colspan="8" class="wf-td wf-td--empty">暂无数据</td>
+                  <td colspan="9" class="wf-td wf-td--empty">暂无数据</td>
                 </tr>
               </tbody>
             </table>
