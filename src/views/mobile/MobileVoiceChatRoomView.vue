@@ -5,10 +5,7 @@ import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
-import {
-  LIVE_STREAM_ASSETS,
-  type LiveShareActionKey,
-} from '../../constants/mobileLiveStream'
+import { type LiveShareActionKey } from '../../constants/mobileLiveStream'
 import {
   MOCK_VOICE_GIFTS,
   MOCK_VOICE_MESSAGES,

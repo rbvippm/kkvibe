@@ -5,16 +5,16 @@ import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   buildRelatedRecords,
   CREDIT_INITIATOR_TYPE_OPTIONS,
-  CREDIT_REBATE_EARN_OPTIONS,
   CREDIT_STATUS_OPTIONS,
   CREDIT_TARGET_TYPE_OPTIONS,
   CREDIT_TRANSFER_MODE_FORM_OPTIONS,
   CREDIT_TRANSFER_MODE_OPTIONS,
   formatCreditAmount,
   formatCreditBalance,
+  hasRelatedRecord,
   initiatorTypeLabel,
   MOCK_CREDIT_LIMIT_TRANSFER_ROWS,
-  MOCK_CREDIT_TOP_AGENTS,
+  listCreditLevel1Agents,
   statusLabel,
   targetTypeLabel,
   transferModeLabel,
@@ -27,11 +27,8 @@ import {
   type CreditTransferStatus,
 } from '../../constants/creditLimitTransfer'
 import {
-  CREDIT_LIMIT_TRANSFER_AMOUNT_STATUS_SPEC,
-  CREDIT_LIMIT_TRANSFER_ENTRY_SPEC,
-  CREDIT_LIMIT_TRANSFER_FILTER_SPEC,
+  CREDIT_LIMIT_TRANSFER_MODE_SPEC,
   CREDIT_LIMIT_TRANSFER_MODAL_SPEC,
-  CREDIT_LIMIT_TRANSFER_RELATED_SPEC,
   CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO,
 } from '../../constants/creditLimitTransferSpec'
 import { signedNumberClass } from '../../utils/formatSignedNumber'
@@ -110,6 +107,7 @@ const relatedPair = ref<CreditRelatedRecord | null>(null)
 
 function openRelated(row: CreditLimitTransferRow) {
   const bundle = buildRelatedRecords(row)
+  if (!bundle) return
   relatedOriginal.value = bundle.original
   relatedPair.value = bundle.related
   relatedVisible.value = true
@@ -126,32 +124,29 @@ const transferVisible = ref(false)
 const agentKeyword = ref('')
 const agentSearchApplied = ref('')
 const selectedAgentId = ref<string | null>(null)
-const rebateEarn = ref('')
 const transferMode = ref('')
 const amountInput = ref('')
 const remarkInput = ref('')
 const transferHint = ref('')
 
+/** 来源：占成代理配置中已授信信用身份的一级代理 */
+const creditLevel1Agents = listCreditLevel1Agents()
+
 const searchedAgents = computed(() => {
-  const kw = agentSearchApplied.value.trim().toLowerCase()
-  if (!kw) return [] as CreditTopAgentRow[]
-  return MOCK_CREDIT_TOP_AGENTS.filter(
-    (agent) =>
-      agent.username.toLowerCase().includes(kw) ||
-      agent.userId.includes(kw) ||
-      agent.kingKongId.toLowerCase().includes(kw),
-  )
+  const memberId = agentSearchApplied.value.trim()
+  if (!memberId) return [] as CreditTopAgentRow[]
+  // 会员 ID 精准匹配：仅命中占成代理配置中已授信的一级代理
+  return creditLevel1Agents.filter((agent) => agent.userId === memberId)
 })
 
 const selectedAgent = computed(
-  () => MOCK_CREDIT_TOP_AGENTS.find((agent) => agent.id === selectedAgentId.value) ?? null,
+  () => creditLevel1Agents.find((agent) => agent.id === selectedAgentId.value) ?? null,
 )
 
 function openTransferModal() {
   agentKeyword.value = ''
   agentSearchApplied.value = ''
   selectedAgentId.value = null
-  rebateEarn.value = ''
   transferMode.value = ''
   amountInput.value = ''
   remarkInput.value = ''
@@ -175,8 +170,7 @@ function selectAgent(agent: CreditTopAgentRow) {
 }
 
 function validateTransferForm() {
-  if (!selectedAgent.value) return '请先搜索并选择一级总代'
-  if (!rebateEarn.value) return '请选择赚取退水'
+  if (!selectedAgent.value) return '请先搜索并选择一级代理信用代理'
   if (!transferMode.value) return '请选择上下分方式'
   const amount = Number(amountInput.value)
   if (!amountInput.value.trim() || Number.isNaN(amount) || amount <= 0) {
@@ -234,14 +228,7 @@ function confirmTransfer() {
 
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label wf-label--with-spec">
-          用户ID：
-          <WfSpecAnnot
-            :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.filter"
-            title="多维筛选"
-            :items="[...CREDIT_LIMIT_TRANSFER_FILTER_SPEC]"
-          />
-        </label>
+        <label class="wf-label">用户ID：</label>
         <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
 
         <label class="wf-label">发起对象：</label>
@@ -284,7 +271,14 @@ function confirmTransfer() {
           </option>
         </select>
 
-        <label class="wf-label">上下分方式：</label>
+        <label class="wf-label wf-label--with-spec">
+          上下分方式：
+          <WfSpecAnnot
+            :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.transferMode"
+            title="上下分方式 · 代理退水"
+            :items="[...CREDIT_LIMIT_TRANSFER_MODE_SPEC]"
+          />
+        </label>
         <select v-model="filter.transferMode" class="wf-input wf-input--select">
           <option
             v-for="opt in CREDIT_TRANSFER_MODE_OPTIONS"
@@ -320,11 +314,6 @@ function confirmTransfer() {
           <button type="button" class="wf-btn wf-btn--credit-transfer" @click="openTransferModal">
             信用额度上下分
           </button>
-          <WfSpecAnnot
-            :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.transferEntry"
-            title="信用额度上下分入口"
-            :items="[...CREDIT_LIMIT_TRANSFER_ENTRY_SPEC]"
-          />
         </span>
         <p v-if="filterHint" class="wf-modal__hint">{{ filterHint }}</p>
       </div>
@@ -336,15 +325,7 @@ function confirmTransfer() {
               <th class="wf-th">流水号</th>
               <th class="wf-th">用户</th>
               <th class="wf-th">用户ID</th>
-              <th class="wf-th wf-th--with-spec">
-                金额
-                <WfSpecAnnot
-                  :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.amountStatus"
-                  title="金额与状态"
-                  :items="[...CREDIT_LIMIT_TRANSFER_AMOUNT_STATUS_SPEC]"
-                  placement="bottom"
-                />
-              </th>
+              <th class="wf-th">金额</th>
               <th class="wf-th">发起对象</th>
               <th class="wf-th">上下分方式</th>
               <th class="wf-th">上下分对象</th>
@@ -353,15 +334,7 @@ function confirmTransfer() {
               <th class="wf-th">时间</th>
               <th class="wf-th">状态</th>
               <th class="wf-th">备注</th>
-              <th class="wf-th wf-th--with-spec">
-                操作
-                <WfSpecAnnot
-                  :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.relatedRecord"
-                  title="关联记录"
-                  :items="[...CREDIT_LIMIT_TRANSFER_RELATED_SPEC]"
-                  placement="bottom"
-                />
-              </th>
+              <th class="wf-th">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -395,9 +368,15 @@ function confirmTransfer() {
               </td>
               <td class="wf-td">{{ row.remark || '-' }}</td>
               <td class="wf-td wf-td--center">
-                <button type="button" class="wf-link-action" @click="openRelated(row)">
+                <button
+                  v-if="hasRelatedRecord(row)"
+                  type="button"
+                  class="wf-link-action"
+                  @click="openRelated(row)"
+                >
                   关联记录
                 </button>
+                <span v-else>-</span>
               </td>
             </tr>
           </tbody>
@@ -422,7 +401,7 @@ function confirmTransfer() {
             信用额度上下分
             <WfSpecAnnot
               :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.transferModal"
-              title="总代检索与表单"
+              title="会员ID精准搜索与去掉赚取退水"
               :items="[...CREDIT_LIMIT_TRANSFER_MODAL_SPEC]"
             />
           </h3>
@@ -437,7 +416,7 @@ function confirmTransfer() {
               v-model="agentKeyword"
               type="text"
               class="wf-input"
-              placeholder="请选择总代（一级代理）"
+              placeholder="请输入会员ID（精准搜索）"
               @keydown.enter.prevent="searchAgents"
             />
             <button type="button" class="wf-btn wf-btn--primary" @click="searchAgents">搜索</button>
@@ -458,7 +437,9 @@ function confirmTransfer() {
               </thead>
               <tbody>
                 <tr v-if="!agentSearchApplied">
-                  <td colspan="7" class="wf-td wf-td--empty">请输入关键字后搜索</td>
+                  <td colspan="7" class="wf-td wf-td--empty">
+                    请输入会员ID精准搜索已授信的一级代理信用代理
+                  </td>
                 </tr>
                 <tr v-else-if="!searchedAgents.length">
                   <td colspan="7" class="wf-td wf-td--empty">暂无数据</td>
@@ -489,19 +470,6 @@ function confirmTransfer() {
           </div>
 
           <div class="wf-modal__form credit-transfer-form">
-            <label class="wf-modal__field">
-              <span class="wf-modal__field-label"><i class="wf-required">*</i>赚取退水</span>
-              <select v-model="rebateEarn" class="wf-input wf-input--select">
-                <option
-                  v-for="opt in CREDIT_REBATE_EARN_OPTIONS"
-                  :key="opt.value || 'empty'"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
-            </label>
-
             <label class="wf-modal__field">
               <span class="wf-modal__field-label"><i class="wf-required">*</i>上下分方式</span>
               <select v-model="transferMode" class="wf-input wf-input--select">

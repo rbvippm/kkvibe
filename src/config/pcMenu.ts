@@ -34,7 +34,7 @@ export const pcDocRoutes: PcDocRoute[] = [
     path: '/pc/credit-limit-transfer/doc',
     routeName: 'pc-credit-limit-transfer-doc',
     title: '文档说明',
-    pagePath: ['推广返利', '信用额度上下分记录', '文档说明'],
+    pagePath: ['推广返利', '信用额度记录', '文档说明'],
   },
   {
     path: '/pc/live-danmaku-mute-list/doc',
@@ -216,10 +216,10 @@ export const pcMenuTree: PcMenuItem[] = [
       },
       {
         key: 'credit-limit-transfer',
-        title: '信用额度上下分记录',
+        title: '信用额度记录',
         path: '/pc/credit-limit-transfer',
         routeName: 'pc-credit-limit-transfer',
-        pagePath: ['推广返利', '信用额度上下分记录'],
+        pagePath: ['推广返利', '信用额度记录'],
         docRouteName: 'pc-credit-limit-transfer-doc',
       },
     ],

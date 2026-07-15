@@ -32,7 +32,7 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
         </p>
         <p class="wf-doc-page__hint">{{ PRD_DIMENSION_HINT }}</p>
         <RouterLink :to="{ name: 'pc-credit-limit-transfer' }" class="wf-doc-page__back">
-          ← 返回信用额度上下分记录
+          ← 返回信用额度记录
         </RouterLink>
       </header>
 
@@ -104,18 +104,20 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
           class="wf-doc-page__feature-card"
         >
           <header class="wf-doc-page__feature-header">
-            <span class="wf-doc-page__feature-id">注{{ row.id }}</span>
+            <span class="wf-doc-page__feature-id">#{{ row.id }}</span>
             <div>
-              <h3 class="wf-doc-page__feature-title">{{ row.feature }}</h3>
-              <p class="wf-doc-page__feature-meta">
-                {{ row.module }} · {{ row.pageLocation }}
-              </p>
+              <h4 class="wf-doc-page__feature-name">{{ row.module }} · {{ row.feature }}</h4>
+              <p class="wf-doc-page__feature-loc">{{ row.pageLocation }}</p>
             </div>
           </header>
-          <dl class="wf-doc-page__prd-grid">
-            <div v-for="key in prdDimensionKeys" :key="key" class="wf-doc-page__prd-item">
-              <dt>{{ PRD_DIMENSION_LABELS[key] }}</dt>
-              <dd>{{ row.prd[key] }}</dd>
+          <dl class="wf-doc-page__dimension-list">
+            <div
+              v-for="key in prdDimensionKeys"
+              :key="key"
+              class="wf-doc-page__dimension-row"
+            >
+              <dt class="wf-doc-page__dimension-label">{{ PRD_DIMENSION_LABELS[key] }}</dt>
+              <dd class="wf-doc-page__dimension-value">{{ row.prd[key] }}</dd>
             </div>
           </dl>
         </article>

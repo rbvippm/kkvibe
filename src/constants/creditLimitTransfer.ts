@@ -1,8 +1,14 @@
-/** PC 信用额度上下分记录 · Mock 数据与类型 */
+/** PC 信用额度记录 · Mock 数据与类型 */
+
+import {
+  hasCreditAgentCredentials,
+  MOCK_SHARE_AGENT_ROWS,
+} from './pcShareAgent'
 
 export type CreditInitiatorType = 'admin' | 'agent' | 'system'
 export type CreditTargetType = 'member' | 'agent'
-export type CreditTransferMode = 'up' | 'down'
+export type CreditTransferMode = 'up' | 'down' | 'agent_rebate'
+export type CreditTransferModeBasic = 'up' | 'down'
 export type CreditTransferStatus = 'success' | 'failed'
 
 export type CreditLimitTransferRow = {
@@ -29,7 +35,7 @@ export type CreditRelatedRecord = {
   userId: string
   amount: number
   initiatorType: CreditInitiatorType | 'platform'
-  transferMode: CreditTransferMode
+  transferMode: CreditTransferModeBasic
   targetType: CreditTargetType
   initiatorName: string
 }
@@ -63,18 +69,16 @@ export const CREDIT_TRANSFER_MODE_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'up', label: '上分' },
   { value: 'down', label: '下分' },
+  { value: 'agent_rebate', label: '代理退水' },
 ] as const
+
+/** 代理退水固定备注 */
+export const AGENT_REBATE_REMARK = '系统代理退水'
 
 export const CREDIT_STATUS_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'success', label: '成功' },
   { value: 'failed', label: '失败' },
-] as const
-
-export const CREDIT_REBATE_EARN_OPTIONS = [
-  { value: '', label: '请选择赚取退水' },
-  { value: 'yes', label: '是' },
-  { value: 'no', label: '否' },
 ] as const
 
 export const CREDIT_TRANSFER_MODE_FORM_OPTIONS = [
@@ -95,7 +99,17 @@ export function targetTypeLabel(type: CreditTargetType) {
 }
 
 export function transferModeLabel(mode: CreditTransferMode) {
+  if (mode === 'agent_rebate') return '代理退水'
   return mode === 'up' ? '上分' : '下分'
+}
+
+/** 代理退水：系统发起、对象为代理、备注固定、无关联记录 */
+export function isAgentRebateRow(row: Pick<CreditLimitTransferRow, 'transferMode'>) {
+  return row.transferMode === 'agent_rebate'
+}
+
+export function hasRelatedRecord(row: CreditLimitTransferRow) {
+  return !isAgentRebateRow(row) && Boolean(row.relatedFlowNo)
 }
 
 export function statusLabel(status: CreditTransferStatus) {
@@ -183,45 +197,85 @@ export const MOCK_CREDIT_LIMIT_TRANSFER_ROWS: CreditLimitTransferRow[] = [
     remark: '余额不足',
     relatedFlowNo: '1780512233445566cc03',
   },
-]
-
-export const MOCK_CREDIT_TOP_AGENTS: CreditTopAgentRow[] = [
   {
-    id: 'ta-1',
+    id: '6',
+    flowNo: '1780523344556677dd04',
     username: 'rlzm2qi3',
     userId: '22210001',
-    kingKongId: 'KK90001',
-    cashAccount: 'cash_rlzm',
-    cashPassword: '******',
-    creditAccount: 'credit_rlzm',
-    creditPassword: '******',
-    creditBalance: 12880.5,
+    amount: 88.5,
+    initiatorType: 'system',
+    transferMode: 'agent_rebate',
+    targetType: 'agent',
+    initiatorName: 'System',
+    initiatorId: '0',
+    occurredAt: '2026-07-10 11:20:00',
+    status: 'success',
+    remark: AGENT_REBATE_REMARK,
+    relatedFlowNo: '',
   },
   {
-    id: 'ta-2',
+    id: '7',
+    flowNo: '1780524455667788ee05',
     username: 'hwdlz5ro',
     userId: '222187',
-    kingKongId: 'KK90087',
-    cashAccount: 'cash_hwdl',
-    cashPassword: '******',
-    creditAccount: 'credit_hwdl',
-    creditPassword: '******',
-    creditBalance: 560.2,
+    amount: 36,
+    initiatorType: 'system',
+    transferMode: 'agent_rebate',
+    targetType: 'agent',
+    initiatorName: 'System',
+    initiatorId: '0',
+    occurredAt: '2026-07-12 18:05:41',
+    status: 'success',
+    remark: AGENT_REBATE_REMARK,
+    relatedFlowNo: '',
   },
 ]
 
-/** 关联记录：原始记录 + 对侧关联记录 */
+function parseCreditBalance(raw: string): number {
+  const [left = '', right = ''] = raw.split('/')
+  const current = Number(left)
+  if (!Number.isNaN(current)) return current
+  const fallback = Number(right)
+  return Number.isNaN(fallback) ? 0 : fallback
+}
+
+/**
+ * 上下分可选对象：占成代理配置中已授信的一级代理
+ *（agentLevel=1 且具备信用账密）
+ */
+export function listCreditLevel1Agents(): CreditTopAgentRow[] {
+  return MOCK_SHARE_AGENT_ROWS.filter(
+    (row) =>
+      row.agentLevel === 1 && row.isCreditAgent && hasCreditAgentCredentials(row) && !row.disabled,
+  ).map((row) => ({
+    id: String(row.id),
+    username: row.username,
+    userId: row.userId,
+    kingKongId: row.kingKongId,
+    cashAccount: row.cashAgentAccount,
+    cashPassword: row.cashAgentPassword,
+    creditAccount: row.creditAgentAccount,
+    creditPassword: row.creditAgentPassword,
+    creditBalance: parseCreditBalance(row.xCoinBalance),
+  }))
+}
+
+/** 关联记录：原始记录 + 对侧关联记录（代理退水无关联记录） */
 export function buildRelatedRecords(row: CreditLimitTransferRow): {
   original: CreditRelatedRecord
   related: CreditRelatedRecord
-} {
+} | null {
+  if (!hasRelatedRecord(row)) return null
+
+  const mode: CreditTransferModeBasic = row.transferMode === 'down' ? 'down' : 'up'
+
   const original: CreditRelatedRecord = {
     flowNo: row.flowNo,
     username: row.username,
     userId: row.userId,
     amount: row.amount,
     initiatorType: row.initiatorType,
-    transferMode: row.transferMode,
+    transferMode: mode,
     targetType: row.targetType,
     initiatorName: row.initiatorName,
   }
@@ -232,7 +286,7 @@ export function buildRelatedRecords(row: CreditLimitTransferRow): {
     userId: row.initiatorType === 'agent' ? row.initiatorId : '0',
     amount: -row.amount,
     initiatorType: row.initiatorType === 'agent' ? 'platform' : 'system',
-    transferMode: row.transferMode === 'up' ? 'down' : 'up',
+    transferMode: mode === 'up' ? 'down' : 'up',
     targetType: 'agent',
     initiatorName: 'System',
   }
