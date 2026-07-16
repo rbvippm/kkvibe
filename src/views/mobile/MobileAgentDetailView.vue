@@ -8,11 +8,17 @@ import {
   getAgentDetailTabs,
   getAgentDisplayName,
   findAgentDetail,
-  isAgentCreditCurrency,
   type AgentCreditCurrency,
   type AgentDetailTab,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
+import {
+  agentAppCreditCurrency,
+  agentAppCurrency,
+  isAgentCreditCurrency,
+  setAgentAppCreditCurrency,
+  setAgentAppCurrency,
+} from '../../constants/agentAppCurrency'
 import {
   AGENT_PROFIT_CATEGORY_TABS,
   AGENT_PROFIT_VENDORS,
@@ -33,8 +39,8 @@ const router = useRouter()
 
 const activeTab = ref<AgentDetailTab>('wallet')
 const currencyPickerOpen = ref(false)
-const currency = ref<AgentWalletCurrency>('KKC')
-const creditCurrency = ref<AgentCreditCurrency>('信用额度-CNY')
+const currency = agentAppCurrency
+const creditCurrency = agentAppCreditCurrency
 
 const profitCategory = ref<AgentProfitCategoryKey>('sports')
 const profitVendor = ref<AgentProfitVendorKey>('im')
@@ -47,7 +53,7 @@ const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.
 watch(isCredited, (credited) => {
   if (!credited) {
     if (activeTab.value === 'credit') activeTab.value = 'wallet'
-    if (isAgentCreditCurrency(currency.value)) currency.value = 'KKC'
+    if (isAgentCreditCurrency(currency.value)) setAgentAppCurrency('KKC')
   }
 })
 
@@ -91,11 +97,12 @@ function goCredit() {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  currency.value = value
-  if (isAgentCreditCurrency(value)) {
-    creditCurrency.value = value
-  }
+  setAgentAppCurrency(value)
   currencyPickerOpen.value = false
+}
+
+function pickCreditCurrency(value: AgentCreditCurrency) {
+  setAgentAppCreditCurrency(value)
 }
 </script>
 
@@ -183,7 +190,7 @@ function pickCurrency(value: AgentWalletCurrency) {
             class="mh5-agent-profit-ratio-seg__item"
             :class="{ 'mh5-agent-profit-ratio-seg__item--active': creditCurrency === tab.key }"
             :aria-selected="creditCurrency === tab.key"
-            @click="creditCurrency = tab.key"
+            @click="pickCreditCurrency(tab.key)"
           >
             {{ tab.label }}
           </button>

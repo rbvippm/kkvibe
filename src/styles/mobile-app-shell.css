@@ -12514,9 +12514,56 @@
 }
 
 .mh5-member-detail-subtab--active {
-  border-color: #e07a2b;
-  background: #e07a2b;
+  border-color: #ff8c00;
+  background: #ff8c00;
   color: #fff;
+}
+
+.mh5-member-detail-profit {
+  margin-top: 12px;
+  padding-bottom: 8px;
+}
+
+.mh5-member-detail-profit-total {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+  padding: 16px;
+  border: 0.5px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  text-align: center;
+}
+
+.mh5-member-detail-profit-total__label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+}
+
+.mh5-member-detail-profit-total__value {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #333;
+  line-height: 1.2;
+}
+
+.mh5-member-detail-profit-summary {
+  margin-top: 12px;
+}
+
+.mh5-member-detail-profit .mh5-agent-report-categories {
+  margin-top: 12px;
+}
+
+.mh5-member-detail-profit .mh5-agent-report-detail {
+  margin-top: 8px;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 4%);
 }
 
 .mh5-member-detail-summary {
@@ -14449,6 +14496,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mh5-billing-stats-filter svg {
+  flex-shrink: 0;
+  color: #ff8c00;
 }
 
 .mh5-billing-stats-filter:active {

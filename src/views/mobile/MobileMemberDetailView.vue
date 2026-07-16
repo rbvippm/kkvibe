@@ -4,10 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_CREDIT_CURRENCY_TABS,
   getAgentDetailCurrencyOptions,
-  isAgentCreditCurrency,
   type AgentCreditCurrency,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
+import {
+  agentAppCreditCurrency,
+  agentAppCurrency,
+  isAgentCreditCurrency,
+  setAgentAppCreditCurrency,
+  setAgentAppCurrency,
+} from '../../constants/agentAppCurrency'
 import {
   MEMBER_FLOW_SUB_TABS,
   findMemberDetail,
@@ -16,6 +22,17 @@ import {
   type MemberDetailTab,
   type MemberFlowSubTab,
 } from '../../constants/memberDetail'
+import {
+  MEMBER_PROFIT_CATEGORY_TABS,
+  MEMBER_PROFIT_VENDORS,
+  getMemberProfitDetail,
+  getMemberProfitSummaryRows,
+  getMemberTotalProfit,
+  profitTotalClass,
+  profitValueClass,
+  type MemberProfitCategoryKey,
+  type MemberProfitVendorKey,
+} from '../../constants/memberDetailProfit'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { MEMBER_DETAIL_CREDIT_CURRENCY_SPEC } from '../../constants/memberDetailSpec'
 import '../../styles/mobile-app-shell.css'
@@ -26,18 +43,24 @@ const router = useRouter()
 const activeTab = ref<MemberDetailTab>('manage')
 const flowSubTab = ref<MemberFlowSubTab>('records')
 const currencyPickerOpen = ref(false)
-const currency = ref<AgentWalletCurrency>('KKC')
-const creditCurrency = ref<AgentCreditCurrency>('信用额度-CNY')
+const currency = agentAppCurrency
+const creditCurrency = agentAppCreditCurrency
+const profitCategory = ref<MemberProfitCategoryKey>('sports')
+const profitVendor = ref<MemberProfitVendorKey>('im')
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
 const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
+const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
+const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, profitVendor.value))
+const profitSummaryRows = computed(() => getMemberProfitSummaryRows(currency.value))
+const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value))
 
 watch(isCredited, (credited) => {
   if (!credited) {
     if (activeTab.value === 'credit') activeTab.value = 'manage'
-    if (isAgentCreditCurrency(currency.value)) currency.value = 'KKC'
+    if (isAgentCreditCurrency(currency.value)) setAgentAppCurrency('KKC')
   }
 })
 
@@ -87,6 +110,11 @@ const creditLimitItems = computed(() => {
   return formatMemberCreditLimitRows(member.value.creditLimits[creditCurrency.value])
 })
 
+function selectProfitCategory(key: MemberProfitCategoryKey) {
+  profitCategory.value = key
+  profitVendor.value = MEMBER_PROFIT_VENDORS[key][0]?.key ?? 'im'
+}
+
 function goCredit() {
   router.push({
     name: 'mobile-xcoin-credit-member',
@@ -99,11 +127,12 @@ function goCredit() {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  currency.value = value
-  if (isAgentCreditCurrency(value)) {
-    creditCurrency.value = value
-  }
+  setAgentAppCurrency(value)
   currencyPickerOpen.value = false
+}
+
+function pickCreditCurrency(value: AgentCreditCurrency) {
+  setAgentAppCreditCurrency(value)
 }
 </script>
 
@@ -213,7 +242,7 @@ function pickCurrency(value: AgentWalletCurrency) {
             class="mh5-agent-profit-ratio-seg__item"
             :class="{ 'mh5-agent-profit-ratio-seg__item--active': creditCurrency === tab.key }"
             :aria-selected="creditCurrency === tab.key"
-            @click="creditCurrency = tab.key"
+            @click="pickCreditCurrency(tab.key)"
           >
             {{ tab.label }}
           </button>
@@ -281,7 +310,81 @@ function pickCurrency(value: AgentWalletCurrency) {
           </button>
         </div>
 
-        <section class="mh5-member-detail-summary">
+        <section v-if="flowSubTab === 'profit'" class="mh5-member-detail-profit">
+          <section class="mh5-member-detail-profit-total">
+            <p class="mh5-member-detail-profit-total__label">会员总盈亏</p>
+            <p class="mh5-member-detail-profit-total__value">{{ memberTotalProfit }}</p>
+          </section>
+
+          <section class="mh5-member-detail-panel mh5-member-detail-profit-summary">
+            <div
+              v-for="row in profitSummaryRows"
+              :key="row.label"
+              class="mh5-member-detail-panel__row"
+            >
+              <span class="mh5-member-detail-panel__label">{{ row.label }}</span>
+              <span class="mh5-member-detail-panel__value">{{ row.value }}</span>
+            </div>
+          </section>
+
+          <div class="mh5-agent-report-categories">
+            <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="盈亏品类">
+              <button
+                v-for="tab in MEMBER_PROFIT_CATEGORY_TABS"
+                :key="tab.key"
+                type="button"
+                role="tab"
+                class="mh5-agent-report-cat-tab"
+                :class="{ 'mh5-agent-report-cat-tab--active': profitCategory === tab.key }"
+                :aria-selected="profitCategory === tab.key"
+                @click="selectProfitCategory(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </div>
+            <div class="mh5-agent-report-vendors" role="tablist" aria-label="盈亏场馆">
+              <button
+                v-for="pill in profitVendorOptions"
+                :key="pill.key"
+                type="button"
+                role="tab"
+                class="mh5-agent-report-vendor"
+                :class="{ 'mh5-agent-report-vendor--active': profitVendor === pill.key }"
+                :aria-selected="profitVendor === pill.key"
+                @click="profitVendor = pill.key"
+              >
+                {{ pill.label }}
+              </button>
+            </div>
+          </div>
+
+          <section class="mh5-agent-report-detail">
+            <div class="mh5-agent-report-detail__head">
+              <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
+              <span class="mh5-agent-report-detail__profit">
+                总盈亏
+                <em :class="profitTotalClass(profitDetail.totalProfitTone)">
+                  {{ profitDetail.totalProfit }}
+                </em>
+              </span>
+            </div>
+            <div
+              v-for="row in profitDetail.rows"
+              :key="row.label"
+              class="mh5-agent-report-detail__row"
+            >
+              <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
+              <span
+                class="mh5-agent-report-detail__row-value"
+                :class="profitValueClass(row.tone)"
+              >
+                {{ row.value }}
+              </span>
+            </div>
+          </section>
+        </section>
+
+        <section v-else class="mh5-member-detail-summary">
           <div
             v-for="(item, idx) in summaryItems"
             :key="item.label"

@@ -6,6 +6,12 @@ import {
   type AgentOverviewCurrency,
   type ProfitRankTab,
 } from '../constants/agentOverview'
+import {
+  agentAppCurrency,
+  overviewCurrencyToWallet,
+  setAgentAppCurrency,
+  walletCurrencyToOverview,
+} from '../constants/agentAppCurrency'
 import AgentOverviewPage from '../components/mobile/AgentOverviewPage.vue'
 import AgentTeamPage from '../components/mobile/AgentTeamPage.vue'
 import AgentReportPage from '../components/mobile/AgentReportPage.vue'
@@ -42,7 +48,7 @@ const account = ref({
   profit: '-3,000,000,000',
 })
 
-const currency = ref<AgentOverviewCurrency>('KKC')
+const currency = computed(() => walletCurrencyToOverview(agentAppCurrency.value))
 
 const balance = computed(() => AGENT_OVERVIEW_CURRENCY_BALANCES[currency.value])
 const profitRankTab = ref<ProfitRankTab>('member_win')
@@ -60,7 +66,7 @@ function pickProfitRankTab(tab: ProfitRankTab) {
 }
 
 function pickCurrency(value: AgentOverviewCurrency) {
-  currency.value = value
+  setAgentAppCurrency(overviewCurrencyToWallet(value))
 }
 
 const showTeamSection = computed(() => activeTab.value === 'team')

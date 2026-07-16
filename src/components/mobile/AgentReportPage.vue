@@ -3,9 +3,13 @@ import { computed, ref } from 'vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   AGENT_WALLET_CURRENCY_OPTIONS,
-  isAgentCreditCurrency,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
+import {
+  agentAppCurrency,
+  isAgentCreditCurrency,
+  setAgentAppCurrency,
+} from '../../constants/agentAppCurrency'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_DETAIL_ROWS,
@@ -24,7 +28,7 @@ const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
-const currency = ref<AgentWalletCurrency>('信用额度-CNY')
+const currency = agentAppCurrency
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
@@ -36,7 +40,7 @@ function pickPreset(v: ReportRangePreset) {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  currency.value = value
+  setAgentAppCurrency(value)
   currencyPickerOpen.value = false
 }
 </script>
