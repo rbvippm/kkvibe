@@ -44,7 +44,7 @@ const walletFilterTabs = [
 
 /** 钱包内法币：KKC / KKV */
 const fiatWallets: SimpleWalletItem[] = [
-  { id: 'kkc', name: 'KKC', color: '#ff7a2b', symbol: 'K', kind: 'fiat', balance: 236188.66, cnyRate: 1 },
+  { id: 'kkc', name: 'KKC', color: '#ff8c00', symbol: 'K', kind: 'fiat', balance: 236188.66, cnyRate: 1 },
   { id: 'kkv', name: 'KKV', color: '#ec4899', symbol: 'V', kind: 'fiat', balance: 12880.5, cnyRate: 0.5 },
 ]
 
@@ -59,13 +59,13 @@ const cryptoWallets: SimpleWalletItem[] = [
 ]
 
 const creditWallets: SimpleWalletItem[] = [
-  { id: 'credit-cny', name: 'CNY', color: '#ff7a2b', symbol: '¥', kind: 'credit', balance: 50000, cnyRate: 1 },
+  { id: 'credit-cny', name: 'CNY', color: '#ff8c00', symbol: '¥', kind: 'credit', balance: 50000, cnyRate: 1 },
   { id: 'credit-usd', name: 'USD', color: '#3b82f6', symbol: '$', kind: 'credit', balance: 1280.5, cnyRate: 7.2 },
 ]
 
 /** 总资产计价法币：按实时汇率汇总展示 */
 const preferredFiatOptions: PreferredFiatOption[] = [
-  { id: 'cny', name: 'CNY', symbol: '¥', color: '#ff7a2b', fromCny: 1 },
+  { id: 'cny', name: 'CNY', symbol: '¥', color: '#ff8c00', fromCny: 1 },
   { id: 'vnd', name: 'VND', symbol: '₫', color: '#ef4444', fromCny: 3500 },
   { id: 'usd', name: 'USD', symbol: '$', color: '#26a17b', fromCny: 1 / 7.2 },
 ]
@@ -247,33 +247,10 @@ function goMenuItem(item: MineMenuItem) {
     <div class="mh5-mine-page">
     <div class="mh5-mine-topbar">
       <button type="button" class="mh5-mine-topbar__btn" aria-label="客服">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M4 14v2a2 2 0 002 2h1l2 3 4-3h5a2 2 0 002-2v-8a2 2 0 00-2-2H6a2 2 0 00-2 2v6z"
-            stroke="currentColor"
-            stroke-width="1.6"
-          />
-          <circle cx="9" cy="11" r="1" fill="currentColor" />
-          <circle cx="12" cy="11" r="1" fill="currentColor" />
-          <circle cx="15" cy="11" r="1" fill="currentColor" />
-        </svg>
+        <img src="/images/mine/icon-cs.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
       <button type="button" class="mh5-mine-topbar__btn" aria-label="设置" @click="goSettings">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M12 2.5l6.5 3.75v7.5L12 17.5 5.5 13.75v-7.5L12 2.5z"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linejoin="round"
-          />
-          <circle cx="12" cy="12" r="2.2" stroke="currentColor" stroke-width="1.4" />
-          <path
-            d="M12 10.2v1.6M12 13.8v.2"
-            stroke="currentColor"
-            stroke-width="1.4"
-            stroke-linecap="round"
-          />
-        </svg>
+        <img src="/images/mine/icon-settings.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
     </div>
 
@@ -291,33 +268,22 @@ function goMenuItem(item: MineMenuItem) {
           <h2 class="mh5-mine-profile__name">{{ user.name }}</h2>
           <p class="mh5-mine-profile__id">
             <span>金刚号：{{ user.id }}</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
-              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
-              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
-              <rect x="14" y="14" width="3" height="3" fill="currentColor" />
-              <rect x="18" y="14" width="3" height="3" fill="currentColor" />
-              <rect x="14" y="18" width="3" height="3" fill="currentColor" />
-              <rect x="18" y="18" width="3" height="3" fill="currentColor" />
-            </svg>
           </p>
         </div>
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 20 20"
-          fill="none"
-          class="mh5-mine-profile__arrow"
-          aria-hidden="true"
-        >
-          <path
-            d="M7 4l6 6-6 6"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+        <div class="mh5-mine-profile__trailing">
+          <img
+            src="/images/mine/icon-qr.svg"
+            alt=""
+            class="mh5-mine-profile__qr mh5-mine-icon mh5-mine-icon--28"
+            aria-hidden="true"
           />
-        </svg>
+          <img
+            src="/images/mine/icon-arrow-right.svg"
+            alt=""
+            class="mh5-mine-profile__arrow mh5-mine-icon mh5-mine-icon--20"
+            aria-hidden="true"
+          />
+        </div>
       </div>
 
       <div class="mh5-mine-profile__stats">
@@ -331,55 +297,19 @@ function goMenuItem(item: MineMenuItem) {
     <div class="mh5-mine-actions">
       <button type="button" class="mh5-mine-action">
         <span class="mh5-mine-action__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 8.5V18a2 2 0 002 2h12a2 2 0 002-2V8.5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path d="M4 10h16" stroke="currentColor" stroke-width="1.6" />
-            <path
-              d="M12 14v4M10 16h4"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
+          <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
         </span>
         充值
       </button>
       <button type="button" class="mh5-mine-action">
         <span class="mh5-mine-action__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 8.5V18a2 2 0 002 2h12a2 2 0 002-2V8.5"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path d="M4 10h16" stroke="currentColor" stroke-width="1.6" />
-            <path
-              d="M12 16V12M10 14h4"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          </svg>
+          <img src="/images/mine/icon-withdraw.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
         </span>
         提现
       </button>
       <button type="button" class="mh5-mine-action">
         <span class="mh5-mine-action__icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M7 8h11M15 6l3 2-3 2M17 16H6M9 18l-3-2 3-2"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <img src="/images/mine/icon-convert.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
         </span>
         交易
       </button>
@@ -396,9 +326,7 @@ function goMenuItem(item: MineMenuItem) {
             @click="openFiatPreference"
           >
             {{ preferredFiat.name }}
-            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-            </svg>
+            <img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -406,15 +334,13 @@ function goMenuItem(item: MineMenuItem) {
             :aria-label="balanceHidden ? '显示余额' : '隐藏余额'"
             @click="balanceHidden = !balanceHidden"
           >
-            <svg v-if="!balanceHidden" width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"
-                stroke="currentColor"
-                stroke-width="1.6"
-              />
-              <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.6" />
-            </svg>
-            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <img
+              v-if="!balanceHidden"
+              src="/images/mine/icon-eye.svg"
+              alt=""
+              class="mh5-mine-icon mh5-mine-icon--20"
+            />
+            <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M3 3l18 18M10.6 10.6A3 3 0 0012 15a3 3 0 002.4-4.4M6.7 6.7C4.6 8.1 3 10 3 10s3.5 6 10 6c1.5 0 2.9-.3 4.1-.8M17.3 17.3C19.4 15.9 21 14 21 14s-3.5-6-10-6c-1.1 0-2.1.2-3 .5"
                 stroke="currentColor"
@@ -426,9 +352,7 @@ function goMenuItem(item: MineMenuItem) {
         </div>
         <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">
           全部钱包
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
+          <img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
         </button>
       </div>
 
@@ -442,15 +366,7 @@ function goMenuItem(item: MineMenuItem) {
             aria-label="刷新资产"
             @click="handleRefresh"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M20 12a8 8 0 10-2.3 5.7M20 12v-5M20 12h-5"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <img src="/images/mine/icon-refresh.svg" alt="" class="mh5-mine-icon mh5-mine-icon--20" />
           </button>
         </div>
       </div>
@@ -464,27 +380,30 @@ function goMenuItem(item: MineMenuItem) {
           @click="goRoute(item.route)"
         >
           <span class="mh5-mine-wallet__shortcut-icon" aria-hidden="true">
-            <svg v-if="item.key === 'assets'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6" />
-              <path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-            <svg v-else-if="item.key === 'bill'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.6" />
-              <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-            <svg v-else-if="item.key === 'bank'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M4 10h16M6 10V18M10 10V18M14 10V18M18 10V18M3 18h18M12 4l9 4H3l9-4z"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-            <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.6" />
-              <path d="M3 10h18M7 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
+            <img
+              v-if="item.key === 'assets'"
+              src="/images/mine/icon-assets.svg"
+              alt=""
+              class="mh5-mine-icon mh5-mine-icon--24"
+            />
+            <img
+              v-else-if="item.key === 'bill'"
+              src="/images/mine/icon-bill.svg"
+              alt=""
+              class="mh5-mine-icon mh5-mine-icon--24"
+            />
+            <img
+              v-else-if="item.key === 'bank'"
+              src="/images/mine/icon-bank.svg"
+              alt=""
+              class="mh5-mine-icon mh5-mine-icon--24"
+            />
+            <img
+              v-else
+              src="/images/mine/icon-payment.svg"
+              alt=""
+              class="mh5-mine-icon mh5-mine-icon--24"
+            />
           </span>
           <span class="mh5-mine-wallet__shortcut-label">{{ item.label }}</span>
         </button>
@@ -502,55 +421,42 @@ function goMenuItem(item: MineMenuItem) {
         @click="goMenuItem(item)"
       >
         <span class="mh5-mine-menu__icon" aria-hidden="true">
-          <svg v-if="item.key === 'live'" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.6" />
-            <path d="M17 10l4-2v8l-4-2" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
-          </svg>
-          <svg v-else-if="item.key === 'invite'" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.6" />
-            <path d="M4 19c0-2.8 2.2-5 5-5M16 11v6M13 14h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-          </svg>
-          <svg v-else-if="item.key === 'agent'" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 3l8 4v6c0 4.4-3.6 8-8 8s-8-3.6-8-8V7l8-4z"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path d="M9 12h6M12 9v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-          </svg>
-          <svg v-else-if="item.key === 'agent-invite'" width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M5 7.5A2.5 2.5 0 017.5 5h9A2.5 2.5 0 0119 7.5v7A2.5 2.5 0 0116.5 17H13l-3 3v-3H7.5A2.5 2.5 0 015 14.5v-7z"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path d="M8.5 10h7M8.5 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-          </svg>
-          <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M4 11v2a2 2 0 002 2h1l1 3 3-2h4a2 2 0 002-2v-6a6 6 0 10-12 0z"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linejoin="round"
-            />
-            <path d="M8 10h.01M12 10h.01M16 10h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
+          <img
+            v-if="item.key === 'live'"
+            src="/images/mine/icon-live.svg"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--24"
+          />
+          <img
+            v-else-if="item.key === 'invite'"
+            src="/images/mine/icon-invite.svg"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--24"
+          />
+          <img
+            v-else-if="item.key === 'agent'"
+            src="/images/mine/icon-agent.svg"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--24"
+          />
+          <img
+            v-else-if="item.key === 'agent-invite'"
+            src="/images/mine/icon-agent.svg"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--24"
+          />
+          <img
+            v-else
+            src="/images/mine/icon-invite.svg"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--24"
+          />
         </span>
         <span class="mh5-mine-menu__title">{{ item.title }}</span>
         <span class="mh5-mine-menu__tail">
           <span v-if="item.badge" class="mh5-mine-menu__badge" :aria-label="`${item.badge}条待处理`">{{ item.badge }}</span>
           <span v-if="item.hot" class="mh5-mine-menu__hot" aria-label="热门">🔥</span>
-          <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <path
-              d="M7 4l6 6-6 6"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
+          <img src="/images/mine/icon-arrow-right.svg" alt="" class="mh5-mine-icon mh5-mine-icon--16" aria-hidden="true" />
         </span>
       </button>
       </div>
