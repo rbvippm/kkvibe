@@ -253,8 +253,9 @@ function toggleGameNameExpanded() {
   gameNameExpanded.value = !gameNameExpanded.value
 }
 
-function formatSummaryWinLose(value: number) {
-  return value > 0 ? `+${formatMoney(value)}` : formatMoney(value)
+function formatSummaryWinLose(value: number, currency?: string) {
+  if (value > 0) return `+${formatMoney(value, currency)}`
+  return formatMoney(value, currency)
 }
 
 function summaryWinLoseClass(value: number) {
@@ -338,16 +339,16 @@ function summaryWinLoseClass(value: number) {
               </div>
               <div class="mh5-bet-order-summary__item">
                 <span class="mh5-bet-order-summary__label">总下注</span>
-                <strong>{{ formatMoney(slide.betAmount) }}</strong>
+                <strong>{{ formatMoney(slide.betAmount, slide.currency) }}</strong>
               </div>
               <div class="mh5-bet-order-summary__item">
                 <span class="mh5-bet-order-summary__label">总有效投注</span>
-                <strong>{{ formatMoney(slide.validBet) }}</strong>
+                <strong>{{ formatMoney(slide.validBet, slide.currency) }}</strong>
               </div>
               <div class="mh5-bet-order-summary__item">
                 <span class="mh5-bet-order-summary__label">总输赢</span>
                 <strong :class="summaryWinLoseClass(slide.winLose)">
-                  {{ formatSummaryWinLose(slide.winLose) }}
+                  {{ formatSummaryWinLose(slide.winLose, slide.currency) }}
                 </strong>
               </div>
             </div>
@@ -396,7 +397,7 @@ function summaryWinLoseClass(value: number) {
         <time class="mh5-bet-order-card__time">{{ row.betAt }}</time>
 
         <div class="mh5-bet-order-card__foot">
-          <span class="mh5-bet-order-card__bet">下注 {{ formatMoney(row.betAmount) }}</span>
+          <span class="mh5-bet-order-card__bet">下注 {{ formatMoney(row.betAmount, row.currency) }}</span>
           <span class="mh5-bet-order-card__result" :class="betWinLoseClass(row)">
             {{ formatBetWinLose(row) }}
           </span>
@@ -598,11 +599,11 @@ function summaryWinLoseClass(value: number) {
 
           <section class="mh5-bet-order-detail-block">
             <h3 class="mh5-bet-order-detail-block__title">资金明细</h3>
-            <div class="mh5-bet-order-detail-row"><span>下注金额</span><span>{{ formatMoney(detailRow.betAmount) }}</span></div>
-            <div class="mh5-bet-order-detail-row"><span>实扣金额</span><span>{{ formatMoney(detailRow.actualDeduct) }}</span></div>
+            <div class="mh5-bet-order-detail-row"><span>下注金额</span><span>{{ formatMoney(detailRow.betAmount, detailRow.currency) }}</span></div>
+            <div class="mh5-bet-order-detail-row"><span>实扣金额</span><span>{{ formatMoney(detailRow.actualDeduct, detailRow.currency) }}</span></div>
             <div class="mh5-bet-order-detail-row">
               <span>有效投注</span>
-              <strong>{{ formatMoney(detailRow.validBet) }}</strong>
+              <strong>{{ formatMoney(detailRow.validBet, detailRow.currency) }}</strong>
             </div>
           </section>
 

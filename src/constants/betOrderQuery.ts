@@ -380,10 +380,10 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     gameCategory: 'live',
     periodNo: '—',
     betContent: '百家乐 A厅 庄@1.95',
-    betAmount: 1000,
-    actualDeduct: 1000,
-    validBet: 1000,
-    winLose: 950,
+    betAmount: 1000.12945678,
+    actualDeduct: 1000.12945678,
+    validBet: 1000.12945678,
+    winLose: 950.1299999,
     status: 'settled',
     betAt: mockBetAt(1, 18, 30, 22),
     gameSettledAt: mockBetAt(1, 18, 31, 5),
@@ -807,12 +807,14 @@ export function betOrderStatusClass(status: BetOrderStatus) {
 }
 
 /** 亚洲习惯：红赢绿输 */
-export function formatBetWinLose(row: Pick<BetOrderRecord, 'status' | 'winLose'>) {
+export function formatBetWinLose(
+  row: Pick<BetOrderRecord, 'status' | 'winLose'> & { currency?: BetGameCurrency },
+) {
   if (row.status === 'cancelled') return '已取消'
   if (row.status === 'unsettled' || row.winLose === null) return '待结算'
-  if (row.winLose > 0) return `+${row.winLose.toFixed(2)}`
-  if (row.winLose < 0) return row.winLose.toFixed(2)
-  return '0.00'
+  if (row.winLose === 0) return formatMoney(0, row.currency)
+  const abs = formatMoney(Math.abs(row.winLose), row.currency)
+  return row.winLose > 0 ? `+${abs}` : `-${abs}`
 }
 
 export function betWinLoseClass(row: Pick<BetOrderRecord, 'status' | 'winLose'>) {
@@ -828,6 +830,46 @@ export function truncateBetText(text: string, max = 28) {
   return `${text.slice(0, max)}...`
 }
 
-export function formatMoney(value: number) {
-  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/**
+ * 注单金额展示：向下截断（不四舍五入），禁止默认 Round。
+ * - maxDecimals=6（USDT）：最多 6 位，最少 2 位；截断后剔除第 2 位之后末尾 0
+ * - maxDecimals=2（KKC / KKV / 信用额度-*）：最多 2 位，固定补齐至 2 位
+ */
+export function formatTruncatedMoney(value: number, maxDecimals: 2 | 6 = 2) {
+  if (!Number.isFinite(value)) return '0.00'
+
+  const negative = value < 0
+  const abs = Math.abs(value)
+  const factor = 10 ** maxDecimals
+  const raw = abs.toString()
+
+  let scaled: number
+  if (raw.includes('e') || raw.includes('E')) {
+    scaled = Math.floor(abs * factor + 1e-9)
+  } else {
+    const [intRaw, fracRaw = ''] = raw.split('.')
+    const frac = (fracRaw + '0'.repeat(maxDecimals)).slice(0, maxDecimals)
+    scaled = Number(intRaw) * factor + Number(frac || '0')
+  }
+
+  const whole = Math.floor(scaled / factor)
+  let frac = String(scaled % factor).padStart(maxDecimals, '0')
+  if (maxDecimals > 2) {
+    while (frac.length > 2 && frac.endsWith('0')) {
+      frac = frac.slice(0, -1)
+    }
+  }
+  const body = `${whole.toLocaleString('zh-CN')}.${frac}`
+  return negative ? `-${body}` : body
+}
+
+/** @deprecated 请优先使用 formatMoney(value, currency)；保留别名兼容 */
+export function formatUsdtMoney(value: number) {
+  return formatTruncatedMoney(value, 6)
+}
+
+export function formatMoney(value: number, currency?: BetGameCurrency | string) {
+  if (currency === 'USDT') return formatTruncatedMoney(value, 6)
+  // KKC / KKV / 信用额度-CNY / 信用额度-USD：最多 2 位，同样向下截断
+  return formatTruncatedMoney(value, 2)
 }
