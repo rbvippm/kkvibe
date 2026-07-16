@@ -124,8 +124,9 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       interactiveBehavior:
         '打开弹框 -> 顶部信息表只读展示；直接显示「信用占成」「信用退水」配置区（无 Tab）；点击「确认授信」校验通过后提交并关闭。',
       visualPresentation:
-        '标题「代理授信」；弹框 max-height 70vh，仅 body 内滚动；标题旁侧「注6」标注；底部「取消」「确认授信」。',
-      dataRules: '占成/退水根据数据源的品类数量必填有效数值；信用账密提交后 = 现金账密。',
+        '标题「代理授信」；弹框 max-height 70vh，仅 body 内滚动；标题旁侧「注6」标注；顶部信息表不含「X币余额」列；底部「取消」「确认授信」。',
+      dataRules:
+        '占成/退水根据数据源的品类数量必填有效数值；信用账密提交后 = 现金账密；原信息表「X币余额」已去除——授信与上分流程区分开，本弹框只做授信，X 币上下分走独立流程。',
       exceptions:
         '校验未通过 -> 字段标红 + 底部提示「请修正比例后再提交」，主按钮禁用；点击遮罩/×/取消 -> 放弃修改并关闭。',
       routing: '确认授信成功 -> 关闭弹框，刷新列表对应行；失败保留表单。',
@@ -266,7 +267,8 @@ export const SHARE_AGENT_CREDIT_CREDENTIALS_SPEC = [
 
 export const SHARE_AGENT_GRANT_FLOW_SPEC = [
   '一级未授信代理点击「授信」打开本弹框，直接配置信用占成/退水（无 Tab）。',
-  '顶部信息表只读展示代理与账密；确认授信后生成信用账密并与现金账密一致。',
+  '顶部信息表只读展示：用户名、用户ID、金刚号、现金代理账密、信用代理账密；确认授信后生成信用账密并与现金账密一致。',
+  '原「X币余额」已从表中去除：授信与上分流程已拆分，本弹框仅完成授信配置，不再展示或处理 X 币余额/上下分。',
 ] as const
 
 export const SHARE_AGENT_ROW_ACTIONS_SPEC = [

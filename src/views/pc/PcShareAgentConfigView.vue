@@ -412,7 +412,6 @@ function confirmCreditModal() {
                   <th class="wf-th">金刚号</th>
                   <th class="wf-th">现金代理账密</th>
                   <th class="wf-th">信用代理账密</th>
-                  <th class="wf-th">X币余额</th>
                 </tr>
               </thead>
               <tbody>
@@ -426,7 +425,6 @@ function confirmCreditModal() {
                   <td class="wf-td wf-td--multiline">
                     {{ formatAccountPair(creditTarget.creditAgentAccount, creditTarget.creditAgentPassword) }}
                   </td>
-                  <td class="wf-td">{{ creditTarget.xCoinBalance }}</td>
                 </tr>
               </tbody>
             </table>
