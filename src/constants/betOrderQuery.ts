@@ -32,7 +32,7 @@ export type BetOrderRecord = {
   memberNickname?: string
   /** 代理备注 */
   memberRemark?: string
-  currency: string
+  currency: Exclude<BetGameCurrency, ''>
   productName: string
   /** 游戏名称（与游戏分类联动） */
   gameName: string
@@ -807,9 +807,7 @@ export function betOrderStatusClass(status: BetOrderStatus) {
 }
 
 /** 亚洲习惯：红赢绿输 */
-export function formatBetWinLose(
-  row: Pick<BetOrderRecord, 'status' | 'winLose'> & { currency?: BetGameCurrency },
-) {
+export function formatBetWinLose(row: Pick<BetOrderRecord, 'status' | 'winLose' | 'currency'>) {
   if (row.status === 'cancelled') return '已取消'
   if (row.status === 'unsettled' || row.winLose === null) return '待结算'
   if (row.winLose === 0) return formatMoney(0, row.currency)
