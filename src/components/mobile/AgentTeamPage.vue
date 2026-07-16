@@ -343,121 +343,136 @@ onUnmounted(() => {
     </div>
 
     <main class="agent-team-list">
-      <template v-for="row in teamTreeRows" :key="treeRowKey(row)">
-        <!-- 查看更多：对齐 Figma 两侧虚线 + 文案 -->
-        <button
-          v-if="row.type === 'more'"
-          type="button"
-          class="agent-team-more"
-          :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
-          @click="showMoreChildren(row.parentId)"
-        >
-          <span class="agent-team-more__line" aria-hidden="true" />
-          <span class="agent-team-more__label">
-            查看更多
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </span>
-          <span class="agent-team-more__line" aria-hidden="true" />
-        </button>
-
-        <div
-          v-else
-          class="agent-team-row"
-          :class="{
-            'agent-team-row--self': row.item.kind === 'me',
-            'agent-team-row--member': showMemberBadge(row.item.kind),
-          }"
-          :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
-        >
+      <div class="agent-team-list__track">
+        <template v-for="row in teamTreeRows" :key="treeRowKey(row)">
+          <!-- 查看更多：对齐 Figma 两侧虚线 + 文案 -->
           <button
-            v-if="row.hasChildren"
+            v-if="row.type === 'more'"
             type="button"
-            class="agent-team-row__caret"
-            :class="{ 'agent-team-row__caret--open': isExpanded(row.item.id) }"
-            aria-label="展开下级"
-            :aria-expanded="isExpanded(row.item.id)"
-            @click.stop="toggleExpand(row.item.id)"
+            class="agent-team-more"
+            :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
+            @click="showMoreChildren(row.parentId)"
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
-              <path d="M2 1.2 8 5 2 8.8V1.2Z" />
-            </svg>
+            <span class="agent-team-more__line" aria-hidden="true" />
+            <span class="agent-team-more__label">
+              查看更多
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <span class="agent-team-more__line" aria-hidden="true" />
           </button>
-          <span v-else class="agent-team-row__caret-spacer" aria-hidden="true" />
 
-          <div class="agent-team-row__avatar" :class="{ 'agent-team-row__avatar--online': row.item.online }">
-            <span>{{ row.item.avatarEmoji || '👤' }}</span>
-          </div>
+          <div
+            v-else
+            class="agent-team-row"
+            :class="{
+              'agent-team-row--self': row.item.kind === 'me',
+              'agent-team-row--member': showMemberBadge(row.item.kind),
+            }"
+            :style="{ paddingLeft: `${12 + row.depth * 18}px` }"
+          >
+            <div class="agent-team-row__body">
+              <button
+                v-if="row.hasChildren"
+                type="button"
+                class="agent-team-row__caret"
+                :class="{ 'agent-team-row__caret--open': isExpanded(row.item.id) }"
+                aria-label="展开下级"
+                :aria-expanded="isExpanded(row.item.id)"
+                @click.stop="toggleExpand(row.item.id)"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+                  <path d="M2 1.2 8 5 2 8.8V1.2Z" />
+                </svg>
+              </button>
+              <span v-else class="agent-team-row__caret-spacer" aria-hidden="true" />
 
-          <div class="agent-team-row__main">
-            <button
-              type="button"
-              class="agent-team-row__name agent-team-row__name--link"
-              @click="goTeamDetailByNickname(row.item)"
-            >
-              {{ row.item.nickname }}
-            </button>
-            <div class="agent-team-row__tags">
-              <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
-              <span
-                v-if="teamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
-                class="agent-team-tag agent-team-tag--credit"
-              >
-                信用
-              </span>
-              <!-- Figma 1433:19549：VIP 钻石切面 + 组织人数图标 + 代/会文案 -->
-              <span
-                v-if="showAgentSubordinateTag(row.item)"
-                class="agent-team-tag agent-team-tag--stats"
-              >
-                <span
-                  v-if="row.item.vipLevel"
-                  class="agent-team-vip-badge"
-                  :aria-label="`V${row.item.vipLevel}`"
+              <div class="agent-team-row__avatar" :class="{ 'agent-team-row__avatar--online': row.item.online }">
+                <span>{{ row.item.avatarEmoji || '👤' }}</span>
+              </div>
+
+              <div class="agent-team-row__main">
+                <button
+                  type="button"
+                  class="agent-team-row__name agent-team-row__name--link"
+                  @click="goTeamDetailByNickname(row.item)"
                 >
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--1" src="/images/agent-team/vip-f1.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--2" src="/images/agent-team/vip-f2.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--3" src="/images/agent-team/vip-f3.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--4" src="/images/agent-team/vip-f4.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--5" src="/images/agent-team/vip-f5.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--6" src="/images/agent-team/vip-f6.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--7" src="/images/agent-team/vip-f7.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--8" src="/images/agent-team/vip-f8.svg" alt="" draggable="false" />
-                  <img class="agent-team-vip-badge__f agent-team-vip-badge__f--9" src="/images/agent-team/vip-f9.svg" alt="" draggable="false" />
-                  <span class="agent-team-vip-badge__text">
-                    <i>V</i>{{ row.item.vipLevel }}
+                  {{ row.item.nickname }}
+                </button>
+                <div class="agent-team-row__tags">
+                  <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
+                  <span
+                    v-if="teamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
+                    class="agent-team-tag agent-team-tag--credit"
+                  >
+                    信用
                   </span>
-                </span>
-                <img
-                  class="agent-team-org-icon"
-                  src="/images/agent-team/org-tree.svg"
-                  alt=""
-                  width="10"
-                  height="10"
-                  draggable="false"
-                />
-                <span class="agent-team-tag__stats-text">{{ teamStatsLabel(row.item) }}</span>
-              </span>
-              <span v-else-if="showMemberBadge(row.item.kind)" class="agent-team-tag agent-team-tag--member">
-                {{ memberKindLabel(row.item.kind) }}
-              </span>
+                  <!-- Figma 1433:19549：VIP 钻石切面 + 组织人数图标 + 代/会文案 -->
+                  <span
+                    v-if="showAgentSubordinateTag(row.item)"
+                    class="agent-team-tag agent-team-tag--stats"
+                  >
+                    <span
+                      v-if="row.item.vipLevel"
+                      class="agent-team-vip-badge"
+                      :aria-label="`V${row.item.vipLevel}`"
+                    >
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--1" src="/images/agent-team/vip-f1.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--2" src="/images/agent-team/vip-f2.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--3" src="/images/agent-team/vip-f3.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--4" src="/images/agent-team/vip-f4.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--5" src="/images/agent-team/vip-f5.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--6" src="/images/agent-team/vip-f6.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--7" src="/images/agent-team/vip-f7.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--8" src="/images/agent-team/vip-f8.svg" alt="" draggable="false" />
+                      <img class="agent-team-vip-badge__f agent-team-vip-badge__f--9" src="/images/agent-team/vip-f9.svg" alt="" draggable="false" />
+                      <span class="agent-team-vip-badge__text">
+                        <i>V</i>{{ row.item.vipLevel }}
+                      </span>
+                    </span>
+                    <img
+                      class="agent-team-org-icon"
+                      src="/images/agent-team/org-tree.svg"
+                      alt=""
+                      width="10"
+                      height="10"
+                      draggable="false"
+                    />
+                    <span class="agent-team-tag__stats-text">{{ teamStatsLabel(row.item) }}</span>
+                  </span>
+                  <span v-else-if="showMemberBadge(row.item.kind)" class="agent-team-tag agent-team-tag--member">
+                    {{ memberKindLabel(row.item.kind) }}
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <button
-            v-if="row.item.kind !== 'me'"
-            type="button"
-            class="agent-team-row__menu"
-            :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.item.id }"
-            aria-label="更多操作"
-            :aria-expanded="teamQuickMenuRow?.id === row.item.id"
-            @click.stop="openTeamQuickMenu(row.item, $event)"
-          >
-            <img src="/images/agent-team/more-dots.svg" alt="" width="20" height="4" draggable="false" />
-          </button>
-        </div>
-      </template>
+            <button
+              v-if="row.item.kind !== 'me'"
+              type="button"
+              class="agent-team-row__menu"
+              :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.item.id }"
+              aria-label="更多操作"
+              :aria-expanded="teamQuickMenuRow?.id === row.item.id"
+              @click.stop="openTeamQuickMenu(row.item, $event)"
+            >
+              <svg
+                class="agent-team-row__menu-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle cx="4" cy="10" r="1.75" fill="currentColor" />
+                <circle cx="10" cy="10" r="1.75" fill="currentColor" />
+                <circle cx="16" cy="10" r="1.75" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        </template>
+      </div>
     </main>
 
     <Teleport to="body">

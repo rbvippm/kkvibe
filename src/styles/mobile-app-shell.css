@@ -8859,9 +8859,19 @@
 .agent-team-list {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   padding-bottom: var(--agent-bottom-nav-offset);
   background: #fff;
+}
+
+/* 整棵树统一横滑宽度，按最宽行撑开 */
+.agent-team-list__track {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 100%;
 }
 
 .agent-team-row {
@@ -8869,8 +8879,10 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
   min-height: 45px;
-  padding: 8px 12px;
+  padding: 8px 8px 8px 12px;
   background: #fff;
   border-bottom: 1px dashed #dbdbdb;
 }
@@ -8882,6 +8894,15 @@
 .agent-team-row--member .agent-team-row__name {
   color: #888;
   font-weight: 500;
+}
+
+/* 行内容随整体轨道横滑，不再单独滚动 */
+.agent-team-row__body {
+  flex: 1 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
 }
 
 .agent-team-row__caret {
@@ -8937,29 +8958,23 @@
 }
 
 .agent-team-row__main {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  overflow: hidden;
+  white-space: nowrap;
 }
 
 .agent-team-row__name {
-  flex-shrink: 1;
-  min-width: 0;
-  max-width: 118px;
+  flex-shrink: 0;
   font-size: 14px;
   font-weight: 500;
   color: #333;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .agent-team-row__name--link {
   display: inline-block;
-  max-width: 100%;
   padding: 0;
   border: none;
   background: none;
@@ -8977,9 +8992,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  flex-shrink: 1;
-  min-width: 0;
-  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .agent-team-tag {
@@ -9156,31 +9169,36 @@
 }
 
 .agent-team-row__menu {
+  position: sticky;
+  right: 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: auto;
+  margin-left: 0;
   border: none;
-  background: none;
+  background: #fff;
+  box-shadow: -8px 0 10px -6px rgb(255 255 255 / 95%);
+  color: #888888;
   cursor: pointer;
+  z-index: 2;
 }
 
-.agent-team-row__menu img {
+.agent-team-row__menu-icon {
   display: block;
   width: 20px;
-  height: 4px;
-  opacity: 0.9;
+  height: 20px;
+  flex-shrink: 0;
 }
 
 .agent-team-row__menu:active {
-  opacity: 0.65;
+  opacity: 0.7;
 }
 
-.agent-team-row__menu--active img {
-  filter: brightness(0) saturate(100%) invert(56%) sepia(86%) saturate(1800%) hue-rotate(346deg) brightness(102%) contrast(101%);
+.agent-team-row__menu--active {
+  color: #ff7a2b;
 }
 
 .agent-team-quick-menu {

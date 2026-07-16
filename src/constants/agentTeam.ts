@@ -260,17 +260,30 @@ function buildTeamTree(tab: TeamFilterTab): TeamListItem {
   const creditAgents = teamCreditAgents.value
   const creditMembers = teamCreditMembers.value
 
+  // 直属/信用分类：只展示「我」的直属一级，不展开下级的下级
   if (tab === 'direct_agent') {
-    return { ...MOCK_TEAM_SELF, children: agents.map((item) => ({ ...item })) }
+    return {
+      ...MOCK_TEAM_SELF,
+      children: agents.map((item) => ({ ...item, children: undefined })),
+    }
   }
   if (tab === 'direct_member') {
-    return { ...MOCK_TEAM_SELF, children: members.map((item) => ({ ...item })) }
+    return {
+      ...MOCK_TEAM_SELF,
+      children: members.map((item) => ({ ...item, children: undefined })),
+    }
   }
   if (tab === 'credit_agent') {
-    return { ...MOCK_TEAM_SELF, children: creditAgents.map((item) => ({ ...item })) }
+    return {
+      ...MOCK_TEAM_SELF,
+      children: creditAgents.map((item) => ({ ...item, children: undefined })),
+    }
   }
   if (tab === 'credit_member') {
-    return { ...MOCK_TEAM_SELF, children: creditMembers.map((item) => ({ ...item })) }
+    return {
+      ...MOCK_TEAM_SELF,
+      children: creditMembers.map((item) => ({ ...item, children: undefined })),
+    }
   }
 
   return {
@@ -429,8 +442,8 @@ export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }
 
 export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'
 
-/** 默认展开：非「全部」Tab 用；「全部」Tab 走 collectTeamFullExpandState */
-export const TEAM_TREE_DEFAULT_EXPANDED = ['self', 'a1'] as const
+/** 默认展开：非「全部」Tab 仅展开「我」一层；「全部」Tab 走 collectTeamFullExpandState */
+export const TEAM_TREE_DEFAULT_EXPANDED = ['self'] as const
 
 /** 是否展示「会员授信」入口（已是信用会员则不展示） */
 export function canShowMemberCreditAction(kind: TeamMemberKind) {
