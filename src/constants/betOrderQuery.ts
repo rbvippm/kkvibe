@@ -832,8 +832,8 @@ export function truncateBetText(text: string, max = 28) {
 
 /**
  * 注单金额展示：向下截断（不四舍五入），禁止默认 Round。
- * - maxDecimals=6（USDT）：最多 6 位，最少 2 位；截断后剔除第 2 位之后末尾 0
- * - maxDecimals=2（KKC / KKV / 信用额度-*）：最多 2 位，固定补齐至 2 位
+ * 当前各币种（含 USDT）统一最多 2 位小数（舍弃第 3 位及之后），不足 2 位用 0 补齐。
+ * （游戏方暂不支持超过 2 位；若后续恢复 USDT 6 位，将 maxDecimals 改回 6 即可。）
  */
 export function formatTruncatedMoney(value: number, maxDecimals: 2 | 6 = 2) {
   if (!Number.isFinite(value)) return '0.00'
@@ -863,13 +863,12 @@ export function formatTruncatedMoney(value: number, maxDecimals: 2 | 6 = 2) {
   return negative ? `-${body}` : body
 }
 
-/** @deprecated 请优先使用 formatMoney(value, currency)；保留别名兼容 */
+/** @deprecated 当前与 formatMoney 一致（最多 2 位）；保留别名兼容 */
 export function formatUsdtMoney(value: number) {
-  return formatTruncatedMoney(value, 6)
+  return formatTruncatedMoney(value, 2)
 }
 
-export function formatMoney(value: number, currency?: BetGameCurrency | string) {
-  if (currency === 'USDT') return formatTruncatedMoney(value, 6)
-  // KKC / KKV / 信用额度-CNY / 信用额度-USD：最多 2 位，同样向下截断
+export function formatMoney(value: number, _currency?: BetGameCurrency | string) {
+  // KKC / KKV / USDT / 信用额度-*：统一最多 2 位，向下截断
   return formatTruncatedMoney(value, 2)
 }
