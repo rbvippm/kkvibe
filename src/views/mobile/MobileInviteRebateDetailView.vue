@@ -106,7 +106,8 @@ function closeTimeSheet() {
   timeError.value = ''
 }
 
-function pickDraftPreset(preset: Exclude<InviteTimePreset, 'custom'>) {
+function pickDraftPreset(preset: InviteTimePreset) {
+  if (preset === 'custom') return
   draftPreset.value = preset
   const range = getInviteDateRange({
     timePreset: preset,

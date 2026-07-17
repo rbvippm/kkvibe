@@ -239,7 +239,9 @@ export const INVITE_MAX_RANGE_DAYS = 90
 
 export type InviteTimePreset = 'today' | 'yesterday' | 'week' | 'month' | 'custom'
 
-export const INVITE_TIME_PRESETS: { key: InviteTimePreset; label: string }[] = [
+export type InviteQuickTimePreset = Exclude<InviteTimePreset, 'custom'>
+
+export const INVITE_TIME_PRESETS: { key: InviteQuickTimePreset; label: string }[] = [
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },
   { key: 'week', label: '本周' },
