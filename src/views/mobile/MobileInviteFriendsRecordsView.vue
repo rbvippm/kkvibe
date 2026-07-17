@@ -3,6 +3,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { INVITE_FRIENDS_RECORDS_SPEC } from '../../constants/inviteFriendsSpec'
 import {
   INVITE_PAGE_SIZE,
@@ -27,6 +28,8 @@ import '../../styles/mobile-app-shell.css'
 const router = useRouter()
 /** 邀请人仅一种活动币种（区号绑定） */
 const boundCurrency = INVITER_BOUND_CURRENCY
+/** 与「我的 → 代理邀请」联动：已加入代理团队则不展示返利 */
+const showInviteRebate = computed(() => !memberAgentMembershipJoined.value)
 
 const appliedFilter = ref<InviteRecordsFilter>(createDefaultInviteFilter())
 const filterDraft = ref<InviteRecordsFilter>(createDefaultInviteFilter())
@@ -41,7 +44,11 @@ const filteredMembers = computed(() =>
   ),
 )
 
-const summary = computed(() => summarizeInviteMembers(filteredMembers.value, boundCurrency))
+const summary = computed(() =>
+  summarizeInviteMembers(filteredMembers.value, boundCurrency, {
+    depositScope: showInviteRebate.value ? 'qualified' : 'all',
+  }),
+)
 
 const visibleMembers = computed(() => filteredMembers.value.slice(0, page.value * INVITE_PAGE_SIZE))
 
@@ -123,12 +130,16 @@ async function loadMore() {
 }
 
 function openDetail(member: InviteFriendMember) {
-  if (!member.meetsCondition) return
+  if (!showInviteRebate.value || !member.meetsCondition) return
   router.push({
     name: 'mobile-invite-rebate-detail',
     params: { id: member.id },
     query: { currency: boundCurrency },
   })
+}
+
+function rowClickable(member: InviteFriendMember) {
+  return showInviteRebate.value && member.meetsCondition
 }
 
 function goBackToInviteFriends() {
@@ -178,13 +189,19 @@ function pickDraftVip(value: '' | number) {
       <template v-else>
         <!-- 统计：邀请人绑定币种（单币种） -->
         <div class="mh5-invite-records-summary">
-          <span class="mh5-invite-records-summary__currency">{{ INVITER_BOUND_FIAT_LABEL }}</span>
-          <div class="mh5-invite-records-summary__metrics">
+          <span
+            v-if="showInviteRebate"
+            class="mh5-invite-records-summary__currency"
+          >{{ INVITER_BOUND_FIAT_LABEL }}</span>
+          <div
+            class="mh5-invite-records-summary__metrics"
+            :class="{ 'mh5-invite-records-summary__metrics--no-rebate': !showInviteRebate }"
+          >
             <div class="mh5-invite-records-summary__item">
               <span class="mh5-invite-records-summary__label">邀请人数</span>
               <strong>{{ summary.inviteCount }}</strong>
             </div>
-            <div class="mh5-invite-records-summary__item">
+            <div v-if="showInviteRebate" class="mh5-invite-records-summary__item">
               <span class="mh5-invite-records-summary__label">满足条件</span>
               <strong>{{ summary.eligibleCount }}</strong>
             </div>
@@ -192,7 +209,7 @@ function pickDraftVip(value: '' | number) {
               <span class="mh5-invite-records-summary__label">累计充值</span>
               <strong>{{ formatInviteAmount(summary.deposit, boundCurrency) }}</strong>
             </div>
-            <div class="mh5-invite-records-summary__item">
+            <div v-if="showInviteRebate" class="mh5-invite-records-summary__item">
               <span class="mh5-invite-records-summary__label">累计返利</span>
               <strong class="mh5-invite-records__rebate">
                 {{ formatInviteAmount(summary.rebate, boundCurrency) }}
@@ -202,15 +219,18 @@ function pickDraftVip(value: '' | number) {
         </div>
 
         <div class="mh5-invite-records-table-wrap">
-          <table class="mh5-invite-records-table">
+          <table
+            class="mh5-invite-records-table"
+            :class="{ 'mh5-invite-records-table--no-rebate': !showInviteRebate }"
+          >
             <thead>
               <tr>
                 <th>昵称</th>
                 <th>金刚号</th>
                 <th>注册时间</th>
                 <th>充值金额</th>
-                <th>返利金额</th>
-                <th>详情</th>
+                <th v-if="showInviteRebate">返利金额</th>
+                <th v-if="showInviteRebate">详情</th>
               </tr>
             </thead>
             <tbody>
@@ -218,9 +238,9 @@ function pickDraftVip(value: '' | number) {
                 v-for="member in visibleMembers"
                 :key="member.id"
                 class="mh5-invite-records-table__row"
-                :class="{ 'mh5-invite-records-table__row--clickable': member.meetsCondition }"
-                :role="member.meetsCondition ? 'button' : undefined"
-                :tabindex="member.meetsCondition ? 0 : undefined"
+                :class="{ 'mh5-invite-records-table__row--clickable': rowClickable(member) }"
+                :role="rowClickable(member) ? 'button' : undefined"
+                :tabindex="rowClickable(member) ? 0 : undefined"
                 @click="openDetail(member)"
                 @keydown.enter="openDetail(member)"
               >
@@ -235,18 +255,21 @@ function pickDraftVip(value: '' | number) {
                   {{ formatRegisterDate(member.registeredAt) }}
                 </td>
                 <td class="mh5-invite-records-table__num">
-                  <template v-if="member.meetsCondition">
+                  <template v-if="!showInviteRebate || member.meetsCondition">
                     {{ memberAmount(member, 'deposit') }}
                   </template>
                   <span v-else class="mh5-invite-records-table__na">-</span>
                 </td>
-                <td class="mh5-invite-records-table__num mh5-invite-records-table__rebate">
+                <td
+                  v-if="showInviteRebate"
+                  class="mh5-invite-records-table__num mh5-invite-records-table__rebate"
+                >
                   <template v-if="member.meetsCondition">
                     {{ memberAmount(member, 'rebate') }}
                   </template>
                   <span v-else class="mh5-invite-records-table__na">-</span>
                 </td>
-                <td>
+                <td v-if="showInviteRebate">
                   <span v-if="member.meetsCondition" class="mh5-invite-records-table__link">
                     详情
                   </span>
@@ -395,6 +418,10 @@ function pickDraftVip(value: '' | number) {
   gap: 6px;
 }
 
+.mh5-invite-records-summary__metrics--no-rebate {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .mh5-invite-records-summary__item {
   display: flex;
   flex-direction: column;
@@ -433,6 +460,10 @@ function pickDraftVip(value: '' | number) {
   border-collapse: collapse;
   table-layout: auto;
   background: var(--mh5-app-card, #fff);
+}
+
+.mh5-invite-records-table--no-rebate {
+  min-width: 480px;
 }
 
 .mh5-invite-records-table th,

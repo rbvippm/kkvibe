@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import {
   INVITE_TIME_PRESETS,
   INVITER_BOUND_CURRENCY,
@@ -25,6 +26,16 @@ import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
+
+/** 有代理身份时不可查看返利明细，与「我的 → 代理邀请」联动 */
+function guardRebateAccess() {
+  if (memberAgentMembershipJoined.value) {
+    router.replace({ name: 'mobile-invite-records' })
+  }
+}
+
+onMounted(guardRebateAccess)
+watch(memberAgentMembershipJoined, guardRebateAccess)
 
 function parseCurrency(raw: unknown): InviteCurrency {
   const value = String(raw ?? '')

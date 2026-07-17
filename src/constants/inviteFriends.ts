@@ -383,17 +383,19 @@ export type InviteMembersSummary = {
   rebate: number
 }
 
-/** 按邀请人绑定币种汇总当前筛选结果 */
+/** 按邀请人绑定币种汇总当前筛选结果；有代理身份时充值按全部被邀请人汇总（不套用返利门槛） */
 export function summarizeInviteMembers(
   rows: InviteFriendMember[],
   currency: InviteCurrency = INVITER_BOUND_CURRENCY,
+  options?: { depositScope?: 'qualified' | 'all' },
 ): InviteMembersSummary {
   const qualified = rows.filter((m) => m.meetsCondition)
+  const depositRows = options?.depositScope === 'all' ? rows : qualified
   return {
     currency,
     inviteCount: rows.length,
     eligibleCount: qualified.length,
-    deposit: qualified.reduce((sum, m) => sum + m.totals[currency].deposit, 0),
+    deposit: depositRows.reduce((sum, m) => sum + m.totals[currency].deposit, 0),
     rebate: qualified.reduce((sum, m) => sum + m.totals[currency].rebate, 0),
   }
 }
