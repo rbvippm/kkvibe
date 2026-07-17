@@ -166,7 +166,7 @@ const pendingInviteCount = computed(
 const menuItems = computed<MineMenuItem[]>(() => {
   const base: MineMenuItem[] = [
     { key: 'live', title: '直播中心', route: 'mobile-live' },
-    { key: 'invite', title: '邀请好友' },
+    { key: 'invite', title: '邀请好友', route: 'mobile-invite-friends' },
   ]
 
   if (memberAgentMembershipJoined.value) {

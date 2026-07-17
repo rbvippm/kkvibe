@@ -158,6 +158,21 @@ export const pcMenuTree: PcMenuItem[] = [
     ],
   },
   {
+    key: 'ops',
+    title: '运营管理',
+    icon: '🎯',
+    children: [
+      {
+        key: 'activity-center',
+        title: '活动中心',
+        path: '/pc/activity-center',
+        routeName: 'pc-activity-center',
+        pagePath: ['运营管理', '活动中心'],
+        docRouteName: 'pc-activity-center-doc',
+      },
+    ],
+  },
+  {
     key: 'live',
     title: '直播管理',
     icon: '📺',

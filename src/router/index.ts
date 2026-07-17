@@ -257,6 +257,24 @@ export const router = createRouter({
           meta: { title: '代理邀请', hideTabBar: true },
         },
         {
+          path: 'mine/invite',
+          name: 'mobile-invite-friends',
+          component: () => import('../views/mobile/MobileInviteFriendsView.vue'),
+          meta: { title: '邀请', hideTabBar: true },
+        },
+        {
+          path: 'mine/invite/records',
+          name: 'mobile-invite-records',
+          component: () => import('../views/mobile/MobileInviteFriendsRecordsView.vue'),
+          meta: { title: '邀请好友记录', hideTabBar: true },
+        },
+        {
+          path: 'mine/invite/records/:id',
+          name: 'mobile-invite-rebate-detail',
+          component: () => import('../views/mobile/MobileInviteRebateDetailView.vue'),
+          meta: { title: '返利明细', hideTabBar: true },
+        },
+        {
           path: 'mine/bet-orders',
           redirect: { name: 'mobile-agent', query: { tab: 'bet-order' } },
         },
@@ -384,6 +402,18 @@ export const router = createRouter({
           name: 'pc-live-super-group-manage',
           component: PcSuperGroupManageView,
           meta: { title: '超级群管理' },
+        },
+        {
+          path: 'activity-center',
+          name: 'pc-activity-center',
+          component: () => import('../views/pc/PcActivityCenterView.vue'),
+          meta: { title: '活动中心' },
+        },
+        {
+          path: 'activity-center/doc',
+          name: 'pc-activity-center-doc',
+          component: () => import('../views/pc/PcActivityCenterDocView.vue'),
+          meta: { title: '活动中心-文档说明' },
         },
         {
           path: 'user-list',
