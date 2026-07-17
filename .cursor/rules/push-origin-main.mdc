@@ -1,0 +1,25 @@
+---
+description: 推送 origin/main 前必须先通过 npm run build 打包编译
+alwaysApply: true
+---
+
+# 推送 origin/main 规范
+
+向 `origin/main` 推送（含 `git push`、`git push -u origin HEAD`、`git push origin main` 等）前，**必须**先确认打包编译通过。
+
+## 必做流程
+
+1. 在仓库根目录执行：`npm run build`（即 `vue-tsc -b && vite build`）。
+2. **仅当 build 成功（exit code 0）后**再执行 `git push`。
+3. 若 build 失败：先修复类型/编译错误 → 再跑 `npm run build` → 通过后再推送。
+4. 不要在 build 失败时推送；不要用跳过检查的方式绕过本规范。
+
+## 典型场景
+
+- 用户要求 commit + push、或「提交并推送」时：commit 完成后先 `npm run build`，成功再 push。
+- 仅 push、未改代码时：仍须先 build，再 push。
+
+## 失败处理
+
+- 将 build 报错修到通过为止，再推送。
+- 向用户简要说明曾因编译失败已修复后再推（若本轮发生过）。
