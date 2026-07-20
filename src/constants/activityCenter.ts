@@ -77,6 +77,21 @@ export function phoneDialDisplay(code: string) {
   return hit ? formatPhoneDialLabel(hit) : code ? `+${code}` : ''
 }
 
+/** 区号枚举去重（同 code 只保留首条，供复选） */
+export function uniquePhoneDialOptions() {
+  const seen = new Set<string>()
+  return PHONE_DIAL_CODE_OPTIONS.filter((o) => {
+    if (seen.has(o.code)) return false
+    seen.add(o.code)
+    return true
+  })
+}
+
+export function formatPhonePrefixesLabel(codes: string[]) {
+  if (!codes.length) return ''
+  return codes.map((code) => phoneDialDisplay(code)).join('、')
+}
+
 export type VipCapMode = 'single' | 'range' | 'and_above'
 
 export type VipDailyCapRow = {
@@ -91,18 +106,22 @@ export type VipDailyCapRow = {
   dailyCap: number
 }
 
-/** 单个币种下的活动规则条件（门槛、赠送、VIP 日上限、返利比例等） */
+/** 单个币种下的活动规则条件（门槛、赠送、VIP 日上限等） */
 export type ActivityCurrencyConfig = {
   currency: ActivityCurrency
   /** 邀请人须绑定手机号 */
   inviterRequirePhoneBound: boolean
-  /** 邀请人绑定手机号时允许的区号（如 86 / 84，不含 +） */
-  phonePrefix: string
-  firstDepositRebatePercent: number
-  repeatDepositRebatePercent: number
-  withdrawTurnoverMultiple: number
-  inviterMinDeposit: number
-  historyDepositThreshold: number
+  /** 允许的手机区号（复选，不含 +）；须绑手机号时至少选 1 个 */
+  phonePrefixes: string[]
+  /** 邀请人 · 历史累计存款门槛（本币种） */
+  inviterHistoryDeposit: number
+  /** 邀请人 · 每日最低存款（本币种；结算日校验「昨天」是否达标） */
+  inviterDailyMinDeposit: number
+  /** 被邀请人 · 历史累计存款门槛（本币种） */
+  inviteeHistoryDeposit: number
+  /** 被邀请人 · 每日最低存款（本币种；结算日校验「昨天」是否达标） */
+  inviteeDailyMinDeposit: number
+  /** 被邀请人 VIP 对应 · 邀请人日返利上限阶梯（本币种） */
   vipDailyCaps: VipDailyCapRow[]
   rules: ActivityRuleRow[]
 }
@@ -171,12 +190,11 @@ export function createDefaultCurrencyConfig(
   return {
     currency,
     inviterRequirePhoneBound: true,
-    phonePrefix: CURRENCY_DEFAULT_PHONE_PREFIX[currency],
-    firstDepositRebatePercent: 1,
-    repeatDepositRebatePercent: 1,
-    withdrawTurnoverMultiple: 0,
-    inviterMinDeposit: round(500000 * s),
-    historyDepositThreshold: round(1000000 * s),
+    phonePrefixes: [CURRENCY_DEFAULT_PHONE_PREFIX[currency]],
+    inviterHistoryDeposit: round(500000 * s),
+    inviterDailyMinDeposit: round(100000 * s),
+    inviteeHistoryDeposit: round(1000000 * s),
+    inviteeDailyMinDeposit: round(100000 * s),
     vipDailyCaps: createDefaultVipDailyCaps(currency),
     rules: [
       {
@@ -337,6 +355,7 @@ export function cloneActivityRow(row: ActivityCenterRow): ActivityCenterRow {
     gameCategories: [...row.gameCategories],
     currencyConfigs: row.currencyConfigs.map((c) => ({
       ...c,
+      phonePrefixes: [...(c.phonePrefixes ?? [])],
       vipDailyCaps: c.vipDailyCaps.map((r) => ({ ...r })),
       rules: c.rules.map((r) => ({ ...r })),
     })),

@@ -31,7 +31,7 @@ export function resolveDefaultInviteCurrency(
 }
 
 /**
- * 邀请人活动币种：由后台「绑定手机号区号 ↔ 币种」配置决定，一人仅一种。
+ * 邀请人活动币种：与后台活动中心按币种配置对齐；原型一人仅展示一种。
  * 原型默认跟随「我的」偏好法币映射。
  */
 export const INVITER_BOUND_CURRENCY: InviteCurrency = resolveDefaultInviteCurrency()
