@@ -21,6 +21,7 @@ import {
   getRebateSectionLabel,
   getShareSectionLabel,
   hasCreditAgentCredentials,
+  isShareOnlyProduct,
   MOCK_SHARE_AGENT_ROWS,
   validateRebatePercent,
   validateSharePercent,
@@ -115,6 +116,12 @@ const activeCreditProducts = computed(() => {
   return creditAccountTab.value === 'cash' ? cashCreditProducts.value : creditCreditProducts.value
 })
 
+/** 占成区含「其他成本」；退水区仅游戏品类 */
+const activeShareProducts = computed(() => activeCreditProducts.value)
+const activeRebateProducts = computed(() =>
+  activeCreditProducts.value.filter((p) => !isShareOnlyProduct(p)),
+)
+
 const activeCreditFormKey = computed(() =>
   creditModalMode.value === 'grant' ? 'grant' : creditAccountTab.value,
 )
@@ -176,11 +183,11 @@ function productsHaveError(
 ) {
   const shareLabel = getShareSectionLabel(mode, tab)
   const rebateLabel = getRebateSectionLabel(mode, tab)
-  return products.some(
-    (p) =>
-      validateSharePercent(p.share, p.maxShare, shareLabel) ||
-      validateRebatePercent(p.rebate, p.maxRebate, rebateLabel),
-  )
+  return products.some((p) => {
+    if (validateSharePercent(p.share, p.maxShare, shareLabel)) return true
+    if (isShareOnlyProduct(p)) return false
+    return Boolean(validateRebatePercent(p.rebate, p.maxRebate, rebateLabel))
+  })
 }
 
 function hasCreditValidationError() {
@@ -467,7 +474,7 @@ function confirmCreditModal() {
               </h4>
               <div class="wf-share-agent-credit-grid">
                 <div
-                  v-for="product in activeCreditProducts"
+                  v-for="product in activeShareProducts"
                   :key="`${activeCreditFormKey}-share-${product.key}`"
                   class="wf-share-agent-credit-field"
                 >
@@ -501,7 +508,7 @@ function confirmCreditModal() {
               </h4>
               <div class="wf-share-agent-credit-grid">
                 <div
-                  v-for="product in activeCreditProducts"
+                  v-for="product in activeRebateProducts"
                   :key="`${activeCreditFormKey}-rebate-${product.key}`"
                   class="wf-share-agent-credit-field"
                 >

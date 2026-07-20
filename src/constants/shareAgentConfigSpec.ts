@@ -162,7 +162,7 @@ export const SHARE_AGENT_CONFIG_FEATURE_LIST: ShareAgentFeatureRow[] = [
       visualPresentation:
         '品类网格布局；每行输入框 +「%」后缀；下方灰色区间提示「区间 0~x%」；占成区标题旁侧「注8」标注；错误红色文案。',
       dataRules:
-        '正则 ^\\d+(\\.\\d{1,2})?$；区间 [0, maxShare]，maxShare 为上级该品类最大值；根据数据源的品类数量（棋牌、趣投等）。',
+        '正则 ^\\d+(\\.\\d{1,2})?$；区间 [0, maxShare]，maxShare 为上级该品类最大值；品类含棋牌、趣投、电竞、捕鱼、刮刮乐、热门类、体育、真人、彩票、弹珠、老虎机，另含「其他成本」（规则同游戏品类，仅占成区展示）。',
       exceptions: '超区间/格式错误 -> 字段下红色提示 + 提交按钮禁用；空值视为校验失败。',
       routing: '配置数据随授信/编辑接口一并提交，无独立跳转。',
     },
@@ -220,8 +220,8 @@ export const SHARE_AGENT_SPEC_ANNOT_NO = {
 /** 页面标注文案 · 供 WfSpecAnnot 组件引用 */
 export const SHARE_AGENT_SHARE_SPEC = [
   '区块标题由「比例」调整为「占成比例」；授信时为「信用占成」，编辑时区分「现金占成」「信用占成」。',
-  '各游戏类型占成比例校验区间为 0 ~ x，x 为上级代理该游戏类型的 maxShare 最大值。',
-  '输入须匹配非负数字，最多两位小数；超出区间或格式不符时标红提示。',
+  '各游戏类型与「其他成本」占成比例校验区间均为 0 ~ x，x 为上级代理该品类的 maxShare 最大值。',
+  '输入须匹配非负数字，最多两位小数；超出区间或格式不符时标红提示。「其他成本」仅出现在占成区，退水区不展示。',
 ] as const
 
 export const SHARE_AGENT_REBATE_SPEC = [

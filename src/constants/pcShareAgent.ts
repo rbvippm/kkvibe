@@ -67,7 +67,13 @@ export const PC_SHARE_AGENT_PRODUCTS: PcShareAgentProduct[] = [
   { key: 'lottery', name: '彩票', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
   { key: 'marble', name: '弹珠', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
   { key: 'slots', name: '老虎机', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
+  /** 仅占成配置；退水区不展示 */
+  { key: 'otherCost', name: '其他成本', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
 ]
+
+export function isShareOnlyProduct(product: PcShareAgentProduct) {
+  return product.key === 'otherCost'
+}
 
 export function cloneShareAgentProducts() {
   return PC_SHARE_AGENT_PRODUCTS.map((item) => ({ ...item }))
