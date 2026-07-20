@@ -873,6 +873,39 @@
   margin-top: 4px;
 }
 
+/* 被邀请人每日明细 · 宽表横向滚动 */
+.wf-table--invitee-daily {
+  table-layout: auto;
+  width: max-content;
+  min-width: 1560px;
+}
+
+.wf-table--invitee-daily .wf-th,
+.wf-table--invitee-daily .wf-td {
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.wf-table--invitee-daily .wf-th--remark,
+.wf-table--invitee-daily .wf-td--remark {
+  min-width: 180px;
+  max-width: 260px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.wf-table--invitee-daily .wf-th--amount,
+.wf-table--invitee-daily .wf-td--amount {
+  min-width: 108px;
+  text-align: right;
+}
+
+.wf-table--invitee-daily .wf-th--status,
+.wf-table--invitee-daily .wf-td--status {
+  min-width: 88px;
+}
+
 .wf-modal__commission {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

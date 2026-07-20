@@ -20,7 +20,7 @@ export const INVITE_REBATE_RECORD_META = {
 
 export const INVITE_REBATE_RECORD_BACKGROUND = [
   '运营需核对每一笔邀请返利的计算与派发结果，包括 VIP 快照上限与截断原因。',
-  '落库当日返利金额时同步落库当日返利上限；超出各被邀请人上限之和则扣减后再派发。',
+  '应发返利 = 被邀请人当天存款金额 × 返利比例；落库当日返利金额时同步落库当日返利上限；超出各被邀请人上限之和则扣减后再派发。',
 ] as const
 
 export const INVITE_REBATE_RECORD_GOALS = [

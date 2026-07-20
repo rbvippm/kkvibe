@@ -40,7 +40,7 @@ export const INVITE_REBATE_STATS_FEATURE_LIST: InviteRebateStatsFeatureRow[] = [
     pageLocation: '筛选区旁「注1」；列表应发/实发列',
     prd: {
       functionalLogic:
-        '按返利计算日（业务日）+ 币种聚合活动数据。应发为截断前合计，实发为按 VIP 日上限扣减超出后的派发合计；计划派发时间为隔天 GMT+8 12:00。',
+        '按返利计算日（业务日）+ 币种聚合活动数据。单笔应发 = 被邀请人当天存款 × 返利比例；汇总应发为截断前合计，实发为按 VIP 日上限扣减超出后的派发合计；计划派发时间为隔天 GMT+8 12:00。',
       interactiveBehavior: '选择业务日起止与币种后搜索；重置恢复默认近 7 日（原型即时过滤）。',
       visualPresentation:
         '顶部摘要按币种展示达标邀请人、达标被邀请人、应发、实发（维度为用户+币种，不做跨币种加总）；表格按业务日+币种分行。',
@@ -55,5 +55,5 @@ export const INVITE_REBATE_STATS_FEATURE_LIST: InviteRebateStatsFeatureRow[] = [
 export const INVITE_REBATE_STATS_SETTLE_SPEC = [
   '按业务日 + 币种汇总邀请/达标/充值/返利。',
   '隔天 GMT+8 12:00 派发昨天返利；列表展示计划派发时间。',
-  '应发与实发分列：实发已扣减超过各被邀请人上限之和的部分。',
+  '应发与实发分列：应发按「当天存款 × 返利比例」汇总；实发已扣减超过各被邀请人上限之和的部分。',
 ] as const

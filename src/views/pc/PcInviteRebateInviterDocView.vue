@@ -30,7 +30,7 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
         </p>
         <p class="wf-doc-page__hint">{{ PRD_DIMENSION_HINT }}</p>
         <RouterLink :to="{ name: 'pc-invite-rebate-inviters' }" class="wf-doc-page__back">
-          ← 返回邀请人列表
+          ← 返回邀请活动列表
         </RouterLink>
       </header>
 

@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   formatInviteRebateAmount,
   inviteRebateEligibleLabel,
@@ -15,6 +16,7 @@ import {
   type InviteRebateIdentity,
   type InviteRebateInviterRow,
 } from '../../constants/inviteRebateOps'
+import { INVITE_REBATE_INVITER_ANNOT_MAP } from '../../constants/inviteRebateInviterSpec'
 import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
@@ -69,7 +71,11 @@ const pagedRows = computed(() => {
 function goInvitees(row: InviteRebateInviterRow) {
   router.push({
     name: 'pc-invite-rebate-invitees',
-    query: { inviterId: row.id, inviterAccount: row.account },
+    query: {
+      inviterId: row.id,
+      inviterAccount: row.account,
+      currency: row.currency,
+    },
   })
 }
 </script>
@@ -80,8 +86,15 @@ function goInvitees(row: InviteRebateInviterRow) {
 
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label">邀请人ID：</label>
-        <input v-model="filter.keyword" type="text" class="wf-input" placeholder="请输入邀请人ID" />
+        <label class="wf-label wf-label--with-spec">
+          用户ID：
+          <WfSpecAnnot
+            :no="INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.no"
+            :title="INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.title"
+            :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.items]"
+          />
+        </label>
+        <input v-model="filter.keyword" type="text" class="wf-input" placeholder="请输入用户ID" />
 
         <label class="wf-label">币种：</label>
         <select v-model="filter.currency" class="wf-input wf-input--select">
@@ -97,7 +110,14 @@ function goInvitees(row: InviteRebateInviterRow) {
           </option>
         </select>
 
-        <label class="wf-label">资格：</label>
+        <label class="wf-label wf-label--with-spec">
+          资格：
+          <WfSpecAnnot
+            :no="INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.no"
+            :title="INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.title"
+            :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.items]"
+          />
+        </label>
         <select v-model="filter.eligibleStatus" class="wf-input wf-input--select">
           <option v-for="opt in INVITE_REBATE_ELIGIBLE_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
             {{ opt.label }}
@@ -117,7 +137,7 @@ function goInvitees(row: InviteRebateInviterRow) {
           <thead>
             <tr>
               <th class="wf-th">昵称</th>
-              <th class="wf-th">ID</th>
+              <th class="wf-th">用户ID</th>
               <th class="wf-th">币种</th>
               <th class="wf-th">身份</th>
               <th class="wf-th">历史累计存款</th>
@@ -126,11 +146,18 @@ function goInvitees(row: InviteRebateInviterRow) {
               <th class="wf-th">达标人数</th>
               <th class="wf-th">累计返利</th>
               <th class="wf-th">资格</th>
-              <th class="wf-th">操作</th>
+              <th class="wf-th wf-th--with-spec">
+                操作
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITER_ANNOT_MAP.inviteeDrill.no"
+                  :title="INVITE_REBATE_INVITER_ANNOT_MAP.inviteeDrill.title"
+                  :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.inviteeDrill.items]"
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in pagedRows" :key="row.id">
+            <tr v-for="row in pagedRows" :key="`${row.account}-${row.currency}`">
               <td class="wf-td">{{ row.nickname }}</td>
               <td class="wf-td">{{ row.account }}</td>
               <td class="wf-td">{{ row.currency }}</td>
@@ -146,7 +173,7 @@ function goInvitees(row: InviteRebateInviterRow) {
               </td>
             </tr>
             <tr v-if="!pagedRows.length">
-              <td colspan="11" class="wf-td wf-td--empty">暂无邀请人</td>
+              <td colspan="11" class="wf-td wf-td--empty">暂无活动数据</td>
             </tr>
           </tbody>
         </table>

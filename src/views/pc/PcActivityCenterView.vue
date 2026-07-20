@@ -350,6 +350,9 @@ function validateForm() {
             return `${cfg.currency} VIP 区间结束等级须大于等于起始等级`
           }
         }
+        if (row.rebateRate < 0 || row.rebateRate > 100) {
+          return `${cfg.currency} 返利比例须在 0～100%`
+        }
         if (row.dailyCap < 0) return `${cfg.currency} 每日返利上限不能为负数`
       }
     }
@@ -626,8 +629,9 @@ function setShowInList(value: boolean) {
               </h4>
               <p class="activity-center-modal__rules-desc">
                 仅邀请人与被邀请人均为普通会员时计算返利；任一方成为代理即取消返利资格。金额条件与到账返利均按币种区分配置与派发。结算周期：隔天以业务时区
-                GMT+8 中午 12:00，向邀请人派发「昨天」产生的返利，且要求昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。返利上限取返利计算日当日
-                23:59:59 被邀请人 VIP 等级对应档位；落库当日返利金额时同步落库当日返利上限；派发时若当日应发合计超过各被邀请人上限之和，则扣减超出部分后再派发。
+                GMT+8 中午 12:00，向邀请人派发「昨天」产生的返利，且要求昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。应发返利 =
+                被邀请人当天存款金额 × 对应 VIP 档位返利比例；返利上限取返利计算日当日 23:59:59 被邀请人 VIP
+                等级对应档位；落库当日返利金额时同步落库当日返利上限；派发时若当日应发合计超过各被邀请人上限之和，则扣减超出部分后再派发。
               </p>
 
               <p v-if="!form.currencyConfigs.length" class="activity-center-modal__currency-empty">
@@ -807,7 +811,7 @@ function setShowInList(value: boolean) {
                   </div>
 
                   <h5 class="activity-center-modal__sub-title">
-                    被邀请人VIP对应 · 邀请人日返利上限（{{ activeCurrencyConfig.currency }}）
+                    被邀请人VIP对应 · 邀请人返利比例与日上限（{{ activeCurrencyConfig.currency }}）
                   </h5>
                   <div class="wf-table-wrap">
                     <table class="wf-table">
@@ -815,6 +819,7 @@ function setShowInList(value: boolean) {
                         <tr>
                           <th class="wf-th">设置方式</th>
                           <th class="wf-th">被邀请人VIP等级</th>
+                          <th class="wf-th">返利比例</th>
                           <th class="wf-th">
                             邀请人每日返利最高上限（{{ activeCurrencyConfig.currency }}）
                           </th>
@@ -888,6 +893,20 @@ function setShowInList(value: boolean) {
                             <span v-else>{{ formatVipCapLabel(cap) }}</span>
                           </td>
                           <td class="wf-td">
+                            <div v-if="!readonly" class="wf-modal__pct-row">
+                              <input
+                                v-model.number="cap.rebateRate"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                class="wf-input wf-input--pct"
+                              />
+                              <span class="wf-pct">%</span>
+                            </div>
+                            <span v-else>{{ cap.rebateRate }}%</span>
+                          </td>
+                          <td class="wf-td">
                             <input
                               v-if="!readonly"
                               v-model.number="cap.dailyCap"
@@ -909,7 +928,7 @@ function setShowInList(value: boolean) {
                           </td>
                         </tr>
                         <tr v-if="!activeCurrencyConfig.vipDailyCaps.length">
-                          <td :colspan="readonly ? 3 : 4" class="wf-td wf-td--empty">
+                          <td :colspan="readonly ? 4 : 5" class="wf-td wf-td--empty">
                             暂无 VIP 阶梯配置
                           </td>
                         </tr>
@@ -1239,7 +1258,8 @@ function setShowInList(value: boolean) {
                   </template>
                 </li>
                 <li>
-                  结算：隔天 GMT+8 12:00 派发「昨天」返利；须昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。
+                  结算：隔天 GMT+8 12:00 派发「昨天」返利；须昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。应发返利
+                  = 被邀请人当天存款金额 × 返利比例。
                 </li>
                 <li>
                   上限：以返利计算日 23:59:59 被邀请人 VIP 对应日上限；落库返利金额时同步落库当日上限；若当日应发合计超过各被邀请人上限之和，扣减超出后再派发。

@@ -102,6 +102,8 @@ export type VipDailyCapRow = {
   vipFrom: number
   /** VIP 结束等级（含）；单级时等于 vipFrom；及以上时忽略 */
   vipTo: number
+  /** 返利比例（%），按被邀请人该 VIP 档位适用 */
+  rebateRate: number
   /** 每日返利最高上限（单位随所属币种） */
   dailyCap: number
 }
@@ -152,12 +154,48 @@ function currencyAmountScale(currency: ActivityCurrency) {
 export function createDefaultVipDailyCaps(currency: ActivityCurrency = 'KKC'): VipDailyCapRow[] {
   const s = currencyAmountScale(currency)
   const round = (n: number) => (currency === 'USDT' ? Math.round(n * 100) / 100 : Math.round(n))
+  const rebateRate = 1
   return [
-    { id: `${currency}-vip-0-5`, mode: 'range', vipFrom: 0, vipTo: 5, dailyCap: round(6880000 * s) },
-    { id: `${currency}-vip-6`, mode: 'single', vipFrom: 6, vipTo: 6, dailyCap: round(9888000 * s) },
-    { id: `${currency}-vip-7`, mode: 'single', vipFrom: 7, vipTo: 7, dailyCap: round(12888000 * s) },
-    { id: `${currency}-vip-8`, mode: 'single', vipFrom: 8, vipTo: 8, dailyCap: round(16888000 * s) },
-    { id: `${currency}-vip-9`, mode: 'and_above', vipFrom: 9, vipTo: 9, dailyCap: round(58880000 * s) },
+    {
+      id: `${currency}-vip-0-5`,
+      mode: 'range',
+      vipFrom: 0,
+      vipTo: 5,
+      rebateRate,
+      dailyCap: round(6880000 * s),
+    },
+    {
+      id: `${currency}-vip-6`,
+      mode: 'single',
+      vipFrom: 6,
+      vipTo: 6,
+      rebateRate,
+      dailyCap: round(9888000 * s),
+    },
+    {
+      id: `${currency}-vip-7`,
+      mode: 'single',
+      vipFrom: 7,
+      vipTo: 7,
+      rebateRate,
+      dailyCap: round(12888000 * s),
+    },
+    {
+      id: `${currency}-vip-8`,
+      mode: 'single',
+      vipFrom: 8,
+      vipTo: 8,
+      rebateRate,
+      dailyCap: round(16888000 * s),
+    },
+    {
+      id: `${currency}-vip-9`,
+      mode: 'and_above',
+      vipFrom: 9,
+      vipTo: 9,
+      rebateRate,
+      dailyCap: round(58880000 * s),
+    },
   ]
 }
 
@@ -167,6 +205,7 @@ export function createEmptyVipDailyCap(currency: ActivityCurrency = 'KKC'): VipD
     mode: 'single',
     vipFrom: 0,
     vipTo: 0,
+    rebateRate: 0,
     dailyCap: 0,
   }
 }
