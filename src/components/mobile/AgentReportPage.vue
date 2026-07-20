@@ -11,6 +11,11 @@ import {
   setAgentAppCurrency,
 } from '../../constants/agentAppCurrency'
 import {
+  AGENT_PROFIT_FORMULA,
+  getAgentProfitFormulaRows,
+  getAgentTotalProfit,
+} from '../../constants/agentDetailProfit'
+import {
   REPORT_CATEGORY_TABS,
   REPORT_DETAIL_ROWS,
   REPORT_RANGE_PRESETS,
@@ -23,17 +28,21 @@ import {
   type ReportVendorKey,
 } from '../../constants/agentReport'
 import { AGENT_REPORT_CURRENCY_SUMMARY_SPEC } from '../../constants/agentReportSpec'
+import '../../styles/mobile-app-shell.css'
 
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
+const profitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
 const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(currency.value)))
-const totalProfit = '+0.86'
+const agentTotalProfit = computed(() => getAgentTotalProfit(currency.value))
+const agentProfitRows = computed(() => getAgentProfitFormulaRows(currency.value))
+const totalProfit = computed(() => agentProfitRows.value[0]?.value ?? '+0.00')
 
 function pickPreset(v: ReportRangePreset) {
   preset.value = v
@@ -42,6 +51,14 @@ function pickPreset(v: ReportRangePreset) {
 function pickCurrency(value: AgentWalletCurrency) {
   setAgentAppCurrency(value)
   currencyPickerOpen.value = false
+}
+
+function toggleProfitFormulaTip() {
+  profitFormulaTipOpen.value = !profitFormulaTipOpen.value
+}
+
+function closeProfitFormulaTip() {
+  profitFormulaTipOpen.value = false
 }
 </script>
 
@@ -63,7 +80,7 @@ function pickCurrency(value: AgentWalletCurrency) {
       </div>
     </header>
 
-    <main class="mh5-agent-report-main">
+    <main class="mh5-agent-report-main" @click="closeProfitFormulaTip">
       <section class="mh5-agent-report-period">
         <p class="mh5-agent-report-period__label">时间段</p>
         <div class="mh5-agent-report-period__row">
@@ -86,6 +103,59 @@ function pickCurrency(value: AgentWalletCurrency) {
           >
             {{ item.label }}
           </button>
+        </div>
+      </section>
+
+      <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary mh5-agent-report-profit">
+        <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
+          <span class="mh5-agent-detail-profit-summary__label-wrap">
+            <span class="mh5-agent-detail-wallet__label">我的盈亏</span>
+            <button
+              type="button"
+              class="mh5-agent-detail-profit-summary__tip-btn"
+              aria-label="查看我的盈亏计算公式"
+              :aria-expanded="profitFormulaTipOpen"
+              @click.stop="toggleProfitFormulaTip"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" />
+                <rect x="7.25" y="4.2" width="1.5" height="5.2" rx="0.75" fill="currentColor" />
+                <circle cx="8" cy="11.6" r="1" fill="currentColor" />
+              </svg>
+            </button>
+            <span
+              v-if="profitFormulaTipOpen"
+              class="mh5-agent-detail-profit-summary__tip-bubble"
+              role="tooltip"
+            >
+              {{ AGENT_PROFIT_FORMULA.replace('总盈亏', '我的盈亏') }}
+            </span>
+          </span>
+          <span
+            class="mh5-agent-detail-wallet__value"
+            :class="{
+              'mh5-agent-detail-wallet__value--positive': agentTotalProfit.tone === 'positive',
+              'mh5-agent-detail-wallet__value--negative': agentTotalProfit.tone === 'negative',
+            }"
+          >
+            {{ agentTotalProfit.value }}
+          </span>
+        </div>
+        <div
+          v-for="row in agentProfitRows"
+          :key="row.label"
+          class="mh5-agent-detail-wallet__row"
+        >
+          <span class="mh5-agent-detail-wallet__label">{{ row.label }}</span>
+          <span
+            class="mh5-agent-detail-wallet__value"
+            :class="{
+              'mh5-agent-detail-wallet__value--positive': row.tone === 'positive',
+              'mh5-agent-detail-wallet__value--negative': row.tone === 'negative',
+            }"
+          >
+            {{ row.value }}
+          </span>
         </div>
       </section>
 
@@ -131,7 +201,7 @@ function pickCurrency(value: AgentWalletCurrency) {
         <div class="mh5-agent-report-detail__head">
           <span class="mh5-agent-report-detail__title">{{ sectionTitle }}</span>
           <span class="mh5-agent-report-detail__profit">
-            总盈亏
+            游戏盈亏
             <em>{{ totalProfit }}</em>
           </span>
         </div>

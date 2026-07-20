@@ -44,14 +44,13 @@ export function getReportSummaryCards(isCreditCurrency: boolean) {
   return isCreditCurrency ? REPORT_SUMMARY_CARDS_CREDIT : REPORT_SUMMARY_CARDS_CASH
 }
 
+/** 场馆明细字段与代理详情「代理盈亏」一致（不含 VIP晋级礼金 / 活动金） */
 export const REPORT_DETAIL_ROWS = [
   { key: 'validBet', label: '下注有效金额（不参与计算）', value: '0.00' },
   { key: 'winLose', label: '输赢', value: '0.00' },
   { key: 'rebate', label: '退水', value: '0.00' },
   { key: 'vipRebate', label: 'VIP退水', value: '0.00' },
   { key: 'commission', label: '赚水', value: '0.00' },
-  { key: 'vipBonus', label: 'VIP晋级礼金', value: '0.00' },
-  { key: 'activity', label: '活动金', value: '0.00' },
 ] as const
 
 export function reportDateRangeText(preset: ReportRangePreset): string {

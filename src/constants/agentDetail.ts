@@ -1,10 +1,11 @@
 import { filterTeamList, MOCK_TEAM_SELF, type TeamListItem } from './agentTeam'
 
-export type AgentDetailTab = 'wallet' | 'credit' | 'profit' | 'login'
+export type AgentDetailTab = 'wallet' | 'credit' | 'profit' | 'game' | 'login'
 
 export const AGENT_DETAIL_TABS: { key: AgentDetailTab; label: string }[] = [
   { key: 'wallet', label: '代理钱包' },
   { key: 'profit', label: '代理盈亏' },
+  { key: 'game', label: '游戏数据' },
   { key: 'login', label: '登录日志' },
 ]
 
@@ -16,7 +17,13 @@ export const AGENT_DETAIL_CREDIT_TAB: { key: AgentDetailTab; label: string } = {
 
 export function getAgentDetailTabs(isCredited: boolean): { key: AgentDetailTab; label: string }[] {
   if (!isCredited) return AGENT_DETAIL_TABS
-  return [AGENT_DETAIL_TABS[0], AGENT_DETAIL_CREDIT_TAB, AGENT_DETAIL_TABS[1], AGENT_DETAIL_TABS[2]]
+  return [
+    AGENT_DETAIL_TABS[0],
+    AGENT_DETAIL_CREDIT_TAB,
+    AGENT_DETAIL_TABS[1],
+    AGENT_DETAIL_TABS[2],
+    AGENT_DETAIL_TABS[3],
+  ]
 }
 
 export const AGENT_DETAIL_CURRENCIES = ['KKC', 'USDT', 'KKV'] as const
@@ -59,9 +66,18 @@ export type AgentDetailProfile = {
     members: number
     directMembers: number
   }
-  wallets: { currency: string; balance: string }[]
+  wallets: AgentCashWalletRow[]
   /** 按信用币种区分的额度统计 */
   creditLimits: Record<AgentCreditCurrency, AgentCreditLimitStats>
+}
+
+export type AgentCashWalletRow = {
+  currency: string
+  balance: string
+  /** 充值金额 */
+  deposit: string
+  /** 提款金额 */
+  withdraw: string
 }
 
 /** 展示名：备注 > 昵称 > 金刚号 */
@@ -81,6 +97,13 @@ export function getAgentDisplayName(agent: {
 
 /** 现金币种（不含信用额度） */
 export const AGENT_CASH_CURRENCY_OPTIONS = ['KKC', 'KKV', 'USDT'] as const
+
+/** 现金钱包分类展示顺序 */
+export const AGENT_CASH_CURRENCY_TABS: { key: (typeof AGENT_CASH_CURRENCY_OPTIONS)[number]; label: string }[] = [
+  { key: 'KKC', label: 'KKC' },
+  { key: 'USDT', label: 'USDT' },
+  { key: 'KKV', label: 'KKV' },
+]
 
 export const AGENT_CREDIT_CURRENCY_OPTIONS: readonly AgentCreditCurrency[] = [
   '信用额度-CNY',
@@ -122,6 +145,35 @@ export function formatCreditLimitRows(stats: AgentCreditLimitStats) {
   ]
 }
 
+/** 现金钱包：单币种的余额 / 充值金额 / 提款金额 */
+export function formatCashWalletRows(wallet?: AgentCashWalletRow | null) {
+  if (!wallet) {
+    return [
+      { label: '余额', value: '0' },
+      { label: '充值金额', value: '0' },
+      { label: '提款金额', value: '0' },
+    ]
+  }
+  return [
+    { label: '余额', value: wallet.balance },
+    { label: '充值金额', value: wallet.deposit },
+    { label: '提款金额', value: wallet.withdraw },
+  ]
+}
+
+/** 现金钱包：按 KKC / USDT / KKV 分类卡片列表 */
+export function formatCashWalletGroups(wallets?: AgentCashWalletRow[] | null) {
+  const list = wallets ?? []
+  return AGENT_CASH_CURRENCY_TABS.map((tab) => {
+    const wallet = list.find((item) => item.currency === tab.key) ?? null
+    return {
+      currency: tab.key,
+      title: tab.label,
+      rows: formatCashWalletRows(wallet),
+    }
+  })
+}
+
 function buildCreditLimits(scale: number, shareRatio: number): Record<AgentCreditCurrency, AgentCreditLimitStats> {
   const s = Math.max(1, scale)
   return {
@@ -156,9 +208,9 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
     directMembers: 8,
   },
   wallets: [
-    { currency: 'KKC', balance: '1,000' },
-    { currency: 'USDT', balance: '1,000' },
-    { currency: 'KKV', balance: '1,000' },
+    { currency: 'KKC', balance: '1,000', deposit: '12,800', withdraw: '6,400' },
+    { currency: 'USDT', balance: '1,000', deposit: '3,200', withdraw: '1,150' },
+    { currency: 'KKV', balance: '1,000', deposit: '8,600', withdraw: '4,200' },
   ],
   creditLimits: {
     '信用额度-CNY': {
@@ -197,9 +249,24 @@ function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
       directMembers: Math.max(0, item.memberCount ?? 0),
     },
     wallets: [
-      { currency: 'KKC', balance: '500' },
-      { currency: 'USDT', balance: '320' },
-      { currency: 'KKV', balance: '180' },
+      {
+        currency: 'KKC',
+        balance: '500',
+        deposit: (800 + (item.subordinateCount || 1) * 120).toLocaleString('zh-CN'),
+        withdraw: (300 + (item.subordinateCount || 1) * 60).toLocaleString('zh-CN'),
+      },
+      {
+        currency: 'USDT',
+        balance: '320',
+        deposit: (200 + (item.subordinateCount || 1) * 40).toLocaleString('zh-CN'),
+        withdraw: (80 + (item.subordinateCount || 1) * 20).toLocaleString('zh-CN'),
+      },
+      {
+        currency: 'KKV',
+        balance: '180',
+        deposit: (400 + (item.subordinateCount || 1) * 80).toLocaleString('zh-CN'),
+        withdraw: (150 + (item.subordinateCount || 1) * 30).toLocaleString('zh-CN'),
+      },
     ],
     creditLimits: buildCreditLimits(item.subordinateCount || 1, shareRatio),
   }

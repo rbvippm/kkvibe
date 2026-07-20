@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_CREDIT_CURRENCY_TABS,
+  formatCashWalletGroups,
   formatCreditLimitRows,
   getAgentDetailCurrencyOptions,
   getAgentDetailTabs,
@@ -21,9 +22,11 @@ import {
 } from '../../constants/agentAppCurrency'
 import {
   AGENT_PROFIT_CATEGORY_TABS,
+  AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_VENDORS,
   getAgentProfitDetail,
   getAgentProfitSummaryRows,
+  getAgentTotalProfit,
   profitTotalClass,
   profitValueClass,
   type AgentProfitCategoryKey,
@@ -39,10 +42,11 @@ const router = useRouter()
 
 const activeTab = ref<AgentDetailTab>('wallet')
 const currencyPickerOpen = ref(false)
+const profitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 
-const profitCategory = ref<AgentProfitCategoryKey>('sports')
+const profitCategory = ref<AgentProfitCategoryKey>('overall')
 const profitVendor = ref<AgentProfitVendorKey>('im')
 
 const agent = computed(() => findAgentDetail(String(route.query.id ?? 'self')))
@@ -60,6 +64,7 @@ watch(isCredited, (credited) => {
 const profitVendorOptions = computed(() => AGENT_PROFIT_VENDORS[profitCategory.value])
 const profitDetail = computed(() => getAgentProfitDetail(profitCategory.value, profitVendor.value))
 const profitSummaryRows = computed(() => getAgentProfitSummaryRows(currency.value))
+const agentTotalProfit = computed(() => getAgentTotalProfit(currency.value))
 
 function selectProfitCategory(key: AgentProfitCategoryKey) {
   profitCategory.value = key
@@ -78,6 +83,8 @@ const statItems = computed(() => {
 })
 
 const creditLimitTitle = '信用额度'
+
+const cashWalletGroups = computed(() => formatCashWalletGroups(agent.value?.wallets))
 
 const creditLimitItems = computed(() => {
   if (!agent.value) return []
@@ -103,6 +110,14 @@ function pickCurrency(value: AgentWalletCurrency) {
 
 function pickCreditCurrency(value: AgentCreditCurrency) {
   setAgentAppCreditCurrency(value)
+}
+
+function toggleProfitFormulaTip() {
+  profitFormulaTipOpen.value = !profitFormulaTipOpen.value
+}
+
+function closeProfitFormulaTip() {
+  profitFormulaTipOpen.value = false
 }
 </script>
 
@@ -161,17 +176,21 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
       </div>
 
       <template v-if="activeTab === 'wallet'">
-        <section class="mh5-agent-detail-wallet">
+        <section
+          v-for="group in cashWalletGroups"
+          :key="group.currency"
+          class="mh5-agent-detail-wallet mh5-agent-detail-xcoin"
+        >
           <div class="mh5-agent-detail-wallet__head">
-            <h3 class="mh5-agent-detail-wallet__title">现金钱包</h3>
+            <h3 class="mh5-agent-detail-wallet__title">{{ group.title }}</h3>
           </div>
           <div
-            v-for="wallet in agent.wallets"
-            :key="wallet.currency"
+            v-for="item in group.rows"
+            :key="`${group.currency}-${item.label}`"
             class="mh5-agent-detail-wallet__row"
           >
-            <span class="mh5-agent-detail-wallet__label">{{ wallet.currency }} 余额</span>
-            <span class="mh5-agent-detail-wallet__value">{{ wallet.balance }}</span>
+            <span class="mh5-agent-detail-wallet__label">{{ item.label }}</span>
+            <span class="mh5-agent-detail-wallet__value">{{ item.value }}</span>
           </div>
         </section>
       </template>
@@ -228,32 +247,82 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         </section>
       </template>
 
-      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-profit">
+      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-profit" @click="closeProfitFormulaTip">
         <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
+          <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
+            <span class="mh5-agent-detail-profit-summary__label-wrap">
+              <span class="mh5-agent-detail-wallet__label">总盈亏</span>
+              <button
+                type="button"
+                class="mh5-agent-detail-profit-summary__tip-btn"
+                aria-label="查看总盈亏计算公式"
+                :aria-expanded="profitFormulaTipOpen"
+                @click.stop="toggleProfitFormulaTip"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                  <path
+                    d="M8 4.6v5.2M8 11.6h.01"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+              <span
+                v-if="profitFormulaTipOpen"
+                class="mh5-agent-detail-profit-summary__tip-bubble"
+                role="tooltip"
+              >
+                {{ AGENT_PROFIT_FORMULA }}
+              </span>
+            </span>
+            <span
+              class="mh5-agent-detail-wallet__value"
+              :class="{
+                'mh5-agent-detail-wallet__value--positive': agentTotalProfit.tone === 'positive',
+                'mh5-agent-detail-wallet__value--negative': agentTotalProfit.tone === 'negative',
+              }"
+            >
+              {{ agentTotalProfit.value }}
+            </span>
+          </div>
           <div
             v-for="row in profitSummaryRows"
             :key="row.label"
             class="mh5-agent-detail-wallet__row"
           >
             <span class="mh5-agent-detail-wallet__label">{{ row.label }}</span>
-            <span class="mh5-agent-detail-wallet__value">{{ row.value }}</span>
+            <span
+              class="mh5-agent-detail-wallet__value"
+              :class="{
+                'mh5-agent-detail-wallet__value--positive': row.tone === 'positive',
+                'mh5-agent-detail-wallet__value--negative': row.tone === 'negative',
+              }"
+            >
+              {{ row.value }}
+            </span>
           </div>
         </section>
+      </section>
 
+      <section v-else-if="activeTab === 'game'" class="mh5-agent-detail-profit">
         <div class="mh5-agent-report-categories">
-          <div class="mh5-agent-report-cat-tabs">
+          <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
             <button
               v-for="tab in AGENT_PROFIT_CATEGORY_TABS"
               :key="tab.key"
               type="button"
+              role="tab"
               class="mh5-agent-report-cat-tab"
               :class="{ 'mh5-agent-report-cat-tab--active': profitCategory === tab.key }"
+              :aria-selected="profitCategory === tab.key"
               @click="selectProfitCategory(tab.key)"
             >
               {{ tab.label }}
             </button>
           </div>
-          <div class="mh5-agent-report-vendors">
+          <div v-if="profitVendorOptions.length" class="mh5-agent-report-vendors">
             <button
               v-for="pill in profitVendorOptions"
               :key="pill.key"
@@ -271,7 +340,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           <div class="mh5-agent-report-detail__head">
             <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
             <span class="mh5-agent-report-detail__profit">
-              总盈亏
+              游戏盈亏
               <em :class="profitTotalClass(profitDetail.totalProfitTone)">
                 {{ profitDetail.totalProfit }}
               </em>

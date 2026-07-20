@@ -255,7 +255,7 @@ async function confirmCreateAccount() {
   }
 
   if (createAccountDraft.value === 'agent') {
-    await mh5Alert('创建代理账户（原型占位）')
+    router.push({ name: 'mobile-agent-create-account' })
     return
   }
 

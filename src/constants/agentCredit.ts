@@ -14,6 +14,15 @@ export const AGENT_CREDIT_STEPS = [
   { key: 'success', label: '授信成功' },
 ] as const
 
+/** 创建代理账户 · 步骤条（页面与授信同构，仅文案不同） */
+export const AGENT_CREATE_ACCOUNT_STEPS = [
+  { key: 'ratio', label: '收益比例' },
+  { key: 'success', label: '创建成功' },
+] as const
+
+/** 成本比例上级最大值（Mock） */
+export const DEFAULT_AGENT_CREDIT_MAX_COST = 10
+
 export const DEFAULT_AGENT_CREDIT_PRODUCTS: AgentCreditProduct[] = [
   { key: 'qutou', name: '趣投', share: 0, rebate: 0, maxShare: 1, maxRebate: 0.1 },
   { key: 'marble', name: '弹珠', share: 0, rebate: 0, maxShare: 1, maxRebate: 0.1 },
@@ -45,4 +54,13 @@ export function isValidRebatePercent(value: number) {
 
 export function normalizeRebatePercent(value: number) {
   return Number(value.toFixed(2))
+}
+
+/** 成本：整数百分比，区间 0–上级最大值 */
+export function isValidCostPercent(value: number) {
+  return isValidSharePercent(value)
+}
+
+export function normalizeCostPercent(value: number) {
+  return Math.round(value)
 }

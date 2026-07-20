@@ -1,8 +1,15 @@
 /** 代理收益比例 · Mock */
 
 import { ref } from 'vue'
-import { DEFAULT_AGENT_CREDIT_PRODUCTS, type AgentCreditProduct } from './agentCredit'
+import {
+  DEFAULT_AGENT_CREDIT_MAX_COST,
+  DEFAULT_AGENT_CREDIT_PRODUCTS,
+  normalizeCostPercent,
+  type AgentCreditProduct,
+} from './agentCredit'
 import { teamCreditAgents, teamDirectAgents } from './agentTeam'
+
+export { DEFAULT_AGENT_CREDIT_MAX_COST as AGENT_PROFIT_RATIO_MAX_COST }
 
 export type AgentProfitRatioProduct = {
   key: string
@@ -65,6 +72,10 @@ export const agentCreditProfitRatioProducts = ref<AgentProfitRatioProduct[]>(
   DEFAULT_AGENT_CREDIT_PROFIT_RATIO_PRODUCTS.map((item) => ({ ...item })),
 )
 
+/** 现金 / 信用成本（全局整数比例，与占成滑块联动） */
+export const agentCashProfitCost = ref(0)
+export const agentCreditProfitCost = ref(0)
+
 export const AGENT_PROFIT_RATIO_PRODUCT_ICONS: Record<string, string> = {
   fun: 'F',
   scratch: 'S',
@@ -101,9 +112,26 @@ export function saveAgentProfitRatioProducts(
   agentProfitRatioProducts.value = next
 }
 
-/** 授信成功：把本次信用产品比例写入「信用收益比例」 */
-export function syncCreditProfitRatioFromCredit(products: AgentCreditProduct[]) {
+export function getAgentProfitCost(type: AgentProfitRatioType) {
+  return type === 'credit' ? agentCreditProfitCost : agentCashProfitCost
+}
+
+export function saveAgentProfitCost(type: AgentProfitRatioType, cost: number) {
+  const next = Math.min(
+    normalizeCostPercent(Math.max(0, cost)),
+    DEFAULT_AGENT_CREDIT_MAX_COST,
+  )
+  if (type === 'credit') {
+    agentCreditProfitCost.value = next
+    return
+  }
+  agentCashProfitCost.value = next
+}
+
+/** 授信成功：把本次信用产品比例与成本写入「信用收益比例」 */
+export function syncCreditProfitRatioFromCredit(products: AgentCreditProduct[], cost = 0) {
   agentCreditProfitRatioProducts.value = products.map((item) => ({ ...item }))
+  saveAgentProfitCost('credit', cost)
 }
 
 export function getAgentProfitRatioProductIcon(key: string) {

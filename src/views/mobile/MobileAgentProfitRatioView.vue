@@ -4,8 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
+  DEFAULT_AGENT_CREDIT_MAX_COST,
+  formatCreditPercent,
+} from '../../constants/agentCredit'
+import {
   AGENT_PROFIT_RATIO_TYPE_TABS,
   formatProfitRatioPercent,
+  getAgentProfitCost,
   getAgentProfitRelationLabel,
   getAgentProfitRatioProducts,
   isAgentCreditEnabled,
@@ -41,6 +46,8 @@ watch(showCreditTabs, (enabled) => {
 })
 
 const displayProducts = computed(() => getAgentProfitRatioProducts(ratioType.value).value)
+const displayCost = computed(() => getAgentProfitCost(ratioType.value).value)
+const maxCost = DEFAULT_AGENT_CREDIT_MAX_COST
 
 function goEdit() {
   router.push({
@@ -117,6 +124,21 @@ function goEdit() {
           {{ tab.label }}
         </button>
       </nav>
+
+      <section class="mh5-agent-credit-cost-card mh5-agent-profit-ratio-cost">
+        <div class="mh5-agent-credit-cost-card__left">
+          <span class="mh5-agent-credit-cost-card__label">成本</span>
+          <span class="mh5-agent-credit-cost-card__tip">含活动金和VIP晋级礼金</span>
+        </div>
+        <div class="mh5-agent-credit-table__cell">
+          <span class="mh5-agent-profit-ratio-table__value">
+            {{ formatCreditPercent(displayCost, 'share') }}
+          </span>
+          <span class="mh5-agent-credit-table__limit">
+            最高{{ formatCreditPercent(maxCost, 'share') }}
+          </span>
+        </div>
+      </section>
 
       <section class="mh5-agent-profit-ratio-table-wrap">
         <table class="mh5-agent-profit-ratio-table">

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
+import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
   AGENT_OVERVIEW_CURRENCY_OPTIONS,
   chunkOverviewStats,
@@ -15,6 +17,8 @@ import {
 } from '../../constants/agentOverview'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
 
+const router = useRouter()
+
 const props = defineProps<{
   nickname: string
   avatarEmoji: string
@@ -24,6 +28,8 @@ const props = defineProps<{
   dateRangeText: string
   preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
   profitRankTab: ProfitRankTab
+  /** 进入概况时是否自动打开占成比例弹框 */
+  openShareRatio?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -31,9 +37,18 @@ const emit = defineEmits<{
   pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek']
   pickProfitRankTab: [tab: ProfitRankTab]
   pickCurrency: [currency: AgentOverviewCurrency]
+  shareRatioClosed: []
 }>()
 
 const currencyPickerOpen = ref(false)
+const shareRatioOpen = ref(Boolean(props.openShareRatio))
+
+watch(
+  () => props.openShareRatio,
+  (open) => {
+    if (open) shareRatioOpen.value = true
+  },
+)
 
 const presetOptions = [
   ['today', '今日'],
@@ -45,6 +60,19 @@ const presetOptions = [
 const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
 const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
 const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
+
+function goMyProfit() {
+  router.push({ name: 'mobile-agent-my-profit' })
+}
+
+function openShareRatioDialog() {
+  shareRatioOpen.value = true
+}
+
+function closeShareRatioDialog() {
+  shareRatioOpen.value = false
+  emit('shareRatioClosed')
+}
 
 function pickCurrency(value: AgentOverviewCurrency) {
   emit('pickCurrency', value)
@@ -127,12 +155,24 @@ function pickCurrency(value: AgentOverviewCurrency) {
           </div>
 
           <div class="agent-home__profit-tabs">
-            <button type="button" class="agent-home__profit-tab agent-home__profit-tab--active" data-name="agent_tab/active">
+            <button
+              type="button"
+              class="agent-home__profit-tab agent-home__profit-tab--active"
+              data-name="agent_tab/active"
+              aria-label="查看我的盈亏"
+              @click="goMyProfit"
+            >
               <span class="agent-home__profit-tab-label">我的盈亏</span>
               <span class="agent-home__profit-tab-value">{{ profit }}</span>
               <span class="agent-home__profit-tab-arrow" aria-hidden="true">›</span>
             </button>
-            <button type="button" class="agent-home__profit-tab agent-home__profit-tab--ratio" data-name="agent_tab_/inactive">
+            <button
+              type="button"
+              class="agent-home__profit-tab agent-home__profit-tab--ratio"
+              data-name="agent_tab_/inactive"
+              aria-label="查看占成比例"
+              @click="openShareRatioDialog"
+            >
               <span class="agent-home__profit-tab-label">占成比例</span>
               <span class="agent-home__profit-tab-info" aria-hidden="true">
                 <img :src="AGENT_OVERVIEW_ASSETS.ratioInfoIcon" alt="" width="16" height="16" />
@@ -264,6 +304,8 @@ function pickCurrency(value: AgentOverviewCurrency) {
         </div>
       </div>
     </div>
+
+    <AgentMyShareRatioDialog :open="shareRatioOpen" @close="closeShareRatioDialog" />
 
     <Teleport to="body">
       <Transition name="mh5-wallet-sheet">

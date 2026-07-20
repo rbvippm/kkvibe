@@ -17,6 +17,7 @@ import {
 import {
   MEMBER_FLOW_SUB_TABS,
   findMemberDetail,
+  formatMemberCashWalletGroups,
   formatMemberCreditLimitRows,
   getMemberDetailTabs,
   type MemberDetailTab,
@@ -24,6 +25,7 @@ import {
 } from '../../constants/memberDetail'
 import {
   MEMBER_PROFIT_CATEGORY_TABS,
+  MEMBER_PROFIT_FORMULA,
   MEMBER_PROFIT_VENDORS,
   getMemberProfitDetail,
   getMemberProfitSummaryRows,
@@ -47,11 +49,13 @@ const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 const profitCategory = ref<MemberProfitCategoryKey>('sports')
 const profitVendor = ref<MemberProfitVendorKey>('im')
+const profitFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
 const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
+const cashWalletGroups = computed(() => formatMemberCashWalletGroups(member.value?.wallets))
 const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
 const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, profitVendor.value))
 const profitSummaryRows = computed(() => getMemberProfitSummaryRows(currency.value))
@@ -113,6 +117,14 @@ const creditLimitItems = computed(() => {
 function selectProfitCategory(key: MemberProfitCategoryKey) {
   profitCategory.value = key
   profitVendor.value = MEMBER_PROFIT_VENDORS[key][0]?.key ?? 'im'
+}
+
+function toggleProfitFormulaTip() {
+  profitFormulaTipOpen.value = !profitFormulaTipOpen.value
+}
+
+function closeProfitFormulaTip() {
+  profitFormulaTipOpen.value = false
 }
 
 function goCredit() {
@@ -213,17 +225,21 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
       </div>
 
       <template v-if="activeTab === 'manage'">
-        <section class="mh5-member-detail-panel">
-          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
-            <h3 class="mh5-member-detail-panel__title">现金钱包</h3>
+        <section
+          v-for="group in cashWalletGroups"
+          :key="group.currency"
+          class="mh5-member-detail-panel"
+        >
+          <div class="mh5-member-detail-panel__head">
+            <h3 class="mh5-member-detail-panel__title">{{ group.title }}</h3>
           </div>
           <div
-            v-for="wallet in member.wallets"
-            :key="wallet.currency"
+            v-for="item in group.rows"
+            :key="`${group.currency}-${item.label}`"
             class="mh5-member-detail-panel__row"
           >
-            <span class="mh5-member-detail-panel__label">{{ wallet.currency }} 余额</span>
-            <span class="mh5-member-detail-panel__value">{{ wallet.balance }}</span>
+            <span class="mh5-member-detail-panel__label">{{ item.label }}</span>
+            <span class="mh5-member-detail-panel__value">{{ item.value }}</span>
           </div>
         </section>
       </template>
@@ -310,20 +326,65 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           </button>
         </div>
 
-        <section v-if="flowSubTab === 'profit'" class="mh5-member-detail-profit">
-          <section class="mh5-member-detail-profit-total">
-            <p class="mh5-member-detail-profit-total__label">会员总盈亏</p>
-            <p class="mh5-member-detail-profit-total__value">{{ memberTotalProfit }}</p>
-          </section>
-
-          <section class="mh5-member-detail-panel mh5-member-detail-profit-summary">
+        <section
+          v-if="flowSubTab === 'profit'"
+          class="mh5-member-detail-profit"
+          @click="closeProfitFormulaTip"
+        >
+          <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
+            <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
+              <span class="mh5-agent-detail-profit-summary__label-wrap">
+                <span class="mh5-agent-detail-wallet__label">会员盈亏</span>
+                <button
+                  type="button"
+                  class="mh5-agent-detail-profit-summary__tip-btn"
+                  aria-label="查看会员盈亏计算公式"
+                  :aria-expanded="profitFormulaTipOpen"
+                  @click.stop="toggleProfitFormulaTip"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                    <path
+                      d="M8 4.6v5.2M8 11.6h.01"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+                <span
+                  v-if="profitFormulaTipOpen"
+                  class="mh5-agent-detail-profit-summary__tip-bubble"
+                  role="tooltip"
+                >
+                  {{ MEMBER_PROFIT_FORMULA }}
+                </span>
+              </span>
+              <span
+                class="mh5-agent-detail-wallet__value"
+                :class="{
+                  'mh5-agent-detail-wallet__value--positive': memberTotalProfit.tone === 'positive',
+                  'mh5-agent-detail-wallet__value--negative': memberTotalProfit.tone === 'negative',
+                }"
+              >
+                {{ memberTotalProfit.value }}
+              </span>
+            </div>
             <div
               v-for="row in profitSummaryRows"
               :key="row.label"
-              class="mh5-member-detail-panel__row"
+              class="mh5-agent-detail-wallet__row"
             >
-              <span class="mh5-member-detail-panel__label">{{ row.label }}</span>
-              <span class="mh5-member-detail-panel__value">{{ row.value }}</span>
+              <span class="mh5-agent-detail-wallet__label">{{ row.label }}</span>
+              <span
+                class="mh5-agent-detail-wallet__value"
+                :class="{
+                  'mh5-agent-detail-wallet__value--positive': row.tone === 'positive',
+                  'mh5-agent-detail-wallet__value--negative': row.tone === 'negative',
+                }"
+              >
+                {{ row.value }}
+              </span>
             </div>
           </section>
 
@@ -342,7 +403,12 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                 {{ tab.label }}
               </button>
             </div>
-            <div class="mh5-agent-report-vendors" role="tablist" aria-label="盈亏场馆">
+            <div
+              v-if="profitVendorOptions.length"
+              class="mh5-agent-report-vendors"
+              role="tablist"
+              aria-label="盈亏场馆"
+            >
               <button
                 v-for="pill in profitVendorOptions"
                 :key="pill.key"

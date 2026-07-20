@@ -60,6 +60,36 @@ export const pcDocRoutes: PcDocRoute[] = [
     title: '文档说明',
     pagePath: ['用户管理', '用户列表', '用户详情', '文档说明'],
   },
+  {
+    path: '/pc/activity-center/doc',
+    routeName: 'pc-activity-center-doc',
+    title: '文档说明',
+    pagePath: ['运营管理', '活动中心', '文档说明'],
+  },
+  {
+    path: '/pc/invite-rebate-inviters/doc',
+    routeName: 'pc-invite-rebate-inviters-doc',
+    title: '文档说明',
+    pagePath: ['运营管理', '邀请人列表', '文档说明'],
+  },
+  {
+    path: '/pc/invite-rebate-invitees/doc',
+    routeName: 'pc-invite-rebate-invitees-doc',
+    title: '文档说明',
+    pagePath: ['运营管理', '邀请人列表', '被邀请人详情', '文档说明'],
+  },
+  {
+    path: '/pc/invite-rebate-stats/doc',
+    routeName: 'pc-invite-rebate-stats-doc',
+    title: '文档说明',
+    pagePath: ['运营管理', '活动统计', '文档说明'],
+  },
+  {
+    path: '/pc/invite-rebate-records/doc',
+    routeName: 'pc-invite-rebate-records-doc',
+    title: '文档说明',
+    pagePath: ['运营管理', '活动统计', '活动明细', '文档说明'],
+  },
 ]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
@@ -169,6 +199,22 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-activity-center',
         pagePath: ['运营管理', '活动中心'],
         docRouteName: 'pc-activity-center-doc',
+      },
+      {
+        key: 'invite-rebate-inviters',
+        title: '邀请人列表',
+        path: '/pc/invite-rebate-inviters',
+        routeName: 'pc-invite-rebate-inviters',
+        pagePath: ['运营管理', '邀请人列表'],
+        docRouteName: 'pc-invite-rebate-inviters-doc',
+      },
+      {
+        key: 'invite-rebate-stats',
+        title: '活动统计',
+        path: '/pc/invite-rebate-stats',
+        routeName: 'pc-invite-rebate-stats',
+        pagePath: ['运营管理', '活动统计'],
+        docRouteName: 'pc-invite-rebate-stats-doc',
       },
     ],
   },

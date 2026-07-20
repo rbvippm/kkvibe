@@ -74,6 +74,14 @@ const showOverviewSection = computed(() => activeTab.value === 'overview')
 const showReportSection = computed(() => activeTab.value === 'report')
 const showBetOrderSection = computed(() => activeTab.value === 'bet-order')
 const showMeSection = computed(() => activeTab.value === 'me')
+const openShareRatio = computed(() => String(route.query.shareRatio || '') === '1')
+
+function clearShareRatioQuery() {
+  if (!openShareRatio.value) return
+  const query = { ...route.query }
+  delete query.shareRatio
+  router.replace({ name: 'mobile-agent', query })
+}
 
 function pickPreset(v: RangePreset) {
   preset.value = v
@@ -135,10 +143,12 @@ function switchTab(tab: BottomTab) {
       :date-range-text="dateRangeText"
       :preset="preset"
       :profit-rank-tab="profitRankTab"
+      :open-share-ratio="openShareRatio"
       @back="handleAgentBack"
       @pick-preset="pickPreset"
       @pick-profit-rank-tab="pickProfitRankTab"
       @pick-currency="pickCurrency"
+      @share-ratio-closed="clearShareRatioQuery"
     />
 
     <!-- 注单查询 -->

@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
+  DEFAULT_AGENT_CREDIT_MAX_COST,
+  formatCreditPercent,
+  isValidCostPercent,
+  normalizeCostPercent,
+} from '../../constants/agentCredit'
+import {
   AGENT_PROFIT_RATIO_TYPE_LABEL,
   cloneAgentProfitRatioProducts,
+  getAgentProfitCost,
   getAgentProfitRatioProductIcon,
   getAgentProfitRatioProducts,
   parseAgentProfitRatioType,
+  saveAgentProfitCost,
   saveAgentProfitRatioProducts,
   type AgentProfitRatioProduct,
 } from '../../constants/agentProfitRatio'
@@ -22,12 +30,33 @@ const ratioTypeLabel = computed(() => AGENT_PROFIT_RATIO_TYPE_LABEL[ratioType.va
 
 const sharePercent = ref(0)
 const rebatePercent = ref(0)
+const costPercent = ref(getAgentProfitCost(ratioType.value).value)
+const maxCost = DEFAULT_AGENT_CREDIT_MAX_COST
 const products = ref<AgentProfitRatioProduct[]>(
   cloneAgentProfitRatioProducts(getAgentProfitRatioProducts(ratioType.value).value),
 )
 
+const costEditVisible = ref(false)
+const costDraft = ref('')
+const costError = ref('')
+
 const targetNickname = computed(() => String(route.query.targetName || 'Tom Cat%'))
 const pageTitle = computed(() => `设置${ratioTypeLabel.value}比例`)
+
+watch(sharePercent, (value) => {
+  const next = Math.round(Math.min(100, Math.max(0, value)))
+  products.value.forEach((product) => {
+    product.share = clampProductValue(product, 'share', next)
+  })
+  costPercent.value = Math.min(next, maxCost)
+})
+
+watch(rebatePercent, (value) => {
+  const next = Math.min(100, Math.max(0, value))
+  products.value.forEach((product) => {
+    product.rebate = clampProductValue(product, 'rebate', next)
+  })
+})
 
 function clampProductValue(product: AgentProfitRatioProduct, field: 'share' | 'rebate', value: number) {
   const max = field === 'share' ? product.maxShare : product.maxRebate
@@ -44,20 +73,63 @@ function updateProductField(product: AgentProfitRatioProduct, field: 'share' | '
   }
 }
 
-function applyGlobalShare() {
-  products.value.forEach((product) => {
-    product.share = clampProductValue(product, 'share', sharePercent.value)
-  })
+function validateCostDraft(showEmptyError = false): number | null {
+  const draft = costDraft.value.trim()
+  if (!draft) {
+    costError.value = showEmptyError ? '请输入有效比例' : ''
+    return null
+  }
+
+  const next = Number(draft)
+  if (Number.isNaN(next) || next < 0) {
+    costError.value = '请输入有效比例'
+    return null
+  }
+
+  if (!isValidCostPercent(next)) {
+    costError.value = '成本须为整数'
+    return null
+  }
+
+  if (next > maxCost) {
+    costError.value = `不能超过最高 ${formatCreditPercent(maxCost, 'share')}`
+    return null
+  }
+
+  costError.value = ''
+  return normalizeCostPercent(next)
 }
 
-function applyGlobalRebate() {
-  products.value.forEach((product) => {
-    product.rebate = clampProductValue(product, 'rebate', rebatePercent.value)
-  })
+function onCostDraftInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  const next = target.value.replace(/[^\d]/g, '')
+  costDraft.value = next
+  if (target.value !== next) target.value = next
+  validateCostDraft(false)
+}
+
+function openCostEdit() {
+  costDraft.value = String(Math.round(costPercent.value))
+  costError.value = ''
+  costEditVisible.value = true
+}
+
+function closeCostEdit() {
+  costEditVisible.value = false
+  costDraft.value = ''
+  costError.value = ''
+}
+
+function saveCostEdit() {
+  const next = validateCostDraft(true)
+  if (next === null) return
+  costPercent.value = next
+  closeCostEdit()
 }
 
 async function saveRatios() {
   saveAgentProfitRatioProducts(ratioType.value, products.value)
+  saveAgentProfitCost(ratioType.value, costPercent.value)
   await mh5Alert(`${ratioTypeLabel.value}收益比例已保存`)
   router.back()
 }
@@ -86,7 +158,6 @@ async function saveRatios() {
               max="100"
               step="1"
               aria-label="占成比例"
-              @change="applyGlobalShare"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${sharePercent}%` }">
               {{ sharePercent }}%
@@ -108,12 +179,39 @@ async function saveRatios() {
               max="100"
               step="1"
               aria-label="退水比例"
-              @change="applyGlobalRebate"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${rebatePercent}%` }">
               {{ rebatePercent }}%
             </span>
           </div>
+        </div>
+      </section>
+
+      <section class="mh5-agent-credit-cost-card">
+        <div class="mh5-agent-credit-cost-card__left">
+          <span class="mh5-agent-credit-cost-card__label">成本</span>
+          <span class="mh5-agent-credit-cost-card__tip">含活动金和VIP晋级礼金</span>
+        </div>
+        <div class="mh5-agent-credit-table__cell">
+          <button
+            type="button"
+            class="mh5-agent-credit-table__value-btn"
+            @click="openCostEdit"
+          >
+            <span>{{ formatCreditPercent(costPercent, 'share') }}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linejoin="round"
+              />
+              <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+          <span class="mh5-agent-credit-table__limit">
+            最高{{ formatCreditPercent(maxCost, 'share') }}
+          </span>
         </div>
       </section>
 
@@ -167,6 +265,45 @@ async function saveRatios() {
     <footer class="mh5-agent-profit-ratio-edit-footer safe-pb">
       <button type="button" class="mh5-agent-profit-ratio-edit-footer__btn" @click="saveRatios">保存</button>
     </footer>
+
+    <Teleport to="body">
+      <div v-if="costEditVisible" class="mh5-agent-credit-edit-mask" @click.self="closeCostEdit">
+        <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" aria-label="编辑成本">
+          <h3 class="mh5-agent-credit-edit-panel__title">编辑成本</h3>
+          <p class="mh5-agent-credit-edit-panel__hint">
+            最高 {{ formatCreditPercent(maxCost, 'share') }}
+          </p>
+          <div
+            class="mh5-agent-credit-edit-panel__field"
+            :class="{ 'mh5-agent-credit-edit-panel__field--error': !!costError }"
+          >
+            <input
+              :value="costDraft"
+              type="text"
+              class="mh5-agent-credit-edit-panel__input"
+              inputmode="numeric"
+              placeholder="请输入整数"
+              :aria-invalid="!!costError"
+              @input="onCostDraftInput"
+            />
+            <span>%</span>
+          </div>
+          <p v-if="costError" class="mh5-agent-credit-edit-panel__error">{{ costError }}</p>
+          <div class="mh5-agent-credit-edit-panel__actions">
+            <button type="button" class="mh5-agent-credit-edit-panel__btn" @click="closeCostEdit">
+              取消
+            </button>
+            <button
+              type="button"
+              class="mh5-agent-credit-edit-panel__btn mh5-agent-credit-edit-panel__btn--primary"
+              @click="saveCostEdit"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 

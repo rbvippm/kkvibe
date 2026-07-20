@@ -8,6 +8,10 @@ import '../styles/mobile-app-shell.css'
 const route = useRoute()
 const { isWorkspacePreview } = useWorkspaceInlinePreview()
 
+/**
+ * 仅清理团队「创建账户」残留遮罩（历史问题）。
+ * 禁止在路由切换时强删 Vue Teleport 节点，否则 out-in 过渡会卡死导致白屏。
+ */
 watch(
   () => route.fullPath,
   () => {
@@ -60,10 +64,14 @@ function isActive(tab: (typeof tabs)[number]) {
     <div class="mh5-app-shell">
       <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
         <slot v-if="$slots.default" />
-        <RouterView v-else v-slot="{ Component }">
-          <Transition name="mh5-tab" mode="out-in">
-            <component :is="Component" class="mh5-route-view" />
-          </Transition>
+        <!-- 不用 mode=out-in：离开动画未完成时会卡死 RouterView，表现为返回后白屏 -->
+        <RouterView v-else v-slot="{ Component, route: viewRoute }">
+          <component
+            :is="Component"
+            v-if="Component"
+            :key="viewRoute.fullPath"
+            class="mh5-route-view"
+          />
         </RouterView>
       </div>
 
@@ -181,14 +189,3 @@ function isActive(tab: (typeof tabs)[number]) {
   </div>
 </template>
 
-<style scoped>
-.mh5-tab-enter-active,
-.mh5-tab-leave-active {
-  transition: opacity 0.12s ease;
-}
-
-.mh5-tab-enter-from,
-.mh5-tab-leave-to {
-  opacity: 0;
-}
-</style>

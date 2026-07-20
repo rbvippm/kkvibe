@@ -133,6 +133,12 @@ export const router = createRouter({
           meta: { title: '代理授信', hideTabBar: true },
         },
         {
+          path: 'agent/create-account',
+          name: 'mobile-agent-create-account',
+          component: () => import('../views/mobile/MobileAgentCreditView.vue'),
+          meta: { title: '创建代理账户', hideTabBar: true, agentCreditMode: 'create' },
+        },
+        {
           path: 'agent/invite-member',
           name: 'mobile-agent-invite-member',
           component: () => import('../views/mobile/MobileAgentInviteMemberView.vue'),
@@ -143,6 +149,18 @@ export const router = createRouter({
           name: 'mobile-agent-invite-records',
           component: () => import('../views/mobile/MobileAgentInviteRecordsView.vue'),
           meta: { title: '我的邀请记录', hideTabBar: true },
+        },
+        {
+          path: 'agent/my-profit',
+          name: 'mobile-agent-my-profit',
+          component: () => import('../views/mobile/MobileAgentMyProfitView.vue'),
+          meta: { title: '我的盈亏', hideTabBar: true },
+        },
+        {
+          path: 'agent/my-share-ratio',
+          name: 'mobile-agent-my-share-ratio',
+          component: () => import('../views/mobile/MobileAgentMyShareRatioView.vue'),
+          meta: { title: '占成比例', hideTabBar: true },
         },
         {
           path: 'agent/profit-ratio',
@@ -414,6 +432,54 @@ export const router = createRouter({
           name: 'pc-activity-center-doc',
           component: () => import('../views/pc/PcActivityCenterDocView.vue'),
           meta: { title: '活动中心-文档说明' },
+        },
+        {
+          path: 'invite-rebate-inviters',
+          name: 'pc-invite-rebate-inviters',
+          component: () => import('../views/pc/PcInviteRebateInviterView.vue'),
+          meta: { title: '邀请人列表' },
+        },
+        {
+          path: 'invite-rebate-inviters/doc',
+          name: 'pc-invite-rebate-inviters-doc',
+          component: () => import('../views/pc/PcInviteRebateInviterDocView.vue'),
+          meta: { title: '邀请人列表-文档说明' },
+        },
+        {
+          path: 'invite-rebate-invitees',
+          name: 'pc-invite-rebate-invitees',
+          component: () => import('../views/pc/PcInviteRebateInviteeView.vue'),
+          meta: { title: '被邀请人详情' },
+        },
+        {
+          path: 'invite-rebate-invitees/doc',
+          name: 'pc-invite-rebate-invitees-doc',
+          component: () => import('../views/pc/PcInviteRebateInviteeDocView.vue'),
+          meta: { title: '被邀请人详情-文档说明' },
+        },
+        {
+          path: 'invite-rebate-stats',
+          name: 'pc-invite-rebate-stats',
+          component: () => import('../views/pc/PcInviteRebateStatsView.vue'),
+          meta: { title: '活动统计' },
+        },
+        {
+          path: 'invite-rebate-stats/doc',
+          name: 'pc-invite-rebate-stats-doc',
+          component: () => import('../views/pc/PcInviteRebateStatsDocView.vue'),
+          meta: { title: '活动统计-文档说明' },
+        },
+        {
+          path: 'invite-rebate-records',
+          name: 'pc-invite-rebate-records',
+          component: () => import('../views/pc/PcInviteRebateRecordView.vue'),
+          meta: { title: '活动明细' },
+        },
+        {
+          path: 'invite-rebate-records/doc',
+          name: 'pc-invite-rebate-records-doc',
+          component: () => import('../views/pc/PcInviteRebateRecordDocView.vue'),
+          meta: { title: '活动明细-文档说明' },
         },
         {
           path: 'user-list',

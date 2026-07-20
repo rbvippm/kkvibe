@@ -8,10 +8,12 @@ import {
   type AgentProfitDetailRow,
   type AgentProfitSummaryRow,
   type AgentProfitVendorKey,
+  type ProfitValueTone,
 } from './agentDetailProfit'
 
 export type MemberProfitCategoryKey = AgentProfitCategoryKey
 export type MemberProfitVendorKey = AgentProfitVendorKey
+export type MemberProfitSummaryRow = AgentProfitSummaryRow
 
 export {
   AGENT_PROFIT_CATEGORY_TABS as MEMBER_PROFIT_CATEGORY_TABS,
@@ -20,22 +22,114 @@ export {
   profitValueClass,
 }
 
-/** 会员总盈亏（顶栏币种口径，不展示币种符号） */
-export function getMemberTotalProfit(_currency: string): string {
-  return '0'
+/** 会员盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【实占活动金】 */
+export const MEMBER_PROFIT_FORMULA =
+  '会员盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【实占活动金】'
+
+type MemberProfitSummaryMock = {
+  gameProfit: number
+  memberRebate: number
+  vipBonus: number
+  /** 实占活动金（按公式直接累加） */
+  activityGold: number
 }
 
-/** 现金：充值/提款；信用额度：上分/下分（不展示币种符号） */
-export function getMemberProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
-  if (currency.startsWith('信用额度')) {
-    return [
-      { label: '上分总金额', value: '0' },
-      { label: '下分总金额', value: '0' },
-    ]
+const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
+  KKC: {
+    gameProfit: 12350,
+    memberRebate: 1280,
+    vipBonus: 320,
+    activityGold: 180,
+  },
+  USDT: {
+    gameProfit: 3200,
+    memberRebate: 210,
+    vipBonus: 80,
+    activityGold: 50,
+  },
+  KKV: {
+    gameProfit: 8600,
+    memberRebate: 520,
+    vipBonus: 210,
+    activityGold: 120,
+  },
+  '信用额度-CNY': {
+    gameProfit: 1550,
+    memberRebate: 128,
+    vipBonus: 60,
+    activityGold: 40,
+  },
+  '信用额度-USD': {
+    gameProfit: 620,
+    memberRebate: 48,
+    vipBonus: 22,
+    activityGold: 15,
+  },
+}
+
+const EMPTY_SUMMARY_MOCK: MemberProfitSummaryMock = {
+  gameProfit: 0,
+  memberRebate: 0,
+  vipBonus: 0,
+  activityGold: 0,
+}
+
+function formatProfitAmount(value: number) {
+  const abs = Math.abs(value).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  if (value > 0) return `+${abs}`
+  if (value < 0) return `-${abs}`
+  return '0.00'
+}
+
+function profitTone(value: number): ProfitValueTone {
+  if (value > 0) return 'positive'
+  if (value < 0) return 'negative'
+  return 'neutral'
+}
+
+function getMemberProfitSummaryMock(currency: string) {
+  return PROFIT_SUMMARY_BY_CURRENCY[currency] ?? EMPTY_SUMMARY_MOCK
+}
+
+/** 会员盈亏总值（按公式计算，随顶栏币种切换） */
+export function getMemberTotalProfit(currency: string) {
+  const stats = getMemberProfitSummaryMock(currency)
+  const total =
+    stats.gameProfit + stats.memberRebate + stats.vipBonus + stats.activityGold
+  return {
+    value: formatProfitAmount(total),
+    tone: profitTone(total),
   }
+}
+
+/** 会员盈亏构成项（与公式四项一致） */
+export function getMemberProfitSummaryRows(currency: string): MemberProfitSummaryRow[] {
+  const stats = getMemberProfitSummaryMock(currency)
+
   return [
-    { label: '充值总金额', value: '0' },
-    { label: '提款总金额', value: '0' },
+    {
+      label: '游戏盈亏',
+      value: formatProfitAmount(stats.gameProfit),
+      tone: profitTone(stats.gameProfit),
+    },
+    {
+      label: '会员退水',
+      value: formatProfitAmount(stats.memberRebate),
+      tone: profitTone(stats.memberRebate),
+    },
+    {
+      label: 'VIP晋级礼金',
+      value: formatProfitAmount(stats.vipBonus),
+      tone: profitTone(stats.vipBonus),
+    },
+    {
+      label: '实占活动金',
+      value: formatProfitAmount(stats.activityGold),
+      tone: profitTone(stats.activityGold),
+    },
   ]
 }
 
@@ -48,8 +142,6 @@ const IM_SPORTS_DETAIL: AgentProfitDetail = {
     { label: '会员游戏输赢', value: '+500.00', tone: 'positive' },
     { label: '会员退水', value: '-100.00', tone: 'negative' },
     { label: 'VIP退水', value: '-50.00', tone: 'negative' },
-    { label: '活动金', value: '-30.00', tone: 'negative' },
-    { label: 'VIP晋级礼金', value: '-20.00', tone: 'negative' },
   ],
 }
 
@@ -58,14 +150,28 @@ const EMPTY_DETAIL_ROWS: AgentProfitDetailRow[] = [
   { label: '会员游戏输赢', value: '0.00', tone: 'neutral' },
   { label: '会员退水', value: '0.00', tone: 'neutral' },
   { label: 'VIP退水', value: '0.00', tone: 'neutral' },
-  { label: '活动金', value: '0.00', tone: 'neutral' },
-  { label: 'VIP晋级礼金', value: '0.00', tone: 'neutral' },
 ]
+
+const OVERALL_GAME_DETAIL: AgentProfitDetail = {
+  title: '全部',
+  totalProfit: '+12,800.00',
+  totalProfitTone: 'positive',
+  rows: [
+    { label: '下注有效金额', value: '86,420.00', tone: 'neutral' },
+    { label: '会员游戏输赢', value: '+12,350.00', tone: 'positive' },
+    { label: '会员退水', value: '-1,280.00', tone: 'negative' },
+    { label: 'VIP退水', value: '-150.00', tone: 'negative' },
+  ],
+}
 
 export function getMemberProfitDetail(
   category: MemberProfitCategoryKey,
   vendor: MemberProfitVendorKey,
 ): AgentProfitDetail {
+  if (category === 'overall') {
+    return OVERALL_GAME_DETAIL
+  }
+
   if (category === 'sports' && vendor === 'im') {
     return IM_SPORTS_DETAIL
   }

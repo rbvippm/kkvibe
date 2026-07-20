@@ -23,7 +23,8 @@ export const MOCK_AGENT_ME_PROFILE = {
 export const MOCK_AGENT_ME_PROFIT_ROWS: AgentMeProfitRow[] = [
   { key: 'kkc', label: 'KKC 总盈亏', value: '-1,000' },
   { key: 'kkv', label: 'KKV 总盈亏', value: '+1,000' },
-  { key: 'xcoin', label: '信用额度盈亏', value: '+1,000' },
+  { key: 'credit-cny', label: '信用额度-CNY 盈亏', value: '+1,000' },
+  { key: 'credit-usd', label: '信用额度-USD 盈亏', value: '+1,000' },
   { key: 'usdt', label: 'USDT 总盈亏', value: '+1,000' },
 ]
 

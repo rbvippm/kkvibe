@@ -1,5 +1,9 @@
 import { filterTeamList, type TeamListItem } from './agentTeam'
-import type { AgentCreditCurrency } from './agentDetail'
+import {
+  formatCashWalletGroups,
+  type AgentCashWalletRow,
+  type AgentCreditCurrency,
+} from './agentDetail'
 
 export type MemberDetailTab = 'manage' | 'credit' | 'flow' | 'login'
 
@@ -33,10 +37,8 @@ export const MEMBER_FLOW_SUB_TABS: { key: MemberFlowSubTab; label: string }[] = 
   { key: 'profit', label: '盈亏数据' },
 ]
 
-export type MemberWalletRow = {
-  currency: string
-  balance: string
-}
+/** 与代理现金钱包同构：余额 / 充值金额 / 提款金额 */
+export type MemberWalletRow = AgentCashWalletRow
 
 export type MemberCreditLimitStats = {
   creditBalance: number
@@ -69,10 +71,15 @@ export type MemberDetailProfile = {
 }
 
 const DEFAULT_WALLETS: MemberWalletRow[] = [
-  { currency: 'KKC', balance: '1,000' },
-  { currency: 'USDT', balance: '1,000' },
-  { currency: 'KKV', balance: '1,000' },
+  { currency: 'KKC', balance: '1,000', deposit: '2,400', withdraw: '800' },
+  { currency: 'USDT', balance: '1,000', deposit: '560', withdraw: '220' },
+  { currency: 'KKV', balance: '1,000', deposit: '1,280', withdraw: '460' },
 ]
+
+/** 现金钱包：按 KKC / USDT / KKV 分卡（对齐代理详情） */
+export function formatMemberCashWalletGroups(wallets?: MemberWalletRow[] | null) {
+  return formatCashWalletGroups(wallets)
+}
 
 function buildMemberCreditLimits(scale: number): Record<AgentCreditCurrency, MemberCreditLimitStats> {
   const s = Math.max(1, scale)
