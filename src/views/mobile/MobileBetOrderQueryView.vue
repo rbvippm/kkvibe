@@ -4,10 +4,10 @@ import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
+import { findAgentDetail } from '../../constants/agentDetail'
 import {
   getBetOrderGameNameOptions,
   BET_ORDER_CATEGORY_OPTIONS,
-  BET_ORDER_CURRENCY_OPTIONS,
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
@@ -22,6 +22,9 @@ import {
   formatBetOrderMemberKingkongId,
   formatBetOrderMemberLabel,
   formatMoney,
+  getBetOrderCurrencyOptions,
+  getBetOrderSummaryCurrencies,
+  isBetOrderCreditCurrency,
   summarizeBetOrdersByCurrency,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
@@ -83,7 +86,28 @@ const summaryRecords = computed(() =>
   ),
 )
 
-const currencySummaries = computed(() => summarizeBetOrdersByCurrency(summaryRecords.value))
+/** 本代理是否具备信用代理身份（决定信用额度币种统计页与筛选） */
+const isCreditAgent = computed(() => Boolean(findAgentDetail('self')?.isCredited))
+const currencyOptions = computed(() => getBetOrderCurrencyOptions(isCreditAgent.value))
+const summaryCurrencies = computed(() => getBetOrderSummaryCurrencies(isCreditAgent.value))
+
+const currencySummaries = computed(() =>
+  summarizeBetOrdersByCurrency(summaryRecords.value, summaryCurrencies.value),
+)
+
+watch(
+  isCreditAgent,
+  (credited) => {
+    if (credited) return
+    if (isBetOrderCreditCurrency(appliedFilter.value.gameCurrency)) {
+      appliedFilter.value = { ...appliedFilter.value, gameCurrency: 'KKC' }
+    }
+    if (isBetOrderCreditCurrency(filterDraft.value.gameCurrency)) {
+      filterDraft.value = { ...filterDraft.value, gameCurrency: 'KKC' }
+    }
+  },
+  { immediate: true },
+)
 
 const summaryCarouselRef = ref<HTMLElement | null>(null)
 const summarySlideIndex = ref(0)
@@ -446,7 +470,7 @@ function summaryWinLoseClass(value: number) {
             <h3 class="mh5-xcoin-filter-group__label">游戏币种</h3>
             <div class="mh5-xcoin-filter-chips">
               <button
-                v-for="opt in BET_ORDER_CURRENCY_OPTIONS"
+                v-for="opt in currencyOptions"
                 :key="`currency-${opt.value || 'all'}`"
                 type="button"
                 class="mh5-xcoin-chip"

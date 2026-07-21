@@ -79,12 +79,21 @@ export const BET_ORDER_WINLOSE_OPTIONS = [
   { value: 'draw', label: '和' },
 ] as const
 
-export const BET_ORDER_CURRENCY_OPTIONS = [
+export const BET_ORDER_CASH_CURRENCY_OPTIONS = [
   { value: 'KKC', label: 'KKC' },
   { value: 'KKV', label: 'KKV' },
   { value: 'USDT', label: 'USDT' },
+] as const
+
+export const BET_ORDER_CREDIT_CURRENCY_OPTIONS = [
   { value: '信用额度-CNY', label: '信用额度-CNY' },
   { value: '信用额度-USD', label: '信用额度-USD' },
+] as const
+
+/** 含信用额度币种的完整筛选项（仅信用代理身份可用） */
+export const BET_ORDER_CURRENCY_OPTIONS = [
+  ...BET_ORDER_CASH_CURRENCY_OPTIONS,
+  ...BET_ORDER_CREDIT_CURRENCY_OPTIONS,
 ] as const
 
 export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, string> = {
@@ -93,6 +102,11 @@ export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, stri
   USDT: 'USDT',
   '信用额度-CNY': '信用额度-CNY',
   '信用额度-USD': '信用额度-USD',
+}
+
+/** 游戏币种筛选项：仅本代理拥有信用代理身份时含信用额度币种 */
+export function getBetOrderCurrencyOptions(isCreditAgent: boolean) {
+  return isCreditAgent ? BET_ORDER_CURRENCY_OPTIONS : BET_ORDER_CASH_CURRENCY_OPTIONS
 }
 
 export function formatBetOrderCurrency(currency: string) {
@@ -772,14 +786,30 @@ export function summarizeBetOrders(rows: BetOrderRecord[]): BetOrderSummary {
   )
 }
 
-/** 汇总轮播顺序：KKC → KKV → USDT → 信用额度-CNY → 信用额度-USD */
-export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
+/** 汇总轮播现金币种顺序 */
+export const BET_ORDER_SUMMARY_CASH_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
   'KKC',
   'KKV',
   'USDT',
+]
+
+/** 汇总轮播完整顺序（含信用额度，仅信用代理） */
+export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
+  ...BET_ORDER_SUMMARY_CASH_CURRENCIES,
   '信用额度-CNY',
   '信用额度-USD',
 ]
+
+/** 汇总轮播币种：仅本代理拥有信用代理身份时追加信用额度页 */
+export function getBetOrderSummaryCurrencies(isCreditAgent: boolean) {
+  return isCreditAgent ? BET_ORDER_SUMMARY_CURRENCIES : BET_ORDER_SUMMARY_CASH_CURRENCIES
+}
+
+export function isBetOrderCreditCurrency(
+  currency: string,
+): currency is '信用额度-CNY' | '信用额度-USD' {
+  return currency === '信用额度-CNY' || currency === '信用额度-USD'
+}
 
 export type BetOrderCurrencySummary = BetOrderSummary & {
   currency: Exclude<BetGameCurrency, ''>
