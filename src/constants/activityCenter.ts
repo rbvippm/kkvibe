@@ -119,6 +119,11 @@ export type ActivityCurrencyConfig = {
   inviterDailyMinDeposit: number
   /** 邀请人 · 返利比例（%）；应发 = 被邀请人当天存款 × 该比例 */
   rebateRate: number
+  /**
+   * 邀请人 · 返利提现流水倍数（整数，≥0）
+   * 派发返利时按「返利金额 × 倍数」增加提现流水要求；0 表示无提现流水要求
+   */
+  rebateWithdrawTurnoverMultiple: number
   /** 被邀请人 · 历史累计存款门槛（本币种） */
   inviteeHistoryDeposit: number
   /** 被邀请人 · 每日最低存款（本币种；结算日校验「昨天」是否达标） */
@@ -226,6 +231,7 @@ export function createDefaultCurrencyConfig(
     inviterHistoryDeposit: round(500000 * s),
     inviterDailyMinDeposit: round(100000 * s),
     rebateRate: 1,
+    rebateWithdrawTurnoverMultiple: 1,
     inviteeHistoryDeposit: round(1000000 * s),
     inviteeDailyMinDeposit: round(100000 * s),
     vipDailyCaps: createDefaultVipDailyCaps(currency),

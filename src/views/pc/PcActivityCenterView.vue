@@ -334,6 +334,13 @@ function validateForm() {
       if (cfg.rebateRate < 0 || cfg.rebateRate > 100) {
         return `${cfg.currency} 返利比例须在 0～100%`
       }
+      if (
+        !Number.isFinite(cfg.rebateWithdrawTurnoverMultiple) ||
+        !Number.isInteger(cfg.rebateWithdrawTurnoverMultiple) ||
+        cfg.rebateWithdrawTurnoverMultiple < 0
+      ) {
+        return `${cfg.currency} 返利提现流水倍数须为 ≥0 的整数（0 表示无限制）`
+      }
       if (cfg.inviteeHistoryDeposit < 0) {
         return `${cfg.currency} 被邀请人历史累计存款不能为负数`
       }
@@ -785,7 +792,26 @@ function setShowInList(value: boolean) {
                           <span>%</span>
                         </div>
                       </div>
+                      <div class="wf-form-row">
+                        <label class="wf-form-row__label wf-form-row__label--required">
+                          返利提现流水倍数
+                        </label>
+                        <div class="activity-center-modal__suffix-field">
+                          <input
+                            v-model.number="activeCurrencyConfig.rebateWithdrawTurnoverMultiple"
+                            type="number"
+                            min="0"
+                            step="1"
+                            class="wf-input wf-input--full"
+                            :disabled="readonly"
+                          />
+                          <span>倍</span>
+                        </div>
+                      </div>
                     </div>
+                    <p class="activity-center-modal__condition-hint activity-center-modal__condition-hint--after">
+                      返利提现流水倍数为整数，最小 0；填 0 表示该币种返利无提现流水要求。
+                    </p>
                   </div>
 
                   <div class="activity-center-modal__condition-group">
@@ -1246,7 +1272,12 @@ function setShowInList(value: boolean) {
                     }}，历史累计 ≥
                     {{ formatAmount(cfg.inviterHistoryDeposit) }}，每日最低 ≥
                     {{ formatAmount(cfg.inviterDailyMinDeposit) }}，返利比例
-                    {{ cfg.rebateRate }}%{{ idx < form.currencyConfigs.length - 1 ? '；' : '' }}
+                    {{ cfg.rebateRate }}%，提现流水倍数
+                    {{
+                      cfg.rebateWithdrawTurnoverMultiple === 0
+                        ? '无限制'
+                        : `${cfg.rebateWithdrawTurnoverMultiple} 倍`
+                    }}{{ idx < form.currencyConfigs.length - 1 ? '；' : '' }}
                   </template>
                 </li>
                 <li>
@@ -1565,6 +1596,10 @@ function setShowInList(value: boolean) {
   color: var(--pc-text-secondary, #666);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.activity-center-modal__condition-hint--after {
+  margin: 8px 0 0;
 }
 
 .activity-center-modal__currency-badge {
