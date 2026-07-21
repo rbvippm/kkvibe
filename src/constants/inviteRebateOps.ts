@@ -484,7 +484,7 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
   },
 ]
 
-/** 默认 Mock 返利比例（%），与活动中心 VIP 阶梯一致 */
+/** 默认 Mock 返利比例（%），与活动中心邀请人条件一致 */
 export const INVITE_REBATE_MOCK_RATE = 1
 
 /** 应发返利 = 当天存款金额 × 返利比例 */

@@ -331,6 +331,9 @@ function validateForm() {
       if (cfg.inviterDailyMinDeposit < 0) {
         return `${cfg.currency} 邀请人每日最低存款不能为负数`
       }
+      if (cfg.rebateRate < 0 || cfg.rebateRate > 100) {
+        return `${cfg.currency} 返利比例须在 0～100%`
+      }
       if (cfg.inviteeHistoryDeposit < 0) {
         return `${cfg.currency} 被邀请人历史累计存款不能为负数`
       }
@@ -349,9 +352,6 @@ function validateForm() {
           if (row.vipTo < row.vipFrom) {
             return `${cfg.currency} VIP 区间结束等级须大于等于起始等级`
           }
-        }
-        if (row.rebateRate < 0 || row.rebateRate > 100) {
-          return `${cfg.currency} 返利比例须在 0～100%`
         }
         if (row.dailyCap < 0) return `${cfg.currency} 每日返利上限不能为负数`
       }
@@ -630,7 +630,7 @@ function setShowInList(value: boolean) {
               <p class="activity-center-modal__rules-desc">
                 仅邀请人与被邀请人均为普通会员时计算返利；任一方成为代理即取消返利资格。金额条件与到账返利均按币种区分配置与派发。结算周期：隔天以业务时区
                 GMT+8 中午 12:00，向邀请人派发「昨天」产生的返利，且要求昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。应发返利 =
-                被邀请人当天存款金额 × 对应 VIP 档位返利比例；返利上限取返利计算日当日 23:59:59 被邀请人 VIP
+                被邀请人当天存款金额 × 邀请人返利比例；返利上限取返利计算日当日 23:59:59 被邀请人 VIP
                 等级对应档位；落库当日返利金额时同步落库当日返利上限；派发时若当日应发合计超过各被邀请人上限之和，则扣减超出部分后再派发。
               </p>
 
@@ -770,6 +770,21 @@ function setShowInList(value: boolean) {
                           <span>{{ activeCurrencyConfig.currency }}</span>
                         </div>
                       </div>
+                      <div class="wf-form-row">
+                        <label class="wf-form-row__label wf-form-row__label--required">返利比例</label>
+                        <div class="activity-center-modal__suffix-field">
+                          <input
+                            v-model.number="activeCurrencyConfig.rebateRate"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            class="wf-input wf-input--full"
+                            :disabled="readonly"
+                          />
+                          <span>%</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -811,7 +826,7 @@ function setShowInList(value: boolean) {
                   </div>
 
                   <h5 class="activity-center-modal__sub-title">
-                    被邀请人VIP对应 · 邀请人返利比例与日上限（{{ activeCurrencyConfig.currency }}）
+                    被邀请人VIP对应 · 邀请人日返利上限（{{ activeCurrencyConfig.currency }}）
                   </h5>
                   <div class="wf-table-wrap">
                     <table class="wf-table">
@@ -819,7 +834,6 @@ function setShowInList(value: boolean) {
                         <tr>
                           <th class="wf-th">设置方式</th>
                           <th class="wf-th">被邀请人VIP等级</th>
-                          <th class="wf-th">返利比例</th>
                           <th class="wf-th">
                             邀请人每日返利最高上限（{{ activeCurrencyConfig.currency }}）
                           </th>
@@ -893,20 +907,6 @@ function setShowInList(value: boolean) {
                             <span v-else>{{ formatVipCapLabel(cap) }}</span>
                           </td>
                           <td class="wf-td">
-                            <div v-if="!readonly" class="wf-modal__pct-row">
-                              <input
-                                v-model.number="cap.rebateRate"
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                class="wf-input wf-input--pct"
-                              />
-                              <span class="wf-pct">%</span>
-                            </div>
-                            <span v-else>{{ cap.rebateRate }}%</span>
-                          </td>
-                          <td class="wf-td">
                             <input
                               v-if="!readonly"
                               v-model.number="cap.dailyCap"
@@ -928,7 +928,7 @@ function setShowInList(value: boolean) {
                           </td>
                         </tr>
                         <tr v-if="!activeCurrencyConfig.vipDailyCaps.length">
-                          <td :colspan="readonly ? 4 : 5" class="wf-td wf-td--empty">
+                          <td :colspan="readonly ? 3 : 4" class="wf-td wf-td--empty">
                             暂无 VIP 阶梯配置
                           </td>
                         </tr>
@@ -1245,8 +1245,8 @@ function setShowInList(value: boolean) {
                         : '不强制绑手机'
                     }}，历史累计 ≥
                     {{ formatAmount(cfg.inviterHistoryDeposit) }}，每日最低 ≥
-                    {{ formatAmount(cfg.inviterDailyMinDeposit)
-                    }}{{ idx < form.currencyConfigs.length - 1 ? '；' : '' }}
+                    {{ formatAmount(cfg.inviterDailyMinDeposit) }}，返利比例
+                    {{ cfg.rebateRate }}%{{ idx < form.currencyConfigs.length - 1 ? '；' : '' }}
                   </template>
                 </li>
                 <li>
