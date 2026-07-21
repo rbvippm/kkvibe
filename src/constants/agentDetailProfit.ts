@@ -107,6 +107,39 @@ export function getAgentTotalProfit(currency: string) {
   }
 }
 
+/** 报表「实占佣金」= 游戏盈亏 + 【-VIP晋级礼金】 + 【-活动金】 */
+export const AGENT_SHARE_INCOME_FORMULA =
+  '实占佣金 = 游戏盈亏 + 【-VIP晋级礼金】+ 【-活动金】'
+
+/** 报表实占佣金总值（不含赚水） */
+export function getAgentShareIncome(currency: string) {
+  const stats = getAgentProfitSummaryMock(currency)
+  const total = stats.gameProfit - stats.vipBonus - stats.activityGold
+  return {
+    value: formatProfitAmount(total),
+    tone: profitTone(total),
+  }
+}
+
+/** 报表实占佣金细项：游戏盈亏 / VIP晋级礼金 / 活动金 */
+export function getAgentShareIncomeRows(currency: string): AgentProfitSummaryRow[] {
+  const stats = getAgentProfitSummaryMock(currency)
+
+  return [
+    { label: '游戏盈亏', value: formatProfitAmount(stats.gameProfit), tone: profitTone(stats.gameProfit) },
+    {
+      label: 'VIP晋级礼金',
+      value: formatProfitAmount(-stats.vipBonus),
+      tone: profitTone(-stats.vipBonus),
+    },
+    {
+      label: '活动金',
+      value: formatProfitAmount(-stats.activityGold),
+      tone: profitTone(-stats.activityGold),
+    },
+  ]
+}
+
 /** 按顶栏币种切换盈亏汇总口径（四项构成 + 代理盈亏总值另取） */
 export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
   const stats = getAgentProfitSummaryMock(currency)
@@ -127,24 +160,9 @@ export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryR
   ]
 }
 
-/** 报表等场景：与公式四项一致（游戏盈亏 / 赚水 / 实占VIP晋级礼金 / 实占活动金） */
+/** @deprecated 请使用 getAgentShareIncomeRows */
 export function getAgentProfitFormulaRows(currency: string): AgentProfitSummaryRow[] {
-  const stats = getAgentProfitSummaryMock(currency)
-
-  return [
-    { label: '游戏盈亏', value: formatProfitAmount(stats.gameProfit), tone: profitTone(stats.gameProfit) },
-    { label: '赚水', value: formatProfitAmount(stats.rebateEarn), tone: profitTone(stats.rebateEarn) },
-    {
-      label: '实占VIP晋级礼金',
-      value: formatProfitAmount(-stats.vipBonus),
-      tone: profitTone(-stats.vipBonus),
-    },
-    {
-      label: '实占活动金',
-      value: formatProfitAmount(-stats.activityGold),
-      tone: profitTone(-stats.activityGold),
-    },
-  ]
+  return getAgentShareIncomeRows(currency)
 }
 
 /** @deprecated 请使用 getAgentProfitSummaryRows */

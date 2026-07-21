@@ -11671,8 +11671,9 @@
   color: #fff;
 }
 
-.mh5-agent-report-profit {
-  margin-top: 14px;
+/* 需盖过 .mh5-agent-detail-profit-summary { margin-top: 0 }，与上方时间区拉开 */
+.mh5-agent-detail-wallet.mh5-agent-report-profit {
+  margin-top: 12px;
   padding: 4px 16px 8px;
   overflow: visible;
 }

@@ -5,13 +5,14 @@ import {
   type AgentCreditCurrency,
 } from './agentDetail'
 
-export type MemberDetailTab = 'manage' | 'credit' | 'flow' | 'login'
+export type MemberDetailTab = 'manage' | 'credit' | 'profit' | 'game' | 'login'
 
-export type MemberFlowSubTab = 'instant' | 'records' | 'profit'
+export type MemberGameSubTab = 'instant' | 'records' | 'stats'
 
 export const MEMBER_DETAIL_TABS: { key: MemberDetailTab; label: string }[] = [
   { key: 'manage', label: '会员钱包' },
-  { key: 'flow', label: '账户流水' },
+  { key: 'profit', label: '会员盈亏' },
+  { key: 'game', label: '游戏数据' },
   { key: 'login', label: '登录日志' },
 ]
 
@@ -28,14 +29,21 @@ export function getMemberDetailTabs(isCredited: boolean): { key: MemberDetailTab
     MEMBER_DETAIL_CREDIT_TAB,
     MEMBER_DETAIL_TABS[1],
     MEMBER_DETAIL_TABS[2],
+    MEMBER_DETAIL_TABS[3],
   ]
 }
 
-export const MEMBER_FLOW_SUB_TABS: { key: MemberFlowSubTab; label: string }[] = [
+/** 游戏数据子 Tab */
+export const MEMBER_GAME_SUB_TABS: { key: MemberGameSubTab; label: string }[] = [
   { key: 'instant', label: '即时注单' },
   { key: 'records', label: '注单记录' },
-  { key: 'profit', label: '盈亏数据' },
+  { key: 'stats', label: '游戏统计' },
 ]
+
+/** @deprecated 请使用 MEMBER_GAME_SUB_TABS */
+export type MemberFlowSubTab = MemberGameSubTab
+/** @deprecated 请使用 MEMBER_GAME_SUB_TABS */
+export const MEMBER_FLOW_SUB_TABS = MEMBER_GAME_SUB_TABS
 
 /** 与代理现金钱包同构：余额 / 充值金额 / 提款金额 */
 export type MemberWalletRow = AgentCashWalletRow

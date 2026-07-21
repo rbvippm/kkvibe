@@ -52,7 +52,7 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
   { key: 'slots', name: '老虎机', amountText: '-23,567.88', tone: 'negative' },
   { key: 'fishing', name: '捕鱼', amountText: '+123,567.88', tone: 'positive' },
   { key: 'vip_bonus', name: 'VIP晋级礼金', amountText: '-23,567.88', tone: 'negative' },
-  { key: 'activity', name: '活动金', amountText: '+123,567.88', tone: 'positive' },
+  { key: 'activity', name: '活动金', amountText: '-123,567.88', tone: 'negative' },
 ]
 
 export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {

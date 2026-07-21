@@ -15,13 +15,13 @@ import {
   setAgentAppCurrency,
 } from '../../constants/agentAppCurrency'
 import {
-  MEMBER_FLOW_SUB_TABS,
+  MEMBER_GAME_SUB_TABS,
   findMemberDetail,
   formatMemberCashWalletGroups,
   formatMemberCreditLimitRows,
   getMemberDetailTabs,
   type MemberDetailTab,
-  type MemberFlowSubTab,
+  type MemberGameSubTab,
 } from '../../constants/memberDetail'
 import {
   MEMBER_PROFIT_CATEGORY_TABS,
@@ -43,11 +43,11 @@ const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref<MemberDetailTab>('manage')
-const flowSubTab = ref<MemberFlowSubTab>('records')
+const gameSubTab = ref<MemberGameSubTab>('records')
 const currencyPickerOpen = ref(false)
 const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
-const profitCategory = ref<MemberProfitCategoryKey>('sports')
+const profitCategory = ref<MemberProfitCategoryKey>('overall')
 const profitVendor = ref<MemberProfitVendorKey>('im')
 const profitFormulaTipOpen = ref(false)
 
@@ -296,49 +296,16 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         </section>
       </template>
 
-      <template v-else-if="activeTab === 'login'">
-        <section class="mh5-member-detail-panel">
-          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
-            <h3 class="mh5-member-detail-panel__title">登录日志</h3>
-          </div>
-          <div class="mh5-member-detail-panel__row">
-            <span class="mh5-member-detail-panel__label">注册时间</span>
-            <span class="mh5-member-detail-panel__value">{{ member.loginLog.registeredAt }}</span>
-          </div>
-          <div class="mh5-member-detail-panel__row">
-            <span class="mh5-member-detail-panel__label">最后登录时间</span>
-            <span class="mh5-member-detail-panel__value">{{ member.loginLog.lastLoginAt }}</span>
-          </div>
-        </section>
-      </template>
-
-      <template v-else-if="activeTab === 'flow'">
-        <div class="mh5-member-detail-subtabs">
-          <button
-            v-for="sub in MEMBER_FLOW_SUB_TABS"
-            :key="sub.key"
-            type="button"
-            class="mh5-member-detail-subtab"
-            :class="{ 'mh5-member-detail-subtab--active': flowSubTab === sub.key }"
-            @click="flowSubTab = sub.key"
-          >
-            {{ sub.label }}
-          </button>
-        </div>
-
-        <section
-          v-if="flowSubTab === 'profit'"
-          class="mh5-member-detail-profit"
-          @click="closeProfitFormulaTip"
-        >
+      <template v-else-if="activeTab === 'profit'">
+        <section class="mh5-member-detail-profit" @click="closeProfitFormulaTip">
           <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
             <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
               <span class="mh5-agent-detail-profit-summary__label-wrap">
-                <span class="mh5-agent-detail-wallet__label">会员盈亏</span>
+                <span class="mh5-agent-detail-wallet__label">总盈亏</span>
                 <button
                   type="button"
                   class="mh5-agent-detail-profit-summary__tip-btn"
-                  aria-label="查看会员盈亏计算公式"
+                  aria-label="查看总盈亏计算公式"
                   :aria-expanded="profitFormulaTipOpen"
                   @click.stop="toggleProfitFormulaTip"
                 >
@@ -387,9 +354,29 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               </span>
             </div>
           </section>
+        </section>
+      </template>
 
+      <template v-else-if="activeTab === 'game'">
+        <div class="mh5-member-detail-subtabs">
+          <button
+            v-for="sub in MEMBER_GAME_SUB_TABS"
+            :key="sub.key"
+            type="button"
+            class="mh5-member-detail-subtab"
+            :class="{ 'mh5-member-detail-subtab--active': gameSubTab === sub.key }"
+            @click="gameSubTab = sub.key"
+          >
+            {{ sub.label }}
+          </button>
+        </div>
+
+        <section
+          v-if="gameSubTab === 'stats'"
+          class="mh5-member-detail-profit"
+        >
           <div class="mh5-agent-report-categories">
-            <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="盈亏品类">
+            <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
               <button
                 v-for="tab in MEMBER_PROFIT_CATEGORY_TABS"
                 :key="tab.key"
@@ -407,7 +394,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               v-if="profitVendorOptions.length"
               class="mh5-agent-report-vendors"
               role="tablist"
-              aria-label="盈亏场馆"
+              aria-label="游戏数据场馆"
             >
               <button
                 v-for="pill in profitVendorOptions"
@@ -428,7 +415,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             <div class="mh5-agent-report-detail__head">
               <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
               <span class="mh5-agent-report-detail__profit">
-                总盈亏
+                游戏盈亏
                 <em :class="profitTotalClass(profitDetail.totalProfitTone)">
                   {{ profitDetail.totalProfit }}
                 </em>
@@ -464,6 +451,22 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             >
               {{ item.value }}
             </p>
+          </div>
+        </section>
+      </template>
+
+      <template v-else-if="activeTab === 'login'">
+        <section class="mh5-member-detail-panel">
+          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
+            <h3 class="mh5-member-detail-panel__title">登录日志</h3>
+          </div>
+          <div class="mh5-member-detail-panel__row">
+            <span class="mh5-member-detail-panel__label">注册时间</span>
+            <span class="mh5-member-detail-panel__value">{{ member.loginLog.registeredAt }}</span>
+          </div>
+          <div class="mh5-member-detail-panel__row">
+            <span class="mh5-member-detail-panel__label">最后登录时间</span>
+            <span class="mh5-member-detail-panel__value">{{ member.loginLog.lastLoginAt }}</span>
           </div>
         </section>
       </template>

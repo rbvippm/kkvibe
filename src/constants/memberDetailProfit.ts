@@ -22,15 +22,15 @@ export {
   profitValueClass,
 }
 
-/** 会员盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【实占活动金】 */
+/** 总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【活动金】 */
 export const MEMBER_PROFIT_FORMULA =
-  '会员盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【实占活动金】'
+  '总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【活动金】'
 
 type MemberProfitSummaryMock = {
   gameProfit: number
   memberRebate: number
   vipBonus: number
-  /** 实占活动金（按公式直接累加） */
+  /** 活动金（按公式直接累加） */
   activityGold: number
 }
 
@@ -126,7 +126,7 @@ export function getMemberProfitSummaryRows(currency: string): MemberProfitSummar
       tone: profitTone(stats.vipBonus),
     },
     {
-      label: '实占活动金',
+      label: '活动金',
       value: formatProfitAmount(stats.activityGold),
       tone: profitTone(stats.activityGold),
     },
