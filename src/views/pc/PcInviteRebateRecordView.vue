@@ -30,7 +30,7 @@ type ListFilter = {
 const route = useRoute()
 const router = useRouter()
 const PAGE_SIZE = 10
-const PAGE_SEGMENTS = ['运营管理', '活动统计', '活动明细']
+const PAGE_SEGMENTS = ['运营管理', '活动明细']
 
 const defaultFilter = (): ListFilter => ({
   bizDate: '',
@@ -83,8 +83,8 @@ function resetFilter() {
   page.value = 1
 }
 
-function backToStats() {
-  router.push({ name: 'pc-invite-rebate-stats' })
+function backToInviters() {
+  router.push({ name: 'pc-invite-rebate-inviters' })
 }
 
 function matchRow(row: InviteRebateRecordRow) {
@@ -126,7 +126,7 @@ const pagedRows = computed(() => {
 <template>
   <div class="pc-wireframe-page">
     <div class="wf-toolbar">
-      <button type="button" class="wf-link-action" @click="backToStats">← 返回活动统计</button>
+      <button type="button" class="wf-link-action" @click="backToInviters">← 返回邀请列表</button>
     </div>
     <WfPagePathMenu
       :segments="PAGE_SEGMENTS"

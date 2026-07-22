@@ -1,8 +1,10 @@
 /** 移动端 · 邀请好友 / 邀请好友记录 · Mock */
 
 import {
+  inviteRebateAmountForAggregate,
   inviteRebateEligibleLabel,
   inviteRebateSettleStatusLabel,
+  isInviteRebateAmountStatus,
   type InviteRebateEligibleStatus,
   type InviteRebateSettleStatus,
 } from './inviteRebateOps'
@@ -12,7 +14,12 @@ export type InviteCurrency = 'KKC' | 'KKV' | 'USDT'
 export type InviteDailyEligibleStatus = InviteRebateEligibleStatus
 export type InviteDailySettleStatus = InviteRebateSettleStatus
 
-export { inviteRebateEligibleLabel, inviteRebateSettleStatusLabel }
+export {
+  inviteRebateAmountForAggregate,
+  inviteRebateEligibleLabel,
+  inviteRebateSettleStatusLabel,
+  isInviteRebateAmountStatus,
+}
 
 export const INVITE_CURRENCY_OPTIONS: { value: InviteCurrency; label: string }[] = [
   { value: 'KKC', label: 'KKC' },
@@ -69,7 +76,10 @@ export type InviteDailyRebateRow = {
   inviteeRechargeDayDeposit: number
   meetsThreshold: boolean
   eligibleStatus: InviteDailyEligibleStatus
-  /** 预估返利 */
+  /**
+   * 预估返利（当日公式结果，待解锁行也可展示）。
+   * 汇总「返利总额 / 累计返利」计可领取+已领取+已过期+已取消，见 isInviteRebateAmountStatus。
+   */
   rebateAmount: number
   /** 已领返利（未领为 0） */
   claimedAmount: number
@@ -95,7 +105,13 @@ export type InviteFriendMember = {
   meetsCondition: boolean
   totals: Record<
     InviteCurrency,
-    { deposit: number; withdraw: number; bet: number; rebate: number }
+    {
+      deposit: number
+      withdraw: number
+      bet: number
+      /** 累计返利：可领取+已领取+已过期+已取消（与 PC 口径一致） */
+      rebate: number
+    }
   >
   /** 今日已获得实发返利（按币种，对照 VIP 日上限） */
   todayRebate: Record<InviteCurrency, number>

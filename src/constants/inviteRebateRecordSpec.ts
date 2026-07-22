@@ -48,7 +48,7 @@ export const INVITE_REBATE_RECORD_FEATURE_LIST: InviteRebateRecordFeatureRow[] =
       dataRules:
         '仅 claimed 有 flowNo；cancelled 为代理取消；locked 为解锁条件未齐；expired 为超期未领。',
       exceptions: '无匹配空态；备注解释非已领取原因。',
-      routing: '二级页：从活动统计「明细」进入；← 返回活动统计；文档说明 -> pc-invite-rebate-records-doc。',
+      routing: '可直达活动明细路由；文档说明 -> pc-invite-rebate-records-doc。日返利统计页不再下钻进入本页。',
     },
   },
 ]

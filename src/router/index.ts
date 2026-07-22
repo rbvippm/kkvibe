@@ -467,13 +467,13 @@ export const router = createRouter({
           path: 'invite-rebate-stats',
           name: 'pc-invite-rebate-stats',
           component: () => import('../views/pc/PcInviteRebateStatsView.vue'),
-          meta: { title: '活动统计' },
+          meta: { title: '日返利统计' },
         },
         {
           path: 'invite-rebate-stats/doc',
           name: 'pc-invite-rebate-stats-doc',
           component: () => import('../views/pc/PcInviteRebateStatsDocView.vue'),
-          meta: { title: '活动统计-文档说明' },
+          meta: { title: '日返利统计-文档说明' },
         },
         {
           path: 'invite-rebate-records',

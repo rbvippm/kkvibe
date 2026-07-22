@@ -27,7 +27,7 @@ export const INVITE_REBATE_INVITEE_META = {
   title: '被邀请人详情',
   module: '运营管理',
   updatedAt: '2026-07-22',
-  prdVersion: 'v1.12',
+  prdVersion: 'v1.13',
 } as const
 
 /** 1. 需求背景 */
@@ -67,12 +67,12 @@ export const INVITE_REBATE_INVITEE_FEATURE_LIST: InviteRebateInviteeFeatureRow[]
     pageLocation: '列表「累计返利(KKC)」表头旁「注1」；「累计返利(KKV)」「累计返利(USDT)」列',
     prd: {
       functionalLogic:
-        '累计返利按活动币种分列展示该被邀请人对邀请人已贡献返利：KKC、KKV、USDT 各自独立统计，不做跨币种折算。列表结构对齐邀请列表，但不含「下级人数」。',
+        '累计返利按活动币种分列展示该被邀请人对邀请人已贡献返利：KKC、KKV、USDT 各自独立统计，不做跨币种折算。列表结构对齐邀请列表，但不含「下级人数」。计入领取状态与邀请列表注2一致：可领取 + 已领取 + 已过期 + 已取消；不含待解锁。',
       interactiveBehavior: '只读展示；无排序交互（原型）。',
       visualPresentation:
         '三列金额右对齐展示（千分位 + 两位小数）；表头「累计返利(KKC)」旁「注1」。无该币种返利时展示 0.00。',
       dataRules:
-        '字段：rebateKKC / rebateKKV / rebateUSDT，数值 ≥ 0。口径：返利金额 = 业务日被邀请人存款 × 业务日返利比例（落库汇总）。',
+        '字段：rebateKKC / rebateKKV / rebateUSDT，数值 ≥ 0。口径：对应币种下状态 ∈ {可领取, 已领取, 已过期, 已取消} 的返利金额合计；单笔公式 = 业务日被邀请人存款 × 业务日返利比例（落库汇总）。',
       exceptions: '三币种均为 0 → 仍展示 0.00，不隐藏列。',
       routing: '无跳转。',
     },
@@ -84,7 +84,7 @@ export const INVITE_REBATE_INVITEE_FEATURE_LIST: InviteRebateInviteeFeatureRow[]
     pageLocation: '操作列表头旁「注2」；行内「详情」；大弹框「被邀请人每日明细」',
     prd: {
       functionalLogic:
-        '大弹框按「被邀请人 + 币种 + 业务日」展示邀请人次日存款、被邀请人 T 日/次日存款、返利比例、双方资格、应发/实发、领取状态、流水号、领取开放时间与备注。无「邀请人T日存款」（新规则无邀请人 T 日门槛）。双方资格各自独立；仅双方均为可计奖时计奖。返利金额 = 被邀请人 T 日存款 × 业务日返利比例；触达 VIP 日上限时实发可小于应发。',
+        '大弹框按「被邀请人 + 币种 + 业务日」展示邀请人次日存款、被邀请人 T 日/次日存款、返利比例、双方资格、应发/实发、领取状态、流水号、领取开放时间与备注。无「邀请人T日存款」（新规则无邀请人 T 日门槛）。双方资格各自独立；仅双方均为可计奖时计奖。单行「预估返利」= 被邀请人 T 日存款 × 业务日返利比例（公式结果，待解锁行也可展示）；列表「累计返利」汇总口径见注1（可领取+已领取+已过期+已取消）。触达 VIP 日上限时实发可小于应发。',
       interactiveBehavior:
         '点击行内「详情」→ 打开大弹框；表格横向滚动；底部分页；点「关闭」或遮罩关闭。弹框内筛选见注3～注7；备注原因见注8。',
       visualPresentation:
@@ -210,12 +210,14 @@ export const INVITE_REBATE_INVITEE_FEATURE_LIST: InviteRebateInviteeFeatureRow[]
 export const INVITE_REBATE_INVITEE_REBATE_SPEC = [
   '累计返利按 KKC / KKV / USDT 分列展示，不做跨币种折算。',
   '各列为该被邀请人对邀请人在对应币种下的已贡献返利汇总。',
+  '计入状态：可领取 + 已领取 + 已过期 + 已取消；不含待解锁（与邀请列表注2一致）。',
   '列表对齐邀请列表结构，但不含「下级人数」；无该币种返利时展示 0.00。',
 ] as const
 
 /** 注2 · 浮层简版 */
 export const INVITE_REBATE_INVITEE_DAILY_SPEC = [
   '点击「详情」打开大弹框，按「币种 + 业务日」查看次日解锁相关存款与返利明细（邀请人仅展示次日存款）。',
+  '单行「预估返利」为当日公式结果（待解锁也可展示）；列表累计返利口径见注1。',
   '资格分列：邀请人资格 / 被邀请人资格；解锁须双方次日门槛达标。',
   '仅已领取有流水号；备注按领取状态写待解锁 / 已过期 / 已取消原因（注8；PC 视角为邀请人/被邀请人）。',
   '领取开放：T+1 12:00（GMT+7）；展示过期时间。',

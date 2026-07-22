@@ -29,8 +29,8 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
           PRD 版本：{{ INVITE_REBATE_STATS_META.prdVersion }} · 最近更新：{{ INVITE_REBATE_STATS_META.updatedAt }}
         </p>
         <p class="wf-doc-page__hint">{{ PRD_DIMENSION_HINT }}</p>
-        <RouterLink :to="{ name: 'pc-invite-rebate-stats' }" class="wf-doc-page__back">
-          ← 返回活动统计
+        <RouterLink :to="{ name: 'pc-invite-rebate-inviters' }" class="wf-doc-page__back">
+          ← 返回邀请列表
         </RouterLink>
       </header>
 

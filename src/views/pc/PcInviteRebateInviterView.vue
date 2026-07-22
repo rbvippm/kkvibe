@@ -74,6 +74,16 @@ function goInvitees(row: InviteRebateInviterRow) {
     },
   })
 }
+
+function goDailyStats(row: InviteRebateInviterRow) {
+  router.push({
+    name: 'pc-invite-rebate-stats',
+    query: {
+      inviterId: row.id,
+      inviterAccount: row.account,
+    },
+  })
+}
 </script>
 
 <template>
@@ -143,6 +153,11 @@ function goInvitees(row: InviteRebateInviterRow) {
                   :title="INVITE_REBATE_INVITER_ANNOT_MAP.inviteeDrill.title"
                   :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.inviteeDrill.items]"
                 />
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITER_ANNOT_MAP.dailyStats.no"
+                  :title="INVITE_REBATE_INVITER_ANNOT_MAP.dailyStats.title"
+                  :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.dailyStats.items]"
+                />
               </th>
             </tr>
           </thead>
@@ -156,8 +171,10 @@ function goInvitees(row: InviteRebateInviterRow) {
               <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKC) }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKV) }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.rebateUSDT) }}</td>
-              <td class="wf-td">
+              <td class="wf-td wf-td--actions">
                 <button type="button" class="wf-link-action" @click="goInvitees(row)">被邀请人</button>
+                <span class="wf-action-sep">|</span>
+                <button type="button" class="wf-link-action" @click="goDailyStats(row)">日返利统计</button>
               </td>
             </tr>
             <tr v-if="!pagedRows.length">

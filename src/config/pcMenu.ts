@@ -82,13 +82,13 @@ export const pcDocRoutes: PcDocRoute[] = [
     path: '/pc/invite-rebate-stats/doc',
     routeName: 'pc-invite-rebate-stats-doc',
     title: '文档说明',
-    pagePath: ['运营管理', '活动统计', '文档说明'],
+    pagePath: ['运营管理', '邀请列表', '日返利统计', '文档说明'],
   },
   {
     path: '/pc/invite-rebate-records/doc',
     routeName: 'pc-invite-rebate-records-doc',
     title: '文档说明',
-    pagePath: ['运营管理', '活动统计', '活动明细', '文档说明'],
+    pagePath: ['运营管理', '活动明细', '文档说明'],
   },
 ]
 

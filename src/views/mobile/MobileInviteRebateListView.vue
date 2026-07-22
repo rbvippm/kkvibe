@@ -11,6 +11,7 @@ import {
   findInviteMember,
   formatInviteDetailAmount,
   getInviteDateRange,
+  inviteRebateAmountForAggregate,
   inviteRebateSettleStatusLabel,
   listAllInviteRebateRows,
   resolveInviteTimePresetFromRange,
@@ -89,7 +90,11 @@ const summaryCards = computed(() => {
     return {
       currency: cur,
       deposit: list.reduce((sum, row) => sum + row.inviteeBizDayDeposit, 0),
-      rebate: list.reduce((sum, row) => sum + row.rebateAmount, 0),
+      // 返利总额口径：可领取 + 已领取 + 已过期 + 已取消（不含待解锁）
+      rebate: list.reduce(
+        (sum, row) => sum + inviteRebateAmountForAggregate(row.rebateAmount, row.status),
+        0,
+      ),
       lockedCount: list.filter((row) => row.status === 'locked').length,
       claimableCount: list.filter((row) => row.status === 'claimable').length,
     }

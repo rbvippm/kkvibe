@@ -15,6 +15,34 @@ export type InviteRebateSettleStatus =
   | 'cancelled'
 
 /**
+ * 汇总类「返利金额 / 累计返利 / 返利总额」计入的领取状态。
+ * 与邀请列表注2一致：可领取 + 已领取 + 已过期 + 已取消；不含待解锁。
+ * 单行「预估返利」仍可为当日公式计算结果（待解锁行也可展示预估值）。
+ */
+export const INVITE_REBATE_AMOUNT_STATUSES = [
+  'claimable',
+  'claimed',
+  'expired',
+  'cancelled',
+] as const satisfies readonly InviteRebateSettleStatus[]
+
+export type InviteRebateAmountStatus = (typeof INVITE_REBATE_AMOUNT_STATUSES)[number]
+
+export function isInviteRebateAmountStatus(
+  status: InviteRebateSettleStatus,
+): status is InviteRebateAmountStatus {
+  return (INVITE_REBATE_AMOUNT_STATUSES as readonly InviteRebateSettleStatus[]).includes(status)
+}
+
+/** 汇总返利时：非计入状态按 0 处理 */
+export function inviteRebateAmountForAggregate(
+  amount: number,
+  status: InviteRebateSettleStatus,
+): number {
+  return isInviteRebateAmountStatus(status) ? amount : 0
+}
+
+/**
  * 邀请列表行：维度为人（用户ID），币种下沉到被邀请人每日明细。
  * 计入规则：至少成功邀请 1 名用户注册（inviteeCount > 0），无下级不入列表。
  */
@@ -30,7 +58,10 @@ export type InviteRebateInviterRow = {
   phonePrefixes: string[]
   /** 下级人数：成功邀请并注册的用户数，列表侧必 > 0 */
   inviteeCount: number
-  /** 累计返利：按币种分列展示，不做跨币种折算 */
+  /**
+   * 累计返利：按币种分列，不做跨币种折算。
+   * 口径：状态 ∈ {可领取, 已领取, 已过期, 已取消} 的返利金额合计。
+   */
   rebateKKC: number
   rebateKKV: number
   rebateUSDT: number
@@ -52,28 +83,50 @@ export type InviteRebateInviteeRow = {
   nickname: string
   vipLevel: number
   identity: InviteRebateIdentity
-  /** 累计返利：按币种分列，该被邀请人对邀请人贡献的已计返利 */
+  /**
+   * 累计返利：按币种分列；该被邀请人对邀请人贡献的已计返利。
+   * 口径同邀请列表：可领取 + 已领取 + 已过期 + 已取消。
+   */
   rebateKKC: number
   rebateKKV: number
   rebateUSDT: number
   registeredAt: string
 }
 
-export type InviteRebateStatsRow = {
+/** 日返利统计：邀请人维度，一行一个业务日；金额字段均按三币种分列 */
+export type InviteRebateDailyStatsRow = {
   id: string
+  /** 邀请人 id（与邀请列表行一致） */
+  inviterId: string
   /** 返利计算日（业务日） */
   bizDate: string
-  currency: InviteRebateCurrency
-  inviterCount: number
-  inviteeCount: number
-  qualifiedInviteeCount: number
-  depositSum: number
-  rebateSum: number
-  /** 已领取合计（封顶后） */
-  claimedSum: number
-  /** 领取开放时间：业务日 T+1 的 GMT+7 12:00 */
-  claimOpenAt: string
+  /**
+   * 当日返利金额（按币种）。
+   * 口径：可领取 + 已领取 + 已过期 + 已取消；不含待解锁。
+   */
+  rebateKkc: number
+  rebateKkv: number
+  rebateUsdt: number
+  /** 当日已领取金额（按币种，状态=claimed） */
+  claimKkc: number
+  claimKkv: number
+  claimUsdt: number
+  /** 当日已过期金额（按币种，状态=expired） */
+  expiredKkc: number
+  expiredKkv: number
+  expiredUsdt: number
+  /** 当日待领取金额（按币种，状态=claimable） */
+  pendingKkc: number
+  pendingKkv: number
+  pendingUsdt: number
+  /** 当日已取消金额（按币种，状态=cancelled） */
+  cancelledKkc: number
+  cancelledKkv: number
+  cancelledUsdt: number
 }
+
+/** @deprecated 旧「业务日×币种」行结构，请用 InviteRebateDailyStatsRow */
+export type InviteRebateStatsRow = InviteRebateDailyStatsRow
 
 export type InviteRebateRecordRow = {
   id: string
@@ -91,6 +144,10 @@ export type InviteRebateRecordRow = {
   /** VIP 快照（配置口径不变） */
   vipSnapshot: number
   dailyCap: number
+  /**
+   * 当日预估返利（公式结果，可含待解锁行）。
+   * 汇总「返利金额」时仅状态 ∈ INVITE_REBATE_AMOUNT_STATUSES 计入。
+   */
   rebateAmount: number
   /** 实际领取金额（封顶后；未领取为 0） */
   claimedAmount: number
@@ -343,56 +400,235 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
   },
 ]
 
-export const MOCK_INVITE_REBATE_STATS: InviteRebateStatsRow[] = [
+/**
+ * 日返利统计 Mock：按邀请人 × 业务日聚合。
+ * 同币种近似关系：返利 ≈ 领取 + 待领取 + 已过期 + 已取消（不含待解锁）。
+ */
+export const MOCK_INVITE_REBATE_DAILY_STATS: InviteRebateDailyStatsRow[] = [
   {
-    id: 'st-1',
+    id: 'st-inv1-2026-07-17',
+    inviterId: 'inv-1',
     bizDate: '2026-07-17',
-    currency: 'KKV',
-    inviterCount: 12,
-    inviteeCount: 48,
-    qualifiedInviteeCount: 31,
-    depositSum: 186400000,
-    rebateSum: 1428000,
-    claimedSum: 1288000,
-    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    rebateKkc: 8600,
+    rebateKkv: 986000,
+    rebateUsdt: 0,
+    claimKkc: 8600,
+    claimKkv: 720000,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 86000,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 120000,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 60000,
+    cancelledUsdt: 0,
   },
   {
-    id: 'st-2',
+    id: 'st-inv1-2026-07-16',
+    inviterId: 'inv-1',
+    bizDate: '2026-07-16',
+    rebateKkc: 6200,
+    rebateKkv: 812000,
+    rebateUsdt: 0,
+    claimKkc: 6200,
+    claimKkv: 812000,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv1-2026-07-15',
+    inviterId: 'inv-1',
+    bizDate: '2026-07-15',
+    rebateKkc: 4800,
+    rebateKkv: 654000,
+    rebateUsdt: 0,
+    claimKkc: 2400,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 2400,
+    pendingKkv: 654000,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv1-2026-07-14',
+    inviterId: 'inv-1',
+    bizDate: '2026-07-14',
+    rebateKkc: 3600,
+    rebateKkv: 528000,
+    rebateUsdt: 0,
+    claimKkc: 3600,
+    claimKkv: 528000,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv1-2026-07-13',
+    inviterId: 'inv-1',
+    bizDate: '2026-07-13',
+    rebateKkc: 0,
+    rebateKkv: 412000,
+    rebateUsdt: 0,
+    claimKkc: 0,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 300000,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 112000,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv2-2026-07-17',
+    inviterId: 'inv-2',
     bizDate: '2026-07-17',
-    currency: 'KKC',
-    inviterCount: 8,
-    inviteeCount: 22,
-    qualifiedInviteeCount: 14,
-    depositSum: 980000,
-    rebateSum: 12600,
-    claimedSum: 12600,
-    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    rebateKkc: 4000,
+    rebateKkv: 0,
+    rebateUsdt: 0,
+    claimKkc: 4000,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
   },
   {
-    id: 'st-3',
+    id: 'st-inv2-2026-07-16',
+    inviterId: 'inv-2',
     bizDate: '2026-07-16',
-    currency: 'KKV',
-    inviterCount: 11,
-    inviteeCount: 41,
-    qualifiedInviteeCount: 27,
-    depositSum: 152200000,
-    rebateSum: 1186000,
-    claimedSum: 1102000,
-    claimOpenAt: inviteRebateClaimOpenAt('2026-07-16'),
+    rebateKkc: 3600,
+    rebateKkv: 0,
+    rebateUsdt: 0,
+    claimKkc: 0,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 2400,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 1200,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
   },
   {
-    id: 'st-4',
+    id: 'st-inv2-2026-07-14',
+    inviterId: 'inv-2',
+    bizDate: '2026-07-14',
+    rebateKkc: 1000,
+    rebateKkv: 0,
+    rebateUsdt: 0,
+    claimKkc: 1000,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv4-2026-07-17',
+    inviterId: 'inv-4',
+    bizDate: '2026-07-17',
+    rebateKkc: 0,
+    rebateKkv: 0,
+    rebateUsdt: 6.36,
+    claimKkc: 0,
+    claimKkv: 0,
+    claimUsdt: 6.36,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv4-2026-07-16',
+    inviterId: 'inv-4',
     bizDate: '2026-07-16',
-    currency: 'USDT',
-    inviterCount: 3,
-    inviteeCount: 6,
-    qualifiedInviteeCount: 2,
-    depositSum: 420,
-    rebateSum: 8.5,
-    claimedSum: 8.5,
-    claimOpenAt: inviteRebateClaimOpenAt('2026-07-16'),
+    rebateKkc: 0,
+    rebateKkv: 0,
+    rebateUsdt: 3.2,
+    claimKkc: 0,
+    claimKkv: 0,
+    claimUsdt: 1.6,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 0,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 1.6,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
+  },
+  {
+    id: 'st-inv4-2026-07-13',
+    inviterId: 'inv-4',
+    bizDate: '2026-07-13',
+    rebateKkc: 0,
+    rebateKkv: 0,
+    rebateUsdt: 2.94,
+    claimKkc: 0,
+    claimKkv: 0,
+    claimUsdt: 0,
+    expiredKkc: 0,
+    expiredKkv: 0,
+    expiredUsdt: 2.94,
+    pendingKkc: 0,
+    pendingKkv: 0,
+    pendingUsdt: 0,
+    cancelledKkc: 0,
+    cancelledKkv: 0,
+    cancelledUsdt: 0,
   },
 ]
+
+/** @deprecated 请用 MOCK_INVITE_REBATE_DAILY_STATS */
+export const MOCK_INVITE_REBATE_STATS = MOCK_INVITE_REBATE_DAILY_STATS
 
 export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
   {
@@ -866,4 +1102,11 @@ export function inviteeDailyByInvitee(inviteeId: string) {
     if (byDate !== 0) return byDate
     return a.currency.localeCompare(b.currency)
   })
+}
+
+/** 某邀请人的日返利统计（业务日倒序） */
+export function dailyStatsByInviter(inviterId: string) {
+  return MOCK_INVITE_REBATE_DAILY_STATS.filter((r) => r.inviterId === inviterId).sort((a, b) =>
+    b.bizDate.localeCompare(a.bizDate),
+  )
 }
