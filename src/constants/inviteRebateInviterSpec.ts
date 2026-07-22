@@ -1,5 +1,5 @@
-/** 邀请活动列表 · PRD
- * 与页面「注1～注3」一一对应；不含【文档说明】入口。
+/** 邀请列表 · PRD
+ * 与页面「注1～注4」一一对应；不含【文档说明】入口。
  */
 
 import {
@@ -14,74 +14,75 @@ export type InviteRebateInviterPrdDimension = PcPrdDimension
 export type InviteRebateInviterFeatureRow = PcPrdFeatureRow
 
 export type InviteRebateInviterAnnotContext =
-  | 'listDimension'
-  | 'eligibleFilter'
+  | 'inviteeCount'
+  | 'rebateByCurrency'
   | 'inviteeDrill'
+  | 'identityFilter'
 
 export const INVITE_REBATE_INVITER_META = {
-  title: '邀请活动列表',
+  title: '邀请列表',
   module: '运营管理',
-  updatedAt: '2026-07-20',
-  prdVersion: 'v1.2',
+  updatedAt: '2026-07-22',
+  prdVersion: 'v1.9',
 } as const
 
 /** 1. 需求背景 */
 export const INVITE_REBATE_INVITER_BACKGROUND = [
-  '邀请好友充值返利活动上线后，运营需查看邀请人侧参与情况、门槛存款、下级规模、累计返利与计奖资格。',
-  '列表维度为「用户ID + 币种」：同一用户多币种各占一行；资格规则与活动中心一致——仅普通会员可计奖，成为代理后取消返利资格。',
-  '应发返利口径与活动中心一致：应发 = 被邀请人当天存款金额 × 邀请人返利比例；本列表「累计返利」为该用户在该币种下已贡献/已获返利汇总（原型 Mock）。',
+  '邀请好友充值返利活动上线后，运营需按「人」查看邀请人侧参与情况、下级规模与分币种累计返利。',
+  '计入规则：仅统计成功邀请过其他用户并完成注册的邀请人，列表中下级人数一定大于 0；无成功邀请注册者不入列表。',
+  '列表维度为用户ID（一人一行）；展示金刚号；不展示资格字段。',
+  '累计返利按 KKC / KKV / USDT 分列展示，不做跨币种折算；业务日门槛与币种明细下沉到被邀请人每日明细。',
 ] as const
 
 /** 2. 需求目标 */
 export const INVITE_REBATE_INVITER_GOALS = [
-  '提供邀请活动列表，支持按用户ID、币种、身份、资格筛选（注1 / 注2）。',
-  '列表按用户ID + 币种分行展示历史累计存款、昨日日存、下级人数、达标人数、累计返利与资格。',
-  '操作「被邀请人」进入二级页，按当前活动行（用户ID + 币种）过滤被邀请人及每日明细（注3）。',
+  '提供邀请列表，仅展示下级人数 > 0 的邀请人；支持按用户ID、金刚号、身份筛选（注4）。',
+  '列表展示下级人数（成功邀请并注册人数，注1）以及累计返利(KKC/KKV/USDT)（注2）。',
+  '操作「被邀请人」进入二级页，按当前邀请人过滤被邀请人；币种与每日门槛明细在二级页弹框查看（注3）。',
 ] as const
 
 /** 页面「注N」编号登记（与 FEATURE_LIST.id、页面 WfSpecAnnot :no 一致） */
 export const INVITE_REBATE_INVITER_SPEC_ANNOT_NO = {
-  listDimension: 1,
-  eligibleFilter: 2,
+  inviteeCount: 1,
+  rebateByCurrency: 2,
   inviteeDrill: 3,
+  identityFilter: 4,
 } as const
 
 /** 3. 需求功能清单（与页面「注N」标注一一对应） */
 export const INVITE_REBATE_INVITER_FEATURE_LIST: InviteRebateInviterFeatureRow[] = [
   {
     id: 1,
-    module: '列表维度',
-    feature: '用户ID + 币种',
-    pageLocation: '筛选区「用户ID」标签旁「注1」；列表「用户ID」「币种」列',
+    module: '列表字段',
+    feature: '下级人数',
+    pageLocation: '列表「下级人数」表头旁「注1」',
     prd: {
       functionalLogic:
-        '邀请活动以「用户ID + 币种」为唯一业务行：同一邀请人账号在不同币种下各展示一行，分别统计该币种下的存款门槛、下级人数、达标人数与累计返利。',
-      interactiveBehavior:
-        '「用户ID」输入后搜索 → 按 account 包含匹配；「币种」下拉（全部 / KKC / KKV / USDT）与搜索联动过滤；「清除」恢复默认筛选。同一用户多币种在列表中分多行展示。',
+        '下级人数 = 该邀请人成功邀请并完成注册的用户数。邀请列表计入规则：至少成功邀请 1 人注册才入列表，故本列取值一定 > 0。',
+      interactiveBehavior: '只读展示；无交互（原型）。',
       visualPresentation:
-        '筛选区标签「用户ID：」旁「注1」；列表列含昵称、用户ID、币种等。空态文案「暂无活动数据」。',
+        '表头「下级人数」旁「注1」；单元格展示非负整数。',
       dataRules:
-        '维度键：account（用户ID）+ currency。筛选：用户ID 非必填，trim 后对 account 做包含匹配；币种默认「全部」。Mock 含同一用户多币种示例（如阿凯 KKV / KKC）。金额按币种原生展示，不做跨币种折算。',
-      exceptions: '筛选无结果 → 表格空态，保留已填条件；用户ID 输入空格仅 trim 后参与匹配。',
-      routing: '停留本列表；下钻被邀请人见注3。',
+        '字段 inviteeCount，整数且 ≥ 1；统计口径为成功邀请并注册，不含仅分享未注册。',
+      exceptions: 'inviteeCount=0 的用户不出现在本列表，故无「0」行。',
+      routing: '无跳转；查看具体被邀请人见注3。',
     },
   },
   {
     id: 2,
-    module: '列表筛选',
-    feature: '资格',
-    pageLocation: '筛选区「资格」标签旁「注2」；列表「资格」列',
+    module: '列表字段',
+    feature: '累计返利分币种',
+    pageLocation: '列表「累计返利(KKC)」表头旁「注2」；「累计返利(KKV)」「累计返利(USDT)」列',
     prd: {
       functionalLogic:
-        '按计奖资格过滤邀请活动行。可计奖：双方均为普通会员且门槛达标；未达标：存款门槛未满足；已取消：任一方成为代理等导致取消返利资格。',
-      interactiveBehavior:
-        '选择「全部 / 可计奖 / 未达标 / 已取消」后点「搜索」→ 按 eligibleStatus 精确过滤；点「清除」→ 资格恢复「全部」。可与用户ID、币种、身份组合筛选。',
+        '累计返利按活动币种分列展示该邀请人已获返利：KKC、KKV、USDT 各自独立统计，不做跨币种折算或加总列。',
+      interactiveBehavior: '只读展示；无排序交互（原型）。',
       visualPresentation:
-        '标签「资格：」+ 下拉；旁侧「注2」。列表「资格」列展示可计奖 / 未达标 / 已取消。',
+        '三列金额右对齐展示（千分位 + 两位小数）；表头「累计返利(KKC)」旁「注2」。无该币种返利时展示 0.00。',
       dataRules:
-        '枚举：eligible | ineligible | cancelled；默认「全部」。与列表字段 eligibleStatus、身份字段 identity（member / agent）语义对齐；代理行常见「已取消」。',
-      exceptions: '组合筛选无结果 → 空态；资格与身份组合时不以前端二次推断覆盖后台落库状态（以列表字段为准）。',
-      routing: '停留本列表，不跳转。',
+        '字段：rebateKKC / rebateKKV / rebateUSDT，数值 ≥ 0。口径与活动中心一致：返利金额 = 业务日被邀请人存款 × 业务日返利比例（落库汇总）。',
+      exceptions: '三币种均为 0 → 仍展示 0.00，不隐藏列。',
+      routing: '无跳转。',
     },
   },
   {
@@ -91,58 +92,88 @@ export const INVITE_REBATE_INVITER_FEATURE_LIST: InviteRebateInviterFeatureRow[]
     pageLocation: '操作列表头旁「注3」；行内「被邀请人」',
     prd: {
       functionalLogic:
-        '从当前邀请活动行进入被邀请人二级页，查看该用户在该币种下的被邀请人列表，并可进一步打开每日条件与返利明细（应发 = 当天存款 × 返利比例）。',
+        '从当前邀请人进入被邀请人二级页，查看其名下被邀请人（人维度），并可进一步打开每日明细（含币种、T日/次日存款、领取状态与返利计算）。',
       interactiveBehavior:
-        '点击行内「被邀请人」→ 跳转被邀请人详情页，query 携带 inviterId、inviterAccount、currency；二级页按用户ID + 币种过滤。左上角「← 返回邀请活动列表」回到本页。',
+        '点击行内「被邀请人」→ 跳转被邀请人详情页，query 携带 inviterId、inviterAccount；二级页按邀请人过滤。左上角「← 返回邀请列表」回到本页。',
       visualPresentation:
         '操作列表头旁「注3」；行内蓝色文字链「被邀请人」。',
       dataRules:
-        '跳转参数：inviterId（活动行 id）、inviterAccount（用户ID）、currency（币种）。二级页优先按 account+currency 匹配被邀请人；每日明细展示返利比例、应发/实发等。',
+        '跳转参数：inviterId（活动行 id）、inviterAccount（用户ID）。二级页被邀请人列表为人维度；每日明细含币种列与筛选。',
       exceptions: '无被邀请人 → 二级页表格空态「暂无被邀请人」；每日明细无数据 →「暂无每日明细」。',
       routing:
         '本页 → pc-invite-rebate-invitees（二级，侧栏不单独展示）；文档说明 → pc-invite-rebate-inviters-doc。',
     },
   },
+  {
+    id: 4,
+    module: '列表筛选',
+    feature: '身份',
+    pageLocation: '筛选区「身份」标签旁「注4」；列表「身份」列',
+    prd: {
+      functionalLogic:
+        '按邀请人当前身份过滤列表。普通会员：可正常参与邀请返利相关展示与下钻；代理：已成为代理的邀请人，仍可因曾成功邀请注册而出现在列表，但不参与计奖（计奖资格在每日明细按业务日判定）。',
+      interactiveBehavior:
+        '选择「全部 / 普通会员 / 代理」后点「搜索」→ 按 identity 精确过滤；点「清除」→ 身份恢复「全部」。可与用户ID、金刚号组合筛选。',
+      visualPresentation:
+        '标签「身份：」+ 下拉；旁侧「注4」。列表「身份」列展示普通会员 / 代理。',
+      dataRules:
+        '枚举：member=普通会员 | agent=代理；默认「全部」。与列表字段 identity 一致。',
+      exceptions: '组合筛选无结果 → 空态，保留已填条件。',
+      routing: '停留本列表，不跳转。',
+    },
+  },
 ]
 
 /** 注1 · 浮层简版 */
-export const INVITE_REBATE_INVITER_DIMENSION_SPEC = [
-  '列表维度为「用户ID + 币种」：同一用户多币种各占一行。',
-  '支持按用户ID、币种筛选；金额按币种独立统计，不做跨币种折算。',
-  '与活动中心邀请返利配置的币种口径一致。',
+export const INVITE_REBATE_INVITER_INVITEE_COUNT_SPEC = [
+  '下级人数 = 成功邀请并完成注册的用户数。',
+  '仅当下级人数 > 0 时计入邀请列表。',
+  '不含仅分享未注册的用户。',
 ] as const
 
 /** 注2 · 浮层简版 */
-export const INVITE_REBATE_INVITER_ELIGIBLE_SPEC = [
-  '资格：可计奖 / 未达标 / 已取消。',
-  '仅普通会员可计奖；成为代理后取消返利资格。',
-  '可与用户ID、币种、身份组合筛选。',
+export const INVITE_REBATE_INVITER_REBATE_SPEC = [
+  '累计返利按 KKC / KKV / USDT 分列展示，不做跨币种折算。',
+  '各列为该邀请人在对应币种下的已获返利汇总。',
+  '无该币种返利时展示 0.00。',
 ] as const
 
 /** 注3 · 浮层简版 */
 export const INVITE_REBATE_INVITER_INVITEE_SPEC = [
-  '点击「被邀请人」进入二级页，按当前行用户ID + 币种过滤。',
-  '二级页可查看被邀请人列表及每日条件与返利明细。',
-  '应发返利 = 被邀请人当天存款金额 × 返利比例。',
+  '点击「被邀请人」进入二级页，按当前邀请人（用户ID）过滤。',
+  '二级页被邀请人列表为人维度；币种与每日门槛/返利在「详情」弹框查看。',
+  '返利金额 = 业务日被邀请人存款 × 业务日返利比例。',
+] as const
+
+/** 注4 · 浮层简版 */
+export const INVITE_REBATE_INVITER_IDENTITY_SPEC = [
+  '身份：普通会员 / 代理。',
+  '可与用户ID、金刚号组合筛选。',
+  '已成为代理的邀请人仍可因曾成功邀请注册出现在列表；计奖资格在每日明细判定。',
 ] as const
 
 export const INVITE_REBATE_INVITER_ANNOT_MAP: Record<
   InviteRebateInviterAnnotContext,
   { no: number; title: string; items: readonly string[] }
 > = {
-  listDimension: {
-    no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.listDimension,
-    title: '列表维度 · 用户ID + 币种',
-    items: INVITE_REBATE_INVITER_DIMENSION_SPEC,
+  inviteeCount: {
+    no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.inviteeCount,
+    title: '下级人数',
+    items: INVITE_REBATE_INVITER_INVITEE_COUNT_SPEC,
   },
-  eligibleFilter: {
-    no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.eligibleFilter,
-    title: '资格筛选',
-    items: INVITE_REBATE_INVITER_ELIGIBLE_SPEC,
+  rebateByCurrency: {
+    no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.rebateByCurrency,
+    title: '累计返利分币种',
+    items: INVITE_REBATE_INVITER_REBATE_SPEC,
   },
   inviteeDrill: {
     no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.inviteeDrill,
     title: '被邀请人下钻',
     items: INVITE_REBATE_INVITER_INVITEE_SPEC,
+  },
+  identityFilter: {
+    no: INVITE_REBATE_INVITER_SPEC_ANNOT_NO.identityFilter,
+    title: '身份筛选',
+    items: INVITE_REBATE_INVITER_IDENTITY_SPEC,
   },
 }

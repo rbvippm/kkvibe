@@ -5,20 +5,19 @@ import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import {
-  INVITE_TIME_PRESETS,
-  INVITER_BOUND_CURRENCY,
+  INVITE_DETAIL_CURRENCY_OPTIONS,
+  INVITE_REBATE_TIME_PRESETS,
   filterMemberDailyRows,
   findInviteMember,
   formatInviteDetailAmount,
   getInviteDateRange,
   inviteRebateSettleStatusLabel,
-  resolveDefaultInviteCurrency,
   resolveInviteTimePresetFromRange,
   todayDateStr,
-  vipDailyCap,
-  type InviteCurrency,
+  resolveInviteVipDayCapDisplay,
   type InviteDailyRebateRow,
   type InviteDailySettleStatus,
+  type InviteDetailCurrencyFilter,
   type InviteTimePreset,
 } from '../../constants/inviteFriends'
 import { INVITE_FRIENDS_REBATE_DETAIL_SPEC } from '../../constants/inviteFriendsSpec'
@@ -38,15 +37,23 @@ function guardRebateAccess() {
 onMounted(guardRebateAccess)
 watch(memberAgentMembershipJoined, guardRebateAccess)
 
-function parseCurrency(raw: unknown): InviteCurrency {
+function parseCurrencyFilter(raw: unknown): InviteDetailCurrencyFilter {
   const value = String(raw ?? '')
   if (value === 'KKC' || value === 'KKV' || value === 'USDT') return value
-  return resolveDefaultInviteCurrency()
+  if (value === 'all' || value === '') return ''
+  return ''
 }
 
 const memberId = computed(() => String(route.params.id ?? ''))
 const member = computed(() => findInviteMember(memberId.value))
-const currency = computed(() => parseCurrency(route.query.currency) || INVITER_BOUND_CURRENCY)
+const currency = ref<InviteDetailCurrencyFilter>(parseCurrencyFilter(route.query.currency))
+
+watch(
+  () => route.query.currency,
+  (raw) => {
+    currency.value = parseCurrencyFilter(raw)
+  },
+)
 
 const defaultMonthRange = getInviteDateRange({
   timePreset: 'month',
@@ -65,6 +72,7 @@ const draftPreset = ref<InviteTimePreset>('month')
 const draftStart = ref(defaultMonthStart)
 const draftEnd = ref(defaultMonthEnd)
 const draftStatus = ref<'' | InviteDailySettleStatus>('')
+const draftCurrency = ref<InviteDetailCurrencyFilter>(currency.value)
 const filterError = ref('')
 /** 未达标 / 已取消：点击感叹号查看原因 */
 const reasonTipRowId = ref('')
@@ -75,7 +83,7 @@ const pageTitle = computed(() => {
 })
 
 const timeRangeLabel = computed(() => {
-  const preset = INVITE_TIME_PRESETS.find((item) => item.key === timePreset.value)
+  const preset = INVITE_REBATE_TIME_PRESETS.find((item) => item.key === timePreset.value)
   if (preset && timePreset.value !== 'custom') return preset.label
   if (startDate.value === endDate.value) return startDate.value
   return `${startDate.value} 至 ${endDate.value}`
@@ -88,9 +96,22 @@ const statusFilterLabel = computed(() => {
   )
 })
 
-const filterSummaryLabel = computed(() => `${timeRangeLabel.value} · ${statusFilterLabel.value}`)
+const currencyFilterLabel = computed(() => {
+  return (
+    INVITE_DETAIL_CURRENCY_OPTIONS.find((item) => item.value === currency.value)?.label ?? '全部'
+  )
+})
+
+const filterSummaryLabel = computed(
+  () => `${timeRangeLabel.value} · ${statusFilterLabel.value} · ${currencyFilterLabel.value}`,
+)
+
+const showCurrencyOnCard = computed(() => !currency.value)
+/** 领取后强制刷新列表展示 */
+const claimTick = ref(0)
 
 const rows = computed(() => {
+  void claimTick.value
   if (!member.value) return []
   return filterMemberDailyRows(member.value, startDate.value, endDate.value, currency.value).filter(
     (row) => !settleStatus.value || row.status === settleStatus.value,
@@ -102,15 +123,25 @@ function goBackToRecords() {
 }
 
 function statusTone(status: InviteDailyRebateRow['status']) {
-  if (status === 'settled') return 'settled'
-  if (status === 'pending') return 'pending'
-  if (status === 'capped') return 'capped'
+  if (status === 'claimed') return 'claimed'
+  if (status === 'claimable') return 'claimable'
+  if (status === 'locked') return 'locked'
+  if (status === 'expired') return 'expired'
   if (status === 'cancelled') return 'cancelled'
   return 'fail'
 }
 
+/** 仅待解锁 / 已过期 / 已取消展示原因气泡，文案取行内 remark */
 function hasStatusReason(status: InviteDailyRebateRow['status']) {
-  return status === 'cancelled' || status === 'not_qualified'
+  return status === 'cancelled' || status === 'locked' || status === 'expired'
+}
+
+function claimRebate(row: InviteDailyRebateRow) {
+  if (row.status !== 'claimable') return
+  row.status = 'claimed'
+  row.claimedAmount = row.rebateAmount
+  row.remark = '领取成功'
+  claimTick.value += 1
 }
 
 function toggleReasonTip(rowId: string) {
@@ -126,6 +157,7 @@ function syncDraftFromApplied() {
   draftStart.value = startDate.value
   draftEnd.value = endDate.value
   draftStatus.value = settleStatus.value
+  draftCurrency.value = currency.value
   filterError.value = ''
 }
 
@@ -157,9 +189,18 @@ function pickDraftStatus(value: '' | InviteDailySettleStatus) {
   draftStatus.value = value
 }
 
+function pickDraftCurrency(value: InviteDetailCurrencyFilter) {
+  draftCurrency.value = value
+}
+
 function onDraftDateChange() {
-  draftPreset.value = 'custom'
   filterError.value = ''
+  if (!draftStart.value || !draftEnd.value) {
+    draftPreset.value = 'custom'
+    return
+  }
+  /** 区间与快捷 Tab 一致时回写对应 preset，实现双向联动 */
+  draftPreset.value = resolveInviteTimePresetFromRange(draftStart.value, draftEnd.value)
 }
 
 function applyFilter() {
@@ -183,6 +224,16 @@ function applyFilter() {
   endDate.value = draftEnd.value
   timePreset.value = resolveInviteTimePresetFromRange(draftStart.value, draftEnd.value)
   settleStatus.value = draftStatus.value
+  currency.value = draftCurrency.value
+  const nextQueryCurrency = currency.value || 'all'
+  if (String(route.query.currency ?? '') !== nextQueryCurrency) {
+    router.replace({
+      query: {
+        ...route.query,
+        currency: nextQueryCurrency,
+      },
+    })
+  }
   filterSheetOpen.value = false
   filterError.value = ''
 }
@@ -244,38 +295,72 @@ function applyFilter() {
                 </span>
               </span>
               <span class="mh5-invite-rebate-card__vip">VIP{{ row.vipSnapshot }}</span>
+              <span
+                v-if="showCurrencyOnCard"
+                class="mh5-invite-rebate-card__currency"
+              >
+                {{ row.currency }}
+              </span>
               <span class="mh5-invite-rebate-card__biz">业务日 {{ row.bizDate }}</span>
             </div>
 
             <div class="mh5-invite-rebate-card__grid">
               <div class="mh5-invite-rebate-card__cell">
-                <span>日存</span>
-                <strong>{{ formatInviteDetailAmount(row.inviteeDailyDeposit, row.currency) }}</strong>
+                <span>好友当日存款</span>
+                <strong>{{ formatInviteDetailAmount(row.inviteeBizDayDeposit, row.currency) }}</strong>
               </div>
               <div class="mh5-invite-rebate-card__cell">
-                <span>累计存款</span>
+                <span>好友次日存款</span>
                 <strong>
-                  {{ formatInviteDetailAmount(row.inviteeHistoryDeposit, row.currency) }}
+                  {{ formatInviteDetailAmount(row.inviteeRechargeDayDeposit, row.currency) }}
                 </strong>
               </div>
             </div>
 
             <div class="mh5-invite-rebate-card__amounts">
               <div class="mh5-invite-rebate-card__amount">
-                <span>应发返利</span>
+                <span>预估返利</span>
                 <strong>{{ formatInviteDetailAmount(row.rebateAmount, row.currency) }}</strong>
               </div>
               <div class="mh5-invite-rebate-card__amount">
-                <span>实发 / VIP当日上限</span>
+                <span>已领 / VIP当日上限</span>
                 <strong
                   class="mh5-invite-rebate-card__settled"
-                  :class="{ 'mh5-invite-rebate-card__settled--zero': row.settledAmount <= 0 }"
+                  :class="{ 'mh5-invite-rebate-card__settled--zero': row.claimedAmount <= 0 }"
                 >
-                  {{ formatInviteDetailAmount(row.settledAmount, row.currency) }}
+                  {{ formatInviteDetailAmount(row.claimedAmount, row.currency) }}
                   <em>/</em>
-                  {{ formatInviteDetailAmount(vipDailyCap(row.vipSnapshot, row.currency), row.currency) }}
+                  {{
+                    formatInviteDetailAmount(
+                      resolveInviteVipDayCapDisplay(row),
+                      row.currency,
+                    )
+                  }}
                 </strong>
               </div>
+            </div>
+
+            <div class="mh5-invite-rebate-card__claim-row">
+              <span class="mh5-invite-rebate-card__time">
+                开放 {{ row.claimOpenAt.slice(5, 16) }} · 截止 {{ row.expireAt.slice(5, 16) }}
+              </span>
+              <button
+                v-if="row.status === 'claimable'"
+                type="button"
+                class="mh5-invite-rebate-card__claim-btn"
+                @click.stop="claimRebate(row)"
+              >
+                领取
+              </button>
+              <span v-else-if="row.status === 'locked'" class="mh5-invite-rebate-card__claim-disabled">
+                待解锁
+              </span>
+              <span v-else-if="row.status === 'expired'" class="mh5-invite-rebate-card__claim-disabled">
+                已失效
+              </span>
+              <span v-else-if="row.status === 'claimed'" class="mh5-invite-rebate-card__claim-done">
+                已到账
+              </span>
             </div>
           </li>
         </ul>
@@ -299,7 +384,26 @@ function applyFilter() {
 
             <div class="mh5-bet-order-sheet__body">
               <section class="mh5-xcoin-filter-group">
-                <h3 class="mh5-xcoin-filter-group__label">派发状态</h3>
+                <h3 class="mh5-xcoin-filter-group__label">币种</h3>
+                <div class="mh5-xcoin-filter-chips">
+                  <button
+                    v-for="opt in INVITE_DETAIL_CURRENCY_OPTIONS"
+                    :key="`currency-${opt.label}`"
+                    type="button"
+                    class="mh5-xcoin-chip"
+                    :class="{ 'mh5-xcoin-chip--active': draftCurrency === opt.value }"
+                    @click="pickDraftCurrency(opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+                <p class="mh5-xcoin-filter-hint">
+                  可选全部或单一活动币种；选全部时卡片展示币种标签
+                </p>
+              </section>
+
+              <section class="mh5-xcoin-filter-group">
+                <h3 class="mh5-xcoin-filter-group__label">领取状态</h3>
                 <div class="mh5-xcoin-filter-chips">
                   <button
                     v-for="opt in INVITE_REBATE_SETTLE_STATUS_OPTIONS"
@@ -318,7 +422,7 @@ function applyFilter() {
                 <h3 class="mh5-xcoin-filter-group__label">快捷时间</h3>
                 <div class="mh5-xcoin-filter-chips">
                   <button
-                    v-for="tab in INVITE_TIME_PRESETS"
+                    v-for="tab in INVITE_REBATE_TIME_PRESETS"
                     :key="tab.key"
                     type="button"
                     class="mh5-xcoin-chip"
@@ -347,7 +451,9 @@ function applyFilter() {
                     @change="onDraftDateChange"
                   />
                 </div>
-                <p class="mh5-xcoin-filter-hint">按业务日筛选，最长 90 天</p>
+                <p class="mh5-xcoin-filter-hint">
+                  按业务日查询；与上方「昨天 / 本周 / 本月」联动；区间与快捷一致时自动选中对应 Tab，最长 90 天
+                </p>
               </section>
             </div>
 
@@ -534,25 +640,81 @@ function applyFilter() {
   font-weight: 700;
 }
 
-.mh5-invite-rebate-card__status--settled {
+.mh5-invite-rebate-card__currency {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #fff7ed;
+  color: #ea580c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mh5-invite-rebate-card__status--claimed {
   background: #ecfdf5;
   color: #059669;
 }
 
-.mh5-invite-rebate-card__status--pending {
+.mh5-invite-rebate-card__status--claimable {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.mh5-invite-rebate-card__status--locked {
   background: #fff7ed;
   color: #c2410c;
 }
 
-.mh5-invite-rebate-card__status--capped {
-  background: #f3f4f6;
-  color: #6b7280;
-}
-
+.mh5-invite-rebate-card__status--expired,
 .mh5-invite-rebate-card__status--cancelled,
 .mh5-invite-rebate-card__status--fail {
   background: #fef2f2;
   color: #dc2626;
+}
+
+.mh5-invite-rebate-card__claim-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mh5-invite-rebate-card__time {
+  flex: 1;
+  min-width: 0;
+  color: #9ca3af;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-invite-rebate-card__claim-btn {
+  flex: none;
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mh5-invite-rebate-card__claim-btn:active {
+  background: #1d4ed8;
+}
+
+.mh5-invite-rebate-card__claim-disabled,
+.mh5-invite-rebate-card__claim-done {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.mh5-invite-rebate-card__claim-done {
+  color: #059669;
 }
 
 .mh5-invite-rebate-card__biz {

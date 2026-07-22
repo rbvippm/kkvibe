@@ -70,13 +70,13 @@ export const pcDocRoutes: PcDocRoute[] = [
     path: '/pc/invite-rebate-inviters/doc',
     routeName: 'pc-invite-rebate-inviters-doc',
     title: '文档说明',
-    pagePath: ['运营管理', '邀请活动列表', '文档说明'],
+    pagePath: ['运营管理', '邀请列表', '文档说明'],
   },
   {
     path: '/pc/invite-rebate-invitees/doc',
     routeName: 'pc-invite-rebate-invitees-doc',
     title: '文档说明',
-    pagePath: ['运营管理', '邀请活动列表', '被邀请人详情', '文档说明'],
+    pagePath: ['运营管理', '邀请列表', '被邀请人详情', '文档说明'],
   },
   {
     path: '/pc/invite-rebate-stats/doc',
@@ -202,10 +202,10 @@ export const pcMenuTree: PcMenuItem[] = [
       },
       {
         key: 'invite-rebate-inviters',
-        title: '邀请活动列表',
+        title: '邀请列表',
         path: '/pc/invite-rebate-inviters',
         routeName: 'pc-invite-rebate-inviters',
-        pagePath: ['运营管理', '邀请活动列表'],
+        pagePath: ['运营管理', '邀请列表'],
         docRouteName: 'pc-invite-rebate-inviters-doc',
       },
     ],

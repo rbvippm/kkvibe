@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
-import { INVITE_PROFILE } from '../../constants/inviteFriends'
+import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
+import { countClaimableInviteRebates, INVITE_PROFILE } from '../../constants/inviteFriends'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
@@ -47,9 +48,21 @@ function goRecords() {
   router.push({ name: 'mobile-invite-records' })
 }
 
+function goInviteRebate() {
+  router.push({ name: 'mobile-invite-rebate' })
+}
+
 function goBackToMine() {
   router.push({ name: 'mobile-mine' })
 }
+
+/** 有代理身份时不展示邀请返利入口 */
+const showInviteRebateEntry = computed(() => !memberAgentMembershipJoined.value)
+
+/** 邀请返利入口角标：可领取笔数 */
+const claimableRebateCount = computed(() =>
+  showInviteRebateEntry.value ? countClaimableInviteRebates() : 0,
+)
 </script>
 
 <template>
@@ -125,7 +138,11 @@ function goBackToMine() {
         />
       </div>
 
-      <section class="mh5-invite-actions" aria-label="邀请操作">
+      <section
+        class="mh5-invite-actions"
+        :class="{ 'mh5-invite-actions--with-rebate': showInviteRebateEntry }"
+        aria-label="邀请操作"
+      >
         <button type="button" class="mh5-invite-actions__item" @click="saveImage">
           <span class="mh5-invite-actions__icon" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -187,6 +204,34 @@ function goBackToMine() {
             </svg>
           </span>
           <span>邀请记录</span>
+        </button>
+        <button
+          v-if="showInviteRebateEntry"
+          type="button"
+          class="mh5-invite-actions__item"
+          @click="goInviteRebate"
+        >
+          <span class="mh5-invite-actions__icon-wrap">
+            <span class="mh5-invite-actions__icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.8" />
+                <path
+                  d="M12 7v10M9.5 9.5c0-1.2 1.1-2 2.5-2s2.5.8 2.5 2-1.1 2-2.5 2-2.5.8-2.5 2 1.1 2 2.5 2 2.5-.8 2.5-2"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </span>
+            <span
+              v-if="claimableRebateCount > 0"
+              class="mh5-invite-actions__badge"
+              :aria-label="`${claimableRebateCount}笔可领取返利`"
+            >
+              {{ claimableRebateCount > 99 ? '99+' : claimableRebateCount }}
+            </span>
+          </span>
+          <span>邀请返利</span>
         </button>
       </section>
     </main>
@@ -352,6 +397,10 @@ function goBackToMine() {
   gap: 10px;
 }
 
+.mh5-invite-actions--with-rebate {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .mh5-invite-actions__item {
   display: flex;
   flex-direction: column;
@@ -369,6 +418,11 @@ function goBackToMine() {
   background: #f3f4f6;
 }
 
+.mh5-invite-actions__icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .mh5-invite-actions__icon {
   display: inline-flex;
   align-items: center;
@@ -378,6 +432,25 @@ function goBackToMine() {
   border-radius: 12px;
   background: #f7f8fa;
   color: #555;
+}
+
+.mh5-invite-actions__badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .mh5-invite-toast {

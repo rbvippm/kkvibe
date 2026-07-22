@@ -6,48 +6,56 @@ export type InviteRebateIdentity = 'member' | 'agent'
 
 export type InviteRebateEligibleStatus = 'eligible' | 'ineligible' | 'cancelled'
 
+/** 领取状态：待解锁 / 可领取 / 已领取 / 已过期 / 已取消（代理） */
 export type InviteRebateSettleStatus =
-  | 'pending'
-  | 'settled'
-  | 'capped'
+  | 'locked'
+  | 'claimable'
+  | 'claimed'
+  | 'expired'
   | 'cancelled'
-  | 'not_qualified'
 
-/** 邀请活动行：维度为用户ID（account）+ 币种，同一用户多币种各占一行 */
+/**
+ * 邀请列表行：维度为人（用户ID），币种下沉到被邀请人每日明细。
+ * 计入规则：至少成功邀请 1 名用户注册（inviteeCount > 0），无下级不入列表。
+ */
 export type InviteRebateInviterRow = {
   id: string
   /** 用户ID */
   account: string
+  /** 金刚号 */
+  kingkongId: string
   nickname: string
-  currency: InviteRebateCurrency
   identity: InviteRebateIdentity
   phoneBound: boolean
   phonePrefixes: string[]
-  historyDeposit: number
-  yesterdayDailyDeposit: number
+  /** 下级人数：成功邀请并注册的用户数，列表侧必 > 0 */
   inviteeCount: number
-  qualifiedInviteeCount: number
-  totalRebate: number
-  eligibleStatus: InviteRebateEligibleStatus
+  /** 累计返利：按币种分列展示，不做跨币种折算 */
+  rebateKKC: number
+  rebateKKV: number
+  rebateUSDT: number
   joinedAt: string
 }
 
+/**
+ * 被邀请人行：维度为人（被邀请人用户ID），挂在邀请人名下。
+ * 列表结构对齐邀请列表（无「下级人数」）；币种门槛下沉到每日明细。
+ */
 export type InviteRebateInviteeRow = {
   id: string
   inviterId: string
   inviterAccount: string
   inviterNickname: string
   account: string
+  /** 金刚号 */
+  kingkongId: string
   nickname: string
   vipLevel: number
-  currency: InviteRebateCurrency
   identity: InviteRebateIdentity
-  historyDeposit: number
-  yesterdayDailyDeposit: number
-  depositTotal: number
-  rebateTotal: number
-  meetsCondition: boolean
-  eligibleStatus: InviteRebateEligibleStatus
+  /** 累计返利：按币种分列，该被邀请人对邀请人贡献的已计返利 */
+  rebateKKC: number
+  rebateKKV: number
+  rebateUSDT: number
   registeredAt: string
 }
 
@@ -61,17 +69,18 @@ export type InviteRebateStatsRow = {
   qualifiedInviteeCount: number
   depositSum: number
   rebateSum: number
-  /** 截断后实际派发 */
-  settledSum: number
-  /** GMT+8 12:00 计划派发时间 */
-  settleAt: string
+  /** 已领取合计（封顶后） */
+  claimedSum: number
+  /** 领取开放时间：业务日 T+1 的 GMT+7 12:00 */
+  claimOpenAt: string
 }
 
 export type InviteRebateRecordRow = {
   id: string
   flowNo: string
   bizDate: string
-  settleAt: string
+  claimOpenAt: string
+  expireAt: string
   inviterId: string
   inviterAccount: string
   inviterNickname: string
@@ -79,12 +88,12 @@ export type InviteRebateRecordRow = {
   inviteeAccount: string
   inviteeNickname: string
   currency: InviteRebateCurrency
-  /** 计算日 23:59:59 VIP 快照 */
+  /** VIP 快照（配置口径不变） */
   vipSnapshot: number
   dailyCap: number
   rebateAmount: number
-  /** 截断后实际派发金额 */
-  settledAmount: number
+  /** 实际领取金额（封顶后；未领取为 0） */
+  claimedAmount: number
   status: InviteRebateSettleStatus
   remark: string
 }
@@ -102,6 +111,12 @@ export const INVITE_REBATE_IDENTITY_OPTIONS = [
   { value: 'agent', label: '代理' },
 ] as const
 
+/** VIP 等级枚举：全部 / VIP0～VIP10 */
+export const INVITE_REBATE_VIP_OPTIONS: { value: '' | number; label: string }[] = [
+  { value: '', label: '全部' },
+  ...Array.from({ length: 11 }, (_, i) => ({ value: i as number, label: `VIP${i}` })),
+]
+
 export const INVITE_REBATE_ELIGIBLE_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'eligible', label: '可计奖' },
@@ -111,12 +126,15 @@ export const INVITE_REBATE_ELIGIBLE_OPTIONS = [
 
 export const INVITE_REBATE_SETTLE_STATUS_OPTIONS = [
   { value: '', label: '全部' },
-  { value: 'pending', label: '待派发' },
-  { value: 'settled', label: '已派发' },
-  { value: 'capped', label: '触达上限' },
+  { value: 'locked', label: '待解锁' },
+  { value: 'claimable', label: '可领取' },
+  { value: 'claimed', label: '已领取' },
+  { value: 'expired', label: '已过期' },
   { value: 'cancelled', label: '已取消' },
-  { value: 'not_qualified', label: '未达标' },
 ] as const
+
+/** Mock 默认领取有效期（天） */
+export const INVITE_REBATE_MOCK_CLAIM_VALIDITY_DAYS = 1
 
 export function inviteRebateIdentityLabel(v: InviteRebateIdentity) {
   return v === 'agent' ? '代理' : '普通会员'
@@ -141,85 +159,93 @@ export function formatInviteRebateAmount(value: number) {
   })
 }
 
+function ymdFromParts(y: number, m: number, day: number) {
+  const d = new Date(y, m - 1, day)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * 领取开放时间 = 业务日 T+1 的 GMT+7 12:00。
+ * 入参/出参均为业务日日历日期字符串，不按时区换算偏移。
+ */
+export function inviteRebateClaimOpenAt(bizDate: string) {
+  const [y, m, day] = bizDate.split('-').map(Number)
+  return `${ymdFromParts(y, m, day + 1)} 12:00:00`
+}
+
+/**
+ * 过期时刻 = startOfDay(T+1) + (X===0 ? 1 : X) × 1day（GMT+7 00:00）。
+ * X=0 与 X=1 均在 T+2 00:00 作废。
+ */
+export function inviteRebateExpireAt(
+  bizDate: string,
+  claimValidityDays = INVITE_REBATE_MOCK_CLAIM_VALIDITY_DAYS,
+) {
+  const [y, m, day] = bizDate.split('-').map(Number)
+  const x = claimValidityDays === 0 ? 1 : claimValidityDays
+  return `${ymdFromParts(y, m, day + 1 + x)} 00:00:00`
+}
+
+/** @deprecated 使用 inviteRebateClaimOpenAt */
+export function inviteRebatePlanSettleAt(bizDate: string) {
+  return inviteRebateClaimOpenAt(bizDate)
+}
+
 export const MOCK_INVITE_REBATE_INVITERS: InviteRebateInviterRow[] = [
   {
     id: 'inv-1',
     account: '88001001',
+    kingkongId: '11223344',
     nickname: '阿凯',
-    currency: 'KKV',
     identity: 'member',
     phoneBound: true,
     phonePrefixes: ['84'],
-    historyDeposit: 2580000,
-    yesterdayDailyDeposit: 180000,
-    inviteeCount: 5,
-    qualifiedInviteeCount: 4,
-    totalRebate: 134800,
-    eligibleStatus: 'eligible',
-    joinedAt: '2026-06-01 12:00:00',
-  },
-  {
-    id: 'inv-1-kkc',
-    account: '88001001',
-    nickname: '阿凯',
-    currency: 'KKC',
-    identity: 'member',
-    phoneBound: true,
-    phonePrefixes: ['84'],
-    historyDeposit: 420000,
-    yesterdayDailyDeposit: 36000,
-    inviteeCount: 2,
-    qualifiedInviteeCount: 1,
-    totalRebate: 2800,
-    eligibleStatus: 'eligible',
+    inviteeCount: 4,
+    rebateKKC: 2800,
+    rebateKKV: 134800,
+    rebateUSDT: 0,
     joinedAt: '2026-06-01 12:00:00',
   },
   {
     id: 'inv-2',
     account: '88001088',
+    kingkongId: '66880031',
     nickname: '小幸运',
-    currency: 'KKC',
     identity: 'member',
     phoneBound: true,
     phonePrefixes: ['86', '852'],
-    historyDeposit: 980000,
-    yesterdayDailyDeposit: 120000,
-    inviteeCount: 3,
-    qualifiedInviteeCount: 2,
-    totalRebate: 8600,
-    eligibleStatus: 'eligible',
+    inviteeCount: 1,
+    rebateKKC: 8600,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     joinedAt: '2026-06-12 09:20:00',
   },
   {
     id: 'inv-3',
     account: '88001999',
+    kingkongId: '88888888',
     nickname: '棋王阿杰',
-    currency: 'KKV',
     identity: 'agent',
     phoneBound: true,
     phonePrefixes: ['84'],
-    historyDeposit: 5200000,
-    yesterdayDailyDeposit: 300000,
-    inviteeCount: 8,
-    qualifiedInviteeCount: 0,
-    totalRebate: 0,
-    eligibleStatus: 'cancelled',
+    inviteeCount: 1,
+    rebateKKC: 0,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     joinedAt: '2026-05-20 18:40:00',
   },
   {
     id: 'inv-4',
     account: '88002020',
+    kingkongId: '88661234',
     nickname: '新手小白',
-    currency: 'USDT',
     identity: 'member',
     phoneBound: false,
     phonePrefixes: [],
-    historyDeposit: 80,
-    yesterdayDailyDeposit: 5,
     inviteeCount: 1,
-    qualifiedInviteeCount: 0,
-    totalRebate: 0,
-    eligibleStatus: 'ineligible',
+    rebateKKC: 0,
+    rebateKKV: 0,
+    rebateUSDT: 12.5,
     joinedAt: '2026-07-10 21:00:00',
   },
 ]
@@ -231,16 +257,13 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
     account: '88291001',
+    kingkongId: '55667788',
     nickname: '小幸运',
     vipLevel: 3,
-    currency: 'KKV',
     identity: 'member',
-    historyDeposit: 2580000,
-    yesterdayDailyDeposit: 220000,
-    depositTotal: 2580000,
-    rebateTotal: 8220,
-    meetsCondition: true,
-    eligibleStatus: 'eligible',
+    rebateKKC: 0,
+    rebateKKV: 8220,
+    rebateUSDT: 0,
     registeredAt: '2026-07-18 10:12:00',
   },
   {
@@ -249,16 +272,13 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
     account: '88291088',
+    kingkongId: '55667701',
     nickname: '阿凯小号',
     vipLevel: 1,
-    currency: 'KKV',
     identity: 'member',
-    historyDeposit: 980000,
-    yesterdayDailyDeposit: 150000,
-    depositTotal: 980000,
-    rebateTotal: 2600,
-    meetsCondition: true,
-    eligibleStatus: 'eligible',
+    rebateKKC: 0,
+    rebateKKV: 2600,
+    rebateUSDT: 0,
     registeredAt: '2026-07-17 15:40:00',
   },
   {
@@ -267,34 +287,28 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
     account: '88291111',
+    kingkongId: '55667702',
     nickname: '新手小白',
     vipLevel: 0,
-    currency: 'KKV',
     identity: 'member',
-    historyDeposit: 80000,
-    yesterdayDailyDeposit: 20000,
-    depositTotal: 80000,
-    rebateTotal: 0,
-    meetsCondition: false,
-    eligibleStatus: 'ineligible',
+    rebateKKC: 0,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     registeredAt: '2026-07-16 08:05:00',
   },
   {
     id: 'ivt-1-kkc',
-    inviterId: 'inv-1-kkc',
+    inviterId: 'inv-1',
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
     account: '88292001',
+    kingkongId: '55667703',
     nickname: 'KKC新人',
     vipLevel: 1,
-    currency: 'KKC',
     identity: 'member',
-    historyDeposit: 360000,
-    yesterdayDailyDeposit: 48000,
-    depositTotal: 360000,
-    rebateTotal: 480,
-    meetsCondition: true,
-    eligibleStatus: 'eligible',
+    rebateKKC: 480,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     registeredAt: '2026-07-14 14:08:00',
   },
   {
@@ -303,16 +317,13 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
     inviterAccount: '88001088',
     inviterNickname: '小幸运',
     account: '88330001',
+    kingkongId: '77889900',
     nickname: '明哥888',
     vipLevel: 2,
-    currency: 'KKC',
     identity: 'member',
-    historyDeposit: 1200000,
-    yesterdayDailyDeposit: 110000,
-    depositTotal: 1200000,
-    rebateTotal: 900,
-    meetsCondition: true,
-    eligibleStatus: 'eligible',
+    rebateKKC: 900,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     registeredAt: '2026-07-15 19:22:00',
   },
   {
@@ -321,16 +332,13 @@ export const MOCK_INVITE_REBATE_INVITEES: InviteRebateInviteeRow[] = [
     inviterAccount: '88001999',
     inviterNickname: '棋王阿杰',
     account: '88440001',
+    kingkongId: '99001122',
     nickname: '小林棋王',
     vipLevel: 4,
-    currency: 'KKV',
     identity: 'member',
-    historyDeposit: 3600000,
-    yesterdayDailyDeposit: 260000,
-    depositTotal: 3600000,
-    rebateTotal: 0,
-    meetsCondition: false,
-    eligibleStatus: 'cancelled',
+    rebateKKC: 0,
+    rebateKKV: 0,
+    rebateUSDT: 0,
     registeredAt: '2026-07-12 11:00:00',
   },
 ]
@@ -345,8 +353,8 @@ export const MOCK_INVITE_REBATE_STATS: InviteRebateStatsRow[] = [
     qualifiedInviteeCount: 31,
     depositSum: 186400000,
     rebateSum: 1428000,
-    settledSum: 1288000,
-    settleAt: '2026-07-18 12:00:00',
+    claimedSum: 1288000,
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
   },
   {
     id: 'st-2',
@@ -357,8 +365,8 @@ export const MOCK_INVITE_REBATE_STATS: InviteRebateStatsRow[] = [
     qualifiedInviteeCount: 14,
     depositSum: 980000,
     rebateSum: 12600,
-    settledSum: 12600,
-    settleAt: '2026-07-18 12:00:00',
+    claimedSum: 12600,
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
   },
   {
     id: 'st-3',
@@ -369,8 +377,8 @@ export const MOCK_INVITE_REBATE_STATS: InviteRebateStatsRow[] = [
     qualifiedInviteeCount: 27,
     depositSum: 152200000,
     rebateSum: 1186000,
-    settledSum: 1102000,
-    settleAt: '2026-07-17 12:00:00',
+    claimedSum: 1102000,
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-16'),
   },
   {
     id: 'st-4',
@@ -381,8 +389,8 @@ export const MOCK_INVITE_REBATE_STATS: InviteRebateStatsRow[] = [
     qualifiedInviteeCount: 2,
     depositSum: 420,
     rebateSum: 8.5,
-    settledSum: 8.5,
-    settleAt: '2026-07-17 12:00:00',
+    claimedSum: 8.5,
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-16'),
   },
 ]
 
@@ -391,7 +399,8 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     id: 'rec-1',
     flowNo: 'IRB202607180001',
     bizDate: '2026-07-17',
-    settleAt: '2026-07-18 12:00:00',
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    expireAt: inviteRebateExpireAt('2026-07-17'),
     inviterId: 'inv-1',
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
@@ -401,16 +410,17 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     currency: 'KKV',
     vipSnapshot: 3,
     dailyCap: 6880000,
-    rebateAmount: 2200,
-    settledAmount: 2200,
-    status: 'settled',
-    remark: '应发 = 当天存款 × 1%；隔日派发成功',
+    rebateAmount: 25800,
+    claimedAmount: 25800,
+    status: 'claimed',
+    remark: '',
   },
   {
     id: 'rec-2',
     flowNo: 'IRB202607180002',
     bizDate: '2026-07-17',
-    settleAt: '2026-07-18 12:00:00',
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    expireAt: inviteRebateExpireAt('2026-07-17'),
     inviterId: 'inv-1',
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
@@ -420,16 +430,17 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     currency: 'KKV',
     vipSnapshot: 1,
     dailyCap: 6880000,
-    rebateAmount: 1500,
-    settledAmount: 1500,
-    status: 'settled',
-    remark: '应发 = 当天存款 × 1%；隔日派发成功',
+    rebateAmount: 9800,
+    claimedAmount: 9800,
+    status: 'claimed',
+    remark: '',
   },
   {
     id: 'rec-3',
-    flowNo: 'IRB202607180003',
+    flowNo: '',
     bizDate: '2026-07-17',
-    settleAt: '2026-07-18 12:00:00',
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    expireAt: inviteRebateExpireAt('2026-07-17'),
     inviterId: 'inv-1',
     inviterAccount: '88001001',
     inviterNickname: '阿凯',
@@ -439,16 +450,17 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     currency: 'KKV',
     vipSnapshot: 0,
     dailyCap: 6880000,
-    rebateAmount: 0,
-    settledAmount: 0,
-    status: 'not_qualified',
-    remark: '昨日每日最低存款或历史累计未达标',
+    rebateAmount: 800,
+    claimedAmount: 0,
+    status: 'locked',
+    remark: '被邀请人次日存款未达解锁门槛，暂不可领取',
   },
   {
     id: 'rec-4',
     flowNo: 'IRB202607170010',
     bizDate: '2026-07-16',
-    settleAt: '2026-07-17 12:00:00',
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-16'),
+    expireAt: inviteRebateExpireAt('2026-07-16'),
     inviterId: 'inv-2',
     inviterAccount: '88001088',
     inviterNickname: '小幸运',
@@ -457,17 +469,18 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     inviteeNickname: '明哥888',
     currency: 'KKC',
     vipSnapshot: 2,
-    dailyCap: 6880000,
-    rebateAmount: 1100,
-    settledAmount: 900,
-    status: 'capped',
-    remark: '应发 = 当天存款 × 1%；当日应发超过各被邀请人上限之和，已扣减超出',
+    dailyCap: 900,
+    rebateAmount: 12000,
+    claimedAmount: 900,
+    status: 'claimed',
+    remark: '',
   },
   {
     id: 'rec-5',
-    flowNo: 'IRB202607180099',
+    flowNo: '',
     bizDate: '2026-07-17',
-    settleAt: '2026-07-18 12:00:00',
+    claimOpenAt: inviteRebateClaimOpenAt('2026-07-17'),
+    expireAt: inviteRebateExpireAt('2026-07-17'),
     inviterId: 'inv-3',
     inviterAccount: '88001999',
     inviterNickname: '棋王阿杰',
@@ -477,41 +490,53 @@ export const MOCK_INVITE_REBATE_RECORDS: InviteRebateRecordRow[] = [
     currency: 'KKV',
     vipSnapshot: 4,
     dailyCap: 6880000,
-    rebateAmount: 0,
-    settledAmount: 0,
+    rebateAmount: 36000,
+    claimedAmount: 0,
     status: 'cancelled',
-    remark: '邀请人已成为代理，取消返利资格',
+    remark: '邀请人已成为代理，返利资格已取消',
   },
 ]
 
 /** 默认 Mock 返利比例（%），与活动中心邀请人条件一致 */
 export const INVITE_REBATE_MOCK_RATE = 1
 
-/** 应发返利 = 当天存款金额 × 返利比例 */
-export function calcInviteRebateAmount(dailyDeposit: number, rebateRatePercent: number) {
-  return Math.round(dailyDeposit * rebateRatePercent * 100) / 10000
+/** 预估奖金 = 被邀请人 T 日充值 × 业务日返利比例（再由调用方按 VIP 上限封顶） */
+export function calcInviteRebateAmount(bizDayInviteeDeposit: number, rebateRatePercent: number) {
+  return Math.round(bizDayInviteeDeposit * rebateRatePercent * 100) / 10000
 }
 
-/** 被邀请人每日条件与返利明细（业务日维度） */
+/** 被邀请人每日条件与返利明细（人 + 币种 + 业务日） */
 export type InviteRebateInviteeDailyRow = {
   id: string
   inviteeId: string
   bizDate: string
+  /** 币种维度落在每日明细 */
   currency: InviteRebateCurrency
   vipSnapshot: number
   /** 返利比例（%） */
   rebateRate: number
-  inviteeHistoryDeposit: number
-  inviteeDailyDeposit: number
-  inviterHistoryDeposit: number
-  inviterDailyDeposit: number
-  meetsThreshold: boolean
-  eligibleStatus: InviteRebateEligibleStatus
-  /** 应发 = 被邀请人当天存款 × 返利比例 */
+  /** 被邀请人 T 日充值 */
+  inviteeBizDayDeposit: number
+  /** 被邀请人 T+1 日充值（次日解锁） */
+  inviteeRechargeDayDeposit: number
+  /** 邀请人 T 日充值（展示用） */
+  inviterBizDayDeposit: number
+  /** 邀请人 T+1 日充值（次日解锁） */
+  inviterRechargeDayDeposit: number
+  /** 邀请人解锁侧资格（可计奖 / 未达标 / 已取消） */
+  inviterEligibleStatus: InviteRebateEligibleStatus
+  /** 被邀请人解锁侧资格（可计奖 / 未达标 / 已取消） */
+  inviteeEligibleStatus: InviteRebateEligibleStatus
+  /** 预估奖金（封顶前或已封顶展示值） */
   rebateAmount: number
-  settledAmount: number
+  /** 已领取金额；未领取为 0 */
+  claimedAmount: number
   status: InviteRebateSettleStatus
-  settleAt: string
+  claimOpenAt: string
+  expireAt: string
+  /** 流水号：仅已领取有值 */
+  flowNo: string
+  /** 备注：待解锁缺条件 / 已取消 / 已过期等原因 */
   remark: string
 }
 
@@ -523,13 +548,15 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
     invDaily: number
     ieHist: number
     ieDaily: number
-    meets: boolean
-    eligible: InviteRebateEligibleStatus
+    inviterEligible: InviteRebateEligibleStatus
+    inviteeEligible: InviteRebateEligibleStatus
     status: InviteRebateSettleStatus
-    remark: string
-    /** 触达上限时的实发（小于应发） */
+    /** 仅已取消 / 未达标填写 */
+    remark?: string
+    /** 封顶后的预估/已领金额（小于按比例算出的原始值） */
     settledCap?: number
     rebateRate?: number
+    flowNo?: string
   }
 
   const seed: Array<{
@@ -548,10 +575,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 180000,
           ieHist: 2580000,
           ieDaily: 220000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607180001',
         },
         {
           bizDate: '2026-07-16',
@@ -560,10 +587,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 160000,
           ieHist: 2360000,
           ieDaily: 180000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607170001',
         },
         {
           bizDate: '2026-07-15',
@@ -572,10 +599,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 90000,
           ieHist: 2180000,
           ieDaily: 45000,
-          meets: false,
-          eligible: 'ineligible',
-          status: 'not_qualified',
-          remark: '被邀请人当日日存未达每日最低存款',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'ineligible',
+          status: 'locked',
+          remark: '被邀请人当日存款未达触发门槛，暂不可领取',
         },
         {
           bizDate: '2026-07-14',
@@ -584,10 +611,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 150000,
           ieHist: 2135000,
           ieDaily: 160000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607150001',
         },
         {
           bizDate: '2026-07-13',
@@ -596,11 +623,11 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 140000,
           ieHist: 1975000,
           ieDaily: 155000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'capped',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
           settledCap: 1200,
-          remark: '应发 = 当天存款 × 1%；触达 VIP 日返利上限，已截断',
+          flowNo: 'IRB202607140001',
         },
         {
           bizDate: '2026-07-12',
@@ -609,10 +636,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 130000,
           ieHist: 1820000,
           ieDaily: 142000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607130001',
         },
         {
           bizDate: '2026-07-11',
@@ -620,11 +647,11 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invHist: 1730000,
           invDaily: 80000,
           ieHist: 1678000,
-          ieDaily: 20000,
-          meets: false,
-          eligible: 'ineligible',
-          status: 'not_qualified',
-          remark: '邀请人当日日存未达每日最低存款',
+          ieDaily: 150000,
+          inviterEligible: 'ineligible',
+          inviteeEligible: 'eligible',
+          status: 'locked',
+          remark: '邀请人次日存款未达解锁门槛，暂不可领取',
         },
       ],
     },
@@ -639,10 +666,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 180000,
           ieHist: 980000,
           ieDaily: 150000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607180002',
         },
         {
           bizDate: '2026-07-16',
@@ -651,10 +678,9 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 160000,
           ieHist: 830000,
           ieDaily: 110000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'pending',
-          remark: '应发 = 当天存款 × 1%；待隔日 GMT+8 12:00 派发',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimable',
         },
       ],
     },
@@ -669,10 +695,10 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 180000,
           ieHist: 80000,
           ieDaily: 20000,
-          meets: false,
-          eligible: 'ineligible',
-          status: 'not_qualified',
-          remark: '被邀请人历史累计存款未达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'ineligible',
+          status: 'locked',
+          remark: '被邀请人次日存款未达解锁门槛，暂不可领取',
         },
       ],
     },
@@ -687,22 +713,34 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 36000,
           ieHist: 360000,
           ieDaily: 48000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'settled',
-          remark: '应发 = 当天存款 × 1%；双方日存与历史累计均达标',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
+          flowNo: 'IRB202607170011',
         },
         {
           bizDate: '2026-07-15',
           vip: 1,
           invHist: 384000,
-          invDaily: 28000,
+          invDaily: 48000,
           ieHist: 312000,
           ieDaily: 12000,
-          meets: false,
-          eligible: 'ineligible',
-          status: 'not_qualified',
-          remark: '被邀请人当日日存未达每日最低存款',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'ineligible',
+          status: 'locked',
+          remark: '被邀请人当日存款未达触发门槛，暂不可领取',
+        },
+        {
+          bizDate: '2026-07-14',
+          vip: 1,
+          invHist: 280000,
+          invDaily: 20000,
+          ieHist: 300000,
+          ieDaily: 50000,
+          inviterEligible: 'ineligible',
+          inviteeEligible: 'eligible',
+          status: 'locked',
+          remark: '邀请人次日存款未达解锁门槛，暂不可领取',
         },
       ],
     },
@@ -717,11 +755,11 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 120000,
           ieHist: 1200000,
           ieDaily: 110000,
-          meets: true,
-          eligible: 'eligible',
-          status: 'capped',
+          inviterEligible: 'eligible',
+          inviteeEligible: 'eligible',
+          status: 'claimed',
           settledCap: 900,
-          remark: '应发 = 当天存款 × 1%；当日应发超过上限之和，已扣减超出',
+          flowNo: 'IRB202607170012',
         },
       ],
     },
@@ -736,47 +774,67 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
           invDaily: 300000,
           ieHist: 3600000,
           ieDaily: 260000,
-          meets: false,
-          eligible: 'cancelled',
+          inviterEligible: 'cancelled',
+          inviteeEligible: 'eligible',
           status: 'cancelled',
-          remark: '邀请人已成为代理，取消返利资格',
+          remark: '邀请人已成为代理，返利资格已取消',
+        },
+        {
+          bizDate: '2026-07-16',
+          vip: 4,
+          invHist: 5000000,
+          invDaily: 280000,
+          ieHist: 3400000,
+          ieDaily: 240000,
+          inviterEligible: 'eligible',
+          inviteeEligible: 'cancelled',
+          status: 'cancelled',
+          remark: '被邀请人已成为代理，返利资格已取消',
         },
       ],
     },
   ]
 
+  let flowSeq = 0
   return seed.flatMap((group) =>
     group.days.map((d) => {
-      const [y, m, day] = d.bizDate.split('-').map(Number)
-      const next = new Date(y, m - 1, day + 1)
-      const settleAt = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')} 12:00:00`
+      const claimOpenAt = inviteRebateClaimOpenAt(d.bizDate)
+      const expireAt = inviteRebateExpireAt(d.bizDate)
       const rebateRate = d.rebateRate ?? INVITE_REBATE_MOCK_RATE
-      const canAward = d.meets && d.eligible === 'eligible'
-      const rebateAmount = canAward ? calcInviteRebateAmount(d.ieDaily, rebateRate) : 0
-      const settledAmount =
-        d.status === 'capped' && d.settledCap != null
-          ? d.settledCap
-          : canAward
-            ? rebateAmount
-            : 0
+      /** T 日有充值即生成预估；未达蓄力门槛也计算金额 */
+      const raw = d.ieHist > 0 ? calcInviteRebateAmount(d.ieHist, rebateRate) : 0
+      const rebateAmount = d.settledCap != null ? Math.min(raw, d.settledCap) : raw
+      const claimedAmount = d.status === 'claimed' ? rebateAmount : 0
+      const hasBill = d.status === 'claimed'
+      if (hasBill && !d.flowNo) flowSeq += 1
+      const flowNo = hasBill
+        ? d.flowNo ??
+          `IRB${claimOpenAt.slice(0, 10).replace(/-/g, '')}${String(flowSeq).padStart(4, '0')}`
+        : ''
+      const remark =
+        d.status === 'cancelled' || d.status === 'locked' || d.status === 'expired'
+          ? (d.remark ?? '')
+          : ''
       return {
-        id: `${group.inviteeId}-${d.bizDate}`,
+        id: `${group.inviteeId}-${group.currency}-${d.bizDate}`,
         inviteeId: group.inviteeId,
         bizDate: d.bizDate,
         currency: group.currency,
         vipSnapshot: d.vip,
         rebateRate,
-        inviteeHistoryDeposit: d.ieHist,
-        inviteeDailyDeposit: d.ieDaily,
-        inviterHistoryDeposit: d.invHist,
-        inviterDailyDeposit: d.invDaily,
-        meetsThreshold: d.meets,
-        eligibleStatus: d.eligible,
+        inviteeBizDayDeposit: d.ieHist,
+        inviteeRechargeDayDeposit: d.ieDaily,
+        inviterBizDayDeposit: d.invHist,
+        inviterRechargeDayDeposit: d.invDaily,
+        inviterEligibleStatus: d.inviterEligible,
+        inviteeEligibleStatus: d.inviteeEligible,
         rebateAmount,
-        settledAmount,
+        claimedAmount,
         status: d.status,
-        settleAt,
-        remark: d.remark,
+        claimOpenAt,
+        expireAt,
+        flowNo,
+        remark,
       }
     }),
   )
@@ -785,8 +843,13 @@ function buildInviteeDailyMocks(): InviteRebateInviteeDailyRow[] {
 export const MOCK_INVITE_REBATE_INVITEE_DAILY: InviteRebateInviteeDailyRow[] =
   buildInviteeDailyMocks()
 
+/** 邀请列表数据源：仅含成功邀请过注册用户的邀请人（下级人数 > 0） */
+export function listInviteRebateInviters() {
+  return MOCK_INVITE_REBATE_INVITERS.filter((r) => r.inviteeCount > 0)
+}
+
 export function findInviteRebateInviter(id: string) {
-  return MOCK_INVITE_REBATE_INVITERS.find((r) => r.id === id)
+  return listInviteRebateInviters().find((r) => r.id === id)
 }
 
 export function findInviteRebateInvitee(id: string) {
@@ -798,7 +861,9 @@ export function inviteesByInviter(inviterId: string) {
 }
 
 export function inviteeDailyByInvitee(inviteeId: string) {
-  return MOCK_INVITE_REBATE_INVITEE_DAILY.filter((r) => r.inviteeId === inviteeId).sort((a, b) =>
-    b.bizDate.localeCompare(a.bizDate),
-  )
+  return MOCK_INVITE_REBATE_INVITEE_DAILY.filter((r) => r.inviteeId === inviteeId).sort((a, b) => {
+    const byDate = b.bizDate.localeCompare(a.bizDate)
+    if (byDate !== 0) return byDate
+    return a.currency.localeCompare(b.currency)
+  })
 }

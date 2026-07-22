@@ -287,6 +287,12 @@ export const router = createRouter({
           meta: { title: '邀请好友记录', hideTabBar: true },
         },
         {
+          path: 'mine/invite/rebate',
+          name: 'mobile-invite-rebate',
+          component: () => import('../views/mobile/MobileInviteRebateListView.vue'),
+          meta: { title: '邀请返利', hideTabBar: true },
+        },
+        {
           path: 'mine/invite/records/:id',
           name: 'mobile-invite-rebate-detail',
           component: () => import('../views/mobile/MobileInviteRebateDetailView.vue'),
@@ -437,13 +443,13 @@ export const router = createRouter({
           path: 'invite-rebate-inviters',
           name: 'pc-invite-rebate-inviters',
           component: () => import('../views/pc/PcInviteRebateInviterView.vue'),
-          meta: { title: '邀请活动列表' },
+          meta: { title: '邀请列表' },
         },
         {
           path: 'invite-rebate-inviters/doc',
           name: 'pc-invite-rebate-inviters-doc',
           component: () => import('../views/pc/PcInviteRebateInviterDocView.vue'),
-          meta: { title: '邀请活动列表-文档说明' },
+          meta: { title: '邀请列表-文档说明' },
         },
         {
           path: 'invite-rebate-invitees',

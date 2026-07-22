@@ -206,7 +206,7 @@ function openCreate() {
     activityId: nextActivityId.value,
     type: 'invite_recharge_rebate_vip',
     title: '邀请好友充值返利',
-    subtitle: 'VIP阶梯自动派发',
+    subtitle: '次日解锁 · 限时领取',
   })
   formHint.value = ''
   channelDropdownOpen.value = false
@@ -325,27 +325,32 @@ function validateForm() {
           }
         }
       }
-      if (cfg.inviterHistoryDeposit < 0) {
-        return `${cfg.currency} 邀请人历史累计存款不能为负数`
-      }
-      if (cfg.inviterDailyMinDeposit < 0) {
-        return `${cfg.currency} 邀请人每日最低存款不能为负数`
+      if (cfg.inviterRechargeDayMinDeposit < 0) {
+        return `${cfg.currency} 次日解锁门槛-邀请人不能为负数`
       }
       if (cfg.rebateRate < 0 || cfg.rebateRate > 100) {
-        return `${cfg.currency} 返利比例须在 0～100%`
+        return `${cfg.currency} 业务日返利比例须在 0～100%`
       }
       if (
         !Number.isFinite(cfg.rebateWithdrawTurnoverMultiple) ||
         !Number.isInteger(cfg.rebateWithdrawTurnoverMultiple) ||
         cfg.rebateWithdrawTurnoverMultiple < 0
       ) {
-        return `${cfg.currency} 返利提现流水倍数须为 ≥0 的整数（0 表示无限制）`
+        return `${cfg.currency} 提现流水倍数须为 ≥0 的整数（0 表示无限制）`
       }
-      if (cfg.inviteeHistoryDeposit < 0) {
-        return `${cfg.currency} 被邀请人历史累计存款不能为负数`
+      if (
+        !Number.isFinite(cfg.claimValidityDays) ||
+        !Number.isInteger(cfg.claimValidityDays) ||
+        cfg.claimValidityDays < 0 ||
+        cfg.claimValidityDays > 30
+      ) {
+        return `${cfg.currency} 奖励领取有效期须为 0～30 的整数`
       }
-      if (cfg.inviteeDailyMinDeposit < 0) {
-        return `${cfg.currency} 被邀请人每日最低存款不能为负数`
+      if (cfg.inviteeBizDayMinDeposit < 0) {
+        return `${cfg.currency} T日返利触发门槛-被邀请人不能为负数`
+      }
+      if (cfg.inviteeRechargeDayMinDeposit < 0) {
+        return `${cfg.currency} 次日解锁门槛-被邀请人不能为负数`
       }
       if (!cfg.vipDailyCaps.length) return `请配置 ${cfg.currency} 的 VIP 阶梯日上限`
       for (const row of cfg.vipDailyCaps) {
@@ -632,13 +637,13 @@ function setShowInList(value: boolean) {
             <!-- 邀请好友充值返利 · 按币种 Tab 配置规则 -->
             <section v-if="isInviteRechargeRebateVip(form.type)" class="activity-center-modal__rules">
               <h4 class="activity-center-modal__rules-title">
-                活动规则--邀请好友充值返利（VIP阶梯自动版）
+                活动规则--邀请返利
               </h4>
               <p class="activity-center-modal__rules-desc">
-                仅邀请人与被邀请人均为普通会员时计算返利；任一方成为代理即取消返利资格。金额条件与到账返利均按币种区分配置与派发。结算周期：隔天以业务时区
-                GMT+8 中午 12:00，向邀请人派发「昨天」产生的返利，且要求昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。应发返利 =
-                被邀请人当天存款金额 × 邀请人返利比例；返利上限取返利计算日当日 23:59:59 被邀请人 VIP
-                等级对应档位；落库当日返利金额时同步落库当日返利上限；派发时若当日应发合计超过各被邀请人上限之和，则扣减超出部分后再派发。
+                仅邀请人与被邀请人均为普通会员时计算返利；任一方成为代理即取消返利资格。金额与领取均按币种独立配置。流程：被邀请人
+                T 日有充值即生成「待解锁」预估奖金（未达触发门槛也生成）→ T+1 日须同时满足「次日解锁门槛-被邀请人 / 次日解锁门槛-邀请人 /
+                绑定手机号」→ T+1 日 12:00（GMT+7）起可手动领取 → 超【奖励领取有效期】未领则作废。预估奖金 = 被邀请人 T
+                日充值 × 业务日返利比例，再按 VIP 日上限封顶；领取后按提现流水倍数增加流水（0=无限制）。修改配置仅影响新生成记录。
               </p>
 
               <p v-if="!form.currencyConfigs.length" class="activity-center-modal__currency-empty">
@@ -665,190 +670,239 @@ function setShowInList(value: boolean) {
                   </p>
 
                   <div class="activity-center-modal__condition-group">
-                    <h5 class="activity-center-modal__sub-title">邀请人条件</h5>
+                    <h5 class="activity-center-modal__sub-title">解锁与领取条件</h5>
                     <p class="activity-center-modal__condition-hint">
-                      本 Tab 金额均以 {{ activeCurrencyConfig.currency }} 计量；返利亦按此币种派发给邀请人。
+                      本 Tab 金额均以 {{ activeCurrencyConfig.currency }} 计量；奖金按此币种发放给邀请人。
                     </p>
-                    <div class="activity-center-modal__grid2">
-                      <div class="wf-form-row activity-center-modal__phone-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">绑定手机号</label>
-                        <div class="activity-center-modal__phone-fields">
-                          <div class="activity-center-modal__radios">
-                            <label>
-                              <input
-                                type="radio"
-                                :name="`inviter-phone-bound-${activeCurrencyConfig.currency}`"
-                                :checked="activeCurrencyConfig.inviterRequirePhoneBound"
-                                :disabled="readonly"
-                                @change="setInviterPhoneBound(true)"
-                              />
-                              是
-                            </label>
-                            <label>
-                              <input
-                                type="radio"
-                                :name="`inviter-phone-bound-${activeCurrencyConfig.currency}`"
-                                :checked="!activeCurrencyConfig.inviterRequirePhoneBound"
-                                :disabled="readonly"
-                                @change="setInviterPhoneBound(false)"
-                              />
-                              否
-                            </label>
-                          </div>
-                          <div
-                            v-if="activeCurrencyConfig.inviterRequirePhoneBound"
-                            class="activity-center-modal__dial"
-                          >
-                            <span class="activity-center-modal__dial-label">区号</span>
-                            <div class="activity-center-modal__multi activity-center-modal__dial-multi">
-                              <button
-                                type="button"
-                                class="activity-center-modal__multi-trigger"
-                                :disabled="readonly"
-                                @click="dialDropdownOpen ? closeDialDropdown() : openDialDropdown()"
-                              >
-                                <span v-if="selectedDialText">{{ selectedDialText }}</span>
-                                <span v-else class="activity-center-modal__multi-placeholder">
-                                  请选择区号（可多选）
-                                </span>
-                                <span class="activity-center-modal__multi-arrow">
-                                  {{ dialDropdownOpen ? '⌃' : '▾' }}
-                                </span>
-                              </button>
-                              <div
-                                v-if="dialDropdownOpen && !readonly"
-                                class="activity-center-modal__multi-panel activity-center-modal__dial-panel"
-                              >
-                                <input
-                                  v-model="dialSearch"
-                                  type="text"
-                                  class="wf-input activity-center-modal__dial-search"
-                                  placeholder="搜索区号 / 国家"
-                                  @click.stop
-                                />
-                                <label
-                                  v-for="opt in filteredDialOptions"
-                                  :key="`dial-${opt.code}`"
-                                  class="activity-center-modal__multi-option"
-                                >
+
+                    <section class="activity-center-modal__condition-block">
+                      <h6 class="activity-center-modal__condition-block-title">邀请人</h6>
+                      <div class="activity-center-modal__grid2">
+                        <div class="wf-form-row activity-center-modal__phone-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            绑定手机号
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__phone-fields">
+                              <div class="activity-center-modal__radios">
+                                <label>
                                   <input
-                                    type="checkbox"
-                                    :checked="activeCurrencyConfig.phonePrefixes.includes(opt.code)"
-                                    @change="toggleDialCode(opt.code)"
+                                    type="radio"
+                                    :name="`inviter-phone-bound-${activeCurrencyConfig.currency}`"
+                                    :checked="activeCurrencyConfig.inviterRequirePhoneBound"
+                                    :disabled="readonly"
+                                    @change="setInviterPhoneBound(true)"
                                   />
-                                  <span>{{ opt.code }}-{{ opt.name }}</span>
+                                  是
                                 </label>
-                                <p
-                                  v-if="!filteredDialOptions.length"
-                                  class="activity-center-modal__dial-empty"
-                                >
-                                  无匹配区号
-                                </p>
+                                <label>
+                                  <input
+                                    type="radio"
+                                    :name="`inviter-phone-bound-${activeCurrencyConfig.currency}`"
+                                    :checked="!activeCurrencyConfig.inviterRequirePhoneBound"
+                                    :disabled="readonly"
+                                    @change="setInviterPhoneBound(false)"
+                                  />
+                                  否
+                                </label>
+                              </div>
+                              <div
+                                v-if="activeCurrencyConfig.inviterRequirePhoneBound"
+                                class="activity-center-modal__dial"
+                              >
+                                <span class="activity-center-modal__dial-label">区号</span>
+                                <div class="activity-center-modal__multi activity-center-modal__dial-multi">
+                                  <button
+                                    type="button"
+                                    class="activity-center-modal__multi-trigger"
+                                    :disabled="readonly"
+                                    @click="dialDropdownOpen ? closeDialDropdown() : openDialDropdown()"
+                                  >
+                                    <span v-if="selectedDialText">{{ selectedDialText }}</span>
+                                    <span v-else class="activity-center-modal__multi-placeholder">
+                                      请选择区号（可多选）
+                                    </span>
+                                    <span class="activity-center-modal__multi-arrow">
+                                      {{ dialDropdownOpen ? '⌃' : '▾' }}
+                                    </span>
+                                  </button>
+                                  <div
+                                    v-if="dialDropdownOpen && !readonly"
+                                    class="activity-center-modal__multi-panel activity-center-modal__dial-panel"
+                                  >
+                                    <input
+                                      v-model="dialSearch"
+                                      type="text"
+                                      class="wf-input activity-center-modal__dial-search"
+                                      placeholder="搜索区号 / 国家"
+                                      @click.stop
+                                    />
+                                    <label
+                                      v-for="opt in filteredDialOptions"
+                                      :key="`dial-${opt.code}`"
+                                      class="activity-center-modal__multi-option"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        :checked="
+                                          activeCurrencyConfig.phonePrefixes.includes(opt.code)
+                                        "
+                                        @change="toggleDialCode(opt.code)"
+                                      />
+                                      <span>{{ opt.code }}-{{ opt.name }}</span>
+                                    </label>
+                                    <p
+                                      v-if="!filteredDialOptions.length"
+                                      class="activity-center-modal__dial-empty"
+                                    >
+                                      无匹配区号
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
                             </div>
+                            <p class="activity-center-modal__field-tip">
+                              解锁条件：邀请人须已绑定手机号
+                            </p>
+                          </div>
+                        </div>
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            次日解锁门槛
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__suffix-field">
+                              <input
+                                v-model.number="activeCurrencyConfig.inviterRechargeDayMinDeposit"
+                                type="number"
+                                min="0"
+                                step="1000"
+                                class="wf-input wf-input--full"
+                                :disabled="readonly"
+                              />
+                              <span>{{ activeCurrencyConfig.currency }}</span>
+                            </div>
+                            <p class="activity-center-modal__field-tip">
+                              邀请人次日需存款达标，才能解锁
+                            </p>
                           </div>
                         </div>
                       </div>
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">历史累计存款</label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.inviterHistoryDeposit"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>{{ activeCurrencyConfig.currency }}</span>
-                        </div>
-                      </div>
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">每日最低存款</label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.inviterDailyMinDeposit"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>{{ activeCurrencyConfig.currency }}</span>
-                        </div>
-                      </div>
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">返利比例</label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.rebateRate"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>%</span>
-                        </div>
-                      </div>
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">
-                          返利提现流水倍数
-                        </label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.rebateWithdrawTurnoverMultiple"
-                            type="number"
-                            min="0"
-                            step="1"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>倍</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p class="activity-center-modal__condition-hint activity-center-modal__condition-hint--after">
-                      返利提现流水倍数为整数，最小 0；填 0 表示该币种返利无提现流水要求。
-                    </p>
-                  </div>
+                    </section>
 
-                  <div class="activity-center-modal__condition-group">
-                    <h5 class="activity-center-modal__sub-title">被邀请人条件</h5>
-                    <p class="activity-center-modal__condition-hint">
-                      门槛按本币种 {{ activeCurrencyConfig.currency }} 配置；结算日校验「昨天」每日最低存款是否达标。
-                    </p>
-                    <div class="activity-center-modal__grid2">
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">历史累计存款</label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.inviteeHistoryDeposit"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>{{ activeCurrencyConfig.currency }}</span>
+                    <section class="activity-center-modal__condition-block">
+                      <h6 class="activity-center-modal__condition-block-title">被邀请人</h6>
+                      <div class="activity-center-modal__grid2">
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            T日返利触发门槛
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__suffix-field">
+                              <input
+                                v-model.number="activeCurrencyConfig.inviteeBizDayMinDeposit"
+                                type="number"
+                                min="0"
+                                step="1000"
+                                class="wf-input wf-input--full"
+                                :disabled="readonly"
+                              />
+                              <span>{{ activeCurrencyConfig.currency }}</span>
+                            </div>
+                            <p class="activity-center-modal__field-tip">
+                              好友当天存款的蓄力展示线；未达也会生成待解锁返利记录
+                            </p>
+                          </div>
+                        </div>
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            次日解锁门槛
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__suffix-field">
+                              <input
+                                v-model.number="activeCurrencyConfig.inviteeRechargeDayMinDeposit"
+                                type="number"
+                                min="0"
+                                step="1000"
+                                class="wf-input wf-input--full"
+                                :disabled="readonly"
+                              />
+                              <span>{{ activeCurrencyConfig.currency }}</span>
+                            </div>
+                            <p class="activity-center-modal__field-tip">
+                              好友次日还需再存这么多，才能解锁
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      <div class="wf-form-row">
-                        <label class="wf-form-row__label wf-form-row__label--required">每日最低存款</label>
-                        <div class="activity-center-modal__suffix-field">
-                          <input
-                            v-model.number="activeCurrencyConfig.inviteeDailyMinDeposit"
-                            type="number"
-                            min="0"
-                            step="1000"
-                            class="wf-input wf-input--full"
-                            :disabled="readonly"
-                          />
-                          <span>{{ activeCurrencyConfig.currency }}</span>
+                    </section>
+
+                    <section class="activity-center-modal__condition-block">
+                      <h6 class="activity-center-modal__condition-block-title">领取与发放</h6>
+                      <div class="activity-center-modal__grid2">
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            业务日返利比例
+                          </label>
+                          <div class="activity-center-modal__suffix-field">
+                            <input
+                              v-model.number="activeCurrencyConfig.rebateRate"
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              class="wf-input wf-input--full"
+                              :disabled="readonly"
+                            />
+                            <span>%</span>
+                          </div>
+                        </div>
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            提现流水倍数
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__suffix-field">
+                              <input
+                                v-model.number="activeCurrencyConfig.rebateWithdrawTurnoverMultiple"
+                                type="number"
+                                min="0"
+                                step="1"
+                                class="wf-input wf-input--full"
+                                :disabled="readonly"
+                              />
+                              <span>倍</span>
+                            </div>
+                            <p class="activity-center-modal__field-tip">
+                              填 0 表示领完即可提现，无流水
+                            </p>
+                          </div>
+                        </div>
+                        <div class="wf-form-row">
+                          <label class="wf-form-row__label wf-form-row__label--required">
+                            奖励领取有效期
+                          </label>
+                          <div class="activity-center-modal__control">
+                            <div class="activity-center-modal__suffix-field">
+                              <input
+                                v-model.number="activeCurrencyConfig.claimValidityDays"
+                                type="number"
+                                min="0"
+                                max="30"
+                                step="1"
+                                class="wf-input wf-input--full"
+                                :disabled="readonly"
+                              />
+                              <span>天</span>
+                            </div>
+                            <p class="activity-center-modal__field-tip">
+                              从次日算起，几天内必须领完；填 0 表示次日当晚失效
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </section>
                   </div>
 
                   <h5 class="activity-center-modal__sub-title">
@@ -1256,23 +1310,27 @@ function setShowInList(value: boolean) {
             <p v-if="formHint" class="wf-modal__hint">{{ formHint }}</p>
 
             <div v-if="readonly && isInviteRechargeRebateVip(form.type)" class="activity-center-modal__readonly-note">
-              <p><strong>自动派发逻辑摘要：</strong></p>
+              <p><strong>次日解锁 · 限时领取摘要：</strong></p>
               <ol>
                 <li>
-                  资格：邀请人与被邀请人均须为普通会员；任一方成为代理则取消返利资格。返利仅发放给邀请人。
+                  资格：邀请人与被邀请人均须为普通会员；任一方成为代理则取消返利资格。奖金仅邀请人可领。
                 </li>
                 <li>
-                  邀请人条件（按币种）：
+                  生成：被邀请人 T 日充值 &gt; 0 即生成「待解锁」记录；T日返利触发门槛仅作蓄力展示，未达也生成。
+                </li>
+                <li>
+                  配置（按币种）：
                   <template v-for="(cfg, idx) in form.currencyConfigs" :key="`inv-${cfg.currency}`">
                     {{ cfg.currency }}
                     {{
                       cfg.inviterRequirePhoneBound
                         ? `须绑手机（区号 ${formatPhonePrefixesLabel(cfg.phonePrefixes) || '-'}）`
                         : '不强制绑手机'
-                    }}，历史累计 ≥
-                    {{ formatAmount(cfg.inviterHistoryDeposit) }}，每日最低 ≥
-                    {{ formatAmount(cfg.inviterDailyMinDeposit) }}，返利比例
-                    {{ cfg.rebateRate }}%，提现流水倍数
+                    }}；触发门槛
+                    {{ formatAmount(cfg.inviteeBizDayMinDeposit) }}；次日解锁（被邀请人）
+                    {{ formatAmount(cfg.inviteeRechargeDayMinDeposit) }} /（邀请人）
+                    {{ formatAmount(cfg.inviterRechargeDayMinDeposit) }}；比例
+                    {{ cfg.rebateRate }}%；领取有效期 {{ cfg.claimValidityDays }} 天；提现流水
                     {{
                       cfg.rebateWithdrawTurnoverMultiple === 0
                         ? '无限制'
@@ -1281,23 +1339,14 @@ function setShowInList(value: boolean) {
                   </template>
                 </li>
                 <li>
-                  被邀请人条件（按币种）：
-                  <template v-for="(cfg, idx) in form.currencyConfigs" :key="`ivt-${cfg.currency}`">
-                    {{ cfg.currency }} 历史累计 ≥ {{ formatAmount(cfg.inviteeHistoryDeposit) }}，每日最低 ≥
-                    {{ formatAmount(cfg.inviteeDailyMinDeposit)
-                    }}{{ idx < form.currencyConfigs.length - 1 ? '；' : '' }}
-                  </template>
+                  解锁与领取：T+1 日双方次日门槛达标且邀请人已绑手机 → T+1 12:00（GMT+7）起可手动领取；超领取有效期未领作废。
                 </li>
                 <li>
-                  结算：隔天 GMT+8 12:00 派发「昨天」返利；须昨天邀请人、被邀请人每日最低存款均达标，并且历史累计存款也要达标。应发返利
-                  = 被邀请人当天存款金额 × 返利比例。
-                </li>
-                <li>
-                  上限：以返利计算日 23:59:59 被邀请人 VIP 对应日上限；落库返利金额时同步落库当日上限；若当日应发合计超过各被邀请人上限之和，扣减超出后再派发。
+                  金额：预估 = 被邀请人 T 日充值 × 业务日返利比例，再按 VIP 日上限封顶；修改配置仅影响新生成记录。
                 </li>
               </ol>
               <p>
-                当前渠道：{{ form.channels.map(channelLabel).join('、') || '-' }}；按币种配置金额条件与返利派发。
+                当前渠道：{{ form.channels.map(channelLabel).join('、') || '-' }}；按币种配置金额条件与领取。
               </p>
             </div>
           </div>
@@ -1324,7 +1373,7 @@ function setShowInList(value: boolean) {
 }
 
 .activity-center-page__type-select {
-  min-width: 240px;
+  min-width: 140px;
   width: auto;
 }
 
@@ -1596,6 +1645,52 @@ function setShowInList(value: boolean) {
   color: var(--pc-text-secondary, #666);
   font-size: 12px;
   line-height: 1.5;
+}
+
+.activity-center-modal__condition-block {
+  margin-bottom: 16px;
+  padding: 12px 14px 4px;
+  border: 1px solid var(--pc-border, #e8e8e8);
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.activity-center-modal__condition-block:last-child {
+  margin-bottom: 0;
+}
+
+.activity-center-modal__condition-block-title {
+  margin: 0 0 10px;
+  color: var(--pc-text, #333);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.activity-center-modal__condition-block .wf-form-row {
+  grid-template-columns: 120px 1fr;
+}
+
+.activity-center-modal__control {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.activity-center-modal__control .activity-center-modal__suffix-field {
+  width: 100%;
+}
+
+.activity-center-modal__field-tip {
+  margin: 0;
+  max-width: 100%;
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .activity-center-modal__condition-hint--after {

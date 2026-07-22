@@ -113,7 +113,7 @@ function matchRow(row: InviteRebateRecordRow) {
 
 const filteredRows = computed(() =>
   MOCK_INVITE_REBATE_RECORDS.filter(matchRow).sort((a, b) =>
-    b.settleAt.localeCompare(a.settleAt),
+    b.claimOpenAt.localeCompare(a.claimOpenAt),
   ),
 )
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / PAGE_SIZE)))
@@ -139,7 +139,7 @@ const pagedRows = computed(() => {
           业务日：
           <WfSpecAnnot
             :no="INVITE_REBATE_RECORD_SPEC_ANNOT_NO.capSnapshot"
-            title="VIP 上限快照与派发状态"
+            title="VIP 上限快照与领取状态"
             :items="[...INVITE_REBATE_RECORD_CAP_SPEC]"
           />
         </label>
@@ -185,35 +185,37 @@ const pagedRows = computed(() => {
             <tr>
               <th class="wf-th">流水号</th>
               <th class="wf-th">业务日</th>
-              <th class="wf-th">派发时间</th>
+              <th class="wf-th">领取开放时间</th>
+              <th class="wf-th">过期时间</th>
               <th class="wf-th">邀请人</th>
               <th class="wf-th">被邀请人</th>
               <th class="wf-th">币种</th>
               <th class="wf-th">VIP快照</th>
               <th class="wf-th">日上限</th>
-              <th class="wf-th">应发</th>
-              <th class="wf-th">实发</th>
+              <th class="wf-th">预估</th>
+              <th class="wf-th">已领</th>
               <th class="wf-th">状态</th>
               <th class="wf-th">备注</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="row in pagedRows" :key="row.id">
-              <td class="wf-td">{{ row.flowNo }}</td>
+              <td class="wf-td">{{ row.flowNo || '-' }}</td>
               <td class="wf-td">{{ row.bizDate }}</td>
-              <td class="wf-td">{{ row.settleAt }}</td>
+              <td class="wf-td">{{ row.claimOpenAt }}</td>
+              <td class="wf-td">{{ row.expireAt }}</td>
               <td class="wf-td">{{ row.inviterNickname }}（{{ row.inviterAccount }}）</td>
               <td class="wf-td">{{ row.inviteeNickname }}（{{ row.inviteeAccount }}）</td>
               <td class="wf-td">{{ row.currency }}</td>
               <td class="wf-td">VIP{{ row.vipSnapshot }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.dailyCap) }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.rebateAmount) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.settledAmount) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.claimedAmount) }}</td>
               <td class="wf-td">{{ inviteRebateSettleStatusLabel(row.status) }}</td>
-              <td class="wf-td">{{ row.remark }}</td>
+              <td class="wf-td">{{ row.remark || '-' }}</td>
             </tr>
             <tr v-if="!pagedRows.length">
-              <td colspan="12" class="wf-td wf-td--empty">暂无活动明细</td>
+              <td colspan="13" class="wf-td wf-td--empty">暂无活动明细</td>
             </tr>
           </tbody>
         </table>

@@ -21,6 +21,7 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-agent-invites', platform: 'mobile', routeName: 'mobile-agent-invites', path: '/mobile/mine/agent-invites', title: '代理邀请', group: '我的', pagePath: ['移动端', '我的', '代理邀请'] },
   { id: 'mobile-invite-friends', platform: 'mobile', routeName: 'mobile-invite-friends', path: '/mobile/mine/invite', title: '邀请好友', group: '我的', pagePath: ['移动端', '我的', '邀请好友'] },
   { id: 'mobile-invite-records', platform: 'mobile', routeName: 'mobile-invite-records', path: '/mobile/mine/invite/records', title: '邀请好友记录', group: '我的', pagePath: ['移动端', '我的', '邀请好友', '邀请好友记录'] },
+  { id: 'mobile-invite-rebate', platform: 'mobile', routeName: 'mobile-invite-rebate', path: '/mobile/mine/invite/rebate', title: '邀请返利', group: '我的', pagePath: ['移动端', '我的', '邀请好友', '邀请返利'] },
   { id: 'mobile-invite-rebate-detail', platform: 'mobile', routeName: 'mobile-invite-rebate-detail', path: '/mobile/mine/invite/records/:id', title: '返利明细', group: '我的', pagePath: ['移动端', '我的', '邀请好友', '邀请好友记录', '返利明细'] },
   { id: 'mobile-billing-list', platform: 'mobile', routeName: 'mobile-billing-list', path: '/mobile/mine/billing', title: '银行账单', group: '我的', pagePath: ['移动端', '我的', '银行账单'] },
   { id: 'mobile-billing-stats', platform: 'mobile', routeName: 'mobile-billing-stats', path: '/mobile/mine/billing/stats', title: '账单统计', group: '我的', pagePath: ['移动端', '我的', '账单', '账单统计'] },

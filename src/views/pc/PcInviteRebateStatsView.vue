@@ -75,7 +75,7 @@ type CurrencySummary = {
   inviterCount: number
   qualifiedInviteeCount: number
   rebateSum: number
-  settledSum: number
+  claimedSum: number
 }
 
 /** 维度为用户 + 币种，汇总按币种分行，不做跨币种加总 */
@@ -86,13 +86,13 @@ const summaryByCurrency = computed((): CurrencySummary[] => {
       inviterCount: 0,
       qualifiedInviteeCount: 0,
       rebateSum: 0,
-      settledSum: 0,
+      claimedSum: 0,
     }
     map.set(row.currency, {
       inviterCount: prev.inviterCount + row.inviterCount,
       qualifiedInviteeCount: prev.qualifiedInviteeCount + row.qualifiedInviteeCount,
       rebateSum: prev.rebateSum + row.rebateSum,
-      settledSum: prev.settledSum + row.settledSum,
+      claimedSum: prev.claimedSum + row.claimedSum,
     })
   }
   return (['KKC', 'KKV', 'USDT'] as InviteRebateCurrency[])
@@ -108,7 +108,7 @@ function formatCountByCurrency(
   return rows.map((r) => `${r.currency} ${r[key]}`).join('、')
 }
 
-function formatAmountByCurrency(rows: CurrencySummary[], key: 'rebateSum' | 'settledSum') {
+function formatAmountByCurrency(rows: CurrencySummary[], key: 'rebateSum' | 'claimedSum') {
   if (!rows.length) return '—'
   return rows
     .map((r) => `${r.currency} ${formatInviteRebateAmount(r[key])}`)
@@ -160,9 +160,9 @@ function goRecords(row: InviteRebateStatsRow) {
       <div class="wf-notice">
         <span class="wf-notice-label">当前筛选汇总：</span>
         达标邀请人 {{ formatCountByCurrency(summaryByCurrency, 'inviterCount') }}；达标被邀请人
-        {{ formatCountByCurrency(summaryByCurrency, 'qualifiedInviteeCount') }}；应发
-        {{ formatAmountByCurrency(summaryByCurrency, 'rebateSum') }}；实发
-        {{ formatAmountByCurrency(summaryByCurrency, 'settledSum') }}（隔天 GMT+8 12:00 派发）
+        {{ formatCountByCurrency(summaryByCurrency, 'qualifiedInviteeCount') }}；预估
+        {{ formatAmountByCurrency(summaryByCurrency, 'rebateSum') }}；已领
+        {{ formatAmountByCurrency(summaryByCurrency, 'claimedSum') }}（T+1 12:00 GMT+7 起可手动领取）
       </div>
 
       <div class="wf-table-wrap">
@@ -175,9 +175,9 @@ function goRecords(row: InviteRebateStatsRow) {
               <th class="wf-th">被邀请人数</th>
               <th class="wf-th">达标被邀请人</th>
               <th class="wf-th">充值合计</th>
-              <th class="wf-th">应发返利</th>
-              <th class="wf-th">实发返利</th>
-              <th class="wf-th">计划派发时间</th>
+              <th class="wf-th">预估返利</th>
+              <th class="wf-th">已领返利</th>
+              <th class="wf-th">领取开放时间</th>
               <th class="wf-th">操作</th>
             </tr>
           </thead>
@@ -190,8 +190,8 @@ function goRecords(row: InviteRebateStatsRow) {
               <td class="wf-td">{{ row.qualifiedInviteeCount }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.depositSum) }}</td>
               <td class="wf-td">{{ formatInviteRebateAmount(row.rebateSum) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.settledSum) }}</td>
-              <td class="wf-td">{{ row.settleAt }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.claimedSum) }}</td>
+              <td class="wf-td">{{ row.claimOpenAt }}</td>
               <td class="wf-td">
                 <button type="button" class="wf-link-action" @click="goRecords(row)">明细</button>
               </td>

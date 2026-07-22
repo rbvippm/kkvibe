@@ -5,14 +5,9 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   formatInviteRebateAmount,
-  inviteRebateEligibleLabel,
   inviteRebateIdentityLabel,
-  INVITE_REBATE_CURRENCY_OPTIONS,
-  INVITE_REBATE_ELIGIBLE_OPTIONS,
   INVITE_REBATE_IDENTITY_OPTIONS,
-  MOCK_INVITE_REBATE_INVITERS,
-  type InviteRebateCurrency,
-  type InviteRebateEligibleStatus,
+  listInviteRebateInviters,
   type InviteRebateIdentity,
   type InviteRebateInviterRow,
 } from '../../constants/inviteRebateOps'
@@ -21,9 +16,8 @@ import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
   keyword: string
-  currency: '' | InviteRebateCurrency
+  kingkongId: string
   identity: '' | InviteRebateIdentity
-  eligibleStatus: '' | InviteRebateEligibleStatus
 }
 
 const router = useRouter()
@@ -31,9 +25,8 @@ const PAGE_SIZE = 10
 
 const defaultFilter = (): ListFilter => ({
   keyword: '',
-  currency: '',
+  kingkongId: '',
   identity: '',
-  eligibleStatus: '',
 })
 
 const filter = ref<ListFilter>(defaultFilter())
@@ -41,7 +34,11 @@ const applied = ref<ListFilter>(defaultFilter())
 const page = ref(1)
 
 function applyFilter() {
-  applied.value = { ...filter.value, keyword: filter.value.keyword.trim() }
+  applied.value = {
+    ...filter.value,
+    keyword: filter.value.keyword.trim(),
+    kingkongId: filter.value.kingkongId.trim(),
+  }
   page.value = 1
 }
 
@@ -54,14 +51,14 @@ function resetFilter() {
 function matchRow(row: InviteRebateInviterRow) {
   const f = applied.value
   const kw = f.keyword.trim()
+  const kingkong = f.kingkongId.trim()
   if (kw && !row.account.includes(kw)) return false
-  if (f.currency && row.currency !== f.currency) return false
+  if (kingkong && !row.kingkongId.includes(kingkong)) return false
   if (f.identity && row.identity !== f.identity) return false
-  if (f.eligibleStatus && row.eligibleStatus !== f.eligibleStatus) return false
   return true
 }
 
-const filteredRows = computed(() => MOCK_INVITE_REBATE_INVITERS.filter(matchRow))
+const filteredRows = computed(() => listInviteRebateInviters().filter(matchRow))
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / PAGE_SIZE)))
 const pagedRows = computed(() => {
   const start = (page.value - 1) * PAGE_SIZE
@@ -74,7 +71,6 @@ function goInvitees(row: InviteRebateInviterRow) {
     query: {
       inviterId: row.id,
       inviterAccount: row.account,
-      currency: row.currency,
     },
   })
 }
@@ -86,40 +82,22 @@ function goInvitees(row: InviteRebateInviterRow) {
 
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label wf-label--with-spec">
-          用户ID：
-          <WfSpecAnnot
-            :no="INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.no"
-            :title="INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.title"
-            :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.listDimension.items]"
-          />
-        </label>
+        <label class="wf-label">用户ID：</label>
         <input v-model="filter.keyword" type="text" class="wf-input" placeholder="请输入用户ID" />
 
-        <label class="wf-label">币种：</label>
-        <select v-model="filter.currency" class="wf-input wf-input--select">
-          <option v-for="opt in INVITE_REBATE_CURRENCY_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
-
-        <label class="wf-label">身份：</label>
-        <select v-model="filter.identity" class="wf-input wf-input--select">
-          <option v-for="opt in INVITE_REBATE_IDENTITY_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <label class="wf-label">金刚号：</label>
+        <input v-model="filter.kingkongId" type="text" class="wf-input" placeholder="请输入金刚号" />
 
         <label class="wf-label wf-label--with-spec">
-          资格：
+          身份：
           <WfSpecAnnot
-            :no="INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.no"
-            :title="INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.title"
-            :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.eligibleFilter.items]"
+            :no="INVITE_REBATE_INVITER_ANNOT_MAP.identityFilter.no"
+            :title="INVITE_REBATE_INVITER_ANNOT_MAP.identityFilter.title"
+            :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.identityFilter.items]"
           />
         </label>
-        <select v-model="filter.eligibleStatus" class="wf-input wf-input--select">
-          <option v-for="opt in INVITE_REBATE_ELIGIBLE_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
+        <select v-model="filter.identity" class="wf-input wf-input--select">
+          <option v-for="opt in INVITE_REBATE_IDENTITY_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
             {{ opt.label }}
           </option>
         </select>
@@ -138,14 +116,26 @@ function goInvitees(row: InviteRebateInviterRow) {
             <tr>
               <th class="wf-th">昵称</th>
               <th class="wf-th">用户ID</th>
-              <th class="wf-th">币种</th>
+              <th class="wf-th">金刚号</th>
               <th class="wf-th">身份</th>
-              <th class="wf-th">历史累计存款</th>
-              <th class="wf-th">昨日日存</th>
-              <th class="wf-th">下级人数</th>
-              <th class="wf-th">达标人数</th>
-              <th class="wf-th">累计返利</th>
-              <th class="wf-th">资格</th>
+              <th class="wf-th wf-th--with-spec">
+                下级人数
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITER_ANNOT_MAP.inviteeCount.no"
+                  :title="INVITE_REBATE_INVITER_ANNOT_MAP.inviteeCount.title"
+                  :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.inviteeCount.items]"
+                />
+              </th>
+              <th class="wf-th wf-th--with-spec">
+                累计返利(KKC)
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITER_ANNOT_MAP.rebateByCurrency.no"
+                  :title="INVITE_REBATE_INVITER_ANNOT_MAP.rebateByCurrency.title"
+                  :items="[...INVITE_REBATE_INVITER_ANNOT_MAP.rebateByCurrency.items]"
+                />
+              </th>
+              <th class="wf-th">累计返利(KKV)</th>
+              <th class="wf-th">累计返利(USDT)</th>
               <th class="wf-th wf-th--with-spec">
                 操作
                 <WfSpecAnnot
@@ -157,23 +147,21 @@ function goInvitees(row: InviteRebateInviterRow) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in pagedRows" :key="`${row.account}-${row.currency}`">
+            <tr v-for="row in pagedRows" :key="row.account">
               <td class="wf-td">{{ row.nickname }}</td>
               <td class="wf-td">{{ row.account }}</td>
-              <td class="wf-td">{{ row.currency }}</td>
+              <td class="wf-td">{{ row.kingkongId }}</td>
               <td class="wf-td">{{ inviteRebateIdentityLabel(row.identity) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.historyDeposit) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.yesterdayDailyDeposit) }}</td>
               <td class="wf-td">{{ row.inviteeCount }}</td>
-              <td class="wf-td">{{ row.qualifiedInviteeCount }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.totalRebate) }}</td>
-              <td class="wf-td">{{ inviteRebateEligibleLabel(row.eligibleStatus) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKC) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKV) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateUSDT) }}</td>
               <td class="wf-td">
                 <button type="button" class="wf-link-action" @click="goInvitees(row)">被邀请人</button>
               </td>
             </tr>
             <tr v-if="!pagedRows.length">
-              <td colspan="11" class="wf-td wf-td--empty">暂无活动数据</td>
+              <td colspan="9" class="wf-td wf-td--empty">暂无邀请数据</td>
             </tr>
           </tbody>
         </table>

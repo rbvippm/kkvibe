@@ -63,19 +63,21 @@ export type InviteDailyRebateRow = {
   currency: InviteCurrency
   /** 业务日 23:59:59 VIP 快照 */
   vipSnapshot: number
-  inviterHistoryDeposit: number
-  inviterDailyDeposit: number
-  inviteeHistoryDeposit: number
-  inviteeDailyDeposit: number
+  inviterBizDayDeposit: number
+  inviterRechargeDayDeposit: number
+  inviteeBizDayDeposit: number
+  inviteeRechargeDayDeposit: number
   meetsThreshold: boolean
   eligibleStatus: InviteDailyEligibleStatus
-  /** 应发返利 */
+  /** 预估返利 */
   rebateAmount: number
-  /** 实发返利（触达上限后可小于应发） */
-  settledAmount: number
+  /** 已领返利（未领为 0） */
+  claimedAmount: number
   status: InviteDailySettleStatus
-  /** 计划派发时间（隔日 GMT+8 12:00） */
-  settleAt: string
+  /** 领取开放：业务日 T+1 的 GMT+7 12:00 */
+  claimOpenAt: string
+  /** 过期时刻 */
+  expireAt: string
   remark: string
 }
 
@@ -87,7 +89,8 @@ export type InviteFriendMember = {
   vipLevel: number
   /**
    * 是否满足邀请返利条件。
-   * false 为「不满足条件」：展示标签但不进入明细、不展示返利金额。
+   * false 为「不可计奖」：不进入明细、不展示返利金额。
+   * 统计 Banner「可计奖」即对本字段为 true 的被邀请人计数。
    */
   meetsCondition: boolean
   totals: Record<
@@ -188,7 +191,15 @@ export function vipDailyCap(vipLevel: number, currency: InviteCurrency) {
   return caps[idx]
 }
 
-const today = todayDateStr()
+/**
+ * 卡片「VIP当日上限」展示口径：
+ * - 触达上限：当日可用上限即实发（已被截断），用实发回显，避免配置表大额与 Mock 小额不一致；
+ * - 其它状态：按 VIP 快照查配置表上限。
+ */
+export function resolveInviteVipDayCapDisplay(row: InviteDailyRebateRow) {
+  if (row.status === 'claimed' && row.claimedAmount < row.rebateAmount) return row.claimedAmount
+  return vipDailyCap(row.vipSnapshot, row.currency)
+}
 
 function shiftDate(days: number) {
   const d = new Date()
@@ -209,6 +220,16 @@ export type InviteQuickTimePreset = Exclude<InviteTimePreset, 'custom'>
 
 export const INVITE_TIME_PRESETS: { key: InviteQuickTimePreset; label: string }[] = [
   { key: 'today', label: '今天' },
+  { key: 'yesterday', label: '昨天' },
+  { key: 'week', label: '本周' },
+  { key: 'month', label: '本月' },
+]
+
+/** 返利按业务日查询：不含「今天」（业务日通常尚未完整结算） */
+export const INVITE_REBATE_TIME_PRESETS: {
+  key: Exclude<InviteQuickTimePreset, 'today'>
+  label: string
+}[] = [
   { key: 'yesterday', label: '昨天' },
   { key: 'week', label: '本周' },
   { key: 'month', label: '本月' },
@@ -238,8 +259,16 @@ export function createDefaultInviteFilter(): InviteRecordsFilter {
   })
 }
 
-/** 筛选弹层币种选项（无全部，默认 KKC） */
+/** 列表历史筛选项（无全部）；明细页请用 INVITE_DETAIL_CURRENCY_OPTIONS */
 export const INVITE_FILTER_CURRENCY_OPTIONS = INVITE_CURRENCY_OPTIONS
+
+/** 返利明细币种筛选：含「全部」 */
+export type InviteDetailCurrencyFilter = '' | InviteCurrency
+
+export const INVITE_DETAIL_CURRENCY_OPTIONS: {
+  value: InviteDetailCurrencyFilter
+  label: string
+}[] = [{ value: '', label: '全部' }, ...INVITE_CURRENCY_OPTIONS]
 
 function startOfDay(date: Date) {
   const d = new Date(date)
@@ -339,11 +368,11 @@ export function memberHasCurrencyActivity(member: InviteFriendMember, currency: 
   )
 }
 
-/** 按注册时间 + VIP + 币种过滤；统计 Banner 可忽略币种以分币种独立汇总 */
+/** 按注册时间 + VIP 过滤；币种筛选已下沉到返利明细，列表不再按币种过滤 */
 export function filterInviteMembers(
   rows: InviteFriendMember[],
   filter: InviteRecordsFilter,
-  options?: { ignoreCurrency?: boolean },
+  _options?: { ignoreCurrency?: boolean },
 ) {
   const { start, end } = getInviteDateRange(filter)
 
@@ -351,9 +380,36 @@ export function filterInviteMembers(
     const registeredAt = parseDateTime(row.registeredAt)
     if (registeredAt < start || registeredAt > end) return false
     if (filter.vipLevel !== '' && row.vipLevel !== filter.vipLevel) return false
-    if (!options?.ignoreCurrency && !memberHasCurrencyActivity(row, filter.currency)) return false
     return true
   })
+}
+
+/** 列表金额按 KKC / KKV / USDT 分行展示（原生金额，不换算） */
+export function listMemberCurrencyAmounts(
+  member: InviteFriendMember,
+  field: 'deposit' | 'withdraw' | 'bet' | 'rebate',
+): { currency: InviteCurrency; text: string; value: number }[] {
+  return INVITE_CURRENCY_OPTIONS.map((opt) => {
+    const value = member.totals[opt.value][field]
+    return {
+      currency: opt.value,
+      value,
+      text: formatInviteAmount(value, opt.value),
+    }
+  })
+}
+
+/** 进入返利明细默认币种：优先有返利/业务日数据的币种 */
+export function resolveDetailEntryCurrency(member: InviteFriendMember): InviteCurrency {
+  for (const opt of INVITE_CURRENCY_OPTIONS) {
+    if (
+      member.totals[opt.value].rebate > 0 ||
+      member.dailyRows.some((row) => row.currency === opt.value)
+    ) {
+      return opt.value
+    }
+  }
+  return resolveDefaultInviteCurrency()
 }
 
 export type InviteMembersSummary = {
@@ -397,27 +453,40 @@ export function summarizeInviteMembersByCurrency(
   )
 }
 
-/** 列表金额展示币种：与当前筛选币种一致 */
+/** @deprecated 列表已取消币种筛选；进入明细请用 resolveDetailEntryCurrency */
 export function resolveMemberDisplayCurrency(
-  _member: InviteFriendMember,
-  filterCurrency: InviteCurrency,
+  member: InviteFriendMember,
+  _filterCurrency?: InviteCurrency,
 ): InviteCurrency {
-  return filterCurrency
+  return resolveDetailEntryCurrency(member)
 }
 
-/** 业务日次日 GMT+8 12:00 计划派发 */
-function dailySettleAt(bizDate: string) {
+/** 领取开放：业务日 T+1 的 GMT+7 12:00 */
+function dailyClaimOpenAt(bizDate: string) {
   const [y, m, day] = bizDate.split('-').map(Number)
-  const next = new Date(y, m - 1, day + 1)
-  return `${todayDateStr(next)} 12:00:00`
+  const open = new Date(y, m - 1, day + 1)
+  return `${todayDateStr(open)} 12:00:00`
+}
+
+/** 过期：startOfDay(T+1)+(X===0?1:X) 天，默认 X=1 → T+2 00:00 */
+function dailyExpireAt(bizDate: string, claimValidityDays = 1) {
+  const [y, m, day] = bizDate.split('-').map(Number)
+  const x = claimValidityDays === 0 ? 1 : claimValidityDays
+  const exp = new Date(y, m - 1, day + 1 + x)
+  return `${todayDateStr(exp)} 00:00:00`
 }
 
 function dayRow(
-  partial: Omit<InviteDailyRebateRow, 'settleAt'> & Partial<Pick<InviteDailyRebateRow, 'settleAt'>>,
+  partial: Omit<InviteDailyRebateRow, 'claimOpenAt' | 'expireAt' | 'claimedAmount'> &
+    Partial<Pick<InviteDailyRebateRow, 'claimOpenAt' | 'expireAt' | 'claimedAmount'>>,
 ): InviteDailyRebateRow {
+  const claimedAmount =
+    partial.status === 'claimed' ? (partial.claimedAmount ?? partial.rebateAmount) : 0
   return {
     ...partial,
-    settleAt: partial.settleAt ?? dailySettleAt(partial.bizDate),
+    claimedAmount,
+    claimOpenAt: partial.claimOpenAt ?? dailyClaimOpenAt(partial.bizDate),
+    expireAt: partial.expireAt ?? dailyExpireAt(partial.bizDate),
   }
 }
 
@@ -441,144 +510,144 @@ export const MOCK_INVITE_FRIENDS: InviteFriendMember[] = [
         bizDate: shiftDate(-1),
         currency: 'KKV',
         vipSnapshot: 3,
-        inviterHistoryDeposit: 2580000,
-        inviterDailyDeposit: 180000,
-        inviteeHistoryDeposit: 2580000,
-        inviteeDailyDeposit: 220000,
+        inviterBizDayDeposit: 2580000,
+        inviterRechargeDayDeposit: 180000,
+        inviteeBizDayDeposit: 2580000,
+        inviteeRechargeDayDeposit: 220000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 21600,
-        settledAmount: 21600,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 21600,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm1-kkv-2',
         bizDate: shiftDate(-2),
         currency: 'KKV',
         vipSnapshot: 3,
-        inviterHistoryDeposit: 2400000,
-        inviterDailyDeposit: 160000,
-        inviteeHistoryDeposit: 2360000,
-        inviteeDailyDeposit: 180000,
+        inviterBizDayDeposit: 2400000,
+        inviterRechargeDayDeposit: 160000,
+        inviteeBizDayDeposit: 2360000,
+        inviteeRechargeDayDeposit: 180000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 19800,
-        settledAmount: 19800,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 19800,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm1-kkv-3',
         bizDate: shiftDate(-3),
         currency: 'KKV',
         vipSnapshot: 2,
-        inviterHistoryDeposit: 2240000,
-        inviterDailyDeposit: 90000,
-        inviteeHistoryDeposit: 2180000,
-        inviteeDailyDeposit: 45000,
+        inviterBizDayDeposit: 2240000,
+        inviterRechargeDayDeposit: 90000,
+        inviteeBizDayDeposit: 800,
+        inviteeRechargeDayDeposit: 45000,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '被邀请人当日日存未达每日最低存款',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '好友当日存款未达触发门槛，暂不可领取',
       }),
       dayRow({
         id: 'm1-kkv-4',
         bizDate: shiftDate(-4),
         currency: 'KKV',
         vipSnapshot: 2,
-        inviterHistoryDeposit: 2150000,
-        inviterDailyDeposit: 150000,
-        inviteeHistoryDeposit: 2135000,
-        inviteeDailyDeposit: 160000,
+        inviterBizDayDeposit: 2150000,
+        inviterRechargeDayDeposit: 150000,
+        inviteeBizDayDeposit: 2135000,
+        inviteeRechargeDayDeposit: 160000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 17200,
-        settledAmount: 17200,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 17200,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm1-kkv-5',
         bizDate: shiftDate(-5),
         currency: 'KKV',
         vipSnapshot: 2,
-        inviterHistoryDeposit: 2000000,
-        inviterDailyDeposit: 140000,
-        inviteeHistoryDeposit: 1975000,
-        inviteeDailyDeposit: 155000,
+        inviterBizDayDeposit: 2000000,
+        inviterRechargeDayDeposit: 140000,
+        inviteeBizDayDeposit: 1975000,
+        inviteeRechargeDayDeposit: 155000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 16800,
-        settledAmount: 12000,
-        status: 'capped',
-        remark: '触达 VIP 日返利上限，已截断',
+        claimedAmount: 12000,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm1-kkv-6',
         bizDate: shiftDate(-6),
         currency: 'KKV',
         vipSnapshot: 2,
-        inviterHistoryDeposit: 1860000,
-        inviterDailyDeposit: 130000,
-        inviteeHistoryDeposit: 1820000,
-        inviteeDailyDeposit: 142000,
+        inviterBizDayDeposit: 1860000,
+        inviterRechargeDayDeposit: 130000,
+        inviteeBizDayDeposit: 1820000,
+        inviteeRechargeDayDeposit: 142000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 15400,
-        settledAmount: 15400,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 0,
+        status: 'expired',
+        remark: '已超过领取有效期，奖金已失效',
       }),
       dayRow({
         id: 'm1-kkv-7',
         bizDate: shiftDate(-7),
         currency: 'KKV',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 1730000,
-        inviterDailyDeposit: 80000,
-        inviteeHistoryDeposit: 1678000,
-        inviteeDailyDeposit: 20000,
-        meetsThreshold: false,
+        inviterBizDayDeposit: 1730000,
+        inviterRechargeDayDeposit: 80000,
+        inviteeBizDayDeposit: 1678000,
+        inviteeRechargeDayDeposit: 150000,
+        meetsThreshold: true,
         eligibleStatus: 'ineligible',
-        rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '邀请人当日日存未达每日最低存款',
+        rebateAmount: 16780,
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '请先绑定手机号后再解锁领取',
       }),
       dayRow({
         id: 'm1-kkc-1',
         bizDate: shiftDate(-2),
         currency: 'KKC',
         vipSnapshot: 3,
-        inviterHistoryDeposit: 42000,
-        inviterDailyDeposit: 3600,
-        inviteeHistoryDeposit: 12800,
-        inviteeDailyDeposit: 4800,
+        inviterBizDayDeposit: 42000,
+        inviterRechargeDayDeposit: 3600,
+        inviteeBizDayDeposit: 12800,
+        inviteeRechargeDayDeposit: 4800,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 128,
-        settledAmount: 128,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 128,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm1-usdt-1',
         bizDate: shiftDate(-2),
         currency: 'USDT',
         vipSnapshot: 3,
-        inviterHistoryDeposit: 200,
-        inviterDailyDeposit: 25,
-        inviteeHistoryDeposit: 86,
-        inviteeDailyDeposit: 40,
+        inviterBizDayDeposit: 200,
+        inviterRechargeDayDeposit: 25,
+        inviteeBizDayDeposit: 86,
+        inviteeRechargeDayDeposit: 40,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 0.86,
-        settledAmount: 0.86,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 0.86,
+        status: 'claimed',
+        remark: '',
       }),
     ],
   },
@@ -601,192 +670,192 @@ export const MOCK_INVITE_FRIENDS: InviteFriendMember[] = [
         bizDate: shiftDate(-1),
         currency: 'KKV',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 2580000,
-        inviterDailyDeposit: 180000,
-        inviteeHistoryDeposit: 980000,
-        inviteeDailyDeposit: 150000,
+        inviterBizDayDeposit: 2580000,
+        inviterRechargeDayDeposit: 180000,
+        inviteeBizDayDeposit: 980000,
+        inviteeRechargeDayDeposit: 150000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 9800,
-        settledAmount: 9800,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 9800,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkv-2',
-        bizDate: today,
+        bizDate: shiftDate(-2),
         currency: 'KKV',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 2760000,
-        inviterDailyDeposit: 160000,
-        inviteeHistoryDeposit: 1100000,
-        inviteeDailyDeposit: 120000,
+        inviterBizDayDeposit: 2760000,
+        inviterRechargeDayDeposit: 160000,
+        inviteeBizDayDeposit: 1100000,
+        inviteeRechargeDayDeposit: 120000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 8600,
-        settledAmount: 8600,
-        status: 'pending',
-        remark: '待隔日 GMT+8 12:00 派发',
+        claimedAmount: 8600,
+        status: 'claimable',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkv-3',
         bizDate: shiftDate(-3),
         currency: 'KKV',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 2400000,
-        inviterDailyDeposit: 90000,
-        inviteeHistoryDeposit: 830000,
-        inviteeDailyDeposit: 28000,
+        inviterBizDayDeposit: 2400000,
+        inviterRechargeDayDeposit: 90000,
+        inviteeBizDayDeposit: 830000,
+        inviteeRechargeDayDeposit: 28000,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '被邀请人当日日存未达每日最低存款',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '好友次日存款未达解锁门槛，暂不可领取',
       }),
       dayRow({
         id: 'm2-kkv-4',
         bizDate: shiftDate(-4),
         currency: 'KKV',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 2310000,
-        inviterDailyDeposit: 140000,
-        inviteeHistoryDeposit: 802000,
-        inviteeDailyDeposit: 220000,
+        inviterBizDayDeposit: 2310000,
+        inviterRechargeDayDeposit: 140000,
+        inviteeBizDayDeposit: 802000,
+        inviteeRechargeDayDeposit: 220000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 16800,
-        settledAmount: 12000,
-        status: 'capped',
-        remark: '触达 VIP 日返利上限，已截断',
+        claimedAmount: 12000,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkc-1',
         bizDate: shiftDate(-1),
         currency: 'KKC',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 38000,
-        inviterDailyDeposit: 2800,
-        inviteeHistoryDeposit: 5600,
-        inviteeDailyDeposit: 2200,
+        inviterBizDayDeposit: 38000,
+        inviterRechargeDayDeposit: 2800,
+        inviteeBizDayDeposit: 5600,
+        inviteeRechargeDayDeposit: 2200,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 56,
-        settledAmount: 56,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 56,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkc-2',
-        bizDate: today,
+        bizDate: shiftDate(-2),
         currency: 'KKC',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 42000,
-        inviterDailyDeposit: 3200,
-        inviteeHistoryDeposit: 8600,
-        inviteeDailyDeposit: 3000,
+        inviterBizDayDeposit: 42000,
+        inviterRechargeDayDeposit: 3200,
+        inviteeBizDayDeposit: 8600,
+        inviteeRechargeDayDeposit: 3000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 42,
-        settledAmount: 42,
-        status: 'pending',
-        remark: '待隔日 GMT+8 12:00 派发',
+        claimedAmount: 42,
+        status: 'claimable',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkc-3',
         bizDate: shiftDate(-3),
         currency: 'KKC',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 34800,
-        inviterDailyDeposit: 1800,
-        inviteeHistoryDeposit: 3400,
-        inviteeDailyDeposit: 80,
+        inviterBizDayDeposit: 34800,
+        inviterRechargeDayDeposit: 1800,
+        inviteeBizDayDeposit: 3400,
+        inviteeRechargeDayDeposit: 80,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '被邀请人当日日存未达每日最低存款',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '好友次日存款未达解锁门槛，暂不可领取',
       }),
       dayRow({
         id: 'm2-kkc-4',
         bizDate: shiftDate(-4),
         currency: 'KKC',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 33000,
-        inviterDailyDeposit: 2600,
-        inviteeHistoryDeposit: 13200,
-        inviteeDailyDeposit: 7600,
+        inviterBizDayDeposit: 33000,
+        inviterRechargeDayDeposit: 2600,
+        inviteeBizDayDeposit: 13200,
+        inviteeRechargeDayDeposit: 7600,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 220,
-        settledAmount: 132,
-        status: 'capped',
-        remark: '触达 VIP 日返利上限，已截断',
+        claimedAmount: 132,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm2-kkc-5',
         bizDate: shiftDate(-6),
         currency: 'KKC',
         vipSnapshot: 0,
-        inviterHistoryDeposit: 28000,
-        inviterDailyDeposit: 2000,
-        inviteeHistoryDeposit: 2200,
-        inviteeDailyDeposit: 900,
+        inviterBizDayDeposit: 28000,
+        inviterRechargeDayDeposit: 2000,
+        inviteeBizDayDeposit: 2200,
+        inviteeRechargeDayDeposit: 900,
         meetsThreshold: false,
         eligibleStatus: 'cancelled',
         rebateAmount: 0,
-        settledAmount: 0,
+        claimedAmount: 0,
         status: 'cancelled',
-        remark: '邀请人已成为代理，取消返利资格',
+        remark: '您已成为代理，返利资格已取消',
       }),
       dayRow({
         id: 'm2-usdt-1',
         bizDate: shiftDate(-1),
         currency: 'USDT',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 80,
-        inviterDailyDeposit: 5,
-        inviteeHistoryDeposit: 120,
-        inviteeDailyDeposit: 40,
+        inviterBizDayDeposit: 80,
+        inviterRechargeDayDeposit: 5,
+        inviteeBizDayDeposit: 120,
+        inviteeRechargeDayDeposit: 40,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 1.2,
-        settledAmount: 1.2,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 1.2,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm2-usdt-2',
         bizDate: shiftDate(-2),
         currency: 'USDT',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 70,
-        inviterDailyDeposit: 3,
-        inviteeHistoryDeposit: 80,
-        inviteeDailyDeposit: 2,
+        inviterBizDayDeposit: 70,
+        inviterRechargeDayDeposit: 3,
+        inviteeBizDayDeposit: 80,
+        inviteeRechargeDayDeposit: 2,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '被邀请人当日日存未达每日最低存款',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '好友次日存款未达解锁门槛，暂不可领取',
       }),
       dayRow({
         id: 'm2-usdt-3',
-        bizDate: today,
+        bizDate: shiftDate(-1),
         currency: 'USDT',
         vipSnapshot: 1,
-        inviterHistoryDeposit: 95,
-        inviterDailyDeposit: 8,
-        inviteeHistoryDeposit: 150,
-        inviteeDailyDeposit: 30,
+        inviterBizDayDeposit: 95,
+        inviterRechargeDayDeposit: 8,
+        inviteeBizDayDeposit: 150,
+        inviteeRechargeDayDeposit: 30,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 0.9,
-        settledAmount: 0.9,
-        status: 'pending',
-        remark: '待隔日 GMT+8 12:00 派发',
+        claimedAmount: 0.9,
+        status: 'claimable',
+        remark: '',
       }),
     ],
   },
@@ -809,64 +878,64 @@ export const MOCK_INVITE_FRIENDS: InviteFriendMember[] = [
         bizDate: shiftDate(-1),
         currency: 'KKV',
         vipSnapshot: 8,
-        inviterHistoryDeposit: 5200000,
-        inviterDailyDeposit: 300000,
-        inviteeHistoryDeposit: 12680000,
-        inviteeDailyDeposit: 1200000,
+        inviterBizDayDeposit: 5200000,
+        inviterRechargeDayDeposit: 300000,
+        inviteeBizDayDeposit: 12680000,
+        inviteeRechargeDayDeposit: 1200000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 12000,
-        settledAmount: 12000,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 12000,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm3-kkv-2',
         bizDate: shiftDate(-3),
         currency: 'KKV',
         vipSnapshot: 8,
-        inviterHistoryDeposit: 4900000,
-        inviterDailyDeposit: 280000,
-        inviteeHistoryDeposit: 11480000,
-        inviteeDailyDeposit: 3000000,
+        inviterBizDayDeposit: 4900000,
+        inviterRechargeDayDeposit: 280000,
+        inviteeBizDayDeposit: 11480000,
+        inviteeRechargeDayDeposit: 3000000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 30000,
-        settledAmount: 30000,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 30000,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm3-kkc-1',
         bizDate: shiftDate(-4),
         currency: 'KKC',
         vipSnapshot: 8,
-        inviterHistoryDeposit: 98000,
-        inviterDailyDeposit: 12000,
-        inviteeHistoryDeposit: 56000,
-        inviteeDailyDeposit: 56000,
+        inviterBizDayDeposit: 98000,
+        inviterRechargeDayDeposit: 12000,
+        inviteeBizDayDeposit: 56000,
+        inviteeRechargeDayDeposit: 56000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 420,
-        settledAmount: 420,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 420,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm3-usdt-1',
         bizDate: shiftDate(-3),
         currency: 'USDT',
         vipSnapshot: 8,
-        inviterHistoryDeposit: 500,
-        inviterDailyDeposit: 40,
-        inviteeHistoryDeposit: 260,
-        inviteeDailyDeposit: 80,
+        inviterBizDayDeposit: 500,
+        inviterRechargeDayDeposit: 40,
+        inviteeBizDayDeposit: 260,
+        inviteeRechargeDayDeposit: 80,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 2.6,
-        settledAmount: 2.6,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 2.6,
+        status: 'claimed',
+        remark: '',
       }),
     ],
   },
@@ -889,32 +958,32 @@ export const MOCK_INVITE_FRIENDS: InviteFriendMember[] = [
         bizDate: shiftDate(-1),
         currency: 'KKV',
         vipSnapshot: 0,
-        inviterHistoryDeposit: 2580000,
-        inviterDailyDeposit: 180000,
-        inviteeHistoryDeposit: 80000,
-        inviteeDailyDeposit: 20000,
+        inviterBizDayDeposit: 2580000,
+        inviterRechargeDayDeposit: 180000,
+        inviteeBizDayDeposit: 80000,
+        inviteeRechargeDayDeposit: 20000,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '被邀请人历史累计存款未达标',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '好友次日存款未达解锁门槛，暂不可领取',
       }),
       dayRow({
         id: 'm4-kkc-1',
         bizDate: shiftDate(-2),
         currency: 'KKC',
         vipSnapshot: 0,
-        inviterHistoryDeposit: 1200,
-        inviterDailyDeposit: 800,
-        inviteeHistoryDeposit: 80,
-        inviteeDailyDeposit: 80,
+        inviterBizDayDeposit: 1200,
+        inviterRechargeDayDeposit: 800,
+        inviteeBizDayDeposit: 80,
+        inviteeRechargeDayDeposit: 80,
         meetsThreshold: false,
         eligibleStatus: 'ineligible',
         rebateAmount: 0,
-        settledAmount: 0,
-        status: 'not_qualified',
-        remark: '邀请人历史累计存款未达标',
+        claimedAmount: 0,
+        status: 'locked',
+        remark: '您的次日存款未达解锁门槛，暂不可领取',
       }),
     ],
   },
@@ -937,48 +1006,48 @@ export const MOCK_INVITE_FRIENDS: InviteFriendMember[] = [
         bizDate: shiftDate(-5),
         currency: 'KKV',
         vipSnapshot: 5,
-        inviterHistoryDeposit: 3200000,
-        inviterDailyDeposit: 200000,
-        inviteeHistoryDeposit: 1680000,
-        inviteeDailyDeposit: 680000,
+        inviterBizDayDeposit: 3200000,
+        inviterRechargeDayDeposit: 200000,
+        inviteeBizDayDeposit: 1680000,
+        inviteeRechargeDayDeposit: 680000,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 14800,
-        settledAmount: 14800,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 14800,
+        status: 'claimed',
+        remark: '',
       }),
       dayRow({
         id: 'm5-kkv-2',
         bizDate: shiftDate(-3),
         currency: 'KKV',
         vipSnapshot: 5,
-        inviterHistoryDeposit: 3000000,
-        inviterDailyDeposit: 180000,
-        inviteeHistoryDeposit: 1500000,
-        inviteeDailyDeposit: 200000,
+        inviterBizDayDeposit: 3000000,
+        inviterRechargeDayDeposit: 180000,
+        inviteeBizDayDeposit: 1500000,
+        inviteeRechargeDayDeposit: 200000,
         meetsThreshold: false,
         eligibleStatus: 'cancelled',
         rebateAmount: 0,
-        settledAmount: 0,
+        claimedAmount: 0,
         status: 'cancelled',
-        remark: '被邀请人已成为代理，取消返利资格',
+        remark: '该好友已成为代理，返利资格已取消',
       }),
       dayRow({
         id: 'm5-usdt-1',
         bizDate: shiftDate(-2),
         currency: 'USDT',
         vipSnapshot: 5,
-        inviterHistoryDeposit: 200,
-        inviterDailyDeposit: 20,
-        inviteeHistoryDeposit: 80,
-        inviteeDailyDeposit: 80,
+        inviterBizDayDeposit: 200,
+        inviterRechargeDayDeposit: 20,
+        inviteeBizDayDeposit: 80,
+        inviteeRechargeDayDeposit: 80,
         meetsThreshold: true,
         eligibleStatus: 'eligible',
         rebateAmount: 0.8,
-        settledAmount: 0.8,
-        status: 'settled',
-        remark: '双方日存与历史累计均达标',
+        claimedAmount: 0.8,
+        status: 'claimed',
+        remark: '',
       }),
     ],
   },
@@ -988,27 +1057,60 @@ export function findInviteMember(id: string) {
   return MOCK_INVITE_FRIENDS.find((m) => m.id === id)
 }
 
-/** 按业务日 + 币种过滤每日明细，业务日倒序 */
+/** 邀请返利总览行：全部被邀请人的每日返利（附昵称） */
+export type InviteRebateOverviewRow = InviteDailyRebateRow & {
+  memberId: string
+  nickname: string
+  diamondId: string
+}
+
+/** 汇总所有满足条件的被邀请人每日返利，业务日倒序 */
+export function listAllInviteRebateRows(): InviteRebateOverviewRow[] {
+  return MOCK_INVITE_FRIENDS.filter((m) => m.meetsCondition)
+    .flatMap((m) =>
+      m.dailyRows.map((row) => ({
+        ...row,
+        memberId: m.id,
+        nickname: m.nickname,
+        diamondId: m.diamondId,
+      })),
+    )
+    .sort((a, b) => {
+      if (a.bizDate !== b.bizDate) return a.bizDate < b.bizDate ? 1 : -1
+      if (a.nickname !== b.nickname) return a.nickname.localeCompare(b.nickname, 'zh-CN')
+      return a.currency.localeCompare(b.currency)
+    })
+}
+
+/** 可领取返利笔数（用于「我的 → 邀请好友」角标） */
+export function countClaimableInviteRebates() {
+  return listAllInviteRebateRows().filter((row) => row.status === 'claimable').length
+}
+
+/** 按业务日 + 币种过滤每日明细；币种为空表示全部，业务日倒序 */
 export function filterMemberDailyRows(
   member: InviteFriendMember,
   startDate: string,
   endDate: string,
-  currency: InviteCurrency,
+  currency: InviteDetailCurrencyFilter = '',
 ) {
   const start = startDate || endDate
   const end = endDate || startDate
   return member.dailyRows
     .filter((d) => {
-      if (d.currency !== currency) return false
+      if (currency && d.currency !== currency) return false
       if (start && d.bizDate < start) return false
       if (end && d.bizDate > end) return false
       return true
     })
-    .sort((a, b) => (a.bizDate < b.bizDate ? 1 : a.bizDate > b.bizDate ? -1 : 0))
+    .sort((a, b) => {
+      if (a.bizDate !== b.bizDate) return a.bizDate < b.bizDate ? 1 : -1
+      return a.currency.localeCompare(b.currency)
+    })
 }
 
 export function sumDailySettled(rows: InviteDailyRebateRow[]) {
-  return rows.reduce((sum, item) => sum + item.settledAmount, 0)
+  return rows.reduce((sum, item) => sum + item.claimedAmount, 0)
 }
 
 export function isFilterTodayOnly(startDate: string, endDate: string) {

@@ -109,25 +109,35 @@ export type VipDailyCapRow = {
 /** 单个币种下的活动规则条件（门槛、赠送、VIP 日上限等） */
 export type ActivityCurrencyConfig = {
   currency: ActivityCurrency
-  /** 邀请人须绑定手机号 */
+  /** 邀请人须绑定手机号（解锁条件 C） */
   inviterRequirePhoneBound: boolean
   /** 允许的手机区号（复选，不含 +）；须绑手机号时至少选 1 个 */
   phonePrefixes: string[]
-  /** 邀请人 · 历史累计存款门槛（本币种） */
-  inviterHistoryDeposit: number
-  /** 邀请人 · 每日最低存款（本币种；结算日校验「昨天」是否达标） */
-  inviterDailyMinDeposit: number
-  /** 邀请人 · 返利比例（%）；应发 = 被邀请人当天存款 × 该比例 */
+  /** 次日解锁门槛-邀请人：邀请人 T+1 日最低存款（本币种） */
+  inviterRechargeDayMinDeposit: number
+  /**
+   * 业务日返利比例（%）
+   * 预估奖金 = 被邀请人 T 日充值 × 比例，再按 VIP 日上限封顶
+   */
   rebateRate: number
   /**
-   * 邀请人 · 返利提现流水倍数（整数，≥0）
-   * 派发返利时按「返利金额 × 倍数」增加提现流水要求；0 表示无提现流水要求
+   * 提现流水倍数（整数，≥0）
+   * 领取后按「奖金金额 × 倍数」增加提现流水；0 表示无流水限制
    */
   rebateWithdrawTurnoverMultiple: number
-  /** 被邀请人 · 历史累计存款门槛（本币种） */
-  inviteeHistoryDeposit: number
-  /** 被邀请人 · 每日最低存款（本币种；结算日校验「昨天」是否达标） */
-  inviteeDailyMinDeposit: number
+  /**
+   * 奖励领取有效期（天，整数 ≥0）
+   * 自 T+1 日起算；0 表示 T+1 当晚 24:00（即 T+2 00:00）过期
+   * expireAt = startOfDay(T+1) + (X===0 ? 1 : X) × 1day
+   */
+  claimValidityDays: number
+  /**
+   * T日返利触发门槛-被邀请人（本币种）
+   * 仅蓄力/进度展示；被邀请人 T 日充值 > 0 即生成待解锁记录，未达门槛也生成
+   */
+  inviteeBizDayMinDeposit: number
+  /** 次日解锁门槛-被邀请人：被邀请人 T+1 日最低存款（本币种） */
+  inviteeRechargeDayMinDeposit: number
   /** 被邀请人 VIP 对应 · 邀请人日返利上限阶梯（本币种） */
   vipDailyCaps: VipDailyCapRow[]
   rules: ActivityRuleRow[]
@@ -228,12 +238,12 @@ export function createDefaultCurrencyConfig(
     currency,
     inviterRequirePhoneBound: true,
     phonePrefixes: [CURRENCY_DEFAULT_PHONE_PREFIX[currency]],
-    inviterHistoryDeposit: round(500000 * s),
-    inviterDailyMinDeposit: round(100000 * s),
+    inviterRechargeDayMinDeposit: round(200000 * s),
     rebateRate: 1,
     rebateWithdrawTurnoverMultiple: 1,
-    inviteeHistoryDeposit: round(1000000 * s),
-    inviteeDailyMinDeposit: round(100000 * s),
+    claimValidityDays: 1,
+    inviteeBizDayMinDeposit: round(1000000 * s),
+    inviteeRechargeDayMinDeposit: round(500000 * s),
     vipDailyCaps: createDefaultVipDailyCaps(currency),
     rules: [
       {
@@ -292,7 +302,7 @@ export const ACTIVITY_TYPE_OPTIONS = [
   { value: 'display', label: '展示活动' },
   {
     value: 'invite_recharge_rebate_vip',
-    label: '邀请好友充值返利（VIP阶梯自动版）',
+    label: '邀请返利',
   },
 ] as const
 
@@ -504,7 +514,7 @@ export const MOCK_ACTIVITY_CENTER_ROWS: ActivityCenterRow[] = [
     id: 'a3',
     activityId: 101,
     title: '邀请好友充值返利',
-    subtitle: 'VIP阶梯自动派发',
+    subtitle: '次日解锁 · 限时领取',
     type: 'invite_recharge_rebate_vip',
     channels: ['test1', 'platform'],
     currencies: ['KKC', 'KKV'],

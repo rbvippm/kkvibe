@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
+import { countClaimableInviteRebates } from '../../constants/inviteFriends'
 import '../../styles/mobile-app-shell.css'
 
 type WalletFilter = 'all' | 'fiat' | 'crypto' | 'credit'
@@ -163,10 +164,21 @@ const pendingInviteCount = computed(
   () => memberAgentInvites.value.filter((item) => item.status === 'pending').length,
 )
 
+/** 无代理身份时展示邀请返利可领取笔数 */
+const claimableRebateCount = computed(() =>
+  memberAgentMembershipJoined.value ? 0 : countClaimableInviteRebates(),
+)
+
 const menuItems = computed<MineMenuItem[]>(() => {
+  const inviteItem: MineMenuItem = {
+    key: 'invite',
+    title: '邀请好友',
+    route: 'mobile-invite-friends',
+    badge: claimableRebateCount.value > 0 ? claimableRebateCount.value : undefined,
+  }
   const base: MineMenuItem[] = [
     { key: 'live', title: '直播中心', route: 'mobile-live' },
-    { key: 'invite', title: '邀请好友', route: 'mobile-invite-friends' },
+    inviteItem,
   ]
 
   if (memberAgentMembershipJoined.value) {
@@ -454,7 +466,13 @@ function goMenuItem(item: MineMenuItem) {
         </span>
         <span class="mh5-mine-menu__title">{{ item.title }}</span>
         <span class="mh5-mine-menu__tail">
-          <span v-if="item.badge" class="mh5-mine-menu__badge" :aria-label="`${item.badge}条待处理`">{{ item.badge }}</span>
+          <span
+            v-if="item.badge"
+            class="mh5-mine-menu__badge"
+            :aria-label="item.key === 'invite' ? `${item.badge}笔可领取返利` : `${item.badge}条待处理`"
+          >
+            {{ item.badge }}
+          </span>
           <span v-if="item.hot" class="mh5-mine-menu__hot" aria-label="热门">🔥</span>
           <img src="/images/mine/icon-arrow-right.svg" alt="" class="mh5-mine-icon mh5-mine-icon--16" aria-hidden="true" />
         </span>

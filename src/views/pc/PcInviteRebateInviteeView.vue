@@ -11,10 +11,13 @@ import {
   inviteRebateSettleStatusLabel,
   INVITE_REBATE_CURRENCY_OPTIONS,
   INVITE_REBATE_ELIGIBLE_OPTIONS,
+  INVITE_REBATE_IDENTITY_OPTIONS,
   INVITE_REBATE_SETTLE_STATUS_OPTIONS,
+  INVITE_REBATE_VIP_OPTIONS,
   MOCK_INVITE_REBATE_INVITEES,
   type InviteRebateCurrency,
   type InviteRebateEligibleStatus,
+  type InviteRebateIdentity,
   type InviteRebateInviteeDailyRow,
   type InviteRebateInviteeRow,
   type InviteRebateSettleStatus,
@@ -24,15 +27,17 @@ import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
   keyword: string
-  currency: '' | InviteRebateCurrency
-  meetsOnly: '' | 'yes' | 'no'
+  kingkongId: string
+  identity: '' | InviteRebateIdentity
+  vipLevel: '' | number
 }
 
 type DetailFilter = {
   startDate: string
   endDate: string
-  meetsOnly: '' | 'yes' | 'no'
-  eligibleStatus: '' | InviteRebateEligibleStatus
+  currency: '' | InviteRebateCurrency
+  inviterEligibleStatus: '' | InviteRebateEligibleStatus
+  inviteeEligibleStatus: '' | InviteRebateEligibleStatus
   settleStatus: '' | InviteRebateSettleStatus
 }
 
@@ -40,21 +45,27 @@ const route = useRoute()
 const router = useRouter()
 const PAGE_SIZE = 10
 const DETAIL_PAGE_SIZE = 8
-const PAGE_SEGMENTS = ['运营管理', '邀请活动列表', '被邀请人详情']
+const PAGE_SEGMENTS = ['运营管理', '邀请列表', '被邀请人详情']
 
 const defaultFilter = (): ListFilter => ({
   keyword: '',
-  currency: '',
-  meetsOnly: '',
+  kingkongId: '',
+  identity: '',
+  vipLevel: '',
 })
 
 const defaultDetailFilter = (): DetailFilter => ({
   startDate: '2026-07-10',
   endDate: '2026-07-18',
-  meetsOnly: '',
-  eligibleStatus: '',
+  currency: '',
+  inviterEligibleStatus: '',
+  inviteeEligibleStatus: '',
   settleStatus: '',
 })
+
+function eligibleBadgeClass(status: InviteRebateEligibleStatus) {
+  return status === 'eligible' ? 'wf-status-badge--enabled' : 'wf-status-badge--disabled'
+}
 
 const filter = ref<ListFilter>(defaultFilter())
 const applied = ref<ListFilter>(defaultFilter())
@@ -68,12 +79,9 @@ const detailPage = ref(1)
 
 const inviterIdFromQuery = computed(() => String(route.query.inviterId ?? ''))
 const inviterAccountFromQuery = computed(() => String(route.query.inviterAccount ?? ''))
-const currencyFromQuery = computed(
-  () => String(route.query.currency ?? '') as '' | InviteRebateCurrency,
-)
 
 watch(
-  () => [route.query.inviterId, route.query.inviterAccount, route.query.currency],
+  () => [route.query.inviterId, route.query.inviterAccount],
   () => {
     page.value = 1
   },
@@ -83,6 +91,7 @@ function applyFilter() {
   applied.value = {
     ...filter.value,
     keyword: filter.value.keyword.trim(),
+    kingkongId: filter.value.kingkongId.trim(),
   }
   page.value = 1
 }
@@ -95,17 +104,17 @@ function resetFilter() {
 
 function matchRow(row: InviteRebateInviteeRow) {
   const f = applied.value
-  if (inviterAccountFromQuery.value && currencyFromQuery.value) {
+  if (inviterAccountFromQuery.value) {
     if (row.inviterAccount !== inviterAccountFromQuery.value) return false
-    if (row.currency !== currencyFromQuery.value) return false
   } else if (inviterIdFromQuery.value && row.inviterId !== inviterIdFromQuery.value) {
     return false
   }
   const kw = f.keyword.trim()
+  const kingkong = f.kingkongId.trim()
   if (kw && !row.account.includes(kw)) return false
-  if (f.currency && row.currency !== f.currency) return false
-  if (f.meetsOnly === 'yes' && !row.meetsCondition) return false
-  if (f.meetsOnly === 'no' && row.meetsCondition) return false
+  if (kingkong && !row.kingkongId.includes(kingkong)) return false
+  if (f.identity && row.identity !== f.identity) return false
+  if (f.vipLevel !== '' && row.vipLevel !== f.vipLevel) return false
   return true
 }
 
@@ -120,9 +129,13 @@ function matchDailyRow(row: InviteRebateInviteeDailyRow) {
   const f = detailApplied.value
   if (f.startDate && row.bizDate < f.startDate) return false
   if (f.endDate && row.bizDate > f.endDate) return false
-  if (f.meetsOnly === 'yes' && !row.meetsThreshold) return false
-  if (f.meetsOnly === 'no' && row.meetsThreshold) return false
-  if (f.eligibleStatus && row.eligibleStatus !== f.eligibleStatus) return false
+  if (f.currency && row.currency !== f.currency) return false
+  if (f.inviterEligibleStatus && row.inviterEligibleStatus !== f.inviterEligibleStatus) {
+    return false
+  }
+  if (f.inviteeEligibleStatus && row.inviteeEligibleStatus !== f.inviteeEligibleStatus) {
+    return false
+  }
   if (f.settleStatus && row.status !== f.settleStatus) return false
   return true
 }
@@ -185,7 +198,7 @@ function backToInviters() {
 <template>
   <div class="pc-wireframe-page">
     <div class="wf-toolbar">
-      <button type="button" class="wf-link-action" @click="backToInviters">← 返回邀请活动列表</button>
+      <button type="button" class="wf-link-action" @click="backToInviters">← 返回邀请列表</button>
     </div>
     <WfPagePathMenu
       :segments="PAGE_SEGMENTS"
@@ -194,35 +207,32 @@ function backToInviters() {
 
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label wf-label--with-spec">
-          被邀请人ID：
-          <WfSpecAnnot
-            :no="INVITE_REBATE_INVITEE_ANNOT_MAP.parentScope.no"
-            :title="INVITE_REBATE_INVITEE_ANNOT_MAP.parentScope.title"
-            :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.parentScope.items]"
-          />
-        </label>
-        <input v-model="filter.keyword" type="text" class="wf-input" placeholder="请输入被邀请人ID" />
+        <label class="wf-label">用户ID：</label>
+        <input v-model="filter.keyword" type="text" class="wf-input" placeholder="请输入用户ID" />
 
-        <label class="wf-label">币种：</label>
-        <select v-model="filter.currency" class="wf-input wf-input--select">
-          <option v-for="opt in INVITE_REBATE_CURRENCY_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
+        <label class="wf-label">金刚号：</label>
+        <input v-model="filter.kingkongId" type="text" class="wf-input" placeholder="请输入金刚号" />
+
+        <label class="wf-label">身份：</label>
+        <select v-model="filter.identity" class="wf-input wf-input--select">
+          <option
+            v-for="opt in INVITE_REBATE_IDENTITY_OPTIONS"
+            :key="opt.value || 'all'"
+            :value="opt.value"
+          >
             {{ opt.label }}
           </option>
         </select>
 
-        <label class="wf-label wf-label--with-spec">
-          是否达标：
-          <WfSpecAnnot
-            :no="INVITE_REBATE_INVITEE_ANNOT_MAP.meetsFilter.no"
-            :title="INVITE_REBATE_INVITEE_ANNOT_MAP.meetsFilter.title"
-            :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.meetsFilter.items]"
-          />
-        </label>
-        <select v-model="filter.meetsOnly" class="wf-input wf-input--select">
-          <option value="">全部</option>
-          <option value="yes">已达标</option>
-          <option value="no">未达标</option>
+        <label class="wf-label">VIP：</label>
+        <select v-model="filter.vipLevel" class="wf-input wf-input--select">
+          <option
+            v-for="opt in INVITE_REBATE_VIP_OPTIONS"
+            :key="opt.value === '' ? 'all' : opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
         </select>
       </div>
 
@@ -237,16 +247,21 @@ function backToInviters() {
         <table class="wf-table">
           <thead>
             <tr>
-              <th class="wf-th">被邀请人</th>
-              <th class="wf-th">VIP</th>
-              <th class="wf-th">币种</th>
+              <th class="wf-th">昵称</th>
+              <th class="wf-th">用户ID</th>
+              <th class="wf-th">金刚号</th>
               <th class="wf-th">身份</th>
-              <th class="wf-th">历史累计存款</th>
-              <th class="wf-th">昨日日存</th>
-              <th class="wf-th">累计充值</th>
-              <th class="wf-th">贡献返利</th>
-              <th class="wf-th">达标</th>
-              <th class="wf-th">资格</th>
+              <th class="wf-th">VIP</th>
+              <th class="wf-th wf-th--with-spec">
+                累计返利(KKC)
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.rebateByCurrency.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.rebateByCurrency.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.rebateByCurrency.items]"
+                />
+              </th>
+              <th class="wf-th">累计返利(KKV)</th>
+              <th class="wf-th">累计返利(USDT)</th>
               <th class="wf-th wf-th--with-spec">
                 操作
                 <WfSpecAnnot
@@ -259,22 +274,20 @@ function backToInviters() {
           </thead>
           <tbody>
             <tr v-for="row in pagedRows" :key="row.id">
-              <td class="wf-td">{{ row.nickname }}（{{ row.account }}）</td>
-              <td class="wf-td">VIP{{ row.vipLevel }}</td>
-              <td class="wf-td">{{ row.currency }}</td>
+              <td class="wf-td">{{ row.nickname }}</td>
+              <td class="wf-td">{{ row.account }}</td>
+              <td class="wf-td">{{ row.kingkongId }}</td>
               <td class="wf-td">{{ inviteRebateIdentityLabel(row.identity) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.historyDeposit) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.yesterdayDailyDeposit) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.depositTotal) }}</td>
-              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateTotal) }}</td>
-              <td class="wf-td">{{ row.meetsCondition ? '已达标' : '未达标' }}</td>
-              <td class="wf-td">{{ inviteRebateEligibleLabel(row.eligibleStatus) }}</td>
+              <td class="wf-td">VIP{{ row.vipLevel }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKC) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateKKV) }}</td>
+              <td class="wf-td">{{ formatInviteRebateAmount(row.rebateUSDT) }}</td>
               <td class="wf-td">
                 <button type="button" class="wf-link-action" @click="openDetail(row)">详情</button>
               </td>
             </tr>
             <tr v-if="!pagedRows.length">
-              <td colspan="11" class="wf-td wf-td--empty">暂无被邀请人</td>
+              <td colspan="9" class="wf-td wf-td--empty">暂无被邀请人</td>
             </tr>
           </tbody>
         </table>
@@ -312,22 +325,29 @@ function backToInviters() {
 
           <div class="wf-modal__body">
             <div class="wf-toolbar wf-toolbar--filters">
-              <label class="wf-label">业务日：</label>
+              <label class="wf-label wf-label--with-spec">
+                业务日：
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.bizDateFilter.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.bizDateFilter.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.bizDateFilter.items]"
+                />
+              </label>
               <input v-model="detailFilter.startDate" type="date" class="wf-input wf-input--date" />
               <span class="wf-range-sep">-</span>
               <input v-model="detailFilter.endDate" type="date" class="wf-input wf-input--date" />
 
-              <label class="wf-label">门槛达标：</label>
-              <select v-model="detailFilter.meetsOnly" class="wf-input wf-input--select">
-                <option value="">全部</option>
-                <option value="yes">已达标</option>
-                <option value="no">未达标</option>
-              </select>
-
-              <label class="wf-label">资格：</label>
-              <select v-model="detailFilter.eligibleStatus" class="wf-input wf-input--select">
+              <label class="wf-label wf-label--with-spec">
+                币种：
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.currencyFilter.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.currencyFilter.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.currencyFilter.items]"
+                />
+              </label>
+              <select v-model="detailFilter.currency" class="wf-input wf-input--select">
                 <option
-                  v-for="opt in INVITE_REBATE_ELIGIBLE_OPTIONS"
+                  v-for="opt in INVITE_REBATE_CURRENCY_OPTIONS"
                   :key="opt.value || 'all'"
                   :value="opt.value"
                 >
@@ -335,7 +355,56 @@ function backToInviters() {
                 </option>
               </select>
 
-              <label class="wf-label">派发状态：</label>
+              <label class="wf-label wf-label--with-spec">
+                邀请人资格：
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.inviterEligibleFilter.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.inviterEligibleFilter.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.inviterEligibleFilter.items]"
+                />
+              </label>
+              <select
+                v-model="detailFilter.inviterEligibleStatus"
+                class="wf-input wf-input--select"
+              >
+                <option
+                  v-for="opt in INVITE_REBATE_ELIGIBLE_OPTIONS"
+                  :key="`inv-${opt.value || 'all'}`"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+
+              <label class="wf-label wf-label--with-spec">
+                被邀请人资格：
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.inviteeEligibleFilter.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.inviteeEligibleFilter.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.inviteeEligibleFilter.items]"
+                />
+              </label>
+              <select
+                v-model="detailFilter.inviteeEligibleStatus"
+                class="wf-input wf-input--select"
+              >
+                <option
+                  v-for="opt in INVITE_REBATE_ELIGIBLE_OPTIONS"
+                  :key="`ie-${opt.value || 'all'}`"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+
+              <label class="wf-label wf-label--with-spec">
+                领取状态：
+                <WfSpecAnnot
+                  :no="INVITE_REBATE_INVITEE_ANNOT_MAP.settleStatusFilter.no"
+                  :title="INVITE_REBATE_INVITEE_ANNOT_MAP.settleStatusFilter.title"
+                  :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.settleStatusFilter.items]"
+                />
+              </label>
               <select v-model="detailFilter.settleStatus" class="wf-input wf-input--select">
                 <option
                   v-for="opt in INVITE_REBATE_SETTLE_STATUS_OPTIONS"
@@ -364,76 +433,77 @@ function backToInviters() {
                 <thead>
                   <tr>
                     <th class="wf-th">业务日</th>
+                    <th class="wf-th">币种</th>
                     <th class="wf-th">VIP快照</th>
-                    <th class="wf-th wf-th--amount">邀请人累计</th>
-                    <th class="wf-th wf-th--amount">邀请人日存</th>
-                    <th class="wf-th wf-th--amount">被邀请人累计</th>
-                    <th class="wf-th wf-th--amount">被邀请人日存</th>
-                    <th class="wf-th">返利比例</th>
-                    <th class="wf-th wf-th--status">门槛达标</th>
-                    <th class="wf-th wf-th--status">资格</th>
-                    <th class="wf-th wf-th--amount">应发返利</th>
-                    <th class="wf-th wf-th--amount">实发返利</th>
-                    <th class="wf-th wf-th--status">派发状态</th>
-                    <th class="wf-th">计划派发时间</th>
-                    <th class="wf-th wf-th--remark">备注</th>
+                    <th class="wf-th wf-th--amount">邀请人次日存款</th>
+                    <th class="wf-th wf-th--amount">被邀请人T日存款</th>
+                    <th class="wf-th wf-th--amount">被邀请人次日存款</th>
+                    <th class="wf-th">业务日返利比例</th>
+                    <th class="wf-th wf-th--status">邀请人资格</th>
+                    <th class="wf-th wf-th--status">被邀请人资格</th>
+                    <th class="wf-th wf-th--amount">预估返利</th>
+                    <th class="wf-th wf-th--amount">已领返利</th>
+                    <th class="wf-th wf-th--status">领取状态</th>
+                    <th class="wf-th">流水号</th>
+                    <th class="wf-th">领取开放（GMT+7）</th>
+                    <th class="wf-th">过期时间（GMT+7）</th>
+                    <th class="wf-th wf-th--remark wf-th--with-spec">
+                      备注
+                      <WfSpecAnnot
+                        :no="INVITE_REBATE_INVITEE_ANNOT_MAP.remarkReasons.no"
+                        :title="INVITE_REBATE_INVITEE_ANNOT_MAP.remarkReasons.title"
+                        :items="[...INVITE_REBATE_INVITEE_ANNOT_MAP.remarkReasons.items]"
+                      />
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="row in detailPagedRows" :key="row.id">
                     <td class="wf-td">{{ row.bizDate }}</td>
+                    <td class="wf-td">{{ row.currency }}</td>
                     <td class="wf-td">VIP{{ row.vipSnapshot }}</td>
                     <td class="wf-td wf-td--amount">
-                      {{ formatInviteRebateAmount(row.inviterHistoryDeposit) }}
+                      {{ formatInviteRebateAmount(row.inviterRechargeDayDeposit) }}
                     </td>
                     <td class="wf-td wf-td--amount">
-                      {{ formatInviteRebateAmount(row.inviterDailyDeposit) }}
+                      {{ formatInviteRebateAmount(row.inviteeBizDayDeposit) }}
                     </td>
                     <td class="wf-td wf-td--amount">
-                      {{ formatInviteRebateAmount(row.inviteeHistoryDeposit) }}
-                    </td>
-                    <td class="wf-td wf-td--amount">
-                      {{ formatInviteRebateAmount(row.inviteeDailyDeposit) }}
+                      {{ formatInviteRebateAmount(row.inviteeRechargeDayDeposit) }}
                     </td>
                     <td class="wf-td">{{ row.rebateRate }}%</td>
                     <td class="wf-td wf-td--status">
                       <span
                         class="wf-status-badge"
-                        :class="
-                          row.meetsThreshold
-                            ? 'wf-status-badge--enabled'
-                            : 'wf-status-badge--disabled'
-                        "
+                        :class="eligibleBadgeClass(row.inviterEligibleStatus)"
                       >
-                        {{ row.meetsThreshold ? '已达标' : '未达标' }}
+                        {{ inviteRebateEligibleLabel(row.inviterEligibleStatus) }}
                       </span>
                     </td>
                     <td class="wf-td wf-td--status">
                       <span
                         class="wf-status-badge"
-                        :class="
-                          row.eligibleStatus === 'eligible'
-                            ? 'wf-status-badge--enabled'
-                            : 'wf-status-badge--disabled'
-                        "
+                        :class="eligibleBadgeClass(row.inviteeEligibleStatus)"
                       >
-                        {{ inviteRebateEligibleLabel(row.eligibleStatus) }}
+                        {{ inviteRebateEligibleLabel(row.inviteeEligibleStatus) }}
                       </span>
                     </td>
                     <td class="wf-td wf-td--amount">
                       {{ formatInviteRebateAmount(row.rebateAmount) }}
                     </td>
                     <td class="wf-td wf-td--amount">
-                      {{ formatInviteRebateAmount(row.settledAmount) }}
+                      {{ formatInviteRebateAmount(row.claimedAmount) }}
                     </td>
                     <td class="wf-td wf-td--status">
                       {{ inviteRebateSettleStatusLabel(row.status) }}
                     </td>
-                    <td class="wf-td">{{ row.settleAt }}</td>
-                    <td class="wf-td wf-td--remark">{{ row.remark }}</td>
+                    <td class="wf-td">{{ row.flowNo || '-' }}</td>
+                    <td class="wf-td">{{ row.claimOpenAt }}</td>
+                    <td class="wf-td">{{ row.expireAt }}</td>
+                    <td class="wf-td wf-td--remark">{{ row.remark || '-' }}</td>
                   </tr>
                   <tr v-if="!detailPagedRows.length">
-                    <td colspan="14" class="wf-td wf-td--empty">暂无每日明细</td>
+                    <td colspan="17" class="wf-td wf-td--empty">暂无每日明细</td>
                   </tr>
                 </tbody>
               </table>
@@ -472,8 +542,7 @@ function backToInviters() {
 
 <style scoped>
 .wf-modal--invitee-daily {
-  width: min(1120px, calc(100vw - 48px));
-  max-width: 1120px;
+  width: min(1180px, calc(100vw - 48px));
+  max-width: 1180px;
 }
-
 </style>
