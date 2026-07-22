@@ -6,6 +6,7 @@ import {
   AGENT_MY_PROFIT_FOOTNOTE,
   AGENT_MY_PROFIT_PRESETS,
   AGENT_MY_PROFIT_PRODUCT_ROWS,
+  AGENT_MY_PROFIT_REBATE_EARN_ROW,
   AGENT_MY_PROFIT_SUMMARY_ROW,
   AGENT_MY_PROFIT_TOTAL,
   agentMyProfitDateRangeText,
@@ -140,6 +141,21 @@ onBeforeUnmount(() => {
           </span>
         </component>
       </section>
+
+      <div
+        class="mh5-agent-my-profit-summary mh5-agent-my-profit-summary--static"
+        aria-label="赚水"
+      >
+        <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+          {{ AGENT_MY_PROFIT_REBATE_EARN_ROW.name }}
+        </span>
+        <span
+          class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+          :class="agentMyProfitToneClass(AGENT_MY_PROFIT_REBATE_EARN_ROW.tone)"
+        >
+          {{ AGENT_MY_PROFIT_REBATE_EARN_ROW.amountText }}
+        </span>
+      </div>
 
       <button
         type="button"

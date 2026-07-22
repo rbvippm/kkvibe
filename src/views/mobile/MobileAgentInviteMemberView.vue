@@ -62,7 +62,7 @@ const editMax = computed(() => {
 })
 
 const editTitle = computed(() => {
-  if (editField.value === 'cost') return '编辑成本'
+  if (editField.value === 'cost') return '编辑其他成本'
   if (!editingProduct.value) return '编辑比例'
   const label = editField.value === 'share' ? '占成' : '退水'
   return `编辑${editingProduct.value.name}${label}`
@@ -180,7 +180,7 @@ function validateEditDraft(showEmptyError = false): number | null {
     }
   } else if (editField.value === 'cost') {
     if (!isValidCostPercent(next)) {
-      editError.value = '成本须为整数'
+      editError.value = '其他成本须为整数'
       return null
     }
   } else if (!isValidRebatePercent(next)) {
@@ -394,8 +394,7 @@ function saveEdit() {
 
       <section class="mh5-agent-credit-cost-card">
         <div class="mh5-agent-credit-cost-card__left">
-          <span class="mh5-agent-credit-cost-card__label">成本</span>
-          <span class="mh5-agent-credit-cost-card__tip">含活动金和VIP晋级礼金</span>
+          <span class="mh5-agent-credit-cost-card__label">其他成本</span>
         </div>
         <div class="mh5-agent-credit-table__cell">
           <button

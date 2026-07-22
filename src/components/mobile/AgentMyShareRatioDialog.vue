@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  AGENT_MY_SHARE_RATIO_COST_ROWS,
-  AGENT_MY_SHARE_RATIO_ROWS,
-} from '../../constants/agentMyShareRatio'
+import { AGENT_MY_SHARE_RATIO_ROWS } from '../../constants/agentMyShareRatio'
 
 defineProps<{
   open: boolean
@@ -36,7 +33,7 @@ const emit = defineEmits<{
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
                 role="columnheader"
               >
-                游戏类型
+                占成类型
               </div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
@@ -47,46 +44,6 @@ const emit = defineEmits<{
             </div>
             <div
               v-for="row in AGENT_MY_SHARE_RATIO_ROWS"
-              :key="row.key"
-              class="mh5-agent-my-share-dialog__row"
-              role="row"
-            >
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
-                role="cell"
-              >
-                {{ row.name }}
-              </div>
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
-                role="cell"
-              >
-                {{ row.shareText }}
-              </div>
-            </div>
-          </div>
-
-          <div
-            class="mh5-agent-my-share-dialog__table mh5-agent-my-share-dialog__table--cost"
-            role="table"
-            aria-label="成本类型占成比例"
-          >
-            <div class="mh5-agent-my-share-dialog__head" role="row">
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
-                role="columnheader"
-              >
-                成本类型
-              </div>
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
-                role="columnheader"
-              >
-                占成比例
-              </div>
-            </div>
-            <div
-              v-for="row in AGENT_MY_SHARE_RATIO_COST_ROWS"
               :key="row.key"
               class="mh5-agent-my-share-dialog__row"
               role="row"

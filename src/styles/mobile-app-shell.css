@@ -11868,18 +11868,24 @@
 }
 
 .mh5-agent-report-detail {
+  position: relative;
+  z-index: 1;
   margin-top: 12px;
   padding: 0 14px;
+  overflow: visible;
   border-radius: 12px;
   background: #fff;
 }
 
 .mh5-agent-report-detail__head {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 14px 0 12px;
+  overflow: visible;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -11890,13 +11896,29 @@
 }
 
 .mh5-agent-report-detail__profit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   font-weight: 500;
   color: #666;
 }
 
+.mh5-agent-report-detail__profit-label-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mh5-agent-report-detail__tip-btn {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: #a0a7b4;
+}
+
 .mh5-agent-report-detail__profit em {
-  margin-left: 4px;
   font-style: normal;
   font-size: 15px;
   font-weight: 700;
@@ -12277,6 +12299,19 @@
   height: 10px;
   background: rgb(33 37 41 / 92%);
   transform: rotate(45deg);
+}
+
+/* 场馆明细「游戏盈亏」tip：锚点靠右，气泡向左展开，避免被后置基础样式 left:0 覆盖后溢出 */
+.mh5-agent-report-detail__profit-label-wrap .mh5-agent-detail-profit-summary__tip-bubble {
+  left: auto;
+  right: -4px;
+  width: min(260px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+}
+
+.mh5-agent-report-detail__profit-label-wrap .mh5-agent-detail-profit-summary__tip-bubble::before {
+  left: auto;
+  right: 22px;
 }
 
 .mh5-agent-detail-profit-summary__total .mh5-agent-detail-wallet__value {
@@ -13776,6 +13811,14 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.mh5-agent-my-profit-summary--static {
+  cursor: default;
+}
+
+.mh5-agent-my-profit-summary--static:active {
+  opacity: 1;
+}
+
 .mh5-agent-my-profit-summary:active {
   opacity: 0.92;
 }
@@ -13995,10 +14038,6 @@
   border: 0.5px solid #e8e8e8;
   border-radius: 12px;
   background: #fff;
-}
-
-.mh5-agent-my-share-dialog__table--cost {
-  flex-shrink: 0;
 }
 
 .mh5-agent-my-share-dialog__head,

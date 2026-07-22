@@ -11,7 +11,7 @@ export type AgentMyProfitProductRow = {
 
 export type AgentMyProfitDetailRow = {
   label: string
-  /** 副文案，如「（不参与计算）」 */
+  /** 副文案提示（可选） */
   labelHint?: string
   amountText: string
   tone: AgentMyProfitTone
@@ -52,8 +52,17 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
   { key: 'slots', name: '老虎机', amountText: '-23,567.88', tone: 'negative' },
   { key: 'fishing', name: '捕鱼', amountText: '+123,567.88', tone: 'positive' },
   { key: 'vip_bonus', name: 'VIP晋级礼金', amountText: '-23,567.88', tone: 'negative' },
+  { key: 'vip_extra', name: 'VIP额外奖金', amountText: '-12,345.67', tone: 'negative' },
   { key: 'activity', name: '活动金', amountText: '-123,567.88', tone: 'negative' },
 ]
+
+/** 赚水：与占成项表同级独立行，不混入占成项列表 */
+export const AGENT_MY_PROFIT_REBATE_EARN_ROW: AgentMyProfitProductRow = {
+  key: 'rebate_earn',
+  name: '赚水',
+  amountText: '+12,345.67',
+  tone: 'positive',
+}
 
 export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
   key: 'total',
@@ -65,11 +74,10 @@ export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
 export const AGENT_MY_PROFIT_FOOTNOTE =
   '每日 8 时结算上一日收益\n最多可查询近 6 个月的数据'
 
-/** 游戏占成项盈亏明细（不含 VIP晋级礼金、活动金） */
+/** 游戏占成项盈亏明细（不含 VIP晋级礼金、VIP额外奖金、活动金） */
 export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   {
     label: '下注有效金额',
-    labelHint: '（不参与计算）',
     amountText: '10000',
     tone: 'neutral',
   },
@@ -80,11 +88,10 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: '盈亏结果', amountText: '+360.00', tone: 'positive', emphasize: true },
 ]
 
-/** 总计盈亏明细：相对游戏明细多含 VIP晋级礼金、活动金 */
+/** 总计盈亏明细：相对游戏明细多含 VIP晋级礼金、VIP额外奖金、活动金 */
 export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   {
     label: '下注有效金额',
-    labelHint: '（不参与计算）',
     amountText: '10000',
     tone: 'neutral',
   },
@@ -93,12 +100,13 @@ export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
   { label: '赚水', amountText: '+10.00', tone: 'positive' },
   { label: 'VIP晋级礼金', amountText: '-20.00', tone: 'negative' },
+  { label: 'VIP额外奖金', amountText: '-15.00', tone: 'negative' },
   { label: '活动金', amountText: '-30.00', tone: 'negative' },
-  { label: '盈亏结果', amountText: '+310.00', tone: 'positive', emphasize: true },
+  { label: '盈亏结果', amountText: '+295.00', tone: 'positive', emphasize: true },
 ]
 
 /** 成本占成项暂无明细弹框 */
-const AGENT_MY_PROFIT_NO_DETAIL_KEYS = new Set(['vip_bonus', 'activity'])
+const AGENT_MY_PROFIT_NO_DETAIL_KEYS = new Set(['vip_bonus', 'vip_extra', 'activity'])
 
 export function agentMyProfitHasDetail(rowKey: string): boolean {
   return !AGENT_MY_PROFIT_NO_DETAIL_KEYS.has(rowKey)

@@ -7,7 +7,7 @@ export type AgentMyShareRatioRow = {
   shareText: string
 }
 
-/** 游戏类型 · 对齐设计稿顺序与数值 */
+/** 占成类型 · 对齐设计稿顺序与数值；末行为其他成本（原 VIP晋级礼金 / VIP额外奖金 / 活动金） */
 export const AGENT_MY_SHARE_RATIO_ROWS: AgentMyShareRatioRow[] = [
   { key: 'scratch', name: '刮刮乐游戏', shareText: '2.5%' },
   { key: 'chess', name: '棋牌游戏', shareText: '1.8%' },
@@ -18,12 +18,5 @@ export const AGENT_MY_SHARE_RATIO_ROWS: AgentMyShareRatioRow[] = [
   { key: 'live', name: '真人游戏', shareText: '0.8%' },
   { key: 'slots', name: '老虎机游戏', shareText: '0.6%' },
   { key: 'fishing', name: '捕鱼游戏', shareText: '0.5%' },
-]
-
-/** 成本类型共用同一占成比例（原型 Mock） */
-export const AGENT_MY_SHARE_RATIO_COST_SHARE = '1.0%'
-
-export const AGENT_MY_SHARE_RATIO_COST_ROWS: AgentMyShareRatioRow[] = [
-  { key: 'vip_bonus', name: 'VIP晋级礼金', shareText: AGENT_MY_SHARE_RATIO_COST_SHARE },
-  { key: 'activity', name: '活动金', shareText: AGENT_MY_SHARE_RATIO_COST_SHARE },
+  { key: 'other', name: '其他成本', shareText: '1.0%' },
 ]

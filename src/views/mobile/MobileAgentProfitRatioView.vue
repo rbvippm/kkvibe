@@ -127,8 +127,7 @@ function goEdit() {
 
       <section class="mh5-agent-credit-cost-card mh5-agent-profit-ratio-cost">
         <div class="mh5-agent-credit-cost-card__left">
-          <span class="mh5-agent-credit-cost-card__label">成本</span>
-          <span class="mh5-agent-credit-cost-card__tip">含活动金和VIP晋级礼金</span>
+          <span class="mh5-agent-credit-cost-card__label">其他成本</span>
         </div>
         <div class="mh5-agent-credit-table__cell">
           <span class="mh5-agent-profit-ratio-table__value">

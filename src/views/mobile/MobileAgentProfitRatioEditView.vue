@@ -87,7 +87,7 @@ function validateCostDraft(showEmptyError = false): number | null {
   }
 
   if (!isValidCostPercent(next)) {
-    costError.value = '成本须为整数'
+    costError.value = '其他成本须为整数'
     return null
   }
 
@@ -189,8 +189,7 @@ async function saveRatios() {
 
       <section class="mh5-agent-credit-cost-card">
         <div class="mh5-agent-credit-cost-card__left">
-          <span class="mh5-agent-credit-cost-card__label">成本</span>
-          <span class="mh5-agent-credit-cost-card__tip">含活动金和VIP晋级礼金</span>
+          <span class="mh5-agent-credit-cost-card__label">其他成本</span>
         </div>
         <div class="mh5-agent-credit-table__cell">
           <button
@@ -268,8 +267,8 @@ async function saveRatios() {
 
     <Teleport to="body">
       <div v-if="costEditVisible" class="mh5-agent-credit-edit-mask" @click.self="closeCostEdit">
-        <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" aria-label="编辑成本">
-          <h3 class="mh5-agent-credit-edit-panel__title">编辑成本</h3>
+        <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" aria-label="编辑其他成本">
+          <h3 class="mh5-agent-credit-edit-panel__title">编辑其他成本</h3>
           <p class="mh5-agent-credit-edit-panel__hint">
             最高 {{ formatCreditPercent(maxCost, 'share') }}
           </p>

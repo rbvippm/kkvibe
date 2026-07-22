@@ -21,6 +21,7 @@ import {
   setAgentAppCurrency,
 } from '../../constants/agentAppCurrency'
 import {
+  AGENT_GAME_PROFIT_FORMULA,
   AGENT_PROFIT_CATEGORY_TABS,
   AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_VENDORS,
@@ -43,6 +44,7 @@ const router = useRouter()
 const activeTab = ref<AgentDetailTab>('wallet')
 const currencyPickerOpen = ref(false)
 const profitFormulaTipOpen = ref(false)
+const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 
@@ -113,11 +115,18 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 }
 
 function toggleProfitFormulaTip() {
+  gameProfitFormulaTipOpen.value = false
   profitFormulaTipOpen.value = !profitFormulaTipOpen.value
 }
 
-function closeProfitFormulaTip() {
+function toggleGameProfitFormulaTip() {
   profitFormulaTipOpen.value = false
+  gameProfitFormulaTipOpen.value = !gameProfitFormulaTipOpen.value
+}
+
+function closeProfitFormulaTips() {
+  profitFormulaTipOpen.value = false
+  gameProfitFormulaTipOpen.value = false
 }
 </script>
 
@@ -247,7 +256,7 @@ function closeProfitFormulaTip() {
         </section>
       </template>
 
-      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-profit" @click="closeProfitFormulaTip">
+      <section v-else-if="activeTab === 'profit'" class="mh5-agent-detail-profit" @click="closeProfitFormulaTips">
         <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
           <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
             <span class="mh5-agent-detail-profit-summary__label-wrap">
@@ -306,7 +315,11 @@ function closeProfitFormulaTip() {
         </section>
       </section>
 
-      <section v-else-if="activeTab === 'game'" class="mh5-agent-detail-profit">
+      <section
+        v-else-if="activeTab === 'game'"
+        class="mh5-agent-detail-profit"
+        @click="closeProfitFormulaTips"
+      >
         <div class="mh5-agent-report-categories">
           <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
             <button
@@ -340,7 +353,33 @@ function closeProfitFormulaTip() {
           <div class="mh5-agent-report-detail__head">
             <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
             <span class="mh5-agent-report-detail__profit">
-              游戏盈亏
+              <span class="mh5-agent-report-detail__profit-label-wrap">
+                <button
+                  type="button"
+                  class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                  aria-label="查看游戏盈亏计算公式"
+                  :aria-expanded="gameProfitFormulaTipOpen"
+                  @click.stop="toggleGameProfitFormulaTip"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                    <path
+                      d="M8 4.6v5.2M8 11.6h.01"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+                <span>游戏盈亏</span>
+                <span
+                  v-if="gameProfitFormulaTipOpen"
+                  class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                  role="tooltip"
+                >
+                  {{ AGENT_GAME_PROFIT_FORMULA }}
+                </span>
+              </span>
               <em :class="profitTotalClass(profitDetail.totalProfitTone)">
                 {{ profitDetail.totalProfit }}
               </em>

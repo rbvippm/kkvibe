@@ -22,14 +22,16 @@ export {
   profitValueClass,
 }
 
-/** 总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【活动金】 */
+/** 总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】 */
 export const MEMBER_PROFIT_FORMULA =
-  '总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【活动金】'
+  '总盈亏 = 游戏盈亏 + 会员退水 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
 
 type MemberProfitSummaryMock = {
   gameProfit: number
   memberRebate: number
   vipBonus: number
+  /** VIP 额外奖金（按公式直接累加） */
+  vipExtraBonus: number
   /** 活动金（按公式直接累加） */
   activityGold: number
 }
@@ -39,30 +41,35 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 12350,
     memberRebate: 1280,
     vipBonus: 320,
+    vipExtraBonus: 100,
     activityGold: 180,
   },
   USDT: {
     gameProfit: 3200,
     memberRebate: 210,
     vipBonus: 80,
+    vipExtraBonus: 25,
     activityGold: 50,
   },
   KKV: {
     gameProfit: 8600,
     memberRebate: 520,
     vipBonus: 210,
+    vipExtraBonus: 65,
     activityGold: 120,
   },
   '信用额度-CNY': {
     gameProfit: 1550,
     memberRebate: 128,
     vipBonus: 60,
+    vipExtraBonus: 20,
     activityGold: 40,
   },
   '信用额度-USD': {
     gameProfit: 620,
     memberRebate: 48,
     vipBonus: 22,
+    vipExtraBonus: 8,
     activityGold: 15,
   },
 }
@@ -71,6 +78,7 @@ const EMPTY_SUMMARY_MOCK: MemberProfitSummaryMock = {
   gameProfit: 0,
   memberRebate: 0,
   vipBonus: 0,
+  vipExtraBonus: 0,
   activityGold: 0,
 }
 
@@ -98,14 +106,18 @@ function getMemberProfitSummaryMock(currency: string) {
 export function getMemberTotalProfit(currency: string) {
   const stats = getMemberProfitSummaryMock(currency)
   const total =
-    stats.gameProfit + stats.memberRebate + stats.vipBonus + stats.activityGold
+    stats.gameProfit +
+    stats.memberRebate +
+    stats.vipBonus +
+    stats.vipExtraBonus +
+    stats.activityGold
   return {
     value: formatProfitAmount(total),
     tone: profitTone(total),
   }
 }
 
-/** 会员盈亏构成项（与公式四项一致） */
+/** 会员盈亏构成项（与公式五项一致） */
 export function getMemberProfitSummaryRows(currency: string): MemberProfitSummaryRow[] {
   const stats = getMemberProfitSummaryMock(currency)
 
@@ -124,6 +136,11 @@ export function getMemberProfitSummaryRows(currency: string): MemberProfitSummar
       label: 'VIP晋级礼金',
       value: formatProfitAmount(stats.vipBonus),
       tone: profitTone(stats.vipBonus),
+    },
+    {
+      label: 'VIP额外奖金',
+      value: formatProfitAmount(stats.vipExtraBonus),
+      tone: profitTone(stats.vipExtraBonus),
     },
     {
       label: '活动金',
