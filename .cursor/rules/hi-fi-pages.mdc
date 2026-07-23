@@ -1,0 +1,31 @@
+---
+description: 高保真交互页必须走项目 rules / skills，禁止另起一套实现
+alwaysApply: true
+---
+
+# 高保真交互页强制走项目规范
+
+生成、修改任何高保真交互页面（H5 / 代理端 / PC 后台原型）时，**必须先读并遵循**对应项目 Rules 与 Skills，不得按通用 UI 习惯另起炉灶。
+
+## 开工前必读
+
+| 场景 | 必须加载 |
+|------|----------|
+| `/mobile/*`、代理端 H5 | `.cursor/rules/mobile-h5.mdc` + `.cursor/skills/prd-mobile/SKILL.md` + `docs/H5移动端设计规范.md` |
+| `/pc/*`、PC 管理后台 | `.cursor/rules/pc-admin-wireframe.mdc` + `.cursor/skills/prd-pc/SKILL.md` + `docs/PC后台设计规范.md` |
+| 通用产品原则 | 根目录 `.cursorrules`（意图优先、中文、Mock、边界态） |
+
+## 执行要求
+
+1. **先复用再新建**：优先复用现有布局、组件、`mh5-*` / `wf-*` class、Mock 常量与相近页面交互；禁止新造一套样式体系或外壳。
+2. **弹层定位**：底部 Sheet / Mask 默认挂在手机画布内的 `position: relative` 根上；若 `Teleport to="body"`，必须用项目已有的 overlay 约束（如 `mh5-agent-overlay-*`），禁止宽屏跑版。
+3. **PRD 同步**：页面有「注N」或用户要求标注时，按对应 PRD Skill 维护 `*Spec.ts`；原型与标注双向一致。
+4. **中文完整态**：文案、占位符、Mock、空态 / 禁用 / 异常提示一律中文，且符合真实产品用语。
+5. **端侧隔离**：移动端不用 PC 的 `wf-*` / `WfSpecAnnot`；PC 不用移动端 Tailwind 优先壳层或 `Mh5SpecAnnot` 六大结构套反。
+
+## 自检（交付前）
+
+- [ ] 已按端侧读过对应 rule + skill（而非凭记忆）
+- [ ] 视觉与交互对齐同模块既有样例页
+- [ ] 弹层 / 底栏未脱离视口画布
+- [ ] 需要标注时 Spec 已同步

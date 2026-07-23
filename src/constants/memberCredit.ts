@@ -1,10 +1,122 @@
 /** 会员授信 · 产品退水 Mock */
 
+import {
+  emptySelectableCredits,
+  findOtherMemberByAccountQuery,
+  MOCK_DIRECT_MEMBERS,
+  type XCoinSelectableTarget,
+} from './xCoinTransfer'
+import { teamCreditAgents, teamDirectMembers } from './agentTeam'
+
 export type MemberCreditProduct = {
   key: string
   name: string
   rebate: number
   maxRebate: number
+}
+
+/** 其他会员授信 · 金刚号查询结果 */
+export type MemberCreditKingkongLookupResult =
+  | {
+      ok: true
+      tip: string
+      member: XCoinSelectableTarget
+    }
+  | {
+      ok: false
+      message: string
+    }
+
+/** 原型：命中即视为已是信用代理的金刚号 */
+const MOCK_CREDIT_AGENT_KINGKONGS = new Set(['88661234', 'xy888888', 'credit8888'])
+
+/** 原型：命中即视为自己的直属会员（额外关键字；另含 MOCK_DIRECT_MEMBERS） */
+const MOCK_DIRECT_MEMBER_KINGKONGS = new Set(['direct8888', 'zs888888'])
+
+const MOCK_MEMBER_NICKNAMES: Record<string, string> = {
+  '66880031': 'openapi31axy8',
+  '88661202': 'mid_eyv4menuoax',
+  ming88888: '明哥888',
+  lin11121: '小林棋王',
+}
+
+function isAlreadyCreditAgent(normalized: string) {
+  if (MOCK_CREDIT_AGENT_KINGKONGS.has(normalized)) return true
+  /** agent*：以 agent 开头即视为信用代理（如 agent8、agent888） */
+  if (normalized.startsWith('agent')) return true
+  if (normalized.includes('creditagent') || normalized.startsWith('xy_credit')) return true
+  return teamCreditAgents.value.some(
+    (item) => item.id.toLowerCase() === normalized || item.nickname.trim().toLowerCase() === normalized,
+  )
+}
+
+function isOwnDirectMember(normalized: string) {
+  if (MOCK_DIRECT_MEMBER_KINGKONGS.has(normalized)) return true
+  /** direct*：以 direct 开头即视为自己的直属会员 */
+  if (normalized.startsWith('direct')) return true
+  if (
+    MOCK_DIRECT_MEMBERS.some(
+      (item) =>
+        item.kingkongId.toLowerCase() === normalized ||
+        item.nickname.toLowerCase() === normalized ||
+        item.accountId.toLowerCase() === normalized ||
+        item.userId.toLowerCase() === normalized,
+    )
+  ) {
+    return true
+  }
+  return teamDirectMembers.value.some(
+    (item) => item.id.toLowerCase() === normalized || item.nickname.trim().toLowerCase() === normalized,
+  )
+}
+
+function buildLookupMember(raw: string, normalized: string): XCoinSelectableTarget {
+  const found = findOtherMemberByAccountQuery(raw)
+  if (found) return found
+
+  const nickname = MOCK_MEMBER_NICKNAMES[normalized] ?? `会员_${raw.slice(-4)}`
+  return {
+    id: `mc_${normalized}`,
+    nickname,
+    kingkongId: raw,
+    userId: `1${normalized.replace(/\D/g, '').padStart(7, '0').slice(0, 7) || '0000001'}`,
+    accountId: `mid_${normalized}`,
+    relation: 'non_direct_member',
+    credits: emptySelectableCredits(),
+  }
+}
+
+/**
+ * 其他会员授信 · 按金刚号查询校验
+ * - 金刚号不存在
+ * - 已是信用代理
+ * - 已是自己的直属会员（须走直属会员授信入口）
+ */
+export function lookupMemberCreditByKingkong(input: string): MemberCreditKingkongLookupResult {
+  const raw = input.trim()
+  const normalized = raw.toLowerCase()
+
+  if (!normalized) {
+    return { ok: false, message: '请输入金刚号' }
+  }
+
+  if (isAlreadyCreditAgent(normalized)) {
+    return { ok: false, message: '该账号已是信用代理' }
+  }
+
+  if (isOwnDirectMember(normalized)) {
+    return { ok: false, message: '该账号已是你的直属会员' }
+  }
+
+  if (normalized.length < 4) {
+    return { ok: false, message: '金刚号不存在' }
+  }
+
+  return {
+    ok: true,
+    tip: '会员符合授信条件，请确认后设置退水',
+    member: buildLookupMember(raw, normalized),
+  }
 }
 
 export const DEFAULT_MEMBER_CREDIT_PRODUCTS: MemberCreditProduct[] = [
@@ -28,4 +140,5 @@ export function formatMemberCreditPercent(value: number) {
 export const OTHER_MEMBER_CREDIT_STEPS = [
   { key: 'search', label: '查询会员' },
   { key: 'rebate', label: '设置退水' },
+  { key: 'credit_up', label: '给他上分' },
 ] as const

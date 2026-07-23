@@ -1,28 +1,31 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useOtherMemberQuery } from '../../composables/useOtherMemberQuery'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   DEFAULT_MEMBER_CREDIT_PRODUCTS,
   formatMemberCreditPercent,
+  lookupMemberCreditByKingkong,
   OTHER_MEMBER_CREDIT_STEPS,
+  type MemberCreditKingkongLookupResult,
   type MemberCreditProduct,
 } from '../../constants/memberCredit'
 import { MEMBER_CREDIT_DIRECT_SPEC, MEMBER_CREDIT_OTHER_SPEC } from '../../constants/memberCreditSpec'
 import { promoteToCreditMember } from '../../constants/agentTeam'
 import { syncCreditRebateFromMemberCredit } from '../../constants/memberRebateRatio'
 import {
+  MOCK_XCOIN_BALANCES,
+  XCOIN_CREDIT_CURRENCY_TABS,
   emptySelectableCredits,
-  relationTagClass,
-  relationTagText,
+  parseXCoinCreditCurrency,
+  type XCoinCreditCurrency,
   type XCoinSelectableTarget,
 } from '../../constants/xCoinTransfer'
 import '../../styles/mobile-app-shell.css'
 
-type FlowStep = 'search' | 'rebate' | 'success'
+type FlowStep = 'search' | 'rebate' | 'credit_up' | 'success'
 
 const route = useRoute()
 const router = useRouter()
@@ -33,13 +36,14 @@ const flowStep = ref<FlowStep>(isOtherMemberFlow.value ? 'search' : 'rebate')
 const selectedMemberId = ref(String(route.query.targetId || ''))
 const selectedMember = ref<XCoinSelectableTarget | null>(null)
 
-const {
-  accountQuery,
-  queryLoading,
-  queryError,
-  queryResult,
-  lookupAccount,
-} = useOtherMemberQuery(selectedMemberId)
+const kingkongQuery = ref('')
+const queryLoading = ref(false)
+const lookupTip = ref('')
+const lookupResult = ref<MemberCreditKingkongLookupResult | null>(null)
+
+const queryResult = computed(() =>
+  lookupResult.value?.ok ? lookupResult.value.member : null,
+)
 
 const rebatePercent = ref(0)
 const products = ref<MemberCreditProduct[]>(
@@ -49,6 +53,16 @@ const products = ref<MemberCreditProduct[]>(
 const editVisible = ref(false)
 const editProductKey = ref('')
 const editDraft = ref('')
+
+const creditAmount = ref('')
+const creditCurrency = ref<XCoinCreditCurrency>(parseXCoinCreditCurrency(route.query.currency))
+const currencyPickerOpen = ref(false)
+
+const availableBalance = computed(() => MOCK_XCOIN_BALANCES[creditCurrency.value])
+const creditAmountNumber = computed(() => Number(creditAmount.value))
+const canConfirmCreditUp = computed(
+  () => Boolean(selectedMember.value) && creditAmount.value !== '' && creditAmountNumber.value > 0,
+)
 
 const pageTitle = computed(() => {
   if (flowStep.value === 'success') return '授信成功'
@@ -61,10 +75,35 @@ const editingProduct = computed(() =>
 
 const canConfirmMember = computed(() => Boolean(selectedMemberId.value && queryResult.value))
 
+watch(kingkongQuery, () => {
+  lookupTip.value = ''
+  lookupResult.value = null
+  selectedMemberId.value = ''
+})
+
+async function lookupAccount() {
+  lookupTip.value = ''
+  lookupResult.value = null
+  selectedMemberId.value = ''
+  queryLoading.value = true
+  await new Promise((r) => setTimeout(r, 280))
+  queryLoading.value = false
+
+  const result = lookupMemberCreditByKingkong(kingkongQuery.value)
+  lookupResult.value = result
+  if (result.ok) {
+    lookupTip.value = result.tip
+    selectedMemberId.value = result.member.id
+    return
+  }
+  lookupTip.value = result.message
+}
+
 function flowStepIndex() {
   if (flowStep.value === 'search') return 0
   if (flowStep.value === 'rebate') return 1
-  return 1
+  if (flowStep.value === 'credit_up') return 2
+  return 2
 }
 
 function stepBarStatus(index: number) {
@@ -76,6 +115,11 @@ function stepBarStatus(index: number) {
 
 function goPrevious() {
   if (flowStep.value === 'success') {
+    flowStep.value = isOtherMemberFlow.value ? 'credit_up' : 'rebate'
+    return
+  }
+
+  if (flowStep.value === 'credit_up') {
     flowStep.value = 'rebate'
     return
   }
@@ -94,7 +138,28 @@ function confirmMember() {
   flowStep.value = 'rebate'
 }
 
-function confirmCredit() {
+function goCreditUpStep() {
+  creditAmount.value = ''
+  flowStep.value = 'credit_up'
+}
+
+async function confirmCreditUp() {
+  if (!selectedMember.value) return
+  if (!creditAmount.value || creditAmountNumber.value <= 0) {
+    await mh5Alert('请输入上分额度')
+    return
+  }
+  promoteToCreditMember({
+    id: selectedMember.value.id,
+    nickname: selectedMember.value.nickname,
+    avatarEmoji: '👤',
+  })
+  syncCreditRebateFromMemberCredit(products.value)
+  flowStep.value = 'success'
+}
+
+/** 直属会员授信：设置退水后直接创建成功（无上分步） */
+function confirmDirectCredit() {
   if (selectedMember.value) {
     promoteToCreditMember({
       id: selectedMember.value.id,
@@ -106,6 +171,25 @@ function confirmCredit() {
   flowStep.value = 'success'
 }
 
+function pickCurrency(value: XCoinCreditCurrency) {
+  creditCurrency.value = value
+  currencyPickerOpen.value = false
+}
+
+/** 上分额度：非负数字，最多两位小数 */
+function onCreditAmountInput(event: Event) {
+  const target = event.target as HTMLInputElement
+  let next = target.value.replace(/[^\d.]/g, '')
+  const firstDot = next.indexOf('.')
+  if (firstDot !== -1) {
+    next = next.slice(0, firstDot + 1) + next.slice(firstDot + 1).replace(/\./g, '')
+    const [intPart, fracPart = ''] = next.split('.')
+    next = `${intPart}.${fracPart.slice(0, 2)}`
+  }
+  creditAmount.value = next
+  if (target.value !== next) target.value = next
+}
+
 function backToAgentCenter() {
   router.push({ name: 'mobile-agent' })
 }
@@ -113,11 +197,14 @@ function backToAgentCenter() {
 function resetFlow() {
   flowStep.value = isOtherMemberFlow.value ? 'search' : 'rebate'
   rebatePercent.value = 0
+  creditAmount.value = ''
   products.value = DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item }))
   if (isOtherMemberFlow.value) {
     selectedMemberId.value = ''
     selectedMember.value = null
-    accountQuery.value = ''
+    kingkongQuery.value = ''
+    lookupTip.value = ''
+    lookupResult.value = null
   }
 }
 
@@ -227,10 +314,10 @@ if (route.query.targetId && route.query.targetName) {
       <div class="mh5-xcoin-other-search-area mh5-member-credit-search__query">
         <div class="mh5-xcoin-other-query-bar">
           <input
-            v-model="accountQuery"
+            v-model="kingkongQuery"
             type="text"
             class="mh5-xcoin-other-query-bar__input"
-            placeholder="请输入会员账号或账号ID"
+            placeholder="请输入金刚号"
             @keydown.enter.prevent="lookupAccount"
           />
           <button
@@ -242,17 +329,22 @@ if (route.query.targetId && route.query.targetName) {
             {{ queryLoading ? '查询中' : '查询' }}
           </button>
         </div>
+        <p
+          v-if="lookupTip"
+          class="agent-invite-form__tip mh5-member-credit-search__lookup-tip"
+          :class="{ 'agent-invite-form__tip--error': lookupResult && !lookupResult.ok }"
+        >
+          {{ lookupTip }}
+        </p>
         <p class="mh5-xcoin-other-member__tip">
           注意：非你的直属会员授信成功后将自动挂靠到你的信用会员列表，请务必核实账号信息并注意资金安全
         </p>
       </div>
 
       <div class="mh5-member-credit-search__result">
-        <p v-if="queryError" class="mh5-xcoin-member-picker__error">{{ queryError }}</p>
-
         <label
           v-if="queryResult"
-          class="mh5-xcoin-select-card"
+          class="mh5-xcoin-select-card mh5-member-credit-result-card"
           :class="{ 'mh5-xcoin-select-card--active': selectedMemberId === queryResult.id }"
         >
           <input
@@ -262,20 +354,8 @@ if (route.query.targetId && route.query.targetName) {
             :value="queryResult.id"
           />
           <div class="mh5-xcoin-select-card__body">
-            <div class="mh5-xcoin-select-card__title-row">
-              <span class="mh5-xcoin-select-card__name">{{ queryResult.nickname }}</span>
-              <span :class="relationTagClass(queryResult.relation)">{{ relationTagText(queryResult.relation) }}</span>
-            </div>
-            <div class="mh5-xcoin-select-card__stats">
-              <div>
-                <p class="mh5-xcoin-select-card__stat-label">金刚号</p>
-                <p class="mh5-xcoin-select-card__stat-value">{{ queryResult.kingkongId }}</p>
-              </div>
-              <div>
-                <p class="mh5-xcoin-select-card__stat-label">用户id</p>
-                <p class="mh5-xcoin-select-card__stat-value">{{ queryResult.userId }}</p>
-              </div>
-            </div>
+            <p class="mh5-member-credit-result-card__nickname">昵称：{{ queryResult.nickname }}</p>
+            <p class="mh5-member-credit-result-card__kingkong">金刚号：{{ queryResult.kingkongId }}</p>
           </div>
         </label>
       </div>
@@ -341,6 +421,54 @@ if (route.query.targetId && route.query.targetName) {
       </section>
     </main>
 
+    <main v-else-if="flowStep === 'credit_up'" class="mh5-member-credit-up">
+      <button
+        type="button"
+        class="mh5-xcoin-currency-row"
+        aria-label="选择信用额度币种"
+        @click="currencyPickerOpen = true"
+      >
+        <span class="mh5-xcoin-currency-row__label">币种</span>
+        <span class="mh5-xcoin-currency-row__value">
+          {{ creditCurrency }}
+          <span class="mh5-xcoin-currency-row__arrow">›</span>
+        </span>
+      </button>
+
+      <section class="mh5-xcoin-wallet-card">
+        <p class="mh5-xcoin-wallet-card__label">从 我的 {{ creditCurrency }} 钱包</p>
+        <input
+          :value="creditAmount"
+          type="text"
+          inputmode="decimal"
+          class="mh5-xcoin-wallet-card__amount"
+          placeholder="0.00"
+          @input="onCreditAmountInput"
+        />
+        <p class="mh5-xcoin-wallet-card__balance">
+          可用 {{ availableBalance.toFixed(2) }} {{ creditCurrency }}
+        </p>
+      </section>
+
+      <div class="mh5-xcoin-arrow" aria-hidden="true">↓</div>
+
+      <section class="mh5-xcoin-wallet-card">
+        <p class="mh5-xcoin-wallet-card__label">到 下级的 {{ creditCurrency }} 钱包</p>
+        <div v-if="selectedMember" class="mh5-member-credit-up__target">
+          <p class="mh5-member-credit-up__target-row">
+            <span class="mh5-member-credit-up__target-label">昵称</span>
+            <span class="mh5-member-credit-up__target-value">{{ selectedMember.nickname }}</span>
+          </p>
+          <p class="mh5-member-credit-up__target-row">
+            <span class="mh5-member-credit-up__target-label">金刚号</span>
+            <span class="mh5-member-credit-up__target-value">{{ selectedMember.kingkongId }}</span>
+          </p>
+        </div>
+      </section>
+
+      <p class="mh5-member-credit-up__hint">完成任意额度上分后即可创建授信</p>
+    </main>
+
     <main v-else class="mh5-agent-credit-success">
       <div class="mh5-agent-credit-success__hero">
         <div class="mh5-member-credit-success__icon" aria-hidden="true">
@@ -376,8 +504,34 @@ if (route.query.targetId && route.query.targetName) {
         <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
           上一步
         </button>
-        <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary" @click="confirmCredit">
+        <button
+          v-if="isOtherMemberFlow"
+          type="button"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
+          @click="goCreditUpStep"
+        >
+          下一步
+        </button>
+        <button
+          v-else
+          type="button"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
+          @click="confirmDirectCredit"
+        >
           创建
+        </button>
+      </template>
+      <template v-else-if="flowStep === 'credit_up'">
+        <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
+          上一步
+        </button>
+        <button
+          type="button"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
+          :disabled="!canConfirmCreditUp"
+          @click="confirmCreditUp"
+        >
+          确认上分并创建
         </button>
       </template>
       <template v-else>
@@ -437,11 +591,54 @@ if (route.query.targetId && route.query.targetName) {
         </div>
       </div>
     </Teleport>
+
+    <!-- 不 Teleport：mask 为 absolute，需落在手机画布内的 relative 页面根上 -->
+    <Transition name="mh5-sheet">
+      <div
+        v-if="currencyPickerOpen"
+        class="mh5-xcoin-sheet-mask"
+        @click.self="currencyPickerOpen = false"
+      >
+        <div class="mh5-xcoin-sheet">
+          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+          <button
+            v-for="tab in XCOIN_CREDIT_CURRENCY_TABS"
+            :key="tab.key"
+            type="button"
+            class="mh5-xcoin-sheet__option"
+            :class="{ 'mh5-xcoin-sheet__option--active': creditCurrency === tab.key }"
+            @click="pickCurrency(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped>
 .safe-pb {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mh5-sheet-enter-active,
+.mh5-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-sheet-enter-from,
+.mh5-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
 }
 </style>
