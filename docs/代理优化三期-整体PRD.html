@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>代理优化三期 · 整体 PRD</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --accent: #0071e3;
+      --border: #d2d2d7;
+      --code-bg: #f5f5f7;
+      --success: #18af91;
+      --danger: #f84473;
+      --warn-bg: #fff8e6;
+      --warn-border: #f5d565;
+      --orange: #ff8c00;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px 72px;
+    }
+
+    header.doc-header {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    header.doc-header h1 {
+      margin: 0 0 10px;
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e8f4fd;
+      color: var(--accent);
+    }
+
+    .badge--orange {
+      background: #fff3e6;
+      color: #c45c00;
+    }
+
+    .notice {
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin: 18px 0 0;
+      font-size: 14px;
+    }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .toc h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      border: none;
+      padding: 0;
+    }
+
+    .toc ol {
+      margin: 0;
+      padding-left: 1.25rem;
+    }
+
+    .toc a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .toc a:hover { text-decoration: underline; }
+
+    section {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    h2 {
+      margin: 0 0 16px;
+      font-size: 1.25rem;
+      font-weight: 650;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h3 {
+      margin: 22px 0 10px;
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    h4 {
+      margin: 16px 0 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #333;
+    }
+
+    p { margin: 0 0 12px; }
+
+    ul, ol { margin: 8px 0 16px; padding-left: 1.25rem; }
+    li { margin-bottom: 6px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin: 12px 0 16px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { background: var(--code-bg); font-weight: 600; }
+
+    .formula {
+      background: #1f2937;
+      color: #f9fafb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.7;
+      margin: 10px 0 16px;
+      word-break: break-word;
+    }
+
+    .formula strong { color: #fbbf24; }
+
+    .tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .tag--agent { background: #e8f4fd; color: var(--accent); }
+    .tag--bi { background: #f3e8ff; color: #7c3aed; }
+    .tag--h5 { background: #fff3e6; color: #c45c00; }
+
+    .pos { color: var(--success); font-weight: 600; }
+    .neg { color: var(--danger); font-weight: 600; }
+    .muted { color: var(--text-secondary); }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 12px 0 16px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      background: #fafafa;
+    }
+
+    .card h4 {
+      margin: 0 0 6px;
+      font-size: 14px;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-secondary);
+      padding-top: 8px;
+    }
+
+    @media (max-width: 600px) {
+      .wrap { padding: 16px 12px 48px; }
+      header.doc-header, section, .toc { padding: 18px 16px; }
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="doc-header">
+      <h1>代理优化三期 · 整体 PRD</h1>
+      <div class="meta">
+        <span class="badge">v2.x.x</span>
+        <span class="badge badge--orange">原型 v1.0</span>
+        <span>文档版本：2026-07-23</span>
+        <span>创建人 / 更新人：EZ（原型）</span>
+      </div>
+      <div class="notice">
+        <strong>来源：</strong>Axure《代理优化三期》
+        （<a href="https://dv282e.axshare.com/#g=1&id=kigy3k&p=%E4%BF%AE%E8%AE%A2%E8%AE%B0%E5%BD%95_9" target="_blank" rel="noopener">修订记录</a> /
+        需求概要 / 代理端·成本占成 / 代理端·活动金和VIP晋级礼金 / BI后台·成本占成）。
+        本文汇总三期调整范围，供评审与研发对齐；交互细项以原型标注为准，颜色字号以设计稿为准。
+      </div>
+    </header>
+
+    <nav class="toc" aria-label="目录">
+      <h2>目录</h2>
+      <ol>
+        <li><a href="#overview">背景与目标</a></li>
+        <li><a href="#scope">范围与结构</a></li>
+        <li><a href="#revision">修订记录</a></li>
+        <li><a href="#cost-share">模块一：成本占成（其他成本）</a></li>
+        <li><a href="#profit-breakdown">模块二：盈亏细项区分</a></li>
+        <li><a href="#category-filter">品类筛选（一级 / 二级「全部」）</a></li>
+        <li><a href="#formulas">统一公式与字段口径</a></li>
+        <li><a href="#matrix">页面改造矩阵</a></li>
+        <li><a href="#rules">数据规则与异常</a></li>
+        <li><a href="#acceptance">验收要点</a></li>
+      </ol>
+    </nav>
+
+    <section id="overview">
+      <h2>1. 背景与目标</h2>
+      <p>
+        三期在一期 / 二期能力之上，补齐<strong>成本占成配置</strong>，并统一
+        <strong>代理盈亏 / 会员盈亏 / 游戏净输赢</strong> 的细项展示与计算公式，
+        让代理端与 BI 后台对「实占成本」有一致口径。
+      </p>
+      <div class="card-grid">
+        <div class="card">
+          <h4>业务目标</h4>
+          <p>把 VIP 晋级礼金、VIP 额外奖金、活动金等纳入可配置的「其他成本」占成，并进入盈亏计算。</p>
+        </div>
+        <div class="card">
+          <h4>体验目标</h4>
+          <p>报表、详情、我的盈亏等页面细项对齐；正绿负粉；公式 tip 可查。</p>
+        </div>
+        <div class="card">
+          <h4>管理目标</h4>
+          <p>代理端与 BI 后台均可配置成本占成，上下级比例受上限约束。</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="scope">
+      <h2>2. 范围与结构</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>端</th>
+            <th>原型页面</th>
+            <th>本期重点</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="tag tag--h5">代理端</span></td>
+            <td>成本占成</td>
+            <td>新增「其他成本」配置入口（创建 / 邀请 / 收益比例 / 概况查看）</td>
+          </tr>
+          <tr>
+            <td><span class="tag tag--h5">代理端</span></td>
+            <td>活动金和 VIP 晋级礼金</td>
+            <td>代理盈亏、会员盈亏、游戏净输赢细项与公式对齐</td>
+          </tr>
+          <tr>
+            <td><span class="tag tag--bi">BI 后台</span></td>
+            <td>成本占成</td>
+            <td>推广返利 / 占成代理配置中新增「其他成本」输入项</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted">不在本期：信用额度专项（另册 v2.x.0）、邀请返利领取链路、注单查询等二期已交付能力的重复改造。</p>
+    </section>
+
+    <section id="revision">
+      <h2>3. 修订记录</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>版本号</th>
+            <th>修订内容描述</th>
+            <th>时间</th>
+            <th>创建人 / 更新人</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>v1.0</td>
+            <td>
+              <ol>
+                <li>新增成本占成的设置</li>
+                <li>代理盈亏、会员盈亏、游戏盈亏的细项区分</li>
+              </ol>
+            </td>
+            <td class="muted">—</td>
+            <td>EZ</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="cost-share">
+      <h2>4. 模块一：成本占成（其他成本）</h2>
+      <p>
+        「其他成本」用于承接原分散的成本类占成项：
+        <strong>VIP 晋级礼金、VIP 额外奖金、活动金</strong> 合并为同一占成比例配置项，
+        在概况「占成比例」弹框中与各游戏品类并列展示。
+      </p>
+
+      <h3>4.1 代理端改造点</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>场景</th>
+            <th>交互说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>团队管理 · 新增代理 · 收益比例</td>
+            <td>
+              在全局占成 / 退水滑块下方增加「其他成本」行（默认 0%，展示「最高 xx%」）；
+              点击数值或铅笔进入「编辑其他成本」底部弹层，取消 / 保存。
+            </td>
+          </tr>
+          <tr>
+            <td>团队管理 · 收益比例 · 查看 &amp; 修改</td>
+            <td>
+              查看页展示只读其他成本；进入「设置现金比例」可编辑。
+              占成滑块可同步写入其他成本（不超过上级最大值）。
+            </td>
+          </tr>
+          <tr>
+            <td>邀请现有会员成为下级 · 收益比例步</td>
+            <td>与新增代理一致，需填写其他成本后再确认邀请。</td>
+          </tr>
+          <tr>
+            <td>概况 · 占成比例弹框</td>
+            <td>
+              表末增加「其他成本」行；只读确认，不提供编辑。
+              原型 Mock 示例：刮刮乐 2.5% … 捕鱼 0.5%，其他成本 1.0%。
+            </td>
+          </tr>
+          <tr>
+            <td>编辑其他成本弹层</td>
+            <td>
+              标题「编辑其他成本」；提示「最高 xx%」；输入百分比；
+              按钮「取消」「保存」。须为整数；超上限不可保存。
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 BI 后台改造点</h3>
+      <p>
+        <span class="tag tag--bi">BI</span>
+        推广返利 / 占成代理配置 · 新增 &amp; 编辑代理弹窗：
+        在各游戏品类占成网格中增加 <strong>其他成本</strong>（仅占成区展示，退水区不展示）。
+      </p>
+      <p>品类示例：棋牌、趣投、电竞、捕鱼、刮刮乐、热门类、体育、真人、彩票、弹珠、老虎机、其他成本。</p>
+      <p>
+        <strong>精度：</strong>代理端与 BI 的占成设置（含「其他成本」）均为<strong>整数</strong>；
+        区间 0～上级该品类最大值（maxShare）。退水仍按既有规则（可含小数）。
+      </p>
+
+      <h3>4.3 配置规则摘要</h3>
+      <ul>
+        <li>代理端其他成本为<strong>全局整数比例</strong>，区间 <code>0 ~ 上级最大值</code>（原型 Mock 常见最高 10%）。</li>
+        <li>拖动顶部「占成」滑块时，可同步写入其他成本（取 <code>min(占成整数, 上级最大值)</code>）。</li>
+        <li>概况弹框中「其他成本」= VIP 晋级礼金 + VIP 额外奖金 + 活动金 的合并占成展示。</li>
+      </ul>
+    </section>
+
+    <section id="profit-breakdown">
+      <h2>5. 模块二：盈亏细项区分</h2>
+      <p>
+        将「游戏净输赢（场馆 / 报表口径）」与「代理盈亏 / 会员盈亏（含成本项）」拆清：
+        成本三项（VIP 晋级礼金、VIP 额外奖金、活动金）只出现在盈亏汇总，不进入场馆净输赢明细。
+      </p>
+
+      <h3>5.1 代理端 · 我的报表</h3>
+      <ul>
+        <li>场馆明细标题行：感叹号 + <strong>净输赢</strong> + 数值（正绿负粉）。</li>
+        <li>明细行：下注有效金额、输赢、退水、VIP退水、<strong>代理赚水</strong>（取负）。</li>
+        <li>不含 VIP 晋级礼金 / VIP 额外奖金 / 活动金。</li>
+        <li>品类筛选交互见 <a href="#category-filter">§6</a>（一级 / 二级均含「全部」）。</li>
+      </ul>
+
+      <h3>5.2 代理端 · 代理详情</h3>
+      <ul>
+        <li>
+          <strong>代理盈亏</strong> Tab：首行总值 + tip；细项七项——
+          输赢、退水、VIP退水、代理赚水、VIP晋级礼金、VIP额外奖金、活动金
+         （展示名不带「实占」前缀）。
+        </li>
+        <li>
+          <strong>游戏数据</strong>：一级品类 Tab（含「全部」）+ 二级场馆 pill（含「全部」）；
+          一级「全部」时不展示二级；明细同报表净输赢口径（含代理赚水取负，不含成本三项）。
+          完整交互见 <a href="#category-filter">§6</a>。
+        </li>
+      </ul>
+
+      <h3>5.3 代理端 · 会员详情</h3>
+      <ul>
+        <li>
+          <strong>会员盈亏</strong>：首行总值 + tip；细项六项——
+          游戏输赢、会员退水、VIP退水、VIP晋级礼金、VIP额外奖金、活动金
+          （会员侧退水 / 礼金按公式直接累加，展示为正贡献时用绿色）。
+        </li>
+        <li>
+          <strong>游戏数据 · 游戏统计</strong>：标题行「净输赢」+ tip；
+          明细为下注有效金额、输赢、会员退水、VIP退水、<strong>代理赚水</strong>；
+          品类筛选同 <a href="#category-filter">§6</a>。
+        </li>
+      </ul>
+
+      <h3>5.4 代理端 · 我的盈亏（概况入口）</h3>
+      <ul>
+        <li>顶部总盈亏（即代理盈亏口径），无感叹号 tip。</li>
+        <li>列表：各游戏占成项 + VIP晋级礼金 + VIP额外奖金 + 活动金 + 总计；代理赚水不单独成行。</li>
+        <li>点击游戏占成项 →「{品类}盈亏明细」（净输赢五项，含代理赚水；表头「实占细项 / 金额」）。</li>
+        <li>点击总计 →「总计盈亏明细」（代理盈亏七项）。</li>
+        <li>明细弹框内：末行结果项旁感叹号；公式说明在表格与「我知道了」按钮之间展开（避免气泡裁切）。</li>
+        <li>
+          底部说明：
+          <code>数据每十分钟更新一次</code> /
+          <code>最多可查询近 6 个月的数据</code>。
+        </li>
+      </ul>
+    </section>
+
+    <section id="category-filter">
+      <h2>6. 品类筛选（一级 / 二级「全部」）</h2>
+      <p class="notice" style="margin-top: 0;">
+        <strong>通用规则</strong>（我的报表 / 代理详情·游戏数据 / 会员详情·游戏统计 三端一致）。
+        Review 遗漏补丁：游戏一级分类与二级分类切换<strong>都要有「全部」</strong>。
+      </p>
+      <ul>
+        <li>
+          <strong>一级品类 Tab 必须含「全部」</strong>（各品类合计）；
+          进入页面默认选中一级「全部」。
+        </li>
+        <li>
+          <strong>二级场馆 pill 必须含「全部」</strong>（该品类合计）；
+          仅当一级为具体品类时展示二级。
+        </li>
+        <li>
+          <strong>一级选中「全部」时：隐藏二级场馆分类</strong>；
+          切回一级「全部」时二级隐藏，并将场馆状态重置为「全部」。
+        </li>
+        <li>
+          <strong>切换一级品类时：二级默认选中「全部」</strong>，再刷新下方明细卡。
+        </li>
+        <li>
+          一级「全部」无场馆子项；分品类下始终含二级「全部」及各场馆
+          （如体育：全部 / IM体育 / 金刚体育 / SABA体育 / CDN体育 等）。
+        </li>
+      </ul>
+      <table>
+        <thead>
+          <tr>
+            <th>一级选中</th>
+            <th>二级场馆 pill</th>
+            <th>明细含义</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>全部</td>
+            <td>不展示</td>
+            <td>各品类合计净输赢</td>
+          </tr>
+          <tr>
+            <td>具体品类（如体育）</td>
+            <td>展示，首项「全部」，默认选中「全部」</td>
+            <td>该品类合计；点具体场馆后为单场馆</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="muted">
+        品类清单可按端 Mock 略有差异（如报表含电竞/捕鱼；详情含真人/弹珠/刮刮乐/彩票），
+        但不影响「一级 / 二级均含全部」的交互规则。
+      </p>
+    </section>
+
+    <section id="formulas">
+      <h2>7. 统一公式与字段口径</h2>
+
+      <h3>7.1 游戏净输赢（报表 / 游戏数据 / 占成项明细）</h3>
+      <div class="formula">
+        <strong>游戏净输赢</strong> =
+        【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】
+      </div>
+      <p>会员游戏统计公式文案：</p>
+      <div class="formula">
+        <strong>游戏净输赢</strong> =
+        【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】
+      </div>
+      <p>页面标题短文案统一为「净输赢」；公式左侧用「游戏净输赢」。</p>
+
+      <h3>7.2 代理盈亏（代理详情 / 我的盈亏总计）</h3>
+      <div class="formula">
+        <strong>代理盈亏</strong> =
+        【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】
+        + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】
+      </div>
+
+      <h3>7.3 会员盈亏（会员详情）</h3>
+      <div class="formula">
+        <strong>会员盈亏</strong> =
+        【游戏输赢】 + 【会员退水】 + 【VIP退水】
+        + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】
+      </div>
+
+      <h3>7.4 命名对照</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>场景</th>
+            <th>展示标题</th>
+            <th>公式左侧 / 关键项</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>代理详情汇总</td>
+            <td>代理盈亏</td>
+            <td>代理盈亏；项内用【实占游戏输赢】等</td>
+          </tr>
+          <tr>
+            <td>会员详情汇总</td>
+            <td>会员盈亏</td>
+            <td>会员盈亏；项内用【游戏输赢】等</td>
+          </tr>
+          <tr>
+            <td>场馆 / 报表明细</td>
+            <td>净输赢</td>
+            <td>游戏净输赢</td>
+          </tr>
+          <tr>
+            <td>明细行短标签</td>
+            <td>输赢 / 退水 / 代理赚水 …</td>
+            <td>公式中带「实占」或「会员」前缀</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="matrix">
+      <h2>8. 页面改造矩阵</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>页面</th>
+            <th>其他成本配置</th>
+            <th>净输赢明细</th>
+            <th>盈亏汇总细项</th>
+            <th>公式 tip</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>新增代理 / 邀请下级 · 收益比例</td>
+            <td>✓</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>代理收益比例查看 / 设置</td>
+            <td>✓</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>概况 · 占成比例弹框</td>
+            <td>只读展示</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td>我的报表</td>
+            <td>—</td>
+            <td>✓</td>
+            <td>—</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>代理详情 · 代理盈亏 / 游戏数据</td>
+            <td>—</td>
+            <td>✓（游戏数据）</td>
+            <td>✓（代理盈亏）</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>会员详情 · 会员盈亏 / 游戏统计</td>
+            <td>—</td>
+            <td>✓（游戏统计）</td>
+            <td>✓（会员盈亏）</td>
+            <td>✓</td>
+          </tr>
+          <tr>
+            <td>我的盈亏</td>
+            <td>—</td>
+            <td>✓（占成项弹框）</td>
+            <td>✓（总计弹框）</td>
+            <td>✓（弹框内）</td>
+          </tr>
+          <tr>
+            <td>BI · 占成代理新增 / 编辑</td>
+            <td>✓</td>
+            <td>—</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="rules">
+      <h2>9. 数据规则与异常</h2>
+      <h3>9.1 展示规则</h3>
+      <ul>
+        <li>盈亏类金额：<span class="pos">正数青绿</span>、<span class="neg">负数玫红</span>、中性黑；带 <code>+</code> / <code>-</code> 符号。</li>
+        <li>金额默认不展示币种符号；随顶栏全局币种切换刷新统计。</li>
+        <li>品类筛选完整规则见 <a href="#category-filter">§6</a>（一级 / 二级均含「全部」；一级全部时隐藏二级）。</li>
+        <li>游戏净输赢不含成本三项；代理盈亏含成本三项与代理赚水。</li>
+      </ul>
+      <h3>9.2 校验与边界</h3>
+      <ul>
+        <li>其他成本非整数 / 超上限 → 弹层内提示，不可保存。</li>
+        <li>无 Mock 明细的场馆 → 展示 0.00 / +0.00，不隐藏字段行。</li>
+        <li>我的盈亏查询窗口：最多近 6 个月；数据约每十分钟更新。</li>
+        <li>VIP 晋级礼金 / VIP 额外奖金 / 活动金在「我的盈亏」列表不可点开明细。</li>
+      </ul>
+    </section>
+
+    <section id="acceptance">
+      <h2>10. 验收要点</h2>
+      <ol>
+        <li>代理端四处（新增、邀请、收益比例、概况弹框）均可看到「其他成本」，且上限与同步规则正确。</li>
+        <li>BI 编辑代理弹窗可见「其他成本」；占成（含其他成本）为整数，区间 0～上级上限。</li>
+        <li>
+          代理盈亏 tip 文案含 <code>实占游戏输赢</code>，且七项齐全；
+          游戏净输赢 tip 含代理赚水、不含成本三项。
+        </li>
+        <li>会员游戏统计含「代理赚水」，标题为「净输赢」。</li>
+        <li>我的盈亏底部说明为「数据每十分钟更新一次」。</li>
+        <li>正负金额颜色在报表、详情、盈亏弹框均生效，不被基础字色覆盖。</li>
+        <li>
+          <strong>品类「全部」：</strong>一级、二级均有「全部」；进入默认一级「全部」且二级隐藏；
+          切到具体品类后二级出现且默认「全部」；切回一级「全部」后二级再次隐藏。
+          （报表 / 代理详情游戏数据 / 会员游戏统计均需验收。）
+        </li>
+      </ol>
+      <p class="muted" style="margin-top: 20px;">
+        原型入口：
+        <a href="https://dv282e.axshare.com/#g=1&id=kigy3k&p=%E4%BF%AE%E8%AE%A2%E8%AE%B0%E5%BD%95_9" target="_blank" rel="noopener">Axure · 代理优化三期</a>
+      </p>
+    </section>
+
+    <footer>
+      代理优化三期 · 整体 PRD · 由 Axure 修订记录与各模块原型汇总生成
+    </footer>
+  </div>
+</body>
+</html>
