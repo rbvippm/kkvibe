@@ -11671,77 +11671,6 @@
   color: #fff;
 }
 
-/* 需盖过 .mh5-agent-detail-profit-summary { margin-top: 0 }，与上方时间区拉开 */
-.mh5-agent-detail-wallet.mh5-agent-report-profit {
-  margin-top: 12px;
-  padding: 4px 16px 8px;
-  overflow: visible;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-wallet__row {
-  align-items: center;
-  min-height: 48px;
-  padding: 12px 0;
-  border-bottom-color: #f0f2f5;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-wallet__label {
-  line-height: 22px;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-wallet__value {
-  flex-shrink: 0;
-  line-height: 22px;
-  text-align: right;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__total {
-  min-height: 52px;
-  margin-bottom: 0;
-  padding: 14px 0 12px;
-  border-bottom: 1px solid #ebecef;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__total .mh5-agent-detail-wallet__label {
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 22px;
-  color: #1a1a1a;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__total .mh5-agent-detail-wallet__value {
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 22px;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__label-wrap {
-  display: inline-flex;
-  flex: 0 1 auto;
-  align-items: center;
-  gap: 6px;
-  max-width: 70%;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__tip-btn {
-  display: inline-grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
-  color: #a0a7b4;
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__tip-bubble {
-  left: 0;
-  width: min(300px, calc(100vw - 56px));
-}
-
-.mh5-agent-report-profit .mh5-agent-detail-profit-summary__tip-bubble::before {
-  left: 46px;
-}
-
 .mh5-agent-report-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -11922,22 +11851,14 @@
   font-style: normal;
   font-size: 15px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-agent-report-detail__profit em.mh5-agent-report-detail__profit-total--positive {
   color: #26a69a;
 }
 
-.mh5-agent-report-detail__profit-total--positive {
-  color: #26a69a;
-}
-
-.mh5-agent-report-detail__profit-total--negative {
-  color: #ec407a;
-}
-
-.mh5-agent-report-detail__row-value--positive {
-  color: #26a69a;
-}
-
-.mh5-agent-report-detail__row-value--negative {
+.mh5-agent-report-detail__profit em.mh5-agent-report-detail__profit-total--negative {
   color: #ec407a;
 }
 
@@ -11964,6 +11885,14 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: #1a1a1a;
+}
+
+.mh5-agent-report-detail__row-value.mh5-agent-report-detail__row-value--positive {
+  color: #26a69a;
+}
+
+.mh5-agent-report-detail__row-value.mh5-agent-report-detail__row-value--negative {
+  color: #ec407a;
 }
 
 /* ---------- 代理详情 ---------- */
@@ -12301,7 +12230,7 @@
   transform: rotate(45deg);
 }
 
-/* 场馆明细「游戏盈亏」tip：锚点靠右，气泡向左展开，避免被后置基础样式 left:0 覆盖后溢出 */
+/* 场馆明细「净输赢」tip：锚点靠右，气泡向左展开，避免被后置基础样式 left:0 覆盖后溢出 */
 .mh5-agent-report-detail__profit-label-wrap .mh5-agent-detail-profit-summary__tip-bubble {
   left: auto;
   right: -4px;
@@ -13791,11 +13720,15 @@
   text-underline-offset: 2px;
 }
 
-.mh5-agent-my-profit__amount--positive {
+.mh5-agent-my-profit-table__cell.mh5-agent-my-profit__amount--positive,
+.mh5-agent-my-profit-summary .mh5-agent-my-profit__amount--positive,
+.mh5-agent-my-profit-total__value.mh5-agent-my-profit__amount--positive {
   color: #18af91;
 }
 
-.mh5-agent-my-profit__amount--negative {
+.mh5-agent-my-profit-table__cell.mh5-agent-my-profit__amount--negative,
+.mh5-agent-my-profit-summary .mh5-agent-my-profit__amount--negative,
+.mh5-agent-my-profit-total__value.mh5-agent-my-profit__amount--negative {
   color: #f84473;
 }
 
@@ -13917,8 +13850,57 @@
   padding: 8px 9px 8px 20px;
 }
 
+.mh5-agent-my-profit-dialog__label-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mh5-agent-my-profit-dialog__tip-btn {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.mh5-agent-my-profit-dialog__tip-btn:active {
+  opacity: 0.7;
+}
+
+.mh5-agent-my-profit-dialog__tip-panel {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 310px;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .mh5-agent-my-profit-dialog__cell--label small {
-  font-size: 8px;
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: #6b7280;
+  white-space: normal;
 }
 
 .mh5-agent-my-profit-dialog__cell--value {
@@ -13926,6 +13908,14 @@
   justify-content: flex-end;
   padding: 8px 20px;
   font-variant-numeric: tabular-nums;
+}
+
+.mh5-agent-my-profit-dialog__cell--value.mh5-agent-my-profit__amount--positive {
+  color: #18af91;
+}
+
+.mh5-agent-my-profit-dialog__cell--value.mh5-agent-my-profit__amount--negative {
+  color: #f84473;
 }
 
 .mh5-agent-my-profit-dialog__row--emphasize .mh5-agent-my-profit-dialog__cell {

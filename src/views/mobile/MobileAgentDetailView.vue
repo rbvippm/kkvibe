@@ -49,7 +49,7 @@ const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 
 const profitCategory = ref<AgentProfitCategoryKey>('overall')
-const profitVendor = ref<AgentProfitVendorKey>('im')
+const profitVendor = ref<AgentProfitVendorKey>('all')
 
 const agent = computed(() => findAgentDetail(String(route.query.id ?? 'self')))
 const isCredited = computed(() => Boolean(agent.value?.isCredited))
@@ -70,7 +70,8 @@ const agentTotalProfit = computed(() => getAgentTotalProfit(currency.value))
 
 function selectProfitCategory(key: AgentProfitCategoryKey) {
   profitCategory.value = key
-  profitVendor.value = AGENT_PROFIT_VENDORS[key][0]?.key ?? 'im'
+  /** 切一级品类时，二级默认「全部」 */
+  profitVendor.value = AGENT_PROFIT_VENDORS[key][0]?.key ?? 'all'
 }
 
 const statItems = computed(() => {
@@ -260,11 +261,11 @@ function closeProfitFormulaTips() {
         <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
           <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
             <span class="mh5-agent-detail-profit-summary__label-wrap">
-              <span class="mh5-agent-detail-wallet__label">总盈亏</span>
+              <span class="mh5-agent-detail-wallet__label">代理盈亏</span>
               <button
                 type="button"
                 class="mh5-agent-detail-profit-summary__tip-btn"
-                aria-label="查看总盈亏计算公式"
+                aria-label="查看代理盈亏计算公式"
                 :aria-expanded="profitFormulaTipOpen"
                 @click.stop="toggleProfitFormulaTip"
               >
@@ -357,7 +358,7 @@ function closeProfitFormulaTips() {
                 <button
                   type="button"
                   class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                  aria-label="查看游戏盈亏计算公式"
+                  aria-label="查看净输赢计算公式"
                   :aria-expanded="gameProfitFormulaTipOpen"
                   @click.stop="toggleGameProfitFormulaTip"
                 >
@@ -371,7 +372,7 @@ function closeProfitFormulaTips() {
                     />
                   </svg>
                 </button>
-                <span>游戏盈亏</span>
+                <span>净输赢</span>
                 <span
                   v-if="gameProfitFormulaTipOpen"
                   class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"

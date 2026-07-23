@@ -1,3 +1,5 @@
+import { getAgentTotalProfit } from './agentDetailProfit'
+
 export type AgentMeProfitRow = {
   key: string
   label: string
@@ -20,12 +22,21 @@ export const MOCK_AGENT_ME_PROFILE = {
   memberCount: 30,
 }
 
+/** 各币种总盈亏与代理详情「代理盈亏」同口径 */
 export const MOCK_AGENT_ME_PROFIT_ROWS: AgentMeProfitRow[] = [
-  { key: 'kkc', label: 'KKC 总盈亏', value: '-1,000' },
-  { key: 'kkv', label: 'KKV 总盈亏', value: '+1,000' },
-  { key: 'credit-cny', label: '信用额度-CNY 盈亏', value: '+1,000' },
-  { key: 'credit-usd', label: '信用额度-USD 盈亏', value: '+1,000' },
-  { key: 'usdt', label: 'USDT 总盈亏', value: '+1,000' },
+  { key: 'kkc', label: 'KKC 总盈亏', value: getAgentTotalProfit('KKC').value },
+  { key: 'kkv', label: 'KKV 总盈亏', value: getAgentTotalProfit('KKV').value },
+  {
+    key: 'credit-cny',
+    label: '信用额度-CNY 盈亏',
+    value: getAgentTotalProfit('信用额度-CNY').value,
+  },
+  {
+    key: 'credit-usd',
+    label: '信用额度-USD 盈亏',
+    value: getAgentTotalProfit('信用额度-USD').value,
+  },
+  { key: 'usdt', label: 'USDT 总盈亏', value: getAgentTotalProfit('USDT').value },
 ]
 
 export const MOCK_AGENT_ME_UPDATED_AT = '2026-06-18 00:18:58'

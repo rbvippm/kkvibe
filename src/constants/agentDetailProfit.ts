@@ -7,7 +7,7 @@ export type AgentProfitCategoryKey =
   | 'scratch'
   | 'lottery'
 
-export type AgentProfitVendorKey = 'im' | 'jingang' | 'saba' | 'cdn'
+export type AgentProfitVendorKey = 'all' | 'im' | 'jingang' | 'saba' | 'cdn'
 
 export type ProfitValueTone = 'neutral' | 'positive' | 'negative'
 
@@ -17,16 +17,21 @@ export type AgentProfitSummaryRow = {
   tone?: ProfitValueTone
 }
 
-/** 总盈亏 = 实占游戏盈亏 + 赚水 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 */
+/** 代理盈亏 = 【实占输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 */
 export const AGENT_PROFIT_FORMULA =
-  '总盈亏 = 实占游戏盈亏 + 赚水 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】'
+  '代理盈亏 = 【实占输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】'
 
 type AgentProfitSummaryMock = {
-  gameProfit: number
+  /** 实占输赢（按公式直接累加） */
+  actualWin: number
+  /** 实占退水（公式中取负） */
+  actualRebate: number
+  /** 实占 VIP 退水（公式中取负） */
+  actualVipRebate: number
+  /** 代理赚水（公式中取负） */
   rebateEarn: number
   /** 实占 VIP 晋级礼金（公式中取负） */
   vipBonus: number
-  vipRebate: number
   /** 实占 VIP 额外奖金（公式中取负） */
   vipExtraBonus: number
   /** 实占活动金（公式中取负） */
@@ -35,52 +40,58 @@ type AgentProfitSummaryMock = {
 
 const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
   KKC: {
-    gameProfit: 12800,
+    actualWin: 14890,
+    actualRebate: 1280,
+    actualVipRebate: 150,
     rebateEarn: 860,
     vipBonus: 320,
-    vipRebate: 150,
     vipExtraBonus: 100,
     activityGold: 180,
   },
   USDT: {
-    gameProfit: 3200,
+    actualWin: 3740,
+    actualRebate: 280,
+    actualVipRebate: 50,
     rebateEarn: 210,
     vipBonus: 80,
-    vipRebate: 45,
     vipExtraBonus: 25,
     activityGold: 50,
   },
   KKV: {
-    gameProfit: 8600,
+    actualWin: 9996,
+    actualRebate: 780,
+    actualVipRebate: 96,
     rebateEarn: 520,
     vipBonus: 210,
-    vipRebate: 96,
     vipExtraBonus: 65,
     activityGold: 120,
   },
   '信用额度-CNY': {
-    gameProfit: 1550,
+    actualWin: 1848,
+    actualRebate: 135,
+    actualVipRebate: 35,
     rebateEarn: 128,
     vipBonus: 60,
-    vipRebate: 35,
     vipExtraBonus: 20,
     activityGold: 40,
   },
   '信用额度-USD': {
-    gameProfit: 620,
+    actualWin: 750,
+    actualRebate: 118,
+    actualVipRebate: 12,
     rebateEarn: 48,
     vipBonus: 22,
-    vipRebate: 12,
     vipExtraBonus: 8,
     activityGold: 15,
   },
 }
 
 const EMPTY_SUMMARY_MOCK: AgentProfitSummaryMock = {
-  gameProfit: 0,
+  actualWin: 0,
+  actualRebate: 0,
+  actualVipRebate: 0,
   rebateEarn: 0,
   vipBonus: 0,
-  vipRebate: 0,
   vipExtraBonus: 0,
   activityGold: 0,
 }
@@ -109,7 +120,9 @@ function getAgentProfitSummaryMock(currency: string) {
 export function getAgentTotalProfit(currency: string) {
   const stats = getAgentProfitSummaryMock(currency)
   const total =
-    stats.gameProfit +
+    stats.actualWin -
+    stats.actualRebate -
+    stats.actualVipRebate -
     stats.rebateEarn -
     stats.vipBonus -
     stats.vipExtraBonus -
@@ -120,89 +133,52 @@ export function getAgentTotalProfit(currency: string) {
   }
 }
 
-/** 报表「实占数据」= 游戏盈亏 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】（不含赚水） */
-export const AGENT_SHARE_INCOME_FORMULA =
-  '实占数据 = 游戏盈亏 + 【-VIP晋级礼金】+ 【-VIP额外奖金】+ 【-活动金】'
-
-/** 场馆明细「游戏盈亏」公式 */
+/** 场馆明细标题为「净输赢」；公式左侧为「游戏净输赢」 */
 export const AGENT_GAME_PROFIT_FORMULA =
-  '游戏盈亏 = 【实占输赢】 + 【-实占退水】 + 【-实占VIP退水】'
+  '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】'
 
-/** 报表实占数据总值（不含赚水） */
-export function getAgentShareIncome(currency: string) {
-  const stats = getAgentProfitSummaryMock(currency)
-  const total = stats.gameProfit - stats.vipBonus - stats.vipExtraBonus - stats.activityGold
-  return {
-    value: formatProfitAmount(total),
-    tone: profitTone(total),
-  }
-}
-
-/** 报表赚水（与实占数据同级展示，不参与实占数据计算） */
-export function getAgentShareRebateEarn(currency: string) {
-  const stats = getAgentProfitSummaryMock(currency)
-  return {
-    value: formatProfitAmount(stats.rebateEarn),
-    tone: profitTone(stats.rebateEarn),
-  }
-}
-
-/** 报表实占数据细项：游戏盈亏 / VIP晋级礼金 / VIP额外奖金 / 活动金 */
-export function getAgentShareIncomeRows(currency: string): AgentProfitSummaryRow[] {
-  const stats = getAgentProfitSummaryMock(currency)
-
-  return [
-    { label: '游戏盈亏', value: formatProfitAmount(stats.gameProfit), tone: profitTone(stats.gameProfit) },
-    {
-      label: 'VIP晋级礼金',
-      value: formatProfitAmount(-stats.vipBonus),
-      tone: profitTone(-stats.vipBonus),
-    },
-    {
-      label: 'VIP额外奖金',
-      value: formatProfitAmount(-stats.vipExtraBonus),
-      tone: profitTone(-stats.vipExtraBonus),
-    },
-    {
-      label: '活动金',
-      value: formatProfitAmount(-stats.activityGold),
-      tone: profitTone(-stats.activityGold),
-    },
-  ]
-}
-
-/** 按顶栏币种切换盈亏汇总口径（五项构成 + 代理盈亏总值另取） */
+/** 按顶栏币种切换盈亏汇总口径（七项构成 + 代理盈亏总值另取） */
 export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
   const stats = getAgentProfitSummaryMock(currency)
 
   return [
-    { label: '游戏盈亏', value: formatProfitAmount(stats.gameProfit), tone: profitTone(stats.gameProfit) },
-    { label: '赚水', value: formatProfitAmount(stats.rebateEarn), tone: profitTone(stats.rebateEarn) },
+    {
+      label: '输赢',
+      value: formatProfitAmount(stats.actualWin),
+      tone: profitTone(stats.actualWin),
+    },
+    {
+      label: '退水',
+      value: formatProfitAmount(-stats.actualRebate),
+      tone: profitTone(-stats.actualRebate),
+    },
+    {
+      label: 'VIP退水',
+      value: formatProfitAmount(-stats.actualVipRebate),
+      tone: profitTone(-stats.actualVipRebate),
+    },
+    {
+      label: '代理赚水',
+      value: formatProfitAmount(-stats.rebateEarn),
+      tone: profitTone(-stats.rebateEarn),
+    },
     {
       label: 'VIP晋级礼金',
       value: formatProfitAmount(-stats.vipBonus),
       tone: profitTone(-stats.vipBonus),
     },
     {
-      label: '活动金',
-      value: formatProfitAmount(-stats.activityGold),
-      tone: profitTone(-stats.activityGold),
-    },
-    {
       label: 'VIP额外奖金',
       value: formatProfitAmount(-stats.vipExtraBonus),
       tone: profitTone(-stats.vipExtraBonus),
     },
+    {
+      label: '活动金',
+      value: formatProfitAmount(-stats.activityGold),
+      tone: profitTone(-stats.activityGold),
+    },
   ]
 }
-
-/** @deprecated 请使用 getAgentShareIncomeRows */
-export function getAgentProfitFormulaRows(currency: string): AgentProfitSummaryRow[] {
-  return getAgentShareIncomeRows(currency)
-}
-
-/** @deprecated 请使用 getAgentProfitSummaryRows */
-export const AGENT_PROFIT_SUMMARY_ROWS: AgentProfitSummaryRow[] = getAgentProfitSummaryRows('KKC')
 
 export type AgentProfitDetailRow = {
   label: string
@@ -227,28 +203,34 @@ export const AGENT_PROFIT_CATEGORY_TABS: { key: AgentProfitCategoryKey; label: s
   { key: 'lottery', label: '彩票' },
 ]
 
+const VENDOR_ALL = { key: 'all' as const, label: '全部' }
+
 export const AGENT_PROFIT_VENDORS: Record<
   AgentProfitCategoryKey,
   { key: AgentProfitVendorKey; label: string }[]
 > = {
   overall: [],
   sports: [
+    VENDOR_ALL,
     { key: 'im', label: 'IM体育' },
     { key: 'jingang', label: '金刚体育' },
     { key: 'saba', label: 'SABA体育' },
     { key: 'cdn', label: 'CDN体育' },
   ],
   live: [
+    VENDOR_ALL,
     { key: 'im', label: 'IM真人' },
     { key: 'jingang', label: '金刚真人' },
   ],
   chess: [
+    VENDOR_ALL,
     { key: 'im', label: 'IM棋牌' },
     { key: 'cdn', label: 'CDN棋牌' },
   ],
-  marble: [{ key: 'im', label: 'IM弹珠' }],
-  scratch: [{ key: 'jingang', label: '金刚刮刮乐' }],
+  marble: [VENDOR_ALL, { key: 'im', label: 'IM弹珠' }],
+  scratch: [VENDOR_ALL, { key: 'jingang', label: '金刚刮刮乐' }],
   lottery: [
+    VENDOR_ALL,
     { key: 'saba', label: 'SABA彩票' },
     { key: 'cdn', label: 'CDN彩票' },
   ],
@@ -256,28 +238,30 @@ export const AGENT_PROFIT_VENDORS: Record<
 
 const IM_SPORTS_DETAIL: AgentProfitDetail = {
   title: 'IM体育（实占）',
-  totalProfit: '+15,000',
+  /** 游戏净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水 */
+  totalProfit: '+340.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '1000.00', tone: 'neutral' },
     { label: '输赢', value: '+500.00', tone: 'positive' },
     { label: '退水', value: '-100.00', tone: 'negative' },
     { label: 'VIP退水', value: '-50.00', tone: 'negative' },
-    { label: '赚水（不计算游戏盈亏）', value: '+10.00', tone: 'positive' },
+    { label: '代理赚水', value: '-10.00', tone: 'negative' },
   ],
 }
 
 /** 各品类合计（原型 Mock） */
 const OVERALL_GAME_DETAIL: AgentProfitDetail = {
   title: '全部（实占）',
-  totalProfit: '+12,800.00',
+  /** 游戏净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水 */
+  totalProfit: '+10,060.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '86,420.00', tone: 'neutral' },
     { label: '输赢', value: '+12,350.00', tone: 'positive' },
     { label: '退水', value: '-1,280.00', tone: 'negative' },
     { label: 'VIP退水', value: '-150.00', tone: 'negative' },
-    { label: '赚水（不计算游戏盈亏）', value: '+860.00', tone: 'positive' },
+    { label: '代理赚水', value: '-860.00', tone: 'negative' },
   ],
 }
 
@@ -286,8 +270,36 @@ const EMPTY_DETAIL_ROWS: AgentProfitDetailRow[] = [
   { label: '输赢', value: '0.00', tone: 'neutral' },
   { label: '退水', value: '0.00', tone: 'neutral' },
   { label: 'VIP退水', value: '0.00', tone: 'neutral' },
-  { label: '赚水（不计算游戏盈亏）', value: '0.00', tone: 'neutral' },
+  { label: '代理赚水', value: '0.00', tone: 'neutral' },
 ]
+
+/** 品类下二级「全部」合计（原型 Mock） */
+function getCategoryVendorAllDetail(category: AgentProfitCategoryKey): AgentProfitDetail {
+  const catLabel =
+    AGENT_PROFIT_CATEGORY_TABS.find((item) => item.key === category)?.label ?? '明细'
+
+  if (category === 'sports') {
+    return {
+      title: `${catLabel}（实占）`,
+      totalProfit: '+8,420.00',
+      totalProfitTone: 'positive',
+      rows: [
+        { label: '下注有效金额', value: '42,800.00', tone: 'neutral' },
+        { label: '输赢', value: '+9,860.00', tone: 'positive' },
+        { label: '退水', value: '-980.00', tone: 'negative' },
+        { label: 'VIP退水', value: '-120.00', tone: 'negative' },
+        { label: '代理赚水', value: '-340.00', tone: 'negative' },
+      ],
+    }
+  }
+
+  return {
+    title: `${catLabel}（实占）`,
+    totalProfit: '+0.00',
+    totalProfitTone: 'positive',
+    rows: EMPTY_DETAIL_ROWS,
+  }
+}
 
 export function getAgentProfitDetail(
   category: AgentProfitCategoryKey,
@@ -295,6 +307,10 @@ export function getAgentProfitDetail(
 ): AgentProfitDetail {
   if (category === 'overall') {
     return OVERALL_GAME_DETAIL
+  }
+
+  if (vendor === 'all') {
+    return getCategoryVendorAllDetail(category)
   }
 
   if (category === 'sports' && vendor === 'im') {

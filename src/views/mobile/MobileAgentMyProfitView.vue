@@ -6,7 +6,6 @@ import {
   AGENT_MY_PROFIT_FOOTNOTE,
   AGENT_MY_PROFIT_PRESETS,
   AGENT_MY_PROFIT_PRODUCT_ROWS,
-  AGENT_MY_PROFIT_REBATE_EARN_ROW,
   AGENT_MY_PROFIT_SUMMARY_ROW,
   AGENT_MY_PROFIT_TOTAL,
   agentMyProfitDateRangeText,
@@ -21,6 +20,7 @@ import '../../styles/mobile-app-shell.css'
 const router = useRouter()
 const preset = ref<RangePreset>('today')
 const detailProduct = ref<AgentMyProfitProductRow | null>(null)
+const detailFormulaTipOpen = ref(false)
 
 const dateRangeText = computed(() => agentMyProfitDateRangeText(preset.value))
 const detailTitle = computed(() =>
@@ -29,10 +29,22 @@ const detailTitle = computed(() =>
 const detailRows = computed(() =>
   detailProduct.value ? agentMyProfitDetailRows(detailProduct.value.key) : [],
 )
+const detailFormulaText = computed(
+  () => detailRows.value.find((row) => row.formulaTip)?.formulaTip ?? '',
+)
 const footnoteLines = AGENT_MY_PROFIT_FOOTNOTE.split('\n')
 
 function closeDetail() {
+  detailFormulaTipOpen.value = false
   detailProduct.value = null
+}
+
+function toggleDetailFormulaTip() {
+  detailFormulaTipOpen.value = !detailFormulaTipOpen.value
+}
+
+function closeDetailFormulaTip() {
+  detailFormulaTipOpen.value = false
 }
 
 /** 明确回到代理概况，避免 history.back 异常或 Teleport 遮罩残留导致首页空白 */
@@ -43,11 +55,13 @@ function goBack() {
 
 function openDetail(row: AgentMyProfitProductRow) {
   if (!agentMyProfitHasDetail(row.key)) return
+  closeDetailFormulaTip()
   detailProduct.value = row
 }
 
 onBeforeUnmount(() => {
   closeDetail()
+  closeDetailFormulaTip()
 })
 </script>
 
@@ -142,21 +156,6 @@ onBeforeUnmount(() => {
         </component>
       </section>
 
-      <div
-        class="mh5-agent-my-profit-summary mh5-agent-my-profit-summary--static"
-        aria-label="赚水"
-      >
-        <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-          {{ AGENT_MY_PROFIT_REBATE_EARN_ROW.name }}
-        </span>
-        <span
-          class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-          :class="agentMyProfitToneClass(AGENT_MY_PROFIT_REBATE_EARN_ROW.tone)"
-        >
-          {{ AGENT_MY_PROFIT_REBATE_EARN_ROW.amountText }}
-        </span>
-      </div>
-
       <button
         type="button"
         class="mh5-agent-my-profit-summary"
@@ -193,6 +192,7 @@ onBeforeUnmount(() => {
           role="dialog"
           aria-modal="true"
           :aria-label="detailTitle"
+          @click="closeDetailFormulaTip"
         >
           <h2 class="mh5-agent-my-profit-dialog__title">{{ detailTitle }}</h2>
           <div class="mh5-agent-my-profit-dialog__table">
@@ -211,7 +211,28 @@ onBeforeUnmount(() => {
               :class="{ 'mh5-agent-my-profit-dialog__row--emphasize': row.emphasize }"
             >
               <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
-                {{ row.label }}<small v-if="row.labelHint">{{ row.labelHint }}</small>
+                <span class="mh5-agent-my-profit-dialog__label-wrap">
+                  <span>{{ row.label }}</span>
+                  <button
+                    v-if="row.formulaTip"
+                    type="button"
+                    class="mh5-agent-my-profit-dialog__tip-btn"
+                    :aria-label="`查看${row.label}计算公式`"
+                    :aria-expanded="detailFormulaTipOpen"
+                    @click.stop="toggleDetailFormulaTip"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                      <path
+                        d="M8 4.6v5.2M8 11.6h.01"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                </span>
+                <small v-if="row.labelHint">{{ row.labelHint }}</small>
               </span>
               <span
                 class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value"
@@ -220,6 +241,14 @@ onBeforeUnmount(() => {
                 {{ row.amountText }}
               </span>
             </div>
+          </div>
+          <div
+            v-if="detailFormulaTipOpen && detailFormulaText"
+            class="mh5-agent-my-profit-dialog__tip-panel"
+            role="tooltip"
+            @click.stop
+          >
+            {{ detailFormulaText }}
           </div>
           <button type="button" class="mh5-agent-my-profit-dialog__btn" @click="closeDetail">
             我知道了

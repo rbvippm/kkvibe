@@ -1,5 +1,9 @@
 /** 代理中心 · 我的盈亏（Figma 1433:17568） */
 
+import { AGENT_GAME_PROFIT_FORMULA, AGENT_PROFIT_FORMULA } from './agentDetailProfit'
+
+export { AGENT_GAME_PROFIT_FORMULA, AGENT_PROFIT_FORMULA }
+
 export type AgentMyProfitTone = 'neutral' | 'positive' | 'negative'
 
 export type AgentMyProfitProductRow = {
@@ -16,6 +20,8 @@ export type AgentMyProfitDetailRow = {
   amountText: string
   tone: AgentMyProfitTone
   emphasize?: boolean
+  /** 公式 tip 文案；有值时展示感叹号入口 */
+  formulaTip?: string
 }
 
 export type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
@@ -33,7 +39,7 @@ export const AGENT_MY_PROFIT_PRESETS: { key: RangePreset; label: string }[] = [
   { key: 'lastWeek', label: '上周' },
 ]
 
-/** 顶部总盈亏（设计稿） */
+/** 顶部总盈亏（即代理盈亏；公式见 AGENT_PROFIT_FORMULA） */
 export const AGENT_MY_PROFIT_TOTAL = {
   label: '总盈亏',
   valueText: '+ 123,019.99',
@@ -56,14 +62,6 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
   { key: 'activity', name: '活动金', amountText: '-123,567.88', tone: 'negative' },
 ]
 
-/** 赚水：与占成项表同级独立行，不混入占成项列表 */
-export const AGENT_MY_PROFIT_REBATE_EARN_ROW: AgentMyProfitProductRow = {
-  key: 'rebate_earn',
-  name: '赚水',
-  amountText: '+12,345.67',
-  tone: 'positive',
-}
-
 export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
   key: 'total',
   name: '总计',
@@ -74,7 +72,7 @@ export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
 export const AGENT_MY_PROFIT_FOOTNOTE =
   '每日 8 时结算上一日收益\n最多可查询近 6 个月的数据'
 
-/** 游戏占成项盈亏明细（不含 VIP晋级礼金、VIP额外奖金、活动金） */
+/** 游戏占成项盈亏明细（口径对齐场馆净输赢：含代理赚水，不含成本项） */
 export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   {
     label: '下注有效金额',
@@ -84,25 +82,35 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: '输赢', amountText: '+500.00', tone: 'positive' },
   { label: '退水', amountText: '-100.00', tone: 'negative' },
   { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
-  { label: '赚水', amountText: '+10.00', tone: 'positive' },
-  { label: '盈亏结果', amountText: '+360.00', tone: 'positive', emphasize: true },
+  { label: '代理赚水', amountText: '-10.00', tone: 'negative' },
+  {
+    label: '净输赢',
+    amountText: '+340.00',
+    tone: 'positive',
+    emphasize: true,
+    formulaTip: AGENT_GAME_PROFIT_FORMULA,
+  },
 ]
 
-/** 总计盈亏明细：相对游戏明细多含 VIP晋级礼金、VIP额外奖金、活动金 */
+/**
+ * 总计盈亏明细：对齐代理盈亏七项
+ * 代理盈亏 = 实占输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金
+ */
 export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
-  {
-    label: '下注有效金额',
-    amountText: '10000',
-    tone: 'neutral',
-  },
   { label: '输赢', amountText: '+500.00', tone: 'positive' },
   { label: '退水', amountText: '-100.00', tone: 'negative' },
   { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
-  { label: '赚水', amountText: '+10.00', tone: 'positive' },
+  { label: '代理赚水', amountText: '-10.00', tone: 'negative' },
   { label: 'VIP晋级礼金', amountText: '-20.00', tone: 'negative' },
   { label: 'VIP额外奖金', amountText: '-15.00', tone: 'negative' },
   { label: '活动金', amountText: '-30.00', tone: 'negative' },
-  { label: '盈亏结果', amountText: '+295.00', tone: 'positive', emphasize: true },
+  {
+    label: '代理盈亏',
+    amountText: '+275.00',
+    tone: 'positive',
+    emphasize: true,
+    formulaTip: AGENT_PROFIT_FORMULA,
+  },
 ]
 
 /** 成本占成项暂无明细弹框 */

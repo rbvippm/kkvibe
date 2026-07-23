@@ -10,21 +10,17 @@ import {
   isAgentCreditCurrency,
   setAgentAppCurrency,
 } from '../../constants/agentAppCurrency'
-import {
-  AGENT_GAME_PROFIT_FORMULA,
-  AGENT_SHARE_INCOME_FORMULA,
-  getAgentShareIncome,
-  getAgentShareIncomeRows,
-  getAgentShareRebateEarn,
-} from '../../constants/agentDetailProfit'
+import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
 import {
   REPORT_CATEGORY_TABS,
-  REPORT_DETAIL_ROWS,
   REPORT_RANGE_PRESETS,
   REPORT_VENDOR_PILLS,
+  getReportDetail,
   getReportSummaryCards,
   reportCategoryTitle,
   reportDateRangeText,
+  reportDetailValueClass,
+  reportNetProfitClass,
   type ReportCategoryKey,
   type ReportRangePreset,
   type ReportVendorKey,
@@ -36,17 +32,13 @@ const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
-const profitFormulaTipOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
 const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(currency.value)))
-const agentShareIncome = computed(() => getAgentShareIncome(currency.value))
-const agentShareRebateEarn = computed(() => getAgentShareRebateEarn(currency.value))
-const agentShareIncomeRows = computed(() => getAgentShareIncomeRows(currency.value))
-const totalProfit = computed(() => agentShareIncomeRows.value[0]?.value ?? '+0.00')
+const reportDetail = computed(() => getReportDetail(category.value, vendor.value))
 
 function pickPreset(v: ReportRangePreset) {
   preset.value = v
@@ -54,7 +46,8 @@ function pickPreset(v: ReportRangePreset) {
 
 function pickCategory(key: ReportCategoryKey) {
   category.value = key
-  if (key === 'all') vendor.value = 'all'
+  /** 切一级品类时，二级默认「全部」 */
+  vendor.value = 'all'
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
@@ -62,18 +55,11 @@ function pickCurrency(value: AgentWalletCurrency) {
   currencyPickerOpen.value = false
 }
 
-function toggleProfitFormulaTip() {
-  gameProfitFormulaTipOpen.value = false
-  profitFormulaTipOpen.value = !profitFormulaTipOpen.value
-}
-
 function toggleGameProfitFormulaTip() {
-  profitFormulaTipOpen.value = false
   gameProfitFormulaTipOpen.value = !gameProfitFormulaTipOpen.value
 }
 
-function closeProfitFormulaTips() {
-  profitFormulaTipOpen.value = false
+function closeGameProfitFormulaTip() {
   gameProfitFormulaTipOpen.value = false
 }
 </script>
@@ -96,7 +82,7 @@ function closeProfitFormulaTips() {
       </div>
     </header>
 
-    <main class="mh5-agent-report-main" @click="closeProfitFormulaTips">
+    <main class="mh5-agent-report-main" @click="closeGameProfitFormulaTip">
       <section class="mh5-agent-report-period">
         <p class="mh5-agent-report-period__label">时间段</p>
         <div class="mh5-agent-report-period__row">
@@ -119,71 +105,6 @@ function closeProfitFormulaTips() {
           >
             {{ item.label }}
           </button>
-        </div>
-      </section>
-
-      <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary mh5-agent-report-profit">
-        <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
-          <span class="mh5-agent-detail-wallet__label">赚水</span>
-          <span
-            class="mh5-agent-detail-wallet__value"
-            :class="{
-              'mh5-agent-detail-wallet__value--positive': agentShareRebateEarn.tone === 'positive',
-              'mh5-agent-detail-wallet__value--negative': agentShareRebateEarn.tone === 'negative',
-            }"
-          >
-            {{ agentShareRebateEarn.value }}
-          </span>
-        </div>
-        <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
-          <span class="mh5-agent-detail-profit-summary__label-wrap">
-            <span class="mh5-agent-detail-wallet__label">实占数据</span>
-            <button
-              type="button"
-              class="mh5-agent-detail-profit-summary__tip-btn"
-              aria-label="查看实占数据计算公式"
-              :aria-expanded="profitFormulaTipOpen"
-              @click.stop="toggleProfitFormulaTip"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" />
-                <rect x="7.25" y="4.2" width="1.5" height="5.2" rx="0.75" fill="currentColor" />
-                <circle cx="8" cy="11.6" r="1" fill="currentColor" />
-              </svg>
-            </button>
-            <span
-              v-if="profitFormulaTipOpen"
-              class="mh5-agent-detail-profit-summary__tip-bubble"
-              role="tooltip"
-            >
-              {{ AGENT_SHARE_INCOME_FORMULA }}
-            </span>
-          </span>
-          <span
-            class="mh5-agent-detail-wallet__value"
-            :class="{
-              'mh5-agent-detail-wallet__value--positive': agentShareIncome.tone === 'positive',
-              'mh5-agent-detail-wallet__value--negative': agentShareIncome.tone === 'negative',
-            }"
-          >
-            {{ agentShareIncome.value }}
-          </span>
-        </div>
-        <div
-          v-for="row in agentShareIncomeRows"
-          :key="row.label"
-          class="mh5-agent-detail-wallet__row"
-        >
-          <span class="mh5-agent-detail-wallet__label">{{ row.label }}</span>
-          <span
-            class="mh5-agent-detail-wallet__value"
-            :class="{
-              'mh5-agent-detail-wallet__value--positive': row.tone === 'positive',
-              'mh5-agent-detail-wallet__value--negative': row.tone === 'negative',
-            }"
-          >
-            {{ row.value }}
-          </span>
         </div>
       </section>
 
@@ -233,7 +154,7 @@ function closeProfitFormulaTips() {
               <button
                 type="button"
                 class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                aria-label="查看游戏盈亏计算公式"
+                aria-label="查看净输赢计算公式"
                 :aria-expanded="gameProfitFormulaTipOpen"
                 @click.stop="toggleGameProfitFormulaTip"
               >
@@ -247,7 +168,7 @@ function closeProfitFormulaTips() {
                   />
                 </svg>
               </button>
-              <span>游戏盈亏</span>
+              <span>净输赢</span>
               <span
                 v-if="gameProfitFormulaTipOpen"
                 class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
@@ -256,16 +177,23 @@ function closeProfitFormulaTips() {
                 {{ AGENT_GAME_PROFIT_FORMULA }}
               </span>
             </span>
-            <em>{{ totalProfit }}</em>
+            <em :class="reportNetProfitClass(reportDetail.netProfitTone)">
+              {{ reportDetail.netProfit }}
+            </em>
           </span>
         </div>
         <div
-          v-for="row in REPORT_DETAIL_ROWS"
+          v-for="row in reportDetail.rows"
           :key="row.key"
           class="mh5-agent-report-detail__row"
         >
           <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
-          <span class="mh5-agent-report-detail__row-value">{{ row.value }}</span>
+          <span
+            class="mh5-agent-report-detail__row-value"
+            :class="reportDetailValueClass(row.tone)"
+          >
+            {{ row.value }}
+          </span>
         </div>
       </section>
     </main>

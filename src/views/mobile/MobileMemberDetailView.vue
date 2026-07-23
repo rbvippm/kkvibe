@@ -48,7 +48,7 @@ const currencyPickerOpen = ref(false)
 const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 const profitCategory = ref<MemberProfitCategoryKey>('overall')
-const profitVendor = ref<MemberProfitVendorKey>('im')
+const profitVendor = ref<MemberProfitVendorKey>('all')
 const profitFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
@@ -116,7 +116,8 @@ const creditLimitItems = computed(() => {
 
 function selectProfitCategory(key: MemberProfitCategoryKey) {
   profitCategory.value = key
-  profitVendor.value = MEMBER_PROFIT_VENDORS[key][0]?.key ?? 'im'
+  /** 切一级品类时，二级默认「全部」 */
+  profitVendor.value = MEMBER_PROFIT_VENDORS[key][0]?.key ?? 'all'
 }
 
 function toggleProfitFormulaTip() {
@@ -301,11 +302,11 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
             <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
               <span class="mh5-agent-detail-profit-summary__label-wrap">
-                <span class="mh5-agent-detail-wallet__label">总盈亏</span>
+                <span class="mh5-agent-detail-wallet__label">会员盈亏</span>
                 <button
                   type="button"
                   class="mh5-agent-detail-profit-summary__tip-btn"
-                  aria-label="查看总盈亏计算公式"
+                  aria-label="查看会员盈亏计算公式"
                   :aria-expanded="profitFormulaTipOpen"
                   @click.stop="toggleProfitFormulaTip"
                 >
@@ -415,7 +416,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             <div class="mh5-agent-report-detail__head">
               <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
               <span class="mh5-agent-report-detail__profit">
-                游戏盈亏
+                游戏输赢
                 <em :class="profitTotalClass(profitDetail.totalProfitTone)">
                   {{ profitDetail.totalProfit }}
                 </em>

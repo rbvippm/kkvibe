@@ -4,6 +4,22 @@ export type ReportCategoryKey = 'all' | 'chess' | 'esports' | 'fishing' | 'slots
 
 export type ReportVendorKey = 'all' | 'boya' | 'db' | 'cq9' | 'hacksaw'
 
+export type ReportValueTone = 'neutral' | 'positive' | 'negative'
+
+export type ReportDetailRow = {
+  key: string
+  label: string
+  value: string
+  tone: ReportValueTone
+}
+
+/** 净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水（对齐游戏净输赢公式） */
+export type ReportDetail = {
+  netProfit: string
+  netProfitTone: ReportValueTone
+  rows: ReportDetailRow[]
+}
+
 export const REPORT_RANGE_PRESETS: { key: ReportRangePreset; label: string }[] = [
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },
@@ -29,29 +45,100 @@ export const REPORT_VENDOR_PILLS: { key: ReportVendorKey; label: string }[] = [
 ]
 
 export const REPORT_SUMMARY_CARDS_CREDIT = [
-  { key: 'net', label: '上下分净额', value: '0.00' },
-  { key: 'creditUp', label: '会员上分总额', value: '0.00' },
-  { key: 'creditDown', label: '会员下分总额', value: '0.00' },
+  { key: 'net', label: '上下分净额', value: '1,280.00' },
+  { key: 'creditUp', label: '会员上分总额', value: '3,560.00' },
+  { key: 'creditDown', label: '会员下分总额', value: '2,280.00' },
 ] as const
 
 export const REPORT_SUMMARY_CARDS_CASH = [
-  { key: 'fee', label: '充值后续费', value: '0.00' },
-  { key: 'deposit', label: '会员充值总额', value: '0.00' },
-  { key: 'withdraw', label: '会员提款总额', value: '0.00' },
+  { key: 'fee', label: '充值后续费', value: '86.00' },
+  { key: 'deposit', label: '会员充值总额', value: '12,800.00' },
+  { key: 'withdraw', label: '会员提款总额', value: '6,420.00' },
 ] as const
 
 export function getReportSummaryCards(isCreditCurrency: boolean) {
   return isCreditCurrency ? REPORT_SUMMARY_CARDS_CREDIT : REPORT_SUMMARY_CARDS_CASH
 }
 
-/** 场馆明细字段与代理详情「代理盈亏」一致（不含 VIP晋级礼金 / VIP额外奖金 / 活动金） */
-export const REPORT_DETAIL_ROWS = [
-  { key: 'validBet', label: '下注有效金额', value: '0.00' },
-  { key: 'winLose', label: '输赢', value: '0.00' },
-  { key: 'rebate', label: '退水', value: '0.00' },
-  { key: 'vipRebate', label: 'VIP退水', value: '0.00' },
-  { key: 'commission', label: '赚水（不计算游戏盈亏）', value: '0.00' },
-] as const
+function buildDetail(
+  validBet: string,
+  win: number,
+  rebate: number,
+  vipRebate: number,
+  commission: number,
+): ReportDetail {
+  const net = win - rebate - vipRebate - commission
+  const fmt = (n: number, signed = true) => {
+    const abs = Math.abs(n).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    if (!signed) return abs
+    if (n > 0) return `+${abs}`
+    if (n < 0) return `-${abs}`
+    return '0.00'
+  }
+  const tone = (n: number): ReportValueTone => {
+    if (n > 0) return 'positive'
+    if (n < 0) return 'negative'
+    return 'neutral'
+  }
+
+  return {
+    netProfit: fmt(net),
+    netProfitTone: tone(net),
+    rows: [
+      { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
+      { key: 'winLose', label: '输赢', value: fmt(win), tone: tone(win) },
+      { key: 'rebate', label: '退水', value: fmt(-rebate), tone: tone(-rebate) },
+      { key: 'vipRebate', label: 'VIP退水', value: fmt(-vipRebate), tone: tone(-vipRebate) },
+      {
+        key: 'commission',
+        label: '代理赚水',
+        value: fmt(-commission),
+        tone: tone(-commission),
+      },
+    ],
+  }
+}
+
+/** 一级「全部」合计：净输赢 = 12350 − 1280 − 150 − 860 = 10060 */
+const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860)
+
+/** 品类二级「全部」 */
+const CATEGORY_ALL_DETAIL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
+  sports: buildDetail('42,800.00', 9860, 980, 120, 340), // 8420
+  chess: buildDetail('18,640.00', 3200, 280, 45, 95), // 2780
+  esports: buildDetail('9,820.00', 1560, 160, 28, 52), // 1320
+  fishing: buildDetail('6,450.00', -820, 90, 15, 35), // -960
+  slots: buildDetail('11,200.00', 2140, 210, 38, 72), // 1820
+}
+
+/** 具体场馆：净输赢 = 500 − 100 − 50 − 10 = 340 */
+const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10)
+
+/** @deprecated 请使用 getReportDetail */
+export const REPORT_DETAIL_ROWS = OVERALL_DETAIL.rows
+
+export function getReportDetail(
+  category: ReportCategoryKey,
+  vendor: ReportVendorKey,
+): ReportDetail {
+  if (category === 'all') return OVERALL_DETAIL
+  if (vendor === 'all') return CATEGORY_ALL_DETAIL[category]
+  return VENDOR_DETAIL
+}
+
+export function reportDetailValueClass(tone: ReportValueTone) {
+  if (tone === 'positive') return 'mh5-agent-report-detail__row-value--positive'
+  if (tone === 'negative') return 'mh5-agent-report-detail__row-value--negative'
+  return ''
+}
+
+export function reportNetProfitClass(tone: ReportValueTone) {
+  if (tone === 'negative') return 'mh5-agent-report-detail__profit-total--negative'
+  return 'mh5-agent-report-detail__profit-total--positive'
+}
 
 export function reportDateRangeText(preset: ReportRangePreset): string {
   const base = '2026-06-24'
