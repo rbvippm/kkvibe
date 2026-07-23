@@ -26,6 +26,10 @@ export {
 export const MEMBER_PROFIT_FORMULA =
   '会员盈亏 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
 
+/** 场馆明细标题为「净输赢」；公式左侧为「游戏净输赢」（不含成本三项） */
+export const MEMBER_GAME_PROFIT_FORMULA =
+  '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】'
+
 type MemberProfitSummaryMock = {
   gameProfit: number
   memberRebate: number
@@ -166,32 +170,37 @@ export function getMemberProfitSummaryRows(currency: string): MemberProfitSummar
 
 const IM_SPORTS_DETAIL: AgentProfitDetail = {
   title: 'IM体育',
-  totalProfit: '+15,000',
+  /** 游戏净输赢 = 输赢 − 会员退水 − VIP退水 − 代理赚水 */
+  totalProfit: '+340.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '1000.00', tone: 'neutral' },
-    { label: '游戏输赢', value: '+500.00', tone: 'positive' },
+    { label: '输赢', value: '+500.00', tone: 'positive' },
     { label: '会员退水', value: '-100.00', tone: 'negative' },
     { label: 'VIP退水', value: '-50.00', tone: 'negative' },
+    { label: '代理赚水', value: '-10.00', tone: 'negative' },
   ],
 }
 
 const EMPTY_DETAIL_ROWS: AgentProfitDetailRow[] = [
   { label: '下注有效金额', value: '0.00', tone: 'neutral' },
-  { label: '游戏输赢', value: '0.00', tone: 'neutral' },
+  { label: '输赢', value: '0.00', tone: 'neutral' },
   { label: '会员退水', value: '0.00', tone: 'neutral' },
   { label: 'VIP退水', value: '0.00', tone: 'neutral' },
+  { label: '代理赚水', value: '0.00', tone: 'neutral' },
 ]
 
+/** 各品类合计：游戏净输赢 = 12350 − 1280 − 150 − 860 = 10060 */
 const OVERALL_GAME_DETAIL: AgentProfitDetail = {
   title: '全部',
-  totalProfit: '+12,800.00',
+  totalProfit: '+10,060.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '86,420.00', tone: 'neutral' },
-    { label: '游戏输赢', value: '+12,350.00', tone: 'positive' },
+    { label: '输赢', value: '+12,350.00', tone: 'positive' },
     { label: '会员退水', value: '-1,280.00', tone: 'negative' },
     { label: 'VIP退水', value: '-150.00', tone: 'negative' },
+    { label: '代理赚水', value: '-860.00', tone: 'negative' },
   ],
 }
 
@@ -201,15 +210,17 @@ function getMemberCategoryVendorAllDetail(category: MemberProfitCategoryKey): Ag
     AGENT_PROFIT_CATEGORY_TABS.find((item) => item.key === category)?.label ?? '明细'
 
   if (category === 'sports') {
+    /** 游戏净输赢 = 9860 − 980 − 120 − 340 = 8420 */
     return {
       title: catLabel,
-      totalProfit: '+12,800.00',
+      totalProfit: '+8,420.00',
       totalProfitTone: 'positive',
       rows: [
         { label: '下注有效金额', value: '42,800.00', tone: 'neutral' },
-        { label: '游戏输赢', value: '+9,860.00', tone: 'positive' },
+        { label: '输赢', value: '+9,860.00', tone: 'positive' },
         { label: '会员退水', value: '-980.00', tone: 'negative' },
         { label: 'VIP退水', value: '-120.00', tone: 'negative' },
+        { label: '代理赚水', value: '-340.00', tone: 'negative' },
       ],
     }
   }

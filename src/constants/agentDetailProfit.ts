@@ -17,12 +17,12 @@ export type AgentProfitSummaryRow = {
   tone?: ProfitValueTone
 }
 
-/** 代理盈亏 = 【实占输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 */
+/** 代理盈亏 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 */
 export const AGENT_PROFIT_FORMULA =
-  '代理盈亏 = 【实占输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】'
+  '代理盈亏 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】'
 
 type AgentProfitSummaryMock = {
-  /** 实占输赢（按公式直接累加） */
+  /** 实占游戏输赢（按公式直接累加） */
   actualWin: number
   /** 实占退水（公式中取负） */
   actualRebate: number

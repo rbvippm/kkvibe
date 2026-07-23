@@ -70,7 +70,7 @@ export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
 }
 
 export const AGENT_MY_PROFIT_FOOTNOTE =
-  '每日 8 时结算上一日收益\n最多可查询近 6 个月的数据'
+  '数据每十分钟更新一次\n最多可查询近 6 个月的数据'
 
 /** 游戏占成项盈亏明细（口径对齐场馆净输赢：含代理赚水，不含成本项） */
 export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
@@ -94,7 +94,7 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
 
 /**
  * 总计盈亏明细：对齐代理盈亏七项
- * 代理盈亏 = 实占输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金
+ * 代理盈亏 = 实占游戏输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金
  */
 export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: '输赢', amountText: '+500.00', tone: 'positive' },

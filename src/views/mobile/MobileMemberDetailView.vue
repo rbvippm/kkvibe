@@ -24,6 +24,7 @@ import {
   type MemberGameSubTab,
 } from '../../constants/memberDetail'
 import {
+  MEMBER_GAME_PROFIT_FORMULA,
   MEMBER_PROFIT_CATEGORY_TABS,
   MEMBER_PROFIT_FORMULA,
   MEMBER_PROFIT_VENDORS,
@@ -50,6 +51,7 @@ const creditCurrency = agentAppCreditCurrency
 const profitCategory = ref<MemberProfitCategoryKey>('overall')
 const profitVendor = ref<MemberProfitVendorKey>('all')
 const profitFormulaTipOpen = ref(false)
+const gameProfitFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
@@ -121,11 +123,21 @@ function selectProfitCategory(key: MemberProfitCategoryKey) {
 }
 
 function toggleProfitFormulaTip() {
+  gameProfitFormulaTipOpen.value = false
   profitFormulaTipOpen.value = !profitFormulaTipOpen.value
 }
 
 function closeProfitFormulaTip() {
   profitFormulaTipOpen.value = false
+}
+
+function toggleGameProfitFormulaTip() {
+  profitFormulaTipOpen.value = false
+  gameProfitFormulaTipOpen.value = !gameProfitFormulaTipOpen.value
+}
+
+function closeGameProfitFormulaTip() {
+  gameProfitFormulaTipOpen.value = false
 }
 
 function goCredit() {
@@ -375,6 +387,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         <section
           v-if="gameSubTab === 'stats'"
           class="mh5-member-detail-profit"
+          @click="closeGameProfitFormulaTip"
         >
           <div class="mh5-agent-report-categories">
             <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
@@ -416,7 +429,33 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             <div class="mh5-agent-report-detail__head">
               <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
               <span class="mh5-agent-report-detail__profit">
-                游戏输赢
+                <span class="mh5-agent-report-detail__profit-label-wrap">
+                  <button
+                    type="button"
+                    class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                    aria-label="查看净输赢计算公式"
+                    :aria-expanded="gameProfitFormulaTipOpen"
+                    @click.stop="toggleGameProfitFormulaTip"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                      <path
+                        d="M8 4.6v5.2M8 11.6h.01"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                  <span>净输赢</span>
+                  <span
+                    v-if="gameProfitFormulaTipOpen"
+                    class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                    role="tooltip"
+                  >
+                    {{ MEMBER_GAME_PROFIT_FORMULA }}
+                  </span>
+                </span>
                 <em :class="profitTotalClass(profitDetail.totalProfitTone)">
                   {{ profitDetail.totalProfit }}
                 </em>
