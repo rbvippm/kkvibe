@@ -43,6 +43,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['管理后台', '直播管理', '禁言列表', '文档说明'],
   },
   {
+    path: '/pc/sticker-pack-manage/doc',
+    routeName: 'pc-sticker-pack-manage-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '配置管理', '贴图包管理', '文档说明'],
+  },
+  {
     path: '/pc/live-broadcast/doc',
     routeName: 'pc-live-broadcast-doc',
     title: '文档说明',
@@ -271,6 +277,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/sticker-pack-manage',
         routeName: 'pc-sticker-pack-manage',
         pagePath: ['管理后台', '配置管理', '贴图包管理'],
+        docRouteName: 'pc-sticker-pack-manage-doc',
       },
       {
         key: 'sticker-tag-manage',

@@ -564,6 +564,12 @@ export const router = createRouter({
           meta: { title: '贴图包管理' },
         },
         {
+          path: 'sticker-pack-manage/doc',
+          name: 'pc-sticker-pack-manage-doc',
+          component: () => import('../views/pc/PcStickerPackManageDocView.vue'),
+          meta: { title: '贴图包管理-文档说明' },
+        },
+        {
           path: 'sticker-tag-manage',
           name: 'pc-sticker-tag-manage',
           component: PcStickerTagManageView,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { useStickerTags } from '../../composables/useStickerTags'
 import {
   MOCK_STICKER_PACK_ROWS,
@@ -22,6 +23,7 @@ import {
   type StickerPackRow,
   type StickerPackStatus,
 } from '../../constants/stickerManage'
+import { STICKER_PACK_MANAGE_ANNOT_MAP } from '../../constants/stickerPackManageSpec'
 import '../../styles/pc-wireframe.css'
 
 const { tagRows, enabledTags } = useStickerTags()
@@ -93,9 +95,15 @@ type ModalMode = 'add' | 'edit'
 const modalVisible = ref(false)
 const modalMode = ref<ModalMode>('add')
 const editingId = ref<string | null>(null)
+/** 编辑时源行状态；已上架编辑底部仅「取消 / 保存」 */
+const editingStatus = ref<StickerPackStatus | null>(null)
 const formError = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const dragOver = ref(false)
+
+const isEditingOnline = computed(
+  () => modalMode.value === 'edit' && editingStatus.value === 'online',
+)
 
 const form = ref({
   nameI18n: createEmptyPackNameI18n(),
@@ -212,6 +220,7 @@ function resetForm() {
 function openAddModal() {
   modalMode.value = 'add'
   editingId.value = null
+  editingStatus.value = null
   resetForm()
   modalVisible.value = true
 }
@@ -219,6 +228,7 @@ function openAddModal() {
 function openEditModal(row: StickerPackRow) {
   modalMode.value = 'edit'
   editingId.value = row.id
+  editingStatus.value = row.status
   form.value = {
     nameI18n: { ...row.nameI18n },
     author: row.author,
@@ -233,6 +243,7 @@ function openEditModal(row: StickerPackRow) {
 
 function closeModal() {
   modalVisible.value = false
+  editingStatus.value = null
   closeTagSelect()
   formError.value = ''
 }
@@ -419,18 +430,19 @@ function statusClass(status: StickerPackStatus) {
   <div class="pc-wireframe-page">
     <WfPagePathMenu />
 
-    <p class="wf-notice">
-      <span class="wf-notice-label">说明：</span>
-      贴图包用于管理整套贴图资源（如 Cuppy 系列）。每张贴图的 Emoji 映射请从「贴图标签管理」中多选 1～3 个标签；单包最多
-      {{ STICKER_PACK_MAX_ITEMS }} 张。
-    </p>
-
     <section class="wf-block">
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">贴图包名称：</label>
         <input v-model="filter.name" type="text" class="wf-input" placeholder="支持模糊匹配" />
 
-        <label class="wf-label">状态：</label>
+        <label class="wf-label wf-label--with-spec">
+          状态：
+          <WfSpecAnnot
+            :no="STICKER_PACK_MANAGE_ANNOT_MAP.statusFilter.no"
+            :title="STICKER_PACK_MANAGE_ANNOT_MAP.statusFilter.title"
+            :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.statusFilter.items]"
+          />
+        </label>
         <select v-model="filter.status" class="wf-input wf-input--select">
           <option
             v-for="opt in STICKER_PACK_STATUS_OPTIONS"
@@ -457,8 +469,13 @@ function statusClass(status: StickerPackStatus) {
           <button type="button" class="wf-btn wf-btn--primary" @click="applyFilter">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="resetFilter">清除</button>
         </span>
-        <span class="wf-toolbar__actions">
+        <span class="wf-toolbar__actions wf-action-with-spec">
           <button type="button" class="wf-btn wf-btn--add" @click="openAddModal">新增贴图包</button>
+          <WfSpecAnnot
+            :no="STICKER_PACK_MANAGE_ANNOT_MAP.addPack.no"
+            :title="STICKER_PACK_MANAGE_ANNOT_MAP.addPack.title"
+            :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.addPack.items]"
+          />
         </span>
       </div>
 
@@ -475,7 +492,14 @@ function statusClass(status: StickerPackStatus) {
               <th class="wf-th wf-th--sort">排序权重</th>
               <th class="wf-th">上架时间</th>
               <th class="wf-th">操作人</th>
-              <th class="wf-th wf-th--op">操作</th>
+              <th class="wf-th wf-th--op wf-th--with-spec">
+                操作
+                <WfSpecAnnot
+                  :no="STICKER_PACK_MANAGE_ANNOT_MAP.rowActions.no"
+                  :title="STICKER_PACK_MANAGE_ANNOT_MAP.rowActions.title"
+                  :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.rowActions.items]"
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -542,7 +566,14 @@ function statusClass(status: StickerPackStatus) {
             <section class="sticker-form-section">
               <h4 class="sticker-form-section__title">基础信息</h4>
               <div class="sticker-name-i18n">
-                <p class="sticker-name-i18n__heading wf-form-row__label wf-form-row__label--required">贴图包名称</p>
+                <p class="sticker-name-i18n__heading wf-form-row__label wf-form-row__label--required wf-label--with-spec">
+                  贴图包名称
+                  <WfSpecAnnot
+                    :no="STICKER_PACK_MANAGE_ANNOT_MAP.nameI18n.no"
+                    :title="STICKER_PACK_MANAGE_ANNOT_MAP.nameI18n.title"
+                    :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.nameI18n.items]"
+                  />
+                </p>
                 <div
                   v-for="field in STICKER_PACK_NAME_FIELDS"
                   :key="field.key"
@@ -601,8 +632,13 @@ function statusClass(status: StickerPackStatus) {
             </section>
 
             <section class="sticker-form-section">
-              <h4 class="sticker-form-section__title">
+              <h4 class="sticker-form-section__title wf-label--with-spec">
                 内容管理
+                <WfSpecAnnot
+                  :no="STICKER_PACK_MANAGE_ANNOT_MAP.contentManage.no"
+                  :title="STICKER_PACK_MANAGE_ANNOT_MAP.contentManage.title"
+                  :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.contentManage.items]"
+                />
                 <span class="sticker-form-section__sub">已上传 {{ form.items.length }}/{{ STICKER_PACK_MAX_ITEMS }} 张</span>
               </h4>
 
@@ -685,9 +721,21 @@ function statusClass(status: StickerPackStatus) {
           </div>
 
           <div class="wf-modal__footer">
+            <span class="wf-action-with-spec">
+              <WfSpecAnnot
+                :no="STICKER_PACK_MANAGE_ANNOT_MAP.modalFooter.no"
+                :title="STICKER_PACK_MANAGE_ANNOT_MAP.modalFooter.title"
+                :items="[...STICKER_PACK_MANAGE_ANNOT_MAP.modalFooter.items]"
+              />
+            </span>
             <button type="button" class="wf-btn wf-btn--default" @click="closeModal">取消</button>
-            <button type="button" class="wf-btn wf-btn--default" @click="savePack('draft')">保存为草稿</button>
-            <button type="button" class="wf-btn wf-btn--primary" @click="savePack('online')">立即上架</button>
+            <template v-if="isEditingOnline">
+              <button type="button" class="wf-btn wf-btn--primary" @click="savePack('online')">保存</button>
+            </template>
+            <template v-else>
+              <button type="button" class="wf-btn wf-btn--default" @click="savePack('draft')">保存为草稿</button>
+              <button type="button" class="wf-btn wf-btn--primary" @click="savePack('online')">立即上架</button>
+            </template>
           </div>
         </div>
       </div>
