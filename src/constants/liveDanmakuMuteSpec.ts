@@ -29,7 +29,7 @@ export const LIVE_DANMAKU_MUTE_BACKGROUND = [
 export const LIVE_DANMAKU_MUTE_GOALS = [
   '提供禁言记录列表，支持按用户 ID、禁言来源、禁言类型、状态筛选。',
   '列表展示禁言编号、来源、类型、时间、操作人、原因与当前状态；操作列提供禁言详情、编辑、解除限制三个入口。',
-  '详情弹窗只读展示禁言与关联弹幕；编辑弹窗可改类型与原因；解除限制仅在禁言中展示。',
+  '详情弹窗只读展示禁言与关联弹幕；编辑弹窗可改类型与原因；解除限制仅在禁言中展示，并需二次确认。',
 ] as const
 
 /** 3. 需求功能清单（与页面「注N」标注一一对应，不含文档入口） */
@@ -165,11 +165,11 @@ export const LIVE_DANMAKU_MUTE_FEATURE_LIST: LiveDanmakuMuteFeatureRow[] = [
     pageLocation: '操作列「解除限制」',
     prd: {
       functionalLogic: '对禁言中记录执行解除，恢复用户发言权限。',
-      interactiveBehavior: '仅禁言中展示「解除限制」链接；点击后立即按该条记录的 muteType 解除，无需弹框确认（原型阶段）。',
-      visualPresentation: '操作列红色链接「解除限制」，与「禁言详情」「编辑」以竖线分隔；已解除状态不展示；表头操作列「注9」标注。',
-      dataRules: '调用 unmuteUser(userId, { roomId, muteType })；解除后状态变为「已解除」并写入解除时间。',
-      exceptions: '接口失败时（联调期）状态不变并提示。',
-      routing: '操作后停留列表页，行状态即时刷新。',
+      interactiveBehavior: '仅禁言中展示「解除限制」链接；点击后弹出二次确认弹框，展示用户名、用户ID与禁言类型；点「确定解除」后按该条 muteType 解除，「取消」/遮罩/关闭则不变更。',
+      visualPresentation: '操作列红色链接「解除限制」，与「禁言详情」「编辑」以竖线分隔；已解除状态不展示；确认弹框标题「确认解除限制」，主按钮为危险色「确定解除」；表头操作列「注9」标注。',
+      dataRules: '确认后调用 unmuteUser(userId, { roomId, muteType })；解除后状态变为「已解除」并写入解除时间。',
+      exceptions: '弹框打开时记录已被解除则关闭弹框且列表刷新后无此入口；接口失败时（联调期）状态不变并提示。',
+      routing: '确认成功后关闭弹框并停留列表页，行状态即时刷新。',
     },
   },
 ]
@@ -233,8 +233,9 @@ export const LIVE_DANMAKU_MUTE_EDIT_ACTION_SPEC = [
 ] as const
 
 export const LIVE_DANMAKU_MUTE_UNMUTE_ACTION_SPEC = [
-  '仅「禁言中」状态展示「解除限制」链接，点击后立即解除该条记录对应类型的禁言。',
-  '已解除状态不展示此入口；解除后写入解除时间。',
+  '仅「禁言中」状态展示「解除限制」链接；点击后弹出二次确认，展示用户与禁言类型。',
+  '确认「确定解除」后解除该条对应类型禁言并写入解除时间；取消则不变更。',
+  '已解除状态不展示此入口。',
 ] as const
 
 export const LIVE_DANMAKU_MUTE_ANNOT_MAP: Record<

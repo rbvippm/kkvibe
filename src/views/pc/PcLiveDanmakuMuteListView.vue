@@ -18,6 +18,8 @@ const detailVisible = ref(false)
 const detailRow = ref<MuteRecord | null>(null)
 const editVisible = ref(false)
 const editRow = ref<MuteRecord | null>(null)
+const unmuteConfirmVisible = ref(false)
+const unmuteConfirmRow = ref<MuteRecord | null>(null)
 const muteType = ref<MuteType>('房间禁言')
 const muteReason = ref('')
 const muteReasonHint = ref('')
@@ -90,8 +92,21 @@ function saveEdit() {
   closeEdit()
 }
 
-function confirmUnmute(row: MuteRecord) {
+function openUnmuteConfirm(row: MuteRecord) {
+  unmuteConfirmRow.value = row
+  unmuteConfirmVisible.value = true
+}
+
+function closeUnmuteConfirm() {
+  unmuteConfirmVisible.value = false
+  unmuteConfirmRow.value = null
+}
+
+function submitUnmute() {
+  const row = unmuteConfirmRow.value
+  if (!row) return
   unmuteUser(row.userId, { roomId: row.roomId, muteType: row.muteType })
+  closeUnmuteConfirm()
 }
 </script>
 
@@ -191,7 +206,7 @@ function confirmUnmute(row: MuteRecord) {
                   <button
                     type="button"
                     class="wf-link-action live-mute-action--unmute"
-                    @click="confirmUnmute(row)"
+                    @click="openUnmuteConfirm(row)"
                   >
                     解除限制
                   </button>
@@ -321,6 +336,46 @@ function confirmUnmute(row: MuteRecord) {
 
     <Teleport to="body">
       <div
+        v-if="unmuteConfirmVisible && unmuteConfirmRow"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="closeUnmuteConfirm"
+      >
+        <div
+          class="wf-modal"
+          role="dialog"
+          aria-labelledby="mute-unmute-confirm-title"
+          aria-modal="true"
+        >
+          <div class="wf-modal__header">
+            <h3 id="mute-unmute-confirm-title" class="wf-modal__title">确认解除限制</h3>
+            <button
+              type="button"
+              class="wf-modal__close"
+              aria-label="关闭"
+              @click="closeUnmuteConfirm"
+            >
+              ×
+            </button>
+          </div>
+          <div class="wf-modal__body">
+            <p class="live-mute-confirm__msg">
+              确认解除用户
+              <strong>{{ unmuteConfirmRow.username }}</strong>
+              （{{ unmuteConfirmRow.userId }}）的「{{ unmuteConfirmRow.muteType }}」？
+            </p>
+            <p class="live-mute-confirm__hint">解除后该用户可恢复对应范围的发言权限。</p>
+          </div>
+          <div class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeUnmuteConfirm">取消</button>
+            <button type="button" class="wf-btn wf-btn--danger" @click="submitUnmute">确定解除</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
         v-if="editVisible && editRow"
         class="wf-modal-mask"
         role="presentation"
@@ -413,6 +468,22 @@ function confirmUnmute(row: MuteRecord) {
 
 .live-mute-action--unmute:hover {
   color: #ff7875;
+}
+
+.live-mute-confirm__msg {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--pc-text, #333);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.live-mute-confirm__hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pc-text-secondary, #666);
 }
 
 .live-mute-modal__user {
