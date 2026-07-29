@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  CHAT_CONVERSATIONS,
   CHAT_FILTERS,
+  chatConversationsState,
   conversationsForFilter,
+  type ChatConversation,
   type ChatFilter,
+  type ChatPreviewMediaIcon,
 } from '../../constants/mobileChat'
 import { CHAT_ASSETS } from '../../constants/mobileChatAssets'
 
@@ -15,11 +17,24 @@ const activeFilter = ref<ChatFilter>('all')
 const conversations = computed(() => conversationsForFilter(activeFilter.value))
 
 const totalUnread = computed(() =>
-  CHAT_CONVERSATIONS.reduce((sum, c) => sum + c.unread, 0),
+  chatConversationsState.reduce((sum, c) => sum + c.unread, 0),
 )
 
 function goDiscover() {
   router.push({ name: 'mobile-discover' })
+}
+
+function openRoom(item: ChatConversation) {
+  router.push({
+    name: 'mobile-chat-room',
+    params: { id: item.roomId },
+  })
+}
+
+function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
+  if (kind === 'video') return CHAT_ASSETS.previewVideo
+  if (kind === 'photo') return CHAT_ASSETS.previewPhoto
+  return ''
 }
 </script>
 
@@ -61,7 +76,15 @@ function goDiscover() {
 
     <main class="mh5-chat-main">
       <ul v-if="conversations.length" class="mh5-chat-list" role="list">
-        <li v-for="item in conversations" :key="item.id" class="mh5-chat-item">
+        <li
+          v-for="item in conversations"
+          :key="item.id"
+          class="mh5-chat-item"
+          role="button"
+          tabindex="0"
+          @click="openRoom(item)"
+          @keydown.enter="openRoom(item)"
+        >
           <img class="mh5-chat-item__avatar" :src="item.avatar" :alt="item.title" width="52" height="52" />
 
           <div class="mh5-chat-item__body">
@@ -75,9 +98,36 @@ function goDiscover() {
               </time>
             </div>
             <div class="mh5-chat-item__row">
-              <p class="mh5-chat-item__preview">{{ item.preview }}</p>
+              <p class="mh5-chat-item__preview">
+                <img
+                  v-if="item.previewLine.fromSelf && item.previewLine.delivery"
+                  class="mh5-chat-item__check"
+                  :src="CHAT_ASSETS.checkSent"
+                  alt=""
+                  width="14"
+                  height="14"
+                />
+                <span v-if="item.previewLine.fromSelf" class="mh5-chat-item__you">你:</span>
+                <img
+                  v-if="item.previewLine.mediaIcon"
+                  class="mh5-chat-item__media-icon"
+                  :src="mediaIconSrc(item.previewLine.mediaIcon)"
+                  alt=""
+                  width="14"
+                  height="14"
+                />
+                <span class="mh5-chat-item__preview-text">{{ item.previewLine.text }}</span>
+              </p>
+              <img
+                v-if="item.pinned && item.unread <= 0"
+                class="mh5-chat-item__pin"
+                :src="CHAT_ASSETS.pin"
+                alt="置顶"
+                width="14"
+                height="14"
+              />
               <span
-                v-if="item.unread > 0"
+                v-else-if="item.unread > 0"
                 class="mh5-chat-item__badge"
                 :class="{ 'mh5-chat-item__badge--highlight': item.highlighted }"
               >

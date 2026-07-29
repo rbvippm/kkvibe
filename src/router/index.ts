@@ -63,6 +63,12 @@ export const router = createRouter({
           meta: { title: '会话' },
         },
         {
+          path: 'chat/room/:id?',
+          name: 'mobile-chat-room',
+          component: () => import('../views/mobile/MobileChatRoomView.vue'),
+          meta: { title: '聊天', hideTabBar: true },
+        },
+        {
           path: 'discover',
           name: 'mobile-discover',
           component: () => import('../views/mobile/MobileDiscoverView.vue'),

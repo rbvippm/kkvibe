@@ -37,6 +37,11 @@ const SOURCE_BY_ROUTE: Record<string, WorkspacePageSource> = {
     viewPath: 'src/views/mobile/MobileLobbyView.vue',
     annotComponent: 'Mh5SpecAnnot',
   },
+  'mobile-chat-room': {
+    viewPath: 'src/components/mobile/MobileChatRoomPage.vue',
+    specPath: 'src/constants/mobileChatMediaPickerSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
 }
 
 export function resolvePageSource(routeName: string): WorkspacePageSource | null {

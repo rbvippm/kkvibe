@@ -12,6 +12,7 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-home', platform: 'mobile', routeName: 'mobile-home', path: '/mobile/home', title: '大厅', group: '一级 Tab', pagePath: ['移动端', '大厅'] },
   { id: 'mobile-community', platform: 'mobile', routeName: 'mobile-community', path: '/mobile/community', title: '社区', group: '一级 Tab', pagePath: ['移动端', '社区'] },
   { id: 'mobile-chat', platform: 'mobile', routeName: 'mobile-chat', path: '/mobile/chat', title: '会话', group: '一级 Tab', pagePath: ['移动端', '会话'] },
+  { id: 'mobile-chat-room', platform: 'mobile', routeName: 'mobile-chat-room', path: '/mobile/chat/room/group-demo', title: '聊天详情·多图', group: '会话', pagePath: ['移动端', '会话', '聊天详情'] },
   { id: 'mobile-mine', platform: 'mobile', routeName: 'mobile-mine', path: '/mobile/mine', title: '我的', group: '一级 Tab', pagePath: ['移动端', '我的'] },
   { id: 'mobile-live', platform: 'mobile', routeName: 'mobile-live', path: '/mobile/live', title: '直播', group: '直播', pagePath: ['移动端', '直播'] },
   { id: 'mobile-live-room', platform: 'mobile', routeName: 'mobile-live-room', path: '/mobile/live/room', title: '语聊房', group: '直播', pagePath: ['移动端', '直播', '语聊房'] },
