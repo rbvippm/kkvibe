@@ -37,6 +37,18 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['推广返利', '信用额度记录', '文档说明'],
   },
   {
+    path: '/pc/rebate-agent-config/doc',
+    routeName: 'pc-rebate-agent-config-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '返佣代理配置', '文档说明'],
+  },
+  {
+    path: '/pc/agent-commission-setting/doc',
+    routeName: 'pc-agent-commission-setting-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '返佣金设置', '文档说明'],
+  },
+  {
     path: '/pc/live-danmaku-mute-list/doc',
     routeName: 'pc-live-danmaku-mute-list-doc',
     title: '文档说明',
@@ -300,6 +312,22 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-share-agent-config',
         pagePath: ['推广返利', '占成代理配置'],
         docRouteName: 'pc-share-agent-config-doc',
+      },
+      {
+        key: 'rebate-agent-config',
+        title: '返佣代理配置',
+        path: '/pc/rebate-agent-config',
+        routeName: 'pc-rebate-agent-config',
+        pagePath: ['推广返利', '返佣代理配置'],
+        docRouteName: 'pc-rebate-agent-config-doc',
+      },
+      {
+        key: 'agent-commission-setting',
+        title: '返佣金设置',
+        path: '/pc/agent-commission-setting',
+        routeName: 'pc-agent-commission-setting',
+        pagePath: ['推广返利', '返佣金设置'],
+        docRouteName: 'pc-agent-commission-setting-doc',
       },
       {
         key: 'credit-limit-transfer',

@@ -594,6 +594,30 @@ export const router = createRouter({
           meta: { title: '占成代理配置-文档说明' },
         },
         {
+          path: 'rebate-agent-config',
+          name: 'pc-rebate-agent-config',
+          component: () => import('../views/pc/PcRebateAgentConfigView.vue'),
+          meta: { title: '返佣代理配置' },
+        },
+        {
+          path: 'rebate-agent-config/doc',
+          name: 'pc-rebate-agent-config-doc',
+          component: () => import('../views/pc/PcRebateAgentConfigDocView.vue'),
+          meta: { title: '返佣代理配置-文档说明' },
+        },
+        {
+          path: 'agent-commission-setting',
+          name: 'pc-agent-commission-setting',
+          component: () => import('../views/pc/PcAgentCommissionSettingView.vue'),
+          meta: { title: '返佣金设置' },
+        },
+        {
+          path: 'agent-commission-setting/doc',
+          name: 'pc-agent-commission-setting-doc',
+          component: () => import('../views/pc/PcAgentCommissionSettingDocView.vue'),
+          meta: { title: '返佣金设置-文档说明' },
+        },
+        {
           path: 'credit-limit-transfer',
           name: 'pc-credit-limit-transfer',
           component: () => import('../views/pc/PcCreditLimitTransferView.vue'),
