@@ -46,6 +46,7 @@ const AGENT_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-member-detail', platform: 'agent', routeName: 'mobile-member-detail', path: '/mobile/agent/member/detail', title: '会员详情', group: '团队', pagePath: ['代理端', '团队', '会员详情'] },
   { id: 'mobile-agent-credit', platform: 'agent', routeName: 'mobile-agent-credit', path: '/mobile/agent/credit', title: '代理授信', group: '授信', pagePath: ['代理端', '授信', '代理授信'] },
   { id: 'mobile-agent-create-account', platform: 'agent', routeName: 'mobile-agent-create-account', path: '/mobile/agent/create-account', title: '创建代理账户', group: '团队', pagePath: ['代理端', '团队', '创建代理账户'] },
+  { id: 'mobile-agent-create-member', platform: 'agent', routeName: 'mobile-agent-create-member', path: '/mobile/agent/create-member', title: '创建会员账户', group: '团队', pagePath: ['代理端', '团队', '创建会员账户'] },
   { id: 'mobile-member-credit', platform: 'agent', routeName: 'mobile-member-credit', path: '/mobile/agent/member/credit', title: '会员授信', group: '授信', pagePath: ['代理端', '授信', '会员授信'] },
   { id: 'mobile-agent-invite-member', platform: 'agent', routeName: 'mobile-agent-invite-member', path: '/mobile/agent/invite-member', title: '邀请现有会员', group: '邀请', pagePath: ['代理端', '邀请', '邀请现有会员'] },
   { id: 'mobile-agent-invite-records', platform: 'agent', routeName: 'mobile-agent-invite-records', path: '/mobile/agent/invite-records', title: '我的邀请记录', group: '邀请', pagePath: ['代理端', '邀请', '我的邀请记录'] },

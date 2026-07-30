@@ -358,7 +358,7 @@ function closeProfitFormulaTips() {
                 <button
                   type="button"
                   class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                  aria-label="查看净输赢计算公式"
+                  aria-label="查看游戏净输赢计算公式"
                   :aria-expanded="gameProfitFormulaTipOpen"
                   @click.stop="toggleGameProfitFormulaTip"
                 >
@@ -372,7 +372,7 @@ function closeProfitFormulaTips() {
                     />
                   </svg>
                 </button>
-                <span>净输赢</span>
+                <span>游戏净输赢</span>
                 <span
                   v-if="gameProfitFormulaTipOpen"
                   class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"

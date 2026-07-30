@@ -20,6 +20,8 @@ html.theme-home-light #app {
   --home-mobile-light: #fff5eb;
   --home-agent: #c45c26;
   --home-agent-light: #fff4ed;
+  --home-agent-rebate: #0d9488;
+  --home-agent-rebate-light: #ecfdf5;
   --home-pc: #1890ff;
   --home-pc-light: #e6f7ff;
   --home-workspace: #7c3aed;
@@ -125,6 +127,11 @@ html.theme-home-light #app {
   box-shadow: 0 8px 24px rgb(196 92 38 / 12%);
 }
 
+.home-entry__card--agent-rebate:hover {
+  border-color: rgb(13 148 136 / 35%);
+  box-shadow: 0 8px 24px rgb(13 148 136 / 12%);
+}
+
 .home-entry__card--pc:hover {
   border-color: rgb(24 144 255 / 35%);
   box-shadow: 0 8px 24px rgb(24 144 255 / 12%);
@@ -158,6 +165,10 @@ html.theme-home-light #app {
 
 .home-entry__card-icon--agent {
   background: var(--home-agent-light);
+}
+
+.home-entry__card-icon--agent-rebate {
+  background: var(--home-agent-rebate-light);
 }
 
 .home-entry__card-icon--pc {
@@ -210,6 +221,11 @@ html.theme-home-light #app {
   color: var(--home-agent);
 }
 
+.home-entry__tag--agent-rebate {
+  background: var(--home-agent-rebate-light);
+  color: var(--home-agent-rebate);
+}
+
 .home-entry__tag--pc {
   background: var(--home-pc-light);
   color: var(--home-pc);
@@ -235,6 +251,10 @@ html.theme-home-light #app {
 
 .home-entry__card-action--agent {
   color: var(--home-agent);
+}
+
+.home-entry__card-action--agent-rebate {
+  color: var(--home-agent-rebate);
 }
 
 .home-entry__card-action--pc {

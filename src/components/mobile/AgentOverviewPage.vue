@@ -16,25 +16,65 @@ import {
   type ProfitRankTab,
 } from '../../constants/agentOverview'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
+import type { AgentIdentityType } from '../../constants/agentIdentity'
+import {
+  findCommissionBill,
+  formatCommissionAmount,
+  getCommissionTotal,
+  getDefaultCommissionMonth,
+  MOCK_COMMISSION_MONTH_BILLS,
+} from '../../constants/agentCommissionReport'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 
 const router = useRouter()
+const { withAgentQuery } = useAgentIdentity()
 
-const props = defineProps<{
-  nickname: string
-  avatarEmoji: string
-  balance: string
-  profit: string
-  currency: AgentOverviewCurrency
-  dateRangeText: string
-  preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
-  profitRankTab: ProfitRankTab
-  /** 进入概况时是否自动打开占成比例弹框 */
-  openShareRatio?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    nickname: string
+    avatarEmoji: string
+    identityLabel?: string
+    agentType?: AgentIdentityType
+    balance: string
+    profit: string
+    currency: AgentOverviewCurrency
+    dateRangeText: string
+    preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth'
+    profitRankTab: ProfitRankTab
+    /** 进入概况时是否自动打开占成/返佣比例弹框 */
+    openShareRatio?: boolean
+  }>(),
+  {
+    identityLabel: '占成代理',
+    agentType: 'share',
+  },
+)
+
+const isRebate = computed(() => props.agentType === 'rebate')
+const ratioTabLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
+const profitTabLabel = computed(() => (isRebate.value ? '预计佣金' : '我的盈亏'))
+
+/** 返佣：取本月预计总佣金（与「我的佣金」页同口径） */
+const profitTabValue = computed(() => {
+  if (!isRebate.value) return props.profit
+  const bill =
+    findCommissionBill(getDefaultCommissionMonth()) ??
+    MOCK_COMMISSION_MONTH_BILLS.find((item) => item.status === 'pending') ??
+    MOCK_COMMISSION_MONTH_BILLS[0]
+  return formatCommissionAmount(getCommissionTotal(bill), { signed: true })
+})
+
+/** + 绿 / - 红 */
+const profitTabValueToneClass = computed(() => {
+  const text = profitTabValue.value.trim()
+  if (text.startsWith('-')) return 'agent-home__profit-tab-value--neg'
+  if (text.startsWith('+')) return 'agent-home__profit-tab-value--pos'
+  return ''
+})
 
 const emit = defineEmits<{
   back: []
-  pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek']
+  pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth']
   pickProfitRankTab: [tab: ProfitRankTab]
   pickCurrency: [currency: AgentOverviewCurrency]
   shareRatioClosed: []
@@ -50,19 +90,29 @@ watch(
   },
 )
 
-const presetOptions = [
-  ['today', '今日'],
-  ['yesterday', '昨日'],
-  ['thisWeek', '本周'],
-  ['lastWeek', '上周'],
-] as const
+/** 返佣末项为「本月」（佣金按月）；占成仍为「上周」 */
+const presetOptions = computed(() =>
+  isRebate.value
+    ? ([
+        ['today', '今日'],
+        ['yesterday', '昨日'],
+        ['thisWeek', '本周'],
+        ['thisMonth', '本月'],
+      ] as const)
+    : ([
+        ['today', '今日'],
+        ['yesterday', '昨日'],
+        ['thisWeek', '本周'],
+        ['lastWeek', '上周'],
+      ] as const),
+)
 
 const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
 const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
 const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
 
 function goMyProfit() {
-  router.push({ name: 'mobile-agent-my-profit' })
+  router.push({ name: 'mobile-agent-my-profit', query: withAgentQuery() })
 }
 
 function openShareRatioDialog() {
@@ -110,7 +160,14 @@ function pickCurrency(value: AgentOverviewCurrency) {
           <div class="agent-home__nav-title" data-name="title">
             <p>代理中心</p>
           </div>
-          <div class="agent-home__nav-right" data-name="right" />
+          <div class="agent-home__nav-right" data-name="right">
+            <span
+              class="agent-home__identity-badge"
+              :class="isRebate ? 'agent-home__identity-badge--rebate' : 'agent-home__identity-badge--share'"
+            >
+              {{ identityLabel }}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -129,6 +186,12 @@ function pickCurrency(value: AgentOverviewCurrency) {
               <div class="agent-home__profile-top">
                 <div class="agent-home__profile-name" data-name="名字">
                   <p>{{ nickname }}</p>
+                  <span
+                    class="agent-home__identity-pill"
+                    :class="isRebate ? 'agent-home__identity-pill--rebate' : 'agent-home__identity-pill--share'"
+                  >
+                    {{ identityLabel }}
+                  </span>
                 </div>
                 <button type="button" class="agent-home__withdraw-btn">
                   <p>取款</p>
@@ -159,21 +222,23 @@ function pickCurrency(value: AgentOverviewCurrency) {
               type="button"
               class="agent-home__profit-tab agent-home__profit-tab--active"
               data-name="agent_tab/active"
-              aria-label="查看我的盈亏"
+              :aria-label="`查看${profitTabLabel}`"
               @click="goMyProfit"
             >
-              <span class="agent-home__profit-tab-label">我的盈亏</span>
-              <span class="agent-home__profit-tab-value">{{ profit }}</span>
+              <span class="agent-home__profit-tab-label">{{ profitTabLabel }}</span>
+              <span class="agent-home__profit-tab-value" :class="profitTabValueToneClass">
+                {{ profitTabValue }}
+              </span>
               <span class="agent-home__profit-tab-arrow" aria-hidden="true">›</span>
             </button>
             <button
               type="button"
               class="agent-home__profit-tab agent-home__profit-tab--ratio"
               data-name="agent_tab_/inactive"
-              aria-label="查看占成比例"
+              :aria-label="`查看${ratioTabLabel}`"
               @click="openShareRatioDialog"
             >
-              <span class="agent-home__profit-tab-label">占成比例</span>
+              <span class="agent-home__profit-tab-label">{{ ratioTabLabel }}</span>
               <span class="agent-home__profit-tab-info" aria-hidden="true">
                 <img :src="AGENT_OVERVIEW_ASSETS.ratioInfoIcon" alt="" width="16" height="16" />
               </span>
@@ -305,7 +370,11 @@ function pickCurrency(value: AgentOverviewCurrency) {
       </div>
     </div>
 
-    <AgentMyShareRatioDialog :open="shareRatioOpen" @close="closeShareRatioDialog" />
+    <AgentMyShareRatioDialog
+      :open="shareRatioOpen"
+      :mode="agentType"
+      @close="closeShareRatioDialog"
+    />
 
     <Teleport to="body">
       <Transition name="mh5-wallet-sheet">

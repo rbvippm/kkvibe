@@ -14,11 +14,31 @@ export const AGENT_CREDIT_STEPS = [
   { key: 'success', label: '授信成功' },
 ] as const
 
-/** 创建代理账户 · 步骤条（页面与授信同构，仅文案不同） */
+/** 占成代理 · 创建三步：填写账号 → 收益比例 → 完成创建 */
 export const AGENT_CREATE_ACCOUNT_STEPS = [
+  { key: 'account', label: '填写账号' },
   { key: 'ratio', label: '收益比例' },
-  { key: 'success', label: '创建成功' },
+  { key: 'success', label: '完成创建' },
 ] as const
+
+/** 返佣代理 · 创建两步：填写账号 → 完成创建（无收益比例） */
+export const AGENT_CREATE_ACCOUNT_REBATE_STEPS = [
+  { key: 'account', label: '填写账号' },
+  { key: 'success', label: '完成创建' },
+] as const
+
+/** 创建代理 · 区号 Mock */
+export const AGENT_CREATE_DIAL_CODES = ['+65', '+86', '+852', '+853'] as const
+
+/** 创建代理 · 表单默认 Mock */
+export const AGENT_CREATE_ACCOUNT_DEFAULTS = {
+  parentAgent: 'gg12345678',
+  dialCode: '+65',
+  kingkongAccount: '',
+  password: '',
+  confirmPassword: '',
+  remark: '',
+} as const
 
 /** 成本比例上级最大值（Mock） */
 export const DEFAULT_AGENT_CREDIT_MAX_COST = 10

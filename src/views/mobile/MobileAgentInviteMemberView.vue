@@ -15,18 +15,21 @@ import {
   type AgentCreditProduct,
 } from '../../constants/agentCredit'
 import {
+  AGENT_INVITE_MEMBER_REBATE_STEPS,
   AGENT_INVITE_MEMBER_STEPS,
   createAgentMemberInvite,
   validateInviteMember,
   type AgentInviteValidationResult,
 } from '../../constants/agentInvitation'
 import { AGENT_TEAM_INVITE_EXISTING_SPEC } from '../../constants/agentTeamSpec'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 type InviteStep = 1 | 2 | 3
 type EditField = 'share' | 'rebate' | 'cost'
 
 const router = useRouter()
+const { isRebateAgent, withAgentQuery } = useAgentIdentity()
 
 const step = ref<InviteStep>(1)
 const memberInput = ref('')
@@ -47,7 +50,26 @@ const editProductKey = ref('')
 const editDraft = ref('')
 const editError = ref('')
 
-const pageTitle = computed(() => (step.value === 3 ? '邀请成功' : '邀请现有会员为下级'))
+/** 返佣跳过收益比例 */
+const isRebateInvite = computed(() => isRebateAgent.value)
+
+const pageSteps = computed(() =>
+  isRebateInvite.value ? AGENT_INVITE_MEMBER_REBATE_STEPS : AGENT_INVITE_MEMBER_STEPS,
+)
+
+const isInviteStep = computed(() => step.value === 1)
+const isRatioStep = computed(() => !isRebateInvite.value && step.value === 2)
+const isSuccessStep = computed(() =>
+  isRebateInvite.value ? step.value === 2 : step.value === 3,
+)
+
+const pageTitle = computed(() =>
+  isSuccessStep.value ? '邀请成功' : '邀请现有会员为下级',
+)
+
+const invitePrimaryLabel = computed(() =>
+  isRebateInvite.value ? '确认邀请' : '下一步',
+)
 
 const invitedMember = computed(() => (validation.value?.ok ? validation.value.member : null))
 
@@ -116,6 +138,14 @@ function verifyMember() {
 }
 
 function goPrevious() {
+  if (isRebateInvite.value) {
+    if (step.value === 2) {
+      step.value = 1
+      return
+    }
+    router.back()
+    return
+  }
   if (step.value === 3) {
     step.value = 2
     return
@@ -132,17 +162,21 @@ function goNextStep() {
     verifyMember()
     return
   }
+  if (isRebateInvite.value) {
+    confirmInvite()
+    return
+  }
   step.value = 2
 }
 
 function confirmInvite() {
   if (!validation.value?.ok) return
   createAgentMemberInvite(validation.value.member)
-  step.value = 3
+  step.value = isRebateInvite.value ? 2 : 3
 }
 
 function goInviteRecords() {
-  router.push({ name: 'mobile-agent-invite-records' })
+  router.push({ name: 'mobile-agent-invite-records', query: withAgentQuery() })
 }
 
 function resetProfitRatio() {
@@ -269,13 +303,13 @@ function saveEdit() {
 <template>
   <div class="mh5-agent-credit-page">
     <Mh5SubPageHeader :title="pageTitle">
-      <template v-if="step === 1" #right>
+      <template v-if="isInviteStep" #right>
         <Mh5SpecAnnot :spec="AGENT_TEAM_INVITE_EXISTING_SPEC" placement="bottom" />
       </template>
     </Mh5SubPageHeader>
 
     <div class="mh5-agent-credit-steps" aria-label="邀请进度">
-      <template v-for="(item, index) in AGENT_INVITE_MEMBER_STEPS" :key="item.key">
+      <template v-for="(item, index) in pageSteps" :key="item.key">
         <div
           class="mh5-agent-credit-step"
           :class="{
@@ -303,7 +337,7 @@ function saveEdit() {
           <span class="mh5-agent-credit-step__label">{{ item.label }}</span>
         </div>
         <span
-          v-if="index < AGENT_INVITE_MEMBER_STEPS.length - 1"
+          v-if="index < pageSteps.length - 1"
           class="mh5-agent-credit-steps__line"
           :class="{ 'mh5-agent-credit-steps__line--done': isStepLineDone(index) }"
           aria-hidden="true"
@@ -311,7 +345,7 @@ function saveEdit() {
       </template>
     </div>
 
-    <main v-if="step === 1" class="mh5-agent-credit-main">
+    <main v-if="isInviteStep" class="mh5-agent-credit-main">
       <section class="agent-invite-page-card">
         <label class="agent-invite-form__label" for="invite-member-id">金刚号</label>
         <div class="agent-invite-form__search">
@@ -344,12 +378,23 @@ function saveEdit() {
       </section>
 
       <section class="agent-invite-rule-card">
-        <strong>风控规则</strong>
-        <span>24 小时内同代理仅可邀请 1 次；同一会员最多保留 10 条待处理邀请；邀请 72 小时内有效。</span>
+        <p class="agent-invite-rule-card__group">邀请频控</p>
+        <ul class="agent-invite-rule-card__list">
+          <li>24 小时内同代理仅可邀请同一会员 1 次</li>
+          <li>同一会员最多保留 10 条待处理邀请</li>
+          <li>邀请发出后 72 小时内有效</li>
+        </ul>
+        <p class="agent-invite-rule-card__group">邀请对象</p>
+        <ul class="agent-invite-rule-card__list">
+          <li>对方须为已注册会员，且金刚号真实有效</li>
+          <li>对方渠道须与当前代理一致</li>
+          <li>对方不能已是代理身份</li>
+          <li>对方不能已有上级代理</li>
+        </ul>
       </section>
     </main>
 
-    <main v-else-if="step === 2" class="mh5-agent-credit-main">
+    <main v-else-if="isRatioStep" class="mh5-agent-credit-main">
       <section class="mh5-agent-credit-slider-card">
         <span class="mh5-agent-credit-slider-card__label">占成</span>
         <div class="mh5-agent-credit-slider">
@@ -479,7 +524,7 @@ function saveEdit() {
       </section>
     </main>
 
-    <main v-else class="mh5-agent-credit-success">
+    <main v-else-if="isSuccessStep" class="mh5-agent-credit-success">
       <div class="mh5-agent-credit-success__hero">
         <div class="mh5-agent-credit-success__icon" aria-hidden="true">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
@@ -513,7 +558,7 @@ function saveEdit() {
     </main>
 
     <footer class="mh5-agent-credit-footer safe-pb">
-      <template v-if="step === 1">
+      <template v-if="isInviteStep">
         <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
           上一步
         </button>
@@ -523,10 +568,10 @@ function saveEdit() {
           :disabled="!validation?.ok"
           @click="goNextStep"
         >
-          下一步
+          {{ invitePrimaryLabel }}
         </button>
       </template>
-      <template v-else-if="step === 2">
+      <template v-else-if="isRatioStep">
         <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
           上一步
         </button>

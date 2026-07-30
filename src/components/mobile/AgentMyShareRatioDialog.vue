@@ -1,17 +1,31 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { AGENT_MY_SHARE_RATIO_ROWS } from '../../constants/agentMyShareRatio'
+import {
+  AGENT_MY_REBATE_RATIO_ROWS,
+  type AgentIdentityType,
+} from '../../constants/agentIdentity'
 
-defineProps<{
-  open: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    mode?: AgentIdentityType
+  }>(),
+  { mode: 'share' },
+)
 
 const emit = defineEmits<{
   close: []
 }>()
+
+const isRebate = computed(() => props.mode === 'rebate')
+const rows = computed(() => (isRebate.value ? AGENT_MY_REBATE_RATIO_ROWS : AGENT_MY_SHARE_RATIO_ROWS))
+const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
+const typeHeader = computed(() => (isRebate.value ? '代理' : '占成类型'))
+const ratioHeader = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
 </script>
 
 <template>
-  <!-- Figma 1433:25289 / 1433:25538 · 概况页占成比例弹框（挂页面内，避免路由白屏） -->
   <Transition name="mh5-agent-my-share-dialog">
     <div
       v-if="open"
@@ -23,7 +37,7 @@ const emit = defineEmits<{
         class="mh5-agent-my-share-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="占成比例"
+        :aria-label="dialogLabel"
         data-node-id="1433:25538"
       >
         <div class="mh5-agent-my-share-dialog__body">
@@ -33,17 +47,17 @@ const emit = defineEmits<{
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
                 role="columnheader"
               >
-                占成类型
+                {{ typeHeader }}
               </div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
                 role="columnheader"
               >
-                占成比例
+                {{ ratioHeader }}
               </div>
             </div>
             <div
-              v-for="row in AGENT_MY_SHARE_RATIO_ROWS"
+              v-for="row in rows"
               :key="row.key"
               class="mh5-agent-my-share-dialog__row"
               role="row"

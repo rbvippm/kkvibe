@@ -223,9 +223,16 @@ function syncAcceptedInvitesToTeam() {
 
 syncAcceptedInvitesToTeam()
 
+/** 占成代理 · 邀请三步 */
 export const AGENT_INVITE_MEMBER_STEPS = [
   { key: 'invite', label: '邀请会员' },
   { key: 'ratio', label: '收益比例' },
+  { key: 'success', label: '邀请成功' },
+] as const
+
+/** 返佣代理 · 邀请两步（无收益比例） */
+export const AGENT_INVITE_MEMBER_REBATE_STEPS = [
+  { key: 'invite', label: '邀请会员' },
   { key: 'success', label: '邀请成功' },
 ] as const
 
@@ -278,6 +285,10 @@ export function validateInviteMember(account: string): AgentInviteValidationResu
 
   if (normalized.includes('full')) {
     return { ok: false, message: '该会员邀请箱已满' }
+  }
+
+  if (normalized.includes('channel')) {
+    return { ok: false, message: '渠道不一致，请联系客服处理' }
   }
 
   if (normalized.length < 4) {

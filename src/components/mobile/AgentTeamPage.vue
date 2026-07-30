@@ -22,11 +22,34 @@ import {
   type TeamListItem,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 
 const route = useRoute()
 const router = useRouter()
+const { isRebateAgent, withAgentQuery, agentTypeLabel } = useAgentIdentity()
+
+const createAccountOptions = computed(() =>
+  isRebateAgent.value
+    ? CREATE_ACCOUNT_OPTIONS.filter(
+        (item) => item.key === 'agent' || item.key === 'member' || item.key === 'invite_existing',
+      )
+    : CREATE_ACCOUNT_OPTIONS,
+)
+
+/** 返佣代理无信用代理 / 信用会员 */
+const teamFilterTabs = computed(() =>
+  isRebateAgent.value
+    ? TEAM_FILTER_TABS.filter((tab) => tab.key !== 'credit_agent' && tab.key !== 'credit_member')
+    : TEAM_FILTER_TABS,
+)
 
 const teamFilterTab = ref<TeamFilterTab>('all')
+
+watch(isRebateAgent, (rebate) => {
+  if (rebate && (teamFilterTab.value === 'credit_agent' || teamFilterTab.value === 'credit_member')) {
+    teamFilterTab.value = 'all'
+  }
+})
 const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
 /** parentId → 该层已展开可见条数（「查看更多」累加） */
 const moreVisibleCount = ref<Record<string, number>>({})
@@ -81,10 +104,10 @@ const pendingInviteCount = computed(
 
 function goTeamDetailByNickname(item: TeamListItem) {
   if (showMemberBadge(item.kind)) {
-    router.push({ name: 'mobile-member-detail', query: { id: item.id } })
+    router.push({ name: 'mobile-member-detail', query: withAgentQuery({ id: item.id }) })
     return
   }
-  router.push({ name: 'mobile-agent-detail', query: { id: item.id } })
+  router.push({ name: 'mobile-agent-detail', query: withAgentQuery({ id: item.id }) })
 }
 
 function isExpanded(id: string) {
@@ -145,14 +168,14 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 
     router.push({
       name: 'mobile-agent-profit-ratio',
-      query: {
+      query: withAgentQuery({
         targetId: row.id,
         targetName: row.nickname,
         relation: 'direct',
         kind: row.kind,
         /** 全部 / 信用代理等任意入口：授信过即带标记，收益比例页展示现金/信用 Tab */
         credited: row.kind === 'credit_agent' ? '1' : '0',
-      },
+      }),
     })
     return
   }
@@ -165,13 +188,13 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 
     router.push({
       name: 'mobile-member-rebate-ratio',
-      query: {
+      query: withAgentQuery({
         targetId: row.id,
         targetName: row.nickname,
         relation: 'direct',
         kind: row.kind,
         credited: row.kind === 'credit_member' ? '1' : '0',
-      },
+      }),
     })
     return
   }
@@ -184,6 +207,10 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   if (action === 'member_credit') {
+    if (isRebateAgent.value) {
+      await mh5Alert('返佣代理不支持会员授信，请使用占成代理入口')
+      return
+    }
     if (!canShowMemberCreditAction(row.kind)) {
       await mh5Alert(row.kind === 'credit_member' ? '该会员已授信，无需再次授信' : '会员授信仅支持直属会员')
       return
@@ -191,12 +218,16 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 
     router.push({
       name: 'mobile-member-credit',
-      query: { targetId: row.id, targetName: row.nickname },
+      query: withAgentQuery({ targetId: row.id, targetName: row.nickname }),
     })
     return
   }
 
   if (action === 'agent_credit') {
+    if (isRebateAgent.value) {
+      await mh5Alert('返佣代理不支持代理授信，请使用占成代理入口')
+      return
+    }
     if (!canShowAgentCreditAction(row.kind)) {
       await mh5Alert(row.kind === 'credit_agent' ? '该代理已授信，无需再次授信' : '代理授信仅支持代理账号')
       return
@@ -204,14 +235,16 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 
     router.push({
       name: 'mobile-agent-credit',
-      query: { targetId: row.id, targetName: row.nickname },
+      query: withAgentQuery({ targetId: row.id, targetName: row.nickname }),
     })
   }
 }
 
 function openCreateAccountSheet() {
   closeTeamQuickMenu()
-  createAccountDraft.value = createAccountSelection.value
+  const allowed = createAccountOptions.value.map((item) => item.key)
+  const preferred = createAccountSelection.value
+  createAccountDraft.value = allowed.includes(preferred) ? preferred : (allowed[0] ?? 'agent')
   createAccountSheetOpen.value = true
 }
 
@@ -221,7 +254,7 @@ function closeCreateAccountSheet() {
 
 function goInviteRecords() {
   closeTeamQuickMenu()
-  router.push({ name: 'mobile-agent-invite-records' })
+  router.push({ name: 'mobile-agent-invite-records', query: withAgentQuery() })
 }
 
 function closeAllSheets() {
@@ -245,21 +278,34 @@ async function confirmCreateAccount() {
   createAccountSheetOpen.value = false
 
   if (createAccountDraft.value === 'invite_existing') {
-    router.push({ name: 'mobile-agent-invite-member' })
+    router.push({ name: 'mobile-agent-invite-member', query: withAgentQuery() })
     return
   }
 
   if (createAccountDraft.value === 'member_credit') {
-    router.push({ name: 'mobile-member-credit' })
+    if (isRebateAgent.value) {
+      await mh5Alert('返佣代理不支持会员授信')
+      return
+    }
+    router.push({ name: 'mobile-member-credit', query: withAgentQuery() })
     return
   }
 
   if (createAccountDraft.value === 'agent') {
-    router.push({ name: 'mobile-agent-create-account' })
+    router.push({ name: 'mobile-agent-create-account', query: withAgentQuery() })
     return
   }
 
-  await mh5Alert('创建会员账户（原型占位）')
+  if (createAccountDraft.value === 'member') {
+    if (isRebateAgent.value) {
+      router.push({ name: 'mobile-agent-create-member', query: withAgentQuery() })
+      return
+    }
+    await mh5Alert('创建会员账户（占成代理原型占位）')
+    return
+  }
+
+  await mh5Alert('创建账户（原型占位）')
 }
 
 onMounted(() => {
@@ -280,7 +326,10 @@ onUnmounted(() => {
 <template>
   <div class="agent-team-page">
     <header class="agent-team-header">
-      <h1 class="agent-team-header__title">团队管理</h1>
+      <h1 class="agent-team-header__title">
+        团队管理
+        <span class="agent-team-header__identity">{{ agentTypeLabel }}</span>
+      </h1>
       <div class="agent-team-header__actions">
         <button
           type="button"
@@ -322,7 +371,7 @@ onUnmounted(() => {
     <div class="agent-team-toolbar">
       <div class="agent-team-toolbar__tabs" role="tablist" aria-label="团队筛选">
         <button
-          v-for="tab in TEAM_FILTER_TABS"
+          v-for="tab in teamFilterTabs"
           :key="tab.key"
           type="button"
           role="tab"
@@ -491,7 +540,7 @@ onUnmounted(() => {
         </p>
         <div class="agent-team-quick-menu__actions">
           <button
-            v-if="teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
+            v-if="!isRebateAgent && teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
@@ -500,7 +549,7 @@ onUnmounted(() => {
             退水比例
           </button>
           <button
-            v-else
+            v-else-if="!isRebateAgent"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
@@ -512,7 +561,7 @@ onUnmounted(() => {
             备注
           </button>
           <button
-            v-if="teamQuickMenuRow && canShowMemberCreditAction(teamQuickMenuRow.kind)"
+            v-if="!isRebateAgent && teamQuickMenuRow && canShowMemberCreditAction(teamQuickMenuRow.kind)"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
@@ -521,7 +570,7 @@ onUnmounted(() => {
             会员授信
           </button>
           <button
-            v-else-if="teamQuickMenuRow && canShowAgentCreditAction(teamQuickMenuRow.kind)"
+            v-else-if="!isRebateAgent && teamQuickMenuRow && canShowAgentCreditAction(teamQuickMenuRow.kind)"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
@@ -545,7 +594,7 @@ onUnmounted(() => {
             </div>
             <div class="agent-team-create-sheet__options">
               <button
-                v-for="option in CREATE_ACCOUNT_OPTIONS"
+                v-for="option in createAccountOptions"
                 :key="option.key"
                 type="button"
                 class="agent-team-create-sheet__option"

@@ -49,11 +49,11 @@ export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, str
   '信用额度-USD': '86.50',
 }
 
-/** Figma 行分组：3 + 3 + 3 + 1 */
-export const DIRECT_STAT_ROW_SIZES = [3, 3, 3, 1] as const
+/** 行分组：3 + 3 + 3 + 3 + 2（优惠活动后接 VIP 三项；末行游戏净输赢 + 净输赢） */
+export const DIRECT_STAT_ROW_SIZES = [3, 3, 3, 3, 2] as const
 
-/** Figma 行分组：3 + 3 + 3 + 3 + 2 */
-export const SUB_AGENT_STAT_ROW_SIZES = [3, 3, 3, 3, 2] as const
+/** 行分组：3 + 3 + 3 + 3 + 3 + 2（优惠活动后接退水/VIP；末行含净输赢） */
+export const SUB_AGENT_STAT_ROW_SIZES = [3, 3, 3, 3, 3, 2] as const
 
 export function chunkOverviewStats(
   stats: AgentOverviewStat[],
@@ -68,7 +68,7 @@ export function chunkOverviewStats(
   return rows
 }
 
-/** 我的直属 · 10 项 */
+/** 我的直属 · 14 项（占成 / 返佣共用） */
 export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'new', label: '新增会员', value: '126' },
   { key: 'active', label: '活跃人数', value: '126' },
@@ -77,12 +77,16 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'validBet', label: '有效投注', value: '0.00' },
   { key: 'rebate', label: '投注退水', value: '0.00' },
   { key: 'promo', label: '优惠活动', value: '0.00' },
+  { key: 'vipRebate', label: 'VIP退水', value: '0.00' },
+  { key: 'vipUpgradeBonus', label: 'VIP晋级礼金', value: '0.00' },
+  { key: 'vipExtraBonus', label: 'VIP额外奖金', value: '0.00' },
   { key: 'fee', label: '充值手续费', value: '0.00' },
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
-  { key: 'netLose', label: '净输赢', value: '0.00' },
+  { key: 'netLose', label: '游戏净输赢', value: '0.00' },
+  { key: 'netPnl', label: '净输赢', value: '0.00' },
 ]
 
-/** 下级代理 · 14 项 */
+/** 下级代理 · 17 项（占成 / 返佣共用；优惠活动后为投注退水 / VIP退水 / VIP晋级礼金） */
 export const MOCK_SUB_AGENT_STATS: AgentOverviewStat[] = [
   { key: 'newMember', label: '新增会员', value: '126' },
   { key: 'newAgent', label: '新增代理', value: '126' },
@@ -94,10 +98,13 @@ export const MOCK_SUB_AGENT_STATS: AgentOverviewStat[] = [
   { key: 'recharge', label: '充值（10人）', value: '0.00' },
   { key: 'withdraw', label: '提款（10人）', value: '0.00' },
   { key: 'promo', label: '优惠活动', value: '0.00' },
-  { key: 'turnover', label: '投注流水', value: '0.00' },
+  { key: 'betRebate', label: '投注退水', value: '0.00' },
+  { key: 'vipRebate', label: 'VIP退水', value: '0.00' },
+  { key: 'vipUpgradeBonus', label: 'VIP晋级礼金', value: '0.00' },
   { key: 'fee', label: '充提手续费', value: '0.00' },
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
-  { key: 'netLose', label: '净输赢', value: '0.00' },
+  { key: 'netLose', label: '游戏净输赢', value: '0.00' },
+  { key: 'netPnl', label: '净输赢', value: '0.00' },
 ]
 
 export const PROFIT_RANK_TABS: { key: ProfitRankTab; label: string }[] = [

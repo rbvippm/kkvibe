@@ -133,7 +133,7 @@ export function getAgentTotalProfit(currency: string) {
   }
 }
 
-/** 场馆明细标题为「净输赢」；公式左侧为「游戏净输赢」 */
+/** 场馆明细标题与公式左侧统一为「游戏净输赢」 */
 export const AGENT_GAME_PROFIT_FORMULA =
   '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】'
 

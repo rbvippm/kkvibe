@@ -13,7 +13,7 @@ export type ReportDetailRow = {
   tone: ReportValueTone
 }
 
-/** 净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水（对齐游戏净输赢公式） */
+/** 游戏净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水（对齐游戏净输赢公式） */
 export type ReportDetail = {
   netProfit: string
   netProfitTone: ReportValueTone
@@ -102,7 +102,7 @@ function buildDetail(
   }
 }
 
-/** 一级「全部」合计：净输赢 = 12350 − 1280 − 150 − 860 = 10060 */
+/** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 860 = 10060 */
 const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860)
 
 /** 品类二级「全部」 */
@@ -114,7 +114,7 @@ const CATEGORY_ALL_DETAIL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetai
   slots: buildDetail('11,200.00', 2140, 210, 38, 72), // 1820
 }
 
-/** 具体场馆：净输赢 = 500 − 100 − 50 − 10 = 340 */
+/** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 10 = 340 */
 const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10)
 
 /** @deprecated 请使用 getReportDetail */
@@ -149,9 +149,9 @@ export function reportDateRangeText(preset: ReportRangePreset): string {
 }
 
 export function reportCategoryTitle(category: ReportCategoryKey, vendor: ReportVendorKey): string {
-  if (category === 'all' && vendor === 'all') return '全部（实占）'
+  if (category === 'all' && vendor === 'all') return '全部'
   const cat = REPORT_CATEGORY_TABS.find((t) => t.key === category)?.label ?? '全部'
   const ven = REPORT_VENDOR_PILLS.find((p) => p.key === vendor)?.label ?? ''
-  if (vendor !== 'all') return `${ven}（实占）`
-  return `${cat}（实占）`
+  if (vendor !== 'all') return ven
+  return cat
 }

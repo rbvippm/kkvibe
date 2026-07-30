@@ -9912,6 +9912,10 @@
   color: var(--mh5-app-text);
 }
 
+.agent-team-header__title .agent-team-header__identity {
+  font-size: 11px;
+}
+
 /* ---------- 代理中心 · 我的 ---------- */
 .agent-me-root {
   display: flex;
@@ -11304,7 +11308,7 @@
 .agent-invite-rule-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin-top: 12px;
   padding: 12px;
   font-size: 12px;
@@ -11314,6 +11318,23 @@
 
 .agent-invite-rule-card strong {
   color: #1f2937;
+}
+
+.agent-invite-rule-card__group {
+  margin: 4px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.agent-invite-rule-card__list {
+  margin: 0;
+  padding-left: 1.15em;
+  list-style: disc;
+}
+
+.agent-invite-rule-card__list li + li {
+  margin-top: 2px;
 }
 
 .agent-invite-record-list {
@@ -11747,7 +11768,31 @@
 }
 
 .agent-home__nav-right {
-  padding-right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 12px;
+}
+
+.agent-home__identity-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-home__identity-badge--share {
+  background: rgb(254 205 166 / 18%);
+  color: #fecda6;
+}
+
+.agent-home__identity-badge--rebate {
+  background: rgb(45 212 191 / 18%);
+  color: #5eead4;
 }
 
 .agent-home__nav-back {
@@ -11914,6 +11959,13 @@
   justify-content: center;
 }
 
+.agent-home__profile-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .agent-home__profile-name p {
   margin: 0;
   font-size: 16px;
@@ -11923,6 +11975,60 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.agent-home__identity-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.agent-home__identity-pill--share {
+  background: rgb(254 205 166 / 16%);
+  color: #fecda6;
+}
+
+.agent-home__identity-pill--rebate {
+  background: rgb(45 212 191 / 16%);
+  color: #5eead4;
+}
+
+.agent-team-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-team-header__identity {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: #fff4ed;
+  color: #c45c26;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agent-identity--rebate .agent-team-header__identity {
+  background: #ecfdf5;
+  color: #0d9488;
+}
+
+.mh5-agent-invite-rebate-tip {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #0f766e;
+  font-size: 12px;
+  line-height: 1.45;
 }
 
 .agent-home__profile-balance {
@@ -12127,11 +12233,19 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.2;
-  color: #ff4146;
+  color: #57332a;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 1;
   min-width: 0;
+}
+
+.agent-home__profit-tab-value--pos {
+  color: #18af91;
+}
+
+.agent-home__profit-tab-value--neg {
+  color: #ff4146;
 }
 
 .agent-home__profit-tab-arrow {
@@ -12780,6 +12894,238 @@
   border-top: 1px solid var(--mh5-app-border);
 }
 
+.mh5-agent-credit-footer--single {
+  grid-template-columns: 1fr;
+}
+
+/* 创建代理账户 · 填写账号 */
+.mh5-agent-create-account {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 8px;
+}
+
+.mh5-agent-create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.mh5-agent-create-field__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #454545;
+  line-height: 1.35;
+}
+
+.mh5-agent-create-field__input,
+.mh5-agent-create-field__textarea {
+  width: 100%;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #454545;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.mh5-agent-create-field__input {
+  min-height: 48px;
+  padding: 12px 16px;
+}
+
+.mh5-agent-create-field__input--readonly {
+  color: #454545;
+  background: #fafafa;
+}
+
+.mh5-agent-create-field__textarea {
+  min-height: 100px;
+  padding: 12px 16px;
+  resize: none;
+}
+
+.mh5-agent-create-field__input::placeholder,
+.mh5-agent-create-field__textarea::placeholder {
+  color: #b0b5bf;
+  font-weight: 500;
+}
+
+.mh5-agent-create-field__input:focus,
+.mh5-agent-create-field__textarea:focus {
+  border-color: var(--mh5-app-orange);
+}
+
+.mh5-agent-create-field__combo {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.mh5-agent-create-field__dial {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 12px 0 14px;
+  border: none;
+  border-right: 1px solid #e8e8e8;
+  background: #fff;
+  color: #454545;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-agent-create-field__input--combo {
+  border: none;
+  border-radius: 0;
+  min-width: 0;
+}
+
+.mh5-agent-create-field__password {
+  position: relative;
+}
+
+.mh5-agent-create-field__password .mh5-agent-create-field__input {
+  padding-right: 48px;
+}
+
+.mh5-agent-create-field__eye {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: #8a8f99;
+  cursor: pointer;
+}
+
+.mh5-agent-create-dial-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  min-width: 96px;
+  padding: 6px 0;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+  border: 1px solid #eceef2;
+}
+
+.mh5-agent-create-dial-list__item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  color: #454545;
+  cursor: pointer;
+}
+
+.mh5-agent-create-dial-list__item--active,
+.mh5-agent-create-dial-list__item:active {
+  color: var(--mh5-app-orange);
+  background: rgb(255 140 0 / 8%);
+}
+
+/* 创建会员账户 · 成功页 */
+.mh5-agent-create-member-success {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 24px calc(96px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mh5-agent-create-member-success__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.mh5-agent-create-member-success__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #18af91;
+}
+
+.mh5-agent-create-member-success__card {
+  width: 100%;
+  border-radius: 12px;
+  background: #f7f7f7;
+  overflow: hidden;
+}
+
+.mh5-agent-create-member-success__row {
+  padding: 12px 16px;
+  border-bottom: 1px solid #fff;
+}
+
+.mh5-agent-create-member-success__row:last-child {
+  border-bottom: none;
+}
+
+.mh5-agent-create-member-success__label {
+  margin: 0 0 2px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #747474;
+}
+
+.mh5-agent-create-member-success__value {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #454545;
+  word-break: break-all;
+}
+
+.mh5-agent-create-member-success__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  min-height: 48px;
+  border: 1px solid #d1d1d1;
+  border-radius: 12px;
+  background: #fff;
+  color: #4f4f4f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-agent-create-member-success__copy:active {
+  opacity: 0.9;
+}
+
 .mh5-agent-credit-footer__btn {
   min-height: 48px;
   border-radius: 999px;
@@ -13356,6 +13702,504 @@
   color: #ec407a;
 }
 
+/* ---------- 返佣 · 佣金报表（卡片账单） ---------- */
+.mh5-agent-commission-page {
+  background: #f2f2f2;
+}
+
+.mh5-agent-commission-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.mh5-agent-commission-back {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-list-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mh5-agent-commission-list-select {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-list-select__icon {
+  flex-shrink: 0;
+  color: #666;
+}
+
+.mh5-agent-commission-list-summary {
+  padding: 18px 16px 14px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.mh5-agent-commission-list-summary__label {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.mh5-agent-commission-list-summary__value {
+  margin: 10px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #2f6bff;
+  word-break: break-all;
+}
+
+.mh5-agent-commission-list-summary__value em {
+  margin-left: 6px;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  color: #2f6bff;
+}
+
+.mh5-agent-commission-list-summary__time {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.mh5-agent-commission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mh5-agent-commission-list-card {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  background: #fff;
+  text-align: left;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.mh5-agent-commission-list-card:active {
+  transform: scale(0.985);
+}
+
+.mh5-agent-commission-list-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mh5-agent-commission-list-card__month {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.mh5-agent-commission-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mh5-agent-commission-badge--paid {
+  color: #1b7a4e;
+  background: #e8f7ef;
+}
+
+.mh5-agent-commission-badge--pending {
+  color: #c06a12;
+  background: #fff3e0;
+}
+
+.mh5-agent-commission-badge--none {
+  color: #777;
+  background: #f0f0f0;
+}
+
+.mh5-agent-commission-list-card__total-label {
+  margin: 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.mh5-agent-commission-list-card__total {
+  margin: 4px 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+  word-break: break-all;
+}
+
+.mh5-agent-commission-list-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: #888;
+}
+
+.mh5-agent-commission-list-card__meta em {
+  margin-left: 4px;
+  font-style: normal;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+}
+
+.mh5-agent-commission-filter-card {
+  padding: 12px 14px 14px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.mh5-agent-commission-filter-card__label {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+}
+
+.mh5-agent-commission-filter-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mh5-agent-commission-filter-card__month {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mh5-agent-commission-month-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-cal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #ececec;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-currency__chevron {
+  font-size: 10px;
+  color: #999;
+}
+
+.mh5-agent-commission-card {
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.mh5-agent-commission-card__title {
+  margin: 0 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.mh5-agent-commission-hero__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.mh5-agent-commission-hero__title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.mh5-agent-commission-status {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mh5-agent-commission-status--pending {
+  color: #e07a2b;
+}
+
+.mh5-agent-commission-status--paid {
+  color: #2e9e6a;
+}
+
+.mh5-agent-commission-status--none {
+  color: #999;
+}
+
+.mh5-agent-commission-hero__body {
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+.mh5-agent-commission-hero__unit {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.mh5-agent-commission-hero__amount {
+  margin: 8px 0 0;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #4caf7a;
+  word-break: break-all;
+}
+
+.mh5-agent-commission-cols {
+  display: grid;
+  gap: 12px 8px;
+}
+
+.mh5-agent-commission-cols--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mh5-agent-commission-cols--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.mh5-agent-commission-cols--1 {
+  grid-template-columns: 1fr;
+}
+
+.mh5-agent-commission-formula {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f2f2f2;
+}
+
+.mh5-agent-commission-formula .mh5-agent-commission-cell {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-agent-commission-formula__op {
+  flex-shrink: 0;
+  padding-bottom: 2px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #999;
+  line-height: 1;
+}
+
+.mh5-agent-commission-cell {
+  min-width: 0;
+}
+
+.mh5-agent-commission-cell__label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #999;
+  line-height: 1.3;
+}
+
+.mh5-agent-commission-cell__value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+  word-break: break-all;
+}
+
+.mh5-agent-commission-v--pos {
+  color: #4caf7a !important;
+}
+
+.mh5-agent-commission-v--neg {
+  color: #e85a7a !important;
+}
+
+.mh5-agent-commission-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mh5-agent-commission-tip-wrap--center {
+  justify-content: center;
+}
+
+.mh5-agent-commission-tip-bubble--center {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.mh5-agent-commission-tip-bubble--start {
+  left: 0;
+  right: auto;
+  transform: none;
+}
+
+.mh5-agent-commission-q {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #5b9cf5;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-agent-commission-tip-bubble {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 6;
+  width: min(240px, 68vw);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(40, 40, 40, 0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  white-space: pre-line;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.mh5-agent-commission-tip-bubble--end {
+  left: auto;
+  right: 0;
+}
+
+.mh5-agent-commission-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 32px 20px;
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+}
+
+.mh5-agent-commission-empty__icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f3f3f3, #ebebeb);
+  box-shadow: inset 0 0 0 1px #e5e5e5;
+}
+
+.mh5-agent-commission-empty__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+}
+
+.mh5-agent-commission-empty__desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #999;
+}
+
 /* ---------- 代理详情 ---------- */
 .mh5-agent-detail-page {
   display: flex;
@@ -13691,7 +14535,7 @@
   transform: rotate(45deg);
 }
 
-/* 场馆明细「净输赢」tip：锚点靠右，气泡向左展开，避免被后置基础样式 left:0 覆盖后溢出 */
+/* 场馆明细「游戏净输赢」tip：锚点靠右，气泡向左展开，避免被后置基础样式 left:0 覆盖后溢出 */
 .mh5-agent-report-detail__profit-label-wrap .mh5-agent-detail-profit-summary__tip-bubble {
   left: auto;
   right: -4px;
@@ -14972,6 +15816,134 @@
   background: linear-gradient(90deg, #2c2926 0%, #171412 100%);
 }
 
+/** 返佣「我的佣金」顶部：佣金详情卡结构 + 暗色皮肤 */
+.mh5-agent-my-profit-total--commission {
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+  padding: 14px 16px 16px;
+  overflow: visible;
+  border: 0.5px solid #b19f94;
+  border-radius: 16px;
+  background: linear-gradient(90deg, #2c2926 0%, #171412 100%);
+  box-shadow: none;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__head {
+  margin-bottom: 14px;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__title {
+  color: #fecda6;
+  font-weight: 600;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-status--pending {
+  color: #ff9f4d;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-status--paid {
+  color: #5fd4a4;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-status--none {
+  color: #9a8f86;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__body {
+  padding: 0 0 4px;
+}
+
+.mh5-agent-my-profit-hero-metrics {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+}
+
+.mh5-agent-my-profit-hero-metrics--with-neg {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.mh5-agent-my-profit-hero-metric {
+  min-width: 0;
+  text-align: center;
+}
+
+.mh5-agent-my-profit-hero-metrics--with-neg .mh5-agent-my-profit-hero-metric {
+  text-align: left;
+}
+
+.mh5-agent-my-profit-hero-metric--neg {
+  flex: 0 0 auto;
+  text-align: right;
+}
+
+.mh5-agent-my-profit-hero-metrics--with-neg .mh5-agent-my-profit-hero-metric--neg {
+  text-align: right;
+}
+
+.mh5-agent-my-profit-hero-metric--neg .mh5-agent-commission-hero__unit {
+  justify-content: flex-end;
+}
+
+.mh5-agent-my-profit-hero-metric--neg .mh5-agent-commission-tip-wrap {
+  justify-content: flex-end;
+}
+
+.mh5-agent-my-profit-hero-metric__neg-amount {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1.2;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__unit {
+  color: #c4b3a6;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__amount {
+  color: #5fd4a4;
+}
+
+/** 总佣金金额可点：金额 + › 打开明细（保留 hero__amount 字号） */
+.mh5-agent-my-profit-hero-amount-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  text-align: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mh5-agent-my-profit-hero-metrics--with-neg .mh5-agent-my-profit-hero-amount-btn {
+  justify-content: flex-start;
+}
+
+.mh5-agent-my-profit-hero-amount-btn__arrow {
+  flex-shrink: 0;
+  margin-top: -0.08em;
+  font-size: 0.72em;
+  font-weight: 500;
+  line-height: 1;
+  opacity: 0.85;
+  color: inherit;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-my-profit-hero-metric__neg-amount.mh5-agent-commission-v--neg {
+  color: #f84473 !important;
+}
+
+.mh5-agent-my-profit-total--commission .mh5-agent-commission-q {
+  background: #6aa8f0;
+}
+
 .mh5-agent-my-profit-total__deco {
   position: absolute;
   top: -36px;
@@ -15093,11 +16065,239 @@
 }
 
 .mh5-agent-my-profit-main {
+  --mh5-my-profit-amount-size: 14px;
+  --mh5-my-profit-amount-weight: 600;
+  --mh5-my-profit-amount-pos: #18af91;
+  --mh5-my-profit-amount-neg: #f84473;
+  --mh5-my-profit-amount-neutral: #333;
+  --mh5-my-profit-accent: #c9a36a;
+
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   margin-top: -12px;
   padding: 0 12px 28px;
+}
+
+.mh5-agent-my-profit-main--rebate {
+  padding-top: 4px;
+}
+
+/** 主体区内金额：字号 / 字重 / 正负色统一 */
+.mh5-agent-my-profit-main .mh5-agent-my-profit-table__cell--amount,
+.mh5-agent-my-profit-main .mh5-agent-my-profit-summary .mh5-agent-my-profit-table__cell--amount,
+.mh5-agent-my-profit-main .mh5-agent-my-profit-summary__inline-value,
+.mh5-agent-my-profit-main .mh5-agent-commission-cell__value {
+  font-size: var(--mh5-my-profit-amount-size);
+  font-weight: var(--mh5-my-profit-amount-weight);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  color: var(--mh5-my-profit-amount-neutral);
+}
+
+.mh5-agent-my-profit-main .mh5-agent-my-profit__amount--positive,
+.mh5-agent-my-profit-main .mh5-agent-commission-v--pos {
+  color: var(--mh5-my-profit-amount-pos) !important;
+}
+
+.mh5-agent-my-profit-main .mh5-agent-my-profit__amount--negative,
+.mh5-agent-my-profit-main .mh5-agent-commission-v--neg {
+  color: var(--mh5-my-profit-amount-neg) !important;
+}
+
+/** 合计行金额略强调 */
+.mh5-agent-my-profit-main .mh5-agent-my-profit-table__row--total .mh5-agent-my-profit-table__cell--amount {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mh5-agent-my-profit-level-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  padding: 2px;
+  background: #fff;
+  border: 0.5px solid #ece7e0;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(40, 24, 8, 0.04);
+  overflow: hidden;
+}
+
+.mh5-agent-my-profit-level-tab {
+  flex: 1;
+  padding: 11px 6px 13px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9a9a9a;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.18s ease;
+}
+
+.mh5-agent-my-profit-level-tab--active {
+  font-weight: 700;
+  color: #2a2118;
+}
+
+.mh5-agent-my-profit-level-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--mh5-my-profit-accent);
+}
+
+.mh5-agent-my-profit-level-tab:active {
+  opacity: 0.85;
+}
+
+.mh5-agent-my-profit-table--section + .mh5-agent-my-profit-table--section {
+  margin-top: 10px;
+}
+
+.mh5-agent-my-profit-formula-card {
+  margin-top: 14px;
+  padding: 14px 12px 10px;
+  border-radius: 12px;
+  border: 1px solid #eadfce;
+  background: linear-gradient(180deg, #fffaf3 0%, #fff 60%);
+  box-shadow: 0 2px 8px rgba(120, 80, 20, 0.05);
+}
+
+.mh5-agent-my-profit-formula-card--extra {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.mh5-agent-my-profit-formula {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.mh5-agent-my-profit-formula--extra {
+  gap: 2px;
+}
+
+.mh5-agent-my-profit-formula--extra .mh5-agent-commission-cell__label {
+  font-size: 10px;
+}
+
+.mh5-agent-my-profit-formula--extra .mh5-agent-commission-cell__value {
+  font-size: 13px;
+}
+
+.mh5-agent-my-profit-formula--extra .mh5-agent-my-profit-formula__result-value {
+  font-size: 14px !important;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-cell__label {
+  display: flex;
+  justify-content: flex-end;
+  text-align: right;
+  font-size: 11px;
+  color: #8a8494;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-cell__value {
+  text-align: right;
+}
+
+.mh5-agent-my-profit-formula__rate {
+  color: #333 !important;
+  font-weight: 700 !important;
+}
+
+.mh5-agent-my-profit-formula__result {
+  flex: 1.15;
+  min-width: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(24, 175, 145, 0.06);
+  text-align: right;
+  cursor: pointer;
+}
+
+.mh5-agent-my-profit-formula__result-value {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mh5-agent-my-profit-formula__result:active {
+  opacity: 0.85;
+}
+
+.mh5-agent-my-profit-footer-block {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mh5-agent-my-profit-table__row--total {
+  font-weight: 700;
+  background: #fff8f0;
+  border-top: 1px solid #f0e6dc;
+}
+
+.mh5-agent-my-profit-table__row--total .mh5-agent-my-profit-table__cell--name {
+  font-weight: 700;
+  color: #333;
+}
+
+.mh5-agent-my-profit-table__row--expand {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #f0e6dc;
+  cursor: pointer;
+  text-align: left;
+}
+
+.mh5-agent-my-profit-table__row--expand:active {
+  background: #fff1e4;
+}
+
+.mh5-agent-my-profit-table__name-with-chevron {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mh5-agent-my-profit-table__chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1;
+  color: #9a8f86;
+  transition: transform 0.2s ease;
+}
+
+.mh5-agent-my-profit-table__chevron--open {
+  transform: rotate(180deg);
+}
+
+.mh5-agent-my-profit-table__details {
+  overflow: hidden;
+}
+
+.mh5-agent-my-profit-expand-enter-active,
+.mh5-agent-my-profit-expand-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-agent-my-profit-expand-enter-from,
+.mh5-agent-my-profit-expand-leave-to {
+  opacity: 0;
 }
 
 .mh5-agent-my-profit-table {
@@ -15170,9 +16370,11 @@
 }
 
 .mh5-agent-my-profit-table__cell--amount {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   justify-content: flex-end;
   padding: 10px;
+  text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
@@ -15205,6 +16407,16 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.mh5-agent-my-profit-summary .mh5-agent-my-profit-table__cell--name {
+  flex: 1 1 auto;
+  width: auto;
+  border-right: none;
+}
+
+.mh5-agent-my-profit-summary--stacked {
+  margin-top: 8px;
+}
+
 .mh5-agent-my-profit-summary--static {
   cursor: default;
 }
@@ -15213,15 +16425,57 @@
   opacity: 1;
 }
 
+.mh5-agent-my-profit-summary--inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+/** 负佣金累计：次级信息行 */
+.mh5-agent-my-profit-summary--meta {
+  margin-top: 0;
+  border-color: #ece7e0;
+  background: #faf8f5;
+}
+
+.mh5-agent-my-profit-summary--meta .mh5-agent-my-profit-summary__inline {
+  font-weight: 500;
+  color: #666;
+}
+
+.mh5-agent-my-profit-summary__inline {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  line-height: 1.4;
+}
+
+.mh5-agent-my-profit-summary__inline-value {
+  margin-left: auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .mh5-agent-my-profit-summary:active {
   opacity: 0.92;
 }
 
 .mh5-agent-my-profit-footnote {
-  margin: 16px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: #888;
+  margin: 18px 0 0;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #9a9a9a;
   text-align: center;
 }
 
@@ -15347,11 +16601,11 @@
   color: #374151;
   font-size: 12px;
   font-weight: 400;
-  line-height: 1.5;
+  line-height: 1.55;
   text-align: left;
   word-break: break-word;
   overflow-wrap: anywhere;
-  white-space: normal;
+  white-space: pre-line;
 }
 
 .mh5-agent-my-profit-dialog__cell--label small {

@@ -18,15 +18,23 @@ import AgentReportPage from '../components/mobile/AgentReportPage.vue'
 import AgentMePage from '../components/mobile/AgentMePage.vue'
 import MobileBetOrderQueryView from './mobile/MobileBetOrderQueryView.vue'
 import AgentBottomNav from '../components/mobile/AgentBottomNav.vue'
+import { useAgentIdentity } from '../composables/useAgentIdentity'
 import '../styles/mobile-app-shell.css'
 
 type BottomTab = 'overview' | 'team' | 'bet-order' | 'report' | 'me'
-type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
+type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth'
 
 const activeTab = ref<BottomTab>('overview')
 const preset = ref<RangePreset>('today')
 const route = useRoute()
 const router = useRouter()
+const { agentType, isRebateAgent, agentTypeLabel, withAgentQuery } = useAgentIdentity()
+
+watch(isRebateAgent, (rebate) => {
+  /** 返佣无「上周」快捷；若当前仍落在上周则切到本月 */
+  if (rebate && preset.value === 'lastWeek') preset.value = 'thisMonth'
+  if (!rebate && preset.value === 'thisMonth') preset.value = 'lastWeek'
+})
 
 watch(
   () => route.query.tab,
@@ -38,10 +46,11 @@ watch(
   { immediate: true },
 )
 
-const user = ref({
-  nickname: 'fafa888888',
-  avatarEmoji: '🧔🏻‍♂️',
-})
+const user = computed(() =>
+  isRebateAgent.value
+    ? { nickname: 'rebate888', avatarEmoji: '🦊' }
+    : { nickname: 'fafa888888', avatarEmoji: '🧔‍♂️' },
+)
 
 const account = ref({
   balance: '236,188,666.00',
@@ -53,7 +62,21 @@ const currency = computed(() => walletCurrencyToOverview(agentAppCurrency.value)
 const balance = computed(() => AGENT_OVERVIEW_CURRENCY_BALANCES[currency.value])
 const profitRankTab = ref<ProfitRankTab>('member_win')
 
+function pad2(n: number) {
+  return String(n).padStart(2, '0')
+}
+
+function formatDateYmd(d: Date) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
 const dateRangeText = computed(() => {
+  if (preset.value === 'thisMonth') {
+    const now = new Date()
+    const start = new Date(now.getFullYear(), now.getMonth(), 1)
+    /** 与今日/昨日/本周一致：YYYY-MM-DD至YYYY-MM-DD；本月为月初→今天 */
+    return `${formatDateYmd(start)}至${formatDateYmd(now)}`
+  }
   const base = '2025-08-06'
   if (preset.value === 'today') return `${base}至${base}`
   if (preset.value === 'yesterday') return `2025-08-05至2025-08-05`
@@ -80,7 +103,7 @@ function clearShareRatioQuery() {
   if (!openShareRatio.value) return
   const query = { ...route.query }
   delete query.shareRatio
-  router.replace({ name: 'mobile-agent', query })
+  router.replace({ name: 'mobile-agent', query: withAgentQuery(query as Record<string, string>) })
 }
 
 function pickPreset(v: RangePreset) {
@@ -92,7 +115,7 @@ function agentQueryForTab(tab: BottomTab): Record<string, string> {
   const from = route.query.from
   if (typeof from === 'string' && from) query.from = from
   if (tab !== 'overview') query.tab = tab
-  return query
+  return withAgentQuery(query)
 }
 
 function handleAgentBack() {
@@ -113,7 +136,7 @@ function switchTab(tab: BottomTab) {
 <template>
   <div
     class="relative flex h-full min-h-0 w-full flex-col antialiased"
-    :class="
+    :class="[
       showTeamSection
         ? 'agent-team-root'
         : showOverviewSection
@@ -122,8 +145,10 @@ function switchTab(tab: BottomTab) {
             ? 'agent-report-root'
             : showMeSection
               ? 'agent-me-root'
-              : 'agent-root bg-[#121212] text-white'
-    "
+              : 'agent-root bg-[#121212] text-white',
+      isRebateAgent ? 'agent-identity--rebate' : 'agent-identity--share',
+    ]"
+    :data-agent-type="agentType"
   >
     <!-- 团队管理：Figma 1433:19431 -->
     <AgentTeamPage
@@ -137,6 +162,8 @@ function switchTab(tab: BottomTab) {
       class="relative z-10 flex h-full min-h-0 w-full flex-col"
       :nickname="user.nickname"
       :avatar-emoji="user.avatarEmoji"
+      :identity-label="agentTypeLabel"
+      :agent-type="agentType"
       :balance="balance"
       :profit="account.profit"
       :currency="currency"

@@ -189,22 +189,34 @@ export function addTeamDirectMember(member: TeamListItem) {
   teamDirectMembers.value.unshift({ ...member, kind: 'member' })
 }
 
-/** 创建代理账户：写入一条信用代理 Mock，便于团队列表验收 */
-export function createTeamAgentAccount(nickname?: string) {
+/**
+ * 创建代理账户：写入团队列表 Mock
+ * - 占成：信用代理（走收益比例后创建）
+ * - 返佣：直属代理（无授信）
+ */
+export function createTeamAgentAccount(
+  nickname?: string,
+  options?: { asCredit?: boolean },
+) {
   const suffix = String(Date.now()).slice(-4)
   const id = `create_agent_${suffix}`
   const name = nickname?.trim() || `新代理_${suffix}`
+  const asCredit = options?.asCredit !== false
   const item: TeamListItem = {
     id,
     nickname: name,
-    kind: 'credit_agent',
+    kind: asCredit ? 'credit_agent' : 'agent',
     avatarEmoji: '👨🏻',
     subordinateCount: 0,
     memberCount: 0,
     vipLevel: 1,
     online: true,
   }
-  teamCreditAgents.value.unshift(item)
+  if (asCredit) {
+    teamCreditAgents.value.unshift(item)
+  } else {
+    teamDirectAgents.value.unshift(item)
+  }
   return item
 }
 

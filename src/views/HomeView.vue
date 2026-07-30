@@ -44,25 +44,49 @@ onUnmounted(() => {
       </RouterLink>
 
       <RouterLink
-        :to="{ name: 'mobile-agent', query: { from: 'home' } }"
+        :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
         class="home-entry__card home-entry__card--agent"
       >
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--agent">🤝</span>
           <div class="home-entry__card-body">
-            <h2 class="home-entry__card-title">代理端 H5</h2>
+            <h2 class="home-entry__card-title">占成代理 H5</h2>
             <p class="home-entry__card-text">
-              代理中心、团队管理与报表等 B 端能力演示。
+              占成代理身份：概况占成比例、团队授信与占成配置等能力演示。
             </p>
             <div class="home-entry__card-tags">
-              <span class="home-entry__tag home-entry__tag--agent">概况</span>
+              <span class="home-entry__tag home-entry__tag--agent">占成</span>
+              <span class="home-entry__tag home-entry__tag--agent">授信</span>
               <span class="home-entry__tag home-entry__tag--agent">团队</span>
-              <span class="home-entry__tag home-entry__tag--agent">报表</span>
             </div>
           </div>
         </div>
         <span class="home-entry__card-action home-entry__card-action--agent">
-          进入代理端
+          进入占成代理
+          <span class="ml-1">→</span>
+        </span>
+      </RouterLink>
+
+      <RouterLink
+        :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'rebate' } }"
+        class="home-entry__card home-entry__card--agent-rebate"
+      >
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--agent-rebate">💸</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">返佣代理 H5</h2>
+            <p class="home-entry__card-text">
+              返佣代理身份：概况返佣比例、邀请下级配置退水等能力演示（无占成授信）。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--agent-rebate">返佣</span>
+              <span class="home-entry__tag home-entry__tag--agent-rebate">退水</span>
+              <span class="home-entry__tag home-entry__tag--agent-rebate">团队</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--agent-rebate">
+          进入返佣代理
           <span class="ml-1">→</span>
         </span>
       </RouterLink>

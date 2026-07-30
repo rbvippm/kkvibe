@@ -1,4 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import {
+  getStoredAgentIdentity,
+  setStoredAgentIdentity,
+} from '../constants/agentIdentity'
 import HomeView from '../views/HomeView.vue'
 import MobileAppLayout from '../layouts/MobileAppLayout.vue'
 import MobileLiveSectionView from '../views/mobile/MobileLiveSectionView.vue'
@@ -143,6 +147,12 @@ export const router = createRouter({
           name: 'mobile-agent-create-account',
           component: () => import('../views/mobile/MobileAgentCreditView.vue'),
           meta: { title: '创建代理账户', hideTabBar: true, agentCreditMode: 'create' },
+        },
+        {
+          path: 'agent/create-member',
+          name: 'mobile-agent-create-member',
+          component: () => import('../views/mobile/MobileAgentCreateMemberView.vue'),
+          meta: { title: '创建会员账户', hideTabBar: true },
         },
         {
           path: 'agent/invite-member',
@@ -645,6 +655,23 @@ export const router = createRouter({
     },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
+})
+
+router.beforeEach((to) => {
+  if (!to.path.startsWith('/mobile/agent')) return true
+
+  const raw = to.query.agentType
+  if (raw === 'share' || raw === 'rebate') {
+    setStoredAgentIdentity(raw)
+    return true
+  }
+
+  return {
+    path: to.path,
+    query: { ...to.query, agentType: getStoredAgentIdentity() },
+    hash: to.hash,
+    replace: true,
+  }
 })
 
 router.afterEach((to) => {

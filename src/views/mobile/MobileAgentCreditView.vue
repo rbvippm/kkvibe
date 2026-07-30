@@ -3,8 +3,12 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
+  AGENT_CREATE_ACCOUNT_DEFAULTS,
+  AGENT_CREATE_ACCOUNT_REBATE_STEPS,
   AGENT_CREATE_ACCOUNT_STEPS,
+  AGENT_CREATE_DIAL_CODES,
   AGENT_CREDIT_STEPS,
   DEFAULT_AGENT_CREDIT_MAX_COST,
   DEFAULT_AGENT_CREDIT_PRODUCTS,
@@ -19,13 +23,16 @@ import {
 import { AGENT_CREATE_ACCOUNT_SPEC, AGENT_CREDIT_SPEC } from '../../constants/agentCreditSpec'
 import { syncCreditProfitRatioFromCredit } from '../../constants/agentProfitRatio'
 import { createTeamAgentAccount, promoteToCreditAgent } from '../../constants/agentTeam'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
-type CreditStep = 1 | 2
+/** 授信：1 收益比例 / 2 成功；占成创建：1 账号 / 2 比例 / 3 完成；返佣创建：1 账号 / 2 完成 */
+type CreditStep = 1 | 2 | 3
 type EditField = 'share' | 'rebate' | 'cost'
 
 const route = useRoute()
 const router = useRouter()
+const { isRebateAgent } = useAgentIdentity()
 
 const isCreateMode = computed(
   () =>
@@ -44,6 +51,16 @@ const products = ref<AgentCreditProduct[]>(
 )
 const createdNickname = ref('')
 
+const parentAgent = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.parentAgent)
+const dialCode = ref<string>(AGENT_CREATE_ACCOUNT_DEFAULTS.dialCode)
+const kingkongAccount = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.kingkongAccount)
+const password = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.password)
+const confirmPassword = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.confirmPassword)
+const remark = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.remark)
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
+const dialPickerOpen = ref(false)
+
 const editVisible = ref(false)
 const editField = ref<EditField>('share')
 const editProductKey = ref('')
@@ -54,9 +71,25 @@ const targetNickname = computed(
   () => createdNickname.value || String(route.query.targetName || ''),
 )
 
-const pageSteps = computed(() =>
-  isCreateMode.value ? AGENT_CREATE_ACCOUNT_STEPS : AGENT_CREDIT_STEPS,
-)
+/** 返佣创建无收益比例步 */
+const isRebateCreate = computed(() => isCreateMode.value && isRebateAgent.value)
+
+const isAccountStep = computed(() => isCreateMode.value && step.value === 1)
+const isRatioStep = computed(() => {
+  if (!isCreateMode.value) return step.value === 1
+  if (isRebateCreate.value) return false
+  return step.value === 2
+})
+const isSuccessStep = computed(() => {
+  if (!isCreateMode.value) return step.value === 2
+  if (isRebateCreate.value) return step.value === 2
+  return step.value === 3
+})
+
+const pageSteps = computed(() => {
+  if (!isCreateMode.value) return AGENT_CREDIT_STEPS
+  return isRebateCreate.value ? AGENT_CREATE_ACCOUNT_REBATE_STEPS : AGENT_CREATE_ACCOUNT_STEPS
+})
 
 const pageSpec = computed(() =>
   isCreateMode.value ? AGENT_CREATE_ACCOUNT_SPEC : AGENT_CREDIT_SPEC,
@@ -64,7 +97,7 @@ const pageSpec = computed(() =>
 
 const pageTitle = computed(() => {
   if (isCreateMode.value) {
-    return step.value === 2 ? '创建成功' : '创建代理账户'
+    return isSuccessStep.value ? '创建成功' : '创建代理账户'
   }
   return step.value === 2 ? '授信成功' : '代理授信'
 })
@@ -78,6 +111,8 @@ const successDescPrefix = computed(() => (isCreateMode.value ? '已创建下级�
 const successDescSuffix = computed(() => (isCreateMode.value ? '' : '完成授信'))
 
 const primaryActionLabel = computed(() => (isCreateMode.value ? '继续创建' : '继续授信'))
+
+const accountPrimaryLabel = computed(() => (isRebateCreate.value ? '创建' : '下一步'))
 
 const editingProduct = computed(() =>
   products.value.find((item) => item.key === editProductKey.value),
@@ -119,12 +154,38 @@ watch(rebatePercent, (value) => {
   })
 })
 
-function stepStatus(index: number) {
-  if (step.value === 2) return 'done'
-  return index === 0 ? 'active' : 'pending'
+function stepStatus(index: number): 'active' | 'done' | 'pending' {
+  const current = step.value
+  if (current > index + 1) return 'done'
+  if (current === index + 1) return 'active'
+  return 'pending'
+}
+
+function isStepLineDone(index: number) {
+  return step.value > index + 1
 }
 
 function goPrevious() {
+  if (isCreateMode.value) {
+    if (isRebateCreate.value) {
+      if (step.value === 2) {
+        step.value = 1
+        return
+      }
+      router.back()
+      return
+    }
+    if (step.value === 3) {
+      step.value = 2
+      return
+    }
+    if (step.value === 2) {
+      step.value = 1
+      return
+    }
+    router.back()
+    return
+  }
   if (step.value === 2) {
     step.value = 1
     return
@@ -132,16 +193,48 @@ function goPrevious() {
   router.back()
 }
 
+async function goNextFromAccount() {
+  if (!kingkongAccount.value.trim()) {
+    await mh5Alert('请填写金刚账号')
+    return
+  }
+  if (!password.value) {
+    await mh5Alert('请填写设置密码')
+    return
+  }
+  if (!confirmPassword.value) {
+    await mh5Alert('请填写确认密码')
+    return
+  }
+  if (password.value !== confirmPassword.value) {
+    await mh5Alert('两次密码不一致')
+    return
+  }
+  if (isRebateCreate.value) {
+    submitCreateAccount({ asCredit: false })
+    return
+  }
+  step.value = 2
+}
+
+function submitCreateAccount(options?: { asCredit?: boolean }) {
+  const created = createTeamAgentAccount(kingkongAccount.value.trim(), options)
+  createdNickname.value = created.nickname
+  if (options?.asCredit !== false) {
+    syncCreditProfitRatioFromCredit(products.value, costPercent.value)
+  }
+  step.value = isRebateCreate.value ? 2 : 3
+}
+
 function confirmCredit() {
   if (isCreateMode.value) {
-    const created = createTeamAgentAccount()
-    createdNickname.value = created.nickname
-  } else {
-    const targetId = String(route.query.targetId || '')
-    const targetName = String(route.query.targetName || '')
-    if (targetId) {
-      promoteToCreditAgent(targetId, targetName)
-    }
+    submitCreateAccount({ asCredit: true })
+    return
+  }
+  const targetId = String(route.query.targetId || '')
+  const targetName = String(route.query.targetName || '')
+  if (targetId) {
+    promoteToCreditAgent(targetId, targetName)
   }
   syncCreditProfitRatioFromCredit(products.value, costPercent.value)
   step.value = 2
@@ -151,6 +244,18 @@ function backToAgentCenter() {
   router.push({ name: 'mobile-agent' })
 }
 
+function resetAccountForm() {
+  parentAgent.value = AGENT_CREATE_ACCOUNT_DEFAULTS.parentAgent
+  dialCode.value = AGENT_CREATE_ACCOUNT_DEFAULTS.dialCode
+  kingkongAccount.value = ''
+  password.value = ''
+  confirmPassword.value = ''
+  remark.value = ''
+  showPassword.value = false
+  showConfirmPassword.value = false
+  dialPickerOpen.value = false
+}
+
 function continueCredit() {
   step.value = 1
   sharePercent.value = 0
@@ -158,6 +263,12 @@ function continueCredit() {
   costPercent.value = 0
   createdNickname.value = ''
   products.value = DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item }))
+  if (isCreateMode.value) resetAccountForm()
+}
+
+function pickDialCode(code: string) {
+  dialCode.value = code
+  dialPickerOpen.value = false
 }
 
 function validateEditDraft(showEmptyError = false): number | null {
@@ -199,49 +310,39 @@ function validateEditDraft(showEmptyError = false): number | null {
 }
 
 function onEditDraftInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  const raw = target.value
-
+  const input = event.target as HTMLInputElement
+  let value = input.value
   if (editField.value === 'share' || editField.value === 'cost') {
-    const next = raw.replace(/[^\d]/g, '')
-    editDraft.value = next
-    if (target.value !== next) target.value = next
+    value = value.replace(/[^\d]/g, '')
   } else {
-    let next = raw.replace(/[^\d.]/g, '')
-    const firstDot = next.indexOf('.')
-    if (firstDot !== -1) {
-      next = next.slice(0, firstDot + 1) + next.slice(firstDot + 1).replace(/\./g, '')
-      const [intPart, fracPart = ''] = next.split('.')
-      next = `${intPart}.${fracPart.slice(0, 2)}`
-    }
-    editDraft.value = next
-    if (target.value !== next) target.value = next
+    value = value.replace(/[^\d.]/g, '')
+    const parts = value.split('.')
+    if (parts.length > 2) value = `${parts[0]}.${parts.slice(1).join('')}`
+    if (parts[1]?.length > 2) value = `${parts[0]}.${parts[1].slice(0, 2)}`
   }
-
-  validateEditDraft(false)
+  editDraft.value = value
+  input.value = value
+  validateEditDraft()
 }
 
-function openEdit(product: AgentCreditProduct, field: 'share' | 'rebate') {
-  editProductKey.value = product.key
+function openEdit(row: AgentCreditProduct, field: 'share' | 'rebate') {
   editField.value = field
-  editDraft.value =
-    field === 'share' ? String(Math.round(product.share)) : String(Number(product.rebate.toFixed(2)))
+  editProductKey.value = row.key
+  editDraft.value = String(field === 'share' ? row.share : row.rebate)
   editError.value = ''
   editVisible.value = true
 }
 
 function openCostEdit() {
-  editProductKey.value = ''
   editField.value = 'cost'
-  editDraft.value = String(Math.round(costPercent.value))
+  editProductKey.value = ''
+  editDraft.value = String(costPercent.value)
   editError.value = ''
   editVisible.value = true
 }
 
 function closeEdit() {
   editVisible.value = false
-  editProductKey.value = ''
-  editDraft.value = ''
   editError.value = ''
 }
 
@@ -306,13 +407,156 @@ function saveEdit() {
         <span
           v-if="index < pageSteps.length - 1"
           class="mh5-agent-credit-steps__line"
-          :class="{ 'mh5-agent-credit-steps__line--done': step === 2 }"
+          :class="{ 'mh5-agent-credit-steps__line--done': isStepLineDone(index) }"
           aria-hidden="true"
         />
       </template>
     </div>
 
-    <main v-if="step === 1" class="mh5-agent-credit-main">
+    <!-- 创建 · 填写账号 -->
+    <main v-if="isAccountStep" class="mh5-agent-credit-main mh5-agent-create-account">
+      <label class="mh5-agent-create-field">
+        <span class="mh5-agent-create-field__label">上级代理</span>
+        <input
+          class="mh5-agent-create-field__input mh5-agent-create-field__input--readonly"
+          type="text"
+          :value="parentAgent"
+          readonly
+          aria-readonly="true"
+        />
+      </label>
+
+      <div class="mh5-agent-create-field">
+        <span class="mh5-agent-create-field__label">金刚账号</span>
+        <div class="mh5-agent-create-field__combo">
+          <button
+            type="button"
+            class="mh5-agent-create-field__dial"
+            :aria-expanded="dialPickerOpen"
+            aria-label="选择区号"
+            @click="dialPickerOpen = !dialPickerOpen"
+          >
+            {{ dialCode }}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M3 4.5 6 7.5 9 4.5"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <input
+            v-model="kingkongAccount"
+            class="mh5-agent-create-field__input mh5-agent-create-field__input--combo"
+            type="text"
+            inputmode="tel"
+            placeholder="请输入金刚账号"
+            autocomplete="username"
+          />
+        </div>
+        <div v-if="dialPickerOpen" class="mh5-agent-create-dial-list" role="listbox" aria-label="区号">
+          <button
+            v-for="code in AGENT_CREATE_DIAL_CODES"
+            :key="code"
+            type="button"
+            class="mh5-agent-create-dial-list__item"
+            :class="{ 'mh5-agent-create-dial-list__item--active': dialCode === code }"
+            role="option"
+            :aria-selected="dialCode === code"
+            @click="pickDialCode(code)"
+          >
+            {{ code }}
+          </button>
+        </div>
+      </div>
+
+      <label class="mh5-agent-create-field">
+        <span class="mh5-agent-create-field__label">设置密码</span>
+        <div class="mh5-agent-create-field__password">
+          <input
+            v-model="password"
+            class="mh5-agent-create-field__input"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请设置登录密码"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="mh5-agent-create-field__eye"
+            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+            @click="showPassword = !showPassword"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z"
+                stroke="currentColor"
+                stroke-width="1.6"
+              />
+              <circle cx="12" cy="12" r="2.8" stroke="currentColor" stroke-width="1.6" />
+              <path
+                v-if="!showPassword"
+                d="M4 20 20 4"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </label>
+
+      <label class="mh5-agent-create-field">
+        <span class="mh5-agent-create-field__label">确认密码</span>
+        <div class="mh5-agent-create-field__password">
+          <input
+            v-model="confirmPassword"
+            class="mh5-agent-create-field__input"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            placeholder="请再次输入密码"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="mh5-agent-create-field__eye"
+            :aria-label="showConfirmPassword ? '隐藏密码' : '显示密码'"
+            @click="showConfirmPassword = !showConfirmPassword"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M2.5 12S6 6.5 12 6.5 21.5 12 21.5 12 18 17.5 12 17.5 2.5 12 2.5 12Z"
+                stroke="currentColor"
+                stroke-width="1.6"
+              />
+              <circle cx="12" cy="12" r="2.8" stroke="currentColor" stroke-width="1.6" />
+              <path
+                v-if="!showConfirmPassword"
+                d="M4 20 20 4"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </label>
+
+
+
+      <label class="mh5-agent-create-field">
+        <span class="mh5-agent-create-field__label">备注</span>
+        <textarea
+          v-model="remark"
+          class="mh5-agent-create-field__textarea"
+          rows="4"
+          placeholder="选填，如客户备注"
+        />
+      </label>
+    </main>
+
+    <!-- 收益比例 -->
+    <main v-else-if="isRatioStep" class="mh5-agent-credit-main">
       <section class="mh5-agent-credit-slider-card">
         <span class="mh5-agent-credit-slider-card__label">占成</span>
         <div class="mh5-agent-credit-slider">
@@ -442,7 +686,7 @@ function saveEdit() {
       </section>
     </main>
 
-    <main v-else class="mh5-agent-credit-success">
+    <main v-else-if="isSuccessStep" class="mh5-agent-credit-success">
       <div class="mh5-agent-credit-success__hero">
         <div class="mh5-member-credit-success__icon" aria-hidden="true">
           <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
@@ -464,13 +708,25 @@ function saveEdit() {
       </div>
     </main>
 
-    <footer class="mh5-agent-credit-footer safe-pb">
-      <template v-if="step === 1">
+    <footer
+      class="mh5-agent-credit-footer safe-pb"
+      :class="{ 'mh5-agent-credit-footer--single': isAccountStep }"
+    >
+      <template v-if="isAccountStep">
+        <button
+          type="button"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
+          @click="goNextFromAccount"
+        >
+          {{ accountPrimaryLabel }}
+        </button>
+      </template>
+      <template v-else-if="isRatioStep">
         <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
           上一步
         </button>
         <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary" @click="confirmCredit">
-          创建
+          {{ isCreateMode ? '创建' : '授信' }}
         </button>
       </template>
       <template v-else>

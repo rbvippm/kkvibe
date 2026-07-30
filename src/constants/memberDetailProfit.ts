@@ -26,7 +26,7 @@ export {
 export const MEMBER_PROFIT_FORMULA =
   '会员盈亏 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
 
-/** 场馆明细标题为「净输赢」；公式左侧为「游戏净输赢」（不含成本三项） */
+/** 场馆明细标题与公式左侧统一为「游戏净输赢」（不含成本三项） */
 export const MEMBER_GAME_PROFIT_FORMULA =
   '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】'
 

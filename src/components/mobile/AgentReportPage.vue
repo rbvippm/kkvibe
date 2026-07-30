@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
   AGENT_WALLET_CURRENCY_OPTIONS,
   type AgentWalletCurrency,
@@ -11,6 +12,8 @@ import {
   setAgentAppCurrency,
 } from '../../constants/agentAppCurrency'
 import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
+import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
+import { isCommissionLevel1Agent } from '../../constants/agentCommissionReport'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_RANGE_PRESETS,
@@ -28,6 +31,12 @@ import {
 import { AGENT_REPORT_CURRENCY_SUMMARY_SPEC } from '../../constants/agentReportSpec'
 import '../../styles/mobile-app-shell.css'
 
+const { isRebateAgent } = useAgentIdentity()
+/** 返佣：仅一级代理有「代理赚水」成本项 */
+const showRebateEarnWater = computed(
+  () => isRebateAgent.value && isCommissionLevel1Agent(),
+)
+
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
@@ -38,7 +47,23 @@ const currency = agentAppCurrency
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
 const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(currency.value)))
-const reportDetail = computed(() => getReportDetail(category.value, vendor.value))
+const gameProfitFormula = computed(() =>
+  isRebateAgent.value
+    ? rebateGameNetProfitFormula(showRebateEarnWater.value)
+    : AGENT_GAME_PROFIT_FORMULA,
+)
+const reportDetail = computed(() => {
+  const detail = getReportDetail(category.value, vendor.value)
+  if (!isRebateAgent.value) return detail
+  return {
+    ...detail,
+    rows: detail.rows.filter((row) => {
+      if (row.key === 'rebate') return false
+      if (row.key === 'commission' && !showRebateEarnWater.value) return false
+      return true
+    }),
+  }
+})
 
 function pickPreset(v: ReportRangePreset) {
   preset.value = v
@@ -154,7 +179,7 @@ function closeGameProfitFormulaTip() {
               <button
                 type="button"
                 class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                aria-label="查看净输赢计算公式"
+                aria-label="查看游戏净输赢计算公式"
                 :aria-expanded="gameProfitFormulaTipOpen"
                 @click.stop="toggleGameProfitFormulaTip"
               >
@@ -168,13 +193,13 @@ function closeGameProfitFormulaTip() {
                   />
                 </svg>
               </button>
-              <span>净输赢</span>
+              <span>游戏净输赢</span>
               <span
                 v-if="gameProfitFormulaTipOpen"
                 class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
                 role="tooltip"
               >
-                {{ AGENT_GAME_PROFIT_FORMULA }}
+                {{ gameProfitFormula }}
               </span>
             </span>
             <em :class="reportNetProfitClass(reportDetail.netProfitTone)">
