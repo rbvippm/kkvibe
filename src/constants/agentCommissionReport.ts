@@ -21,8 +21,10 @@ export type CommissionMonthBill = {
   earnWater: number
 }
 
-/** 当前登录代理层级 Mock：1 = 一级代理（展示赚水） */
-export const MOCK_COMMISSION_AGENT_LEVEL = 1
+/** 当前登录代理层级 Mock：1 一级 / 2 二级 / 3 三级 */
+export type CommissionAgentLevel = 1 | 2 | 3
+
+export const MOCK_COMMISSION_AGENT_LEVEL: CommissionAgentLevel = 1
 
 export function isCommissionLevel1Agent(level = MOCK_COMMISSION_AGENT_LEVEL) {
   return level === 1

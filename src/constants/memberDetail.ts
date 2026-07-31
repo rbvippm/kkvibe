@@ -22,15 +22,16 @@ export const MEMBER_DETAIL_CREDIT_TAB: { key: MemberDetailTab; label: string } =
   label: '信用额度',
 }
 
-export function getMemberDetailTabs(isCredited: boolean): { key: MemberDetailTab; label: string }[] {
-  if (!isCredited) return MEMBER_DETAIL_TABS
-  return [
-    MEMBER_DETAIL_TABS[0],
-    MEMBER_DETAIL_CREDIT_TAB,
-    MEMBER_DETAIL_TABS[1],
-    MEMBER_DETAIL_TABS[2],
-    MEMBER_DETAIL_TABS[3],
-  ]
+export function getMemberDetailTabs(
+  isCredited: boolean,
+  isRebate = false,
+): { key: MemberDetailTab; label: string }[] {
+  /** 返佣代理不展示「会员盈亏」Tab */
+  const baseTabs = isRebate
+    ? MEMBER_DETAIL_TABS.filter((tab) => tab.key !== 'profit')
+    : MEMBER_DETAIL_TABS
+  if (!isCredited) return baseTabs
+  return [baseTabs[0], MEMBER_DETAIL_CREDIT_TAB, ...baseTabs.slice(1)]
 }
 
 /** 游戏数据子 Tab */

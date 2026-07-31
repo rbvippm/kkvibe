@@ -15,15 +15,16 @@ export const AGENT_DETAIL_CREDIT_TAB: { key: AgentDetailTab; label: string } = {
   label: '信用额度',
 }
 
-export function getAgentDetailTabs(isCredited: boolean): { key: AgentDetailTab; label: string }[] {
-  if (!isCredited) return AGENT_DETAIL_TABS
-  return [
-    AGENT_DETAIL_TABS[0],
-    AGENT_DETAIL_CREDIT_TAB,
-    AGENT_DETAIL_TABS[1],
-    AGENT_DETAIL_TABS[2],
-    AGENT_DETAIL_TABS[3],
-  ]
+export function getAgentDetailTabs(
+  isCredited: boolean,
+  isRebate = false,
+): { key: AgentDetailTab; label: string }[] {
+  /** 返佣代理不展示「代理盈亏 / 代理佣金」Tab */
+  const baseTabs = isRebate
+    ? AGENT_DETAIL_TABS.filter((tab) => tab.key !== 'profit')
+    : AGENT_DETAIL_TABS
+  if (!isCredited) return baseTabs
+  return [baseTabs[0], AGENT_DETAIL_CREDIT_TAB, ...baseTabs.slice(1)]
 }
 
 export const AGENT_DETAIL_CURRENCIES = ['KKC', 'USDT', 'KKV'] as const

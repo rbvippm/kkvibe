@@ -49,13 +49,16 @@ watch(isRebateAgent, (rebate) => {
   if (rebate && (teamFilterTab.value === 'credit_agent' || teamFilterTab.value === 'credit_member')) {
     teamFilterTab.value = 'all'
   }
+  if (teamFilterTab.value === 'all') applyAllTabFullExpand()
 })
 const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
 /** parentId → 该层已展开可见条数（「查看更多」累加） */
 const moreVisibleCount = ref<Record<string, number>>({})
 
+const teamTreeOptions = computed(() => ({ includeCredit: !isRebateAgent.value }))
+
 function applyAllTabFullExpand() {
-  const state = collectTeamFullExpandState('all')
+  const state = collectTeamFullExpandState('all', teamTreeOptions.value)
   expandedIds.value = state.expandedIds
   moreVisibleCount.value = state.moreVisibleCount
 }
@@ -73,7 +76,12 @@ const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_O
 const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 
 const teamTreeRows = computed(() =>
-  getTeamTreeRows(teamFilterTab.value, expandedIds.value, moreVisibleCount.value),
+  getTeamTreeRows(
+    teamFilterTab.value,
+    expandedIds.value,
+    moreVisibleCount.value,
+    teamTreeOptions.value,
+  ),
 )
 
 function treeRowKey(row: (typeof teamTreeRows.value)[number]) {

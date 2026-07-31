@@ -36,12 +36,25 @@ import {
   type MemberProfitCategoryKey,
   type MemberProfitVendorKey,
 } from '../../constants/memberDetailProfit'
+import {
+  REPORT_CATEGORY_TABS,
+  REPORT_VENDOR_PILLS,
+  getMemberDetailReportDetail,
+  reportCategoryTitle,
+  reportDetailValueClass,
+  reportNetProfitClass,
+  type ReportCategoryKey,
+  type ReportVendorKey,
+} from '../../constants/agentReport'
+import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { MEMBER_DETAIL_CREDIT_CURRENCY_SPEC } from '../../constants/memberDetailSpec'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
+const { isRebateAgent } = useAgentIdentity()
 
 const activeTab = ref<MemberDetailTab>('manage')
 const gameSubTab = ref<MemberGameSubTab>('records')
@@ -50,12 +63,17 @@ const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 const profitCategory = ref<MemberProfitCategoryKey>('overall')
 const profitVendor = ref<MemberProfitVendorKey>('all')
+/** 返佣 · 游戏统计：对齐返佣代理游戏数据品类 */
+const reportCategory = ref<ReportCategoryKey>('all')
+const reportVendor = ref<ReportVendorKey>('all')
 const profitFormulaTipOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
-const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
+const detailTabs = computed(() =>
+  getMemberDetailTabs(isCredited.value, isRebateAgent.value),
+)
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
 const cashWalletGroups = computed(() => formatMemberCashWalletGroups(member.value?.wallets))
 const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
@@ -63,12 +81,33 @@ const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, 
 const profitSummaryRows = computed(() => getMemberProfitSummaryRows(currency.value))
 const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value))
 
+const rebateGameSectionTitle = computed(() =>
+  reportCategoryTitle(reportCategory.value, reportVendor.value),
+)
+/** 会员侧无代理赚水，公式用不含赚水口径 */
+const rebateGameFormula = computed(() => rebateGameNetProfitFormula(false))
+const rebateGameDetail = computed(() => {
+  const detail = getMemberDetailReportDetail(reportCategory.value, reportVendor.value)
+  return {
+    ...detail,
+    rows: detail.rows.filter((row) => row.key !== 'rebate' && row.key !== 'commission'),
+  }
+})
+
 watch(isCredited, (credited) => {
   if (!credited) {
     if (activeTab.value === 'credit') activeTab.value = 'manage'
     if (isAgentCreditCurrency(currency.value)) setAgentAppCurrency('KKC')
   }
 })
+
+watch(
+  isRebateAgent,
+  (rebate) => {
+    if (rebate && activeTab.value === 'profit') activeTab.value = 'manage'
+  },
+  { immediate: true },
+)
 
 const summaryItems = computed(() => {
   if (!member.value) return []
@@ -120,6 +159,11 @@ function selectProfitCategory(key: MemberProfitCategoryKey) {
   profitCategory.value = key
   /** 切一级品类时，二级默认「全部」 */
   profitVendor.value = MEMBER_PROFIT_VENDORS[key][0]?.key ?? 'all'
+}
+
+function selectReportCategory(key: ReportCategoryKey) {
+  reportCategory.value = key
+  reportVendor.value = 'all'
 }
 
 function toggleProfitFormulaTip() {
@@ -389,92 +433,185 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           class="mh5-member-detail-profit"
           @click="closeGameProfitFormulaTip"
         >
-          <div class="mh5-agent-report-categories">
-            <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
-              <button
-                v-for="tab in MEMBER_PROFIT_CATEGORY_TABS"
-                :key="tab.key"
-                type="button"
-                role="tab"
-                class="mh5-agent-report-cat-tab"
-                :class="{ 'mh5-agent-report-cat-tab--active': profitCategory === tab.key }"
-                :aria-selected="profitCategory === tab.key"
-                @click="selectProfitCategory(tab.key)"
+          <!-- 返佣：对齐返佣代理游戏数据 / 我的报表结构 -->
+          <template v-if="isRebateAgent">
+            <div class="mh5-agent-report-categories">
+              <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
+                <button
+                  v-for="tab in REPORT_CATEGORY_TABS"
+                  :key="tab.key"
+                  type="button"
+                  role="tab"
+                  class="mh5-agent-report-cat-tab"
+                  :class="{ 'mh5-agent-report-cat-tab--active': reportCategory === tab.key }"
+                  :aria-selected="reportCategory === tab.key"
+                  @click="selectReportCategory(tab.key)"
+                >
+                  {{ tab.label }}
+                </button>
+              </div>
+              <div
+                v-if="reportCategory !== 'all'"
+                class="mh5-agent-report-vendors"
+                role="tablist"
+                aria-label="游戏数据场馆"
               >
-                {{ tab.label }}
-              </button>
+                <button
+                  v-for="pill in REPORT_VENDOR_PILLS"
+                  :key="pill.key"
+                  type="button"
+                  role="tab"
+                  class="mh5-agent-report-vendor"
+                  :class="{ 'mh5-agent-report-vendor--active': reportVendor === pill.key }"
+                  :aria-selected="reportVendor === pill.key"
+                  @click="reportVendor = pill.key"
+                >
+                  {{ pill.label }}
+                </button>
+              </div>
             </div>
-            <div
-              v-if="profitVendorOptions.length"
-              class="mh5-agent-report-vendors"
-              role="tablist"
-              aria-label="游戏数据场馆"
-            >
-              <button
-                v-for="pill in profitVendorOptions"
-                :key="pill.key"
-                type="button"
-                role="tab"
-                class="mh5-agent-report-vendor"
-                :class="{ 'mh5-agent-report-vendor--active': profitVendor === pill.key }"
-                :aria-selected="profitVendor === pill.key"
-                @click="profitVendor = pill.key"
-              >
-                {{ pill.label }}
-              </button>
-            </div>
-          </div>
 
-          <section class="mh5-agent-report-detail">
-            <div class="mh5-agent-report-detail__head">
-              <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
-              <span class="mh5-agent-report-detail__profit">
-                <span class="mh5-agent-report-detail__profit-label-wrap">
-                  <button
-                    type="button"
-                    class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                    aria-label="查看游戏净输赢计算公式"
-                    :aria-expanded="gameProfitFormulaTipOpen"
-                    @click.stop="toggleGameProfitFormulaTip"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
-                      <path
-                        d="M8 4.6v5.2M8 11.6h.01"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                  <span>游戏净输赢</span>
-                  <span
-                    v-if="gameProfitFormulaTipOpen"
-                    class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
-                    role="tooltip"
-                  >
-                    {{ MEMBER_GAME_PROFIT_FORMULA }}
+            <section class="mh5-agent-report-detail">
+              <div class="mh5-agent-report-detail__head">
+                <span class="mh5-agent-report-detail__title">{{ rebateGameSectionTitle }}</span>
+                <span class="mh5-agent-report-detail__profit">
+                  <span class="mh5-agent-report-detail__profit-label-wrap">
+                    <button
+                      type="button"
+                      class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                      aria-label="查看游戏净输赢计算公式"
+                      :aria-expanded="gameProfitFormulaTipOpen"
+                      @click.stop="toggleGameProfitFormulaTip"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                        <path
+                          d="M8 4.6v5.2M8 11.6h.01"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </button>
+                    <span>游戏净输赢</span>
+                    <span
+                      v-if="gameProfitFormulaTipOpen"
+                      class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                      role="tooltip"
+                    >
+                      {{ rebateGameFormula }}
+                    </span>
                   </span>
+                  <em :class="reportNetProfitClass(rebateGameDetail.netProfitTone)">
+                    {{ rebateGameDetail.netProfit }}
+                  </em>
                 </span>
-                <em :class="profitTotalClass(profitDetail.totalProfitTone)">
-                  {{ profitDetail.totalProfit }}
-                </em>
-              </span>
-            </div>
-            <div
-              v-for="row in profitDetail.rows"
-              :key="row.label"
-              class="mh5-agent-report-detail__row"
-            >
-              <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
-              <span
-                class="mh5-agent-report-detail__row-value"
-                :class="profitValueClass(row.tone)"
+              </div>
+              <div
+                v-for="row in rebateGameDetail.rows"
+                :key="row.key"
+                class="mh5-agent-report-detail__row"
               >
-                {{ row.value }}
-              </span>
+                <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
+                <span
+                  class="mh5-agent-report-detail__row-value"
+                  :class="reportDetailValueClass(row.tone)"
+                >
+                  {{ row.value }}
+                </span>
+              </div>
+            </section>
+          </template>
+
+          <!-- 占成：原品类结构 -->
+          <template v-else>
+            <div class="mh5-agent-report-categories">
+              <div class="mh5-agent-report-cat-tabs" role="tablist" aria-label="游戏数据品类">
+                <button
+                  v-for="tab in MEMBER_PROFIT_CATEGORY_TABS"
+                  :key="tab.key"
+                  type="button"
+                  role="tab"
+                  class="mh5-agent-report-cat-tab"
+                  :class="{ 'mh5-agent-report-cat-tab--active': profitCategory === tab.key }"
+                  :aria-selected="profitCategory === tab.key"
+                  @click="selectProfitCategory(tab.key)"
+                >
+                  {{ tab.label }}
+                </button>
+              </div>
+              <div
+                v-if="profitVendorOptions.length"
+                class="mh5-agent-report-vendors"
+                role="tablist"
+                aria-label="游戏数据场馆"
+              >
+                <button
+                  v-for="pill in profitVendorOptions"
+                  :key="pill.key"
+                  type="button"
+                  role="tab"
+                  class="mh5-agent-report-vendor"
+                  :class="{ 'mh5-agent-report-vendor--active': profitVendor === pill.key }"
+                  :aria-selected="profitVendor === pill.key"
+                  @click="profitVendor = pill.key"
+                >
+                  {{ pill.label }}
+                </button>
+              </div>
             </div>
-          </section>
+
+            <section class="mh5-agent-report-detail">
+              <div class="mh5-agent-report-detail__head">
+                <span class="mh5-agent-report-detail__title">{{ profitDetail.title }}</span>
+                <span class="mh5-agent-report-detail__profit">
+                  <span class="mh5-agent-report-detail__profit-label-wrap">
+                    <button
+                      type="button"
+                      class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                      aria-label="查看游戏净输赢计算公式"
+                      :aria-expanded="gameProfitFormulaTipOpen"
+                      @click.stop="toggleGameProfitFormulaTip"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                        <path
+                          d="M8 4.6v5.2M8 11.6h.01"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round"
+                        />
+                      </svg>
+                    </button>
+                    <span>游戏净输赢</span>
+                    <span
+                      v-if="gameProfitFormulaTipOpen"
+                      class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                      role="tooltip"
+                    >
+                      {{ MEMBER_GAME_PROFIT_FORMULA }}
+                    </span>
+                  </span>
+                  <em :class="profitTotalClass(profitDetail.totalProfitTone)">
+                    {{ profitDetail.totalProfit }}
+                  </em>
+                </span>
+              </div>
+              <div
+                v-for="row in profitDetail.rows"
+                :key="row.label"
+                class="mh5-agent-report-detail__row"
+              >
+                <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
+                <span
+                  class="mh5-agent-report-detail__row-value"
+                  :class="profitValueClass(row.tone)"
+                >
+                  {{ row.value }}
+                </span>
+              </div>
+            </section>
+          </template>
         </section>
 
         <section v-else class="mh5-member-detail-summary">

@@ -21,6 +21,10 @@ export type AgentProfitSummaryRow = {
 export const AGENT_PROFIT_FORMULA =
   '代理盈亏 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】'
 
+/** 返佣 · 代理佣金（不含退水、代理赚水） */
+export const AGENT_COMMISSION_FORMULA =
+  '代理佣金 = 【输赢】 + 【-VIP退水】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】'
+
 type AgentProfitSummaryMock = {
   /** 实占游戏输赢（按公式直接累加） */
   actualWin: number
@@ -133,6 +137,21 @@ export function getAgentTotalProfit(currency: string) {
   }
 }
 
+/** 返佣 · 代理佣金总值（输赢 − VIP退水 − VIP晋级礼金 − VIP额外奖金 − 活动金） */
+export function getAgentTotalCommission(currency: string) {
+  const stats = getAgentProfitSummaryMock(currency)
+  const total =
+    stats.actualWin -
+    stats.actualVipRebate -
+    stats.vipBonus -
+    stats.vipExtraBonus -
+    stats.activityGold
+  return {
+    value: formatProfitAmount(total),
+    tone: profitTone(total),
+  }
+}
+
 /** 场馆明细标题与公式左侧统一为「游戏净输赢」 */
 export const AGENT_GAME_PROFIT_FORMULA =
   '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】'
@@ -161,6 +180,38 @@ export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryR
       label: '代理赚水',
       value: formatProfitAmount(-stats.rebateEarn),
       tone: profitTone(-stats.rebateEarn),
+    },
+    {
+      label: 'VIP晋级礼金',
+      value: formatProfitAmount(-stats.vipBonus),
+      tone: profitTone(-stats.vipBonus),
+    },
+    {
+      label: 'VIP额外奖金',
+      value: formatProfitAmount(-stats.vipExtraBonus),
+      tone: profitTone(-stats.vipExtraBonus),
+    },
+    {
+      label: '活动金',
+      value: formatProfitAmount(-stats.activityGold),
+      tone: profitTone(-stats.activityGold),
+    },
+  ]
+}
+
+/** 返佣 · 代理佣金细项：输赢 / VIP退水 / VIP晋级礼金 / VIP额外奖金 / 活动金 */
+export function getAgentCommissionSummaryRows(currency: string): AgentProfitSummaryRow[] {
+  const stats = getAgentProfitSummaryMock(currency)
+  return [
+    {
+      label: '输赢',
+      value: formatProfitAmount(stats.actualWin),
+      tone: profitTone(stats.actualWin),
+    },
+    {
+      label: 'VIP退水',
+      value: formatProfitAmount(-stats.actualVipRebate),
+      tone: profitTone(-stats.actualVipRebate),
     },
     {
       label: 'VIP晋级礼金',

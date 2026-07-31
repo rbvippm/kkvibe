@@ -285,11 +285,26 @@ export function promoteToCreditMember(input: {
   })
 }
 
-function buildTeamTree(tab: TeamFilterTab): TeamListItem {
+export type BuildTeamTreeOptions = {
+  /** 是否包含信用代理 / 信用会员；返佣代理为 false */
+  includeCredit?: boolean
+}
+
+function stripCreditTeamNodes(items: TeamListItem[]): TeamListItem[] {
+  return items
+    .filter((item) => !isCreditTeamKind(item.kind))
+    .map((item) => ({
+      ...item,
+      children: item.children?.length ? stripCreditTeamNodes(item.children) : item.children,
+    }))
+}
+
+function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): TeamListItem {
+  const includeCredit = options.includeCredit !== false
   const members = teamDirectMembers.value
   const agents = teamDirectAgents.value
-  const creditAgents = teamCreditAgents.value
-  const creditMembers = teamCreditMembers.value
+  const creditAgents = includeCredit ? teamCreditAgents.value : []
+  const creditMembers = includeCredit ? teamCreditMembers.value : []
 
   // 直属/信用分类：只展示「我」的直属一级，不展开下级的下级
   if (tab === 'direct_agent') {
@@ -317,23 +332,28 @@ function buildTeamTree(tab: TeamFilterTab): TeamListItem {
     }
   }
 
+  const children = [
+    ...agents.map((item) => ({ ...item })),
+    ...members.map((item) => ({ ...item })),
+    ...creditAgents.map((item) => ({ ...item })),
+    ...creditMembers.map((item) => ({ ...item })),
+  ]
+
   return {
     ...MOCK_TEAM_SELF,
-    children: [
-      ...agents.map((item) => ({ ...item })),
-      ...members.map((item) => ({ ...item })),
-      ...creditAgents.map((item) => ({ ...item })),
-      ...creditMembers.map((item) => ({ ...item })),
-    ],
+    children: includeCredit ? children : stripCreditTeamNodes(children),
   }
 }
 
 /** 收集树中所有可展开节点 id，以及各层「全部可见」条数（用于默认全部展开） */
-export function collectTeamFullExpandState(tab: TeamFilterTab): {
+export function collectTeamFullExpandState(
+  tab: TeamFilterTab,
+  options: BuildTeamTreeOptions = {},
+): {
   expandedIds: Set<string>
   moreVisibleCount: Record<string, number>
 } {
-  const root = buildTeamTree(tab)
+  const root = buildTeamTree(tab, options)
   const expandedIds = new Set<string>()
   const moreVisibleCount: Record<string, number> = {}
 
@@ -357,8 +377,9 @@ export function getTeamTreeRows(
   tab: TeamFilterTab,
   expandedIds: Set<string>,
   moreVisibleCount: Record<string, number> = {},
+  options: BuildTeamTreeOptions = {},
 ): TeamTreeRow[] {
-  const root = buildTeamTree(tab)
+  const root = buildTeamTree(tab, options)
   const rows: TeamTreeRow[] = []
 
   function walk(node: TeamListItem, depth: number, ancestorLastFlags: boolean[], isLast: boolean) {

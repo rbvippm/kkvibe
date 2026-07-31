@@ -20,33 +20,19 @@ export function rebateGameNetProfitFormula(isLevel1Agent: boolean) {
 
 /** 返佣 · 总佣金（与顶部 tip 一致） */
 export const REBATE_AGENT_PROFIT_FORMULA =
-  '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计；当月佣金 = 直属佣金；额外佣金 = 下一级佣金 + 下二级佣金'
+  '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计'
 
-/** 带入具体数字，便于核对；负佣金仅本月预计佣金计入 */
+/** 总佣金公式 tip：仅一行；负佣金仅本月预计佣金计入 */
 export function rebateTotalCommissionFormulaTip(
-  monthCommission: number,
-  l2Commission: number,
-  l3Commission: number,
-  negativeAccum: number,
+  _monthCommission: number,
+  _l2Commission: number,
+  _l3Commission: number,
+  _negativeAccum: number,
   includeNegative = true,
 ) {
-  const extra = Number((l2Commission + l3Commission).toFixed(2))
-  const neg = includeNegative ? negativeAccum : 0
-  const total = Number((monthCommission + extra + neg).toFixed(2))
-  const fmt = (n: number) =>
-    n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  const fmtSigned = (n: number) => (n > 0 ? `+${fmt(n)}` : n < 0 ? `-${fmt(Math.abs(n))}` : fmt(0))
-  const lines = [
-    includeNegative
-      ? `总佣金 = 当月佣金 + 额外佣金 + 负佣金累计`
-      : `总佣金 = 当月佣金 + 额外佣金`,
-    includeNegative
-      ? `= ${fmt(monthCommission)} + ${fmt(extra)} + (${fmtSigned(neg)}) = ${fmtSigned(total)}`
-      : `= ${fmt(monthCommission)} + ${fmt(extra)} = ${fmtSigned(total)}`,
-    `当月佣金 = 直属佣金 = ${fmt(monthCommission)}`,
-    `额外佣金 = 下一级佣金 + 下二级佣金 = ${fmt(l2Commission)} + ${fmt(l3Commission)} = ${fmt(extra)}`,
-  ]
-  return lines.join('\n')
+  return includeNegative
+    ? '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计'
+    : '总佣金 = 当月佣金 + 额外佣金'
 }
 
 /** 返佣 · 直属佣金（原一级） */
@@ -230,6 +216,15 @@ export const AGENT_MY_PROFIT_REBATE_LEVEL_TABS: {
   { key: 'l2', label: '下一级佣金', subtotalText: '+59.49', tone: 'positive' },
   { key: 'l3', label: '下二级佣金', subtotalText: '+59.49', tone: 'positive' },
 ]
+
+/**
+ * 按代理层级截取可见 Tab：
+ * 一级 → 直属 / 下一级 / 下二级；二级 → 直属 / 下一级；三级 → 仅直属
+ */
+export function agentMyProfitRebateLevelTabs(agentLevel: 1 | 2 | 3 = 1) {
+  const maxCount = agentLevel === 1 ? 3 : agentLevel === 2 ? 2 : 1
+  return AGENT_MY_PROFIT_REBATE_LEVEL_TABS.slice(0, maxCount)
+}
 
 /** 返佣 · 游戏项（净输赢） */
 const REBATE_GAME_BASE: { key: string; name: string }[] = [
@@ -457,8 +452,9 @@ export const AGENT_MY_PROFIT_REBATE_SUMMARY_ROW: AgentMyProfitProductRow =
 
 export const AGENT_MY_PROFIT_REBATE_FOOTNOTE = '本月数据每十分钟更新一次'
 
-/** 佣金项（游戏）明细：输赢 / VIP退水 / 代理赚水 / 游戏净输赢 */
+/** 佣金项（游戏）明细：下注有效金额（展示项，不参与净输赢） / 输赢 / VIP退水 / 代理赚水 / 游戏净输赢 */
 export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
+  { label: '下注有效金额', amountText: '18,650.00', tone: 'neutral' },
   { label: '输赢', amountText: '+2,723.30', tone: 'positive' },
   { label: 'VIP退水', amountText: '-186.50', tone: 'negative' },
   { label: '代理赚水', amountText: '-36.80', tone: 'negative' },
@@ -531,7 +527,6 @@ export const AGENT_MY_PROFIT_REBATE_L2_L3_DETAIL = AGENT_MY_PROFIT_REBATE_L2_DET
 export const AGENT_MY_PROFIT_REBATE_TOTAL_DETAIL: AgentMyProfitDetailRow[] = [
   {
     label: '直属佣金',
-    labelHint: '当月佣金',
     amountText: '+118.98',
     tone: 'positive',
   },
@@ -589,7 +584,6 @@ export function agentMyProfitRebateDetailRowsWithContext(
     const rows: AgentMyProfitDetailRow[] = [
       {
         label: '直属佣金',
-        labelHint: '当月佣金',
         amountText: l1Cell.amountText,
         tone: l1Cell.tone,
       },
@@ -654,7 +648,7 @@ export function agentMyProfitHasDetail(
 /**
  * 按身份 / 返佣级次返回明细
  * - 占成：游戏净输赢 / 总计七项
- * - 返佣：佣金项（游戏）走游戏净输赢四细项；本级小计按 Tab 级次公式；合计为三级汇总
+ * - 返佣：佣金项（游戏）走游戏净输赢细项（含展示项下注有效金额）；本级小计按 Tab 级次公式；合计为三级汇总
  * - 传入 rebateContext 时，末行金额与当前月份列表自洽
  */
 export function agentMyProfitDetailRows(
@@ -724,6 +718,17 @@ export function agentMyProfitRebateMonthKey(preset: ProfitDatePreset): string {
   if (preset === 'may') return '2026-05'
   if (preset === 'april') return '2026-04'
   return '2026-07'
+}
+
+/** 结算月 YYYY-MM → 快捷项（无匹配则 null，仍可选中该月） */
+export function agentMyProfitRebatePresetFromMonthKey(
+  month: string,
+): ProfitDatePreset | null {
+  if (month === '2026-07') return 'thisMonth'
+  if (month === '2026-06') return 'lastMonth'
+  if (month === '2026-05') return 'may'
+  if (month === '2026-04') return 'april'
+  return null
 }
 
 export function agentMyProfitToneClass(tone: AgentMyProfitTone) {

@@ -8,6 +8,7 @@ import {
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
   AGENT_MY_PROFIT_REBATE_LEVEL_TABS,
   AGENT_MY_PROFIT_SUMMARY_ROW,
+  agentMyProfitRebateLevelTabs,
   AGENT_MY_PROFIT_TOTAL,
   REBATE_DEFAULT_SECTION_SCALE,
   REBATE_EXTRA_COMMISSION_RATE,
@@ -25,6 +26,7 @@ import {
   agentMyProfitRebateExtraCommission,
   agentMyProfitRebateLevelFormula,
   agentMyProfitRebateMonthKey,
+  agentMyProfitRebatePresetFromMonthKey,
   agentMyProfitRebateSummaryRow,
   agentMyProfitTableNameHeader,
   agentMyProfitToneClass,
@@ -37,13 +39,19 @@ import {
   COMMISSION_NEGATIVE_TIP,
   COMMISSION_STATUS_META,
   COMMISSION_TOTAL_TIP,
+  MOCK_COMMISSION_AGENT_LEVEL,
   commissionHeroTitle,
   commissionTone,
   findCommissionBill,
   formatCommissionAmount,
+  formatCommissionMonthLabel,
+  getCommissionMonthOptions,
+  getDefaultCommissionMonth,
 } from '../../constants/agentCommissionReport'
 import { agentAppCurrency } from '../../constants/agentAppCurrency'
+import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -51,21 +59,40 @@ const router = useRouter()
 const { agentType, isRebateAgent, withAgentQuery } = useAgentIdentity()
 
 const preset = ref<ProfitDatePreset>(agentMyProfitDefaultPreset(agentType.value))
+/** 返佣结算月（月份选择与快捷 Tab 共用） */
+const rebateMonth = ref(getDefaultCommissionMonth())
 const rebateLevel = ref<RebateProfitLevel>('l1')
 const detailProduct = ref<AgentMyProfitProductRow | null>(null)
 const detailFormulaTipOpen = ref(false)
 const totalTipOpen = ref(false)
 const netWinTipOpen = ref(false)
 const negativeTipOpen = ref(false)
+const monthSheetOpen = ref(false)
 /** 游戏净输赢 / 其他成本：合计下展开细项 */
 const gameDetailsExpanded = ref(false)
 const costDetailsExpanded = ref(false)
 
 const dateFilterLabel = computed(() => agentMyProfitDateFilterLabel(agentType.value))
 const datePresets = computed(() => agentMyProfitPresets(agentType.value))
-const dateRangeText = computed(() => agentMyProfitDateRangeText(preset.value))
+const rebateMonthOptions = computed(() => getCommissionMonthOptions())
+const rebateLevelTabs = computed(() => agentMyProfitRebateLevelTabs(MOCK_COMMISSION_AGENT_LEVEL))
+const dateRangeText = computed(() =>
+  isRebateAgent.value
+    ? formatCommissionMonthLabel(rebateMonth.value)
+    : agentMyProfitDateRangeText(preset.value),
+)
+
+watch(
+  rebateLevelTabs,
+  (tabs) => {
+    if (!tabs.some((tab) => tab.key === rebateLevel.value)) {
+      rebateLevel.value = tabs[0]?.key ?? 'l1'
+    }
+  },
+  { immediate: true },
+)
 const currency = agentAppCurrency
-const rebateMonthKey = computed(() => agentMyProfitRebateMonthKey(preset.value))
+const rebateMonthKey = computed(() => rebateMonth.value)
 const rebateCommissionBill = computed(() => findCommissionBill(rebateMonthKey.value))
 const rebateHeroTitle = computed(() => commissionHeroTitle(rebateMonthKey.value))
 /** 负佣金累计仅本月「预计佣金」展示与计入总佣金 */
@@ -263,8 +290,37 @@ function openTotalDetail() {
 
 function pickPreset(key: ProfitDatePreset) {
   preset.value = key
+  if (isRebateAgent.value) {
+    rebateMonth.value = agentMyProfitRebateMonthKey(key)
+  }
   closeTotalTip()
   closeNetWinTip()
+  closeNegativeTip()
+}
+
+function isPresetActive(key: ProfitDatePreset) {
+  if (!isRebateAgent.value) return preset.value === key
+  return agentMyProfitRebateMonthKey(key) === rebateMonth.value
+}
+
+function openMonthSheet() {
+  if (!isRebateAgent.value) return
+  closeHeroTips()
+  monthSheetOpen.value = true
+}
+
+function closeMonthSheet() {
+  monthSheetOpen.value = false
+}
+
+function pickRebateMonth(month: string) {
+  rebateMonth.value = month
+  const matched = agentMyProfitRebatePresetFromMonthKey(month)
+  if (matched) preset.value = matched
+  closeMonthSheet()
+  closeTotalTip()
+  closeNetWinTip()
+  closeNegativeTip()
 }
 
 function statusClass(status: keyof typeof COMMISSION_STATUS_META) {
@@ -281,6 +337,7 @@ function commissionToneClass(value: number) {
 /** 明确回到代理概况，避免 history.back 异常或 Teleport 遮罩残留导致首页空白 */
 function goBack() {
   closeDetail()
+  closeMonthSheet()
   closeTotalTip()
   closeNetWinTip()
   closeNegativeTip()
@@ -334,7 +391,9 @@ onBeforeUnmount(() => {
           <img :src="AGENT_MY_PROFIT_ASSETS.backIcon" alt="" width="24" height="24" />
         </button>
         <h1 class="mh5-agent-my-profit-nav__title">{{ pageTitle }}</h1>
-        <div class="mh5-agent-my-profit-nav__right" aria-hidden="true" />
+        <div class="mh5-agent-my-profit-nav__right">
+          <Mh5SpecAnnot :spec="AGENT_MY_PROFIT_SPEC" placement="bottom" />
+        </div>
       </header>
 
       <!-- 返佣：对齐佣金详情卡（预计/发放 + 状态 + 总佣金币种 tip + 金额） -->
@@ -452,7 +511,22 @@ onBeforeUnmount(() => {
       <div class="mh5-agent-my-profit-date">
         <div class="mh5-agent-my-profit-date__row">
           <p class="mh5-agent-my-profit-date__label">{{ dateFilterLabel }}</p>
-          <div class="mh5-agent-my-profit-date__picker">
+          <button
+            v-if="isRebateAgent"
+            type="button"
+            class="mh5-agent-my-profit-date__picker mh5-agent-my-profit-date__picker--action"
+            aria-label="选择月份"
+            :aria-expanded="monthSheetOpen"
+            @click="openMonthSheet"
+          >
+            <div class="mh5-agent-my-profit-date__range">
+              <p>{{ dateRangeText }}</p>
+            </div>
+            <span class="mh5-agent-my-profit-date__icon" aria-hidden="true">
+              <img :src="AGENT_MY_PROFIT_ASSETS.calendarIcon" alt="" width="34" height="34" />
+            </span>
+          </button>
+          <div v-else class="mh5-agent-my-profit-date__picker">
             <div class="mh5-agent-my-profit-date__range">
               <p>{{ dateRangeText }}</p>
             </div>
@@ -468,8 +542,8 @@ onBeforeUnmount(() => {
             type="button"
             role="tab"
             class="mh5-agent-my-profit-date__preset"
-            :class="{ 'mh5-agent-my-profit-date__preset--active': preset === item.key }"
-            :aria-selected="preset === item.key"
+            :class="{ 'mh5-agent-my-profit-date__preset--active': isPresetActive(item.key) }"
+            :aria-selected="isPresetActive(item.key)"
             @click="pickPreset(item.key)"
           >
             {{ item.label }}
@@ -487,7 +561,7 @@ onBeforeUnmount(() => {
           aria-label="代理佣金级次"
         >
           <button
-            v-for="tab in AGENT_MY_PROFIT_REBATE_LEVEL_TABS"
+            v-for="tab in rebateLevelTabs"
             :key="tab.key"
             type="button"
             role="tab"
@@ -849,5 +923,51 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Transition>
+
+    <Teleport to="body">
+      <Transition name="mh5-agent-my-profit-sheet">
+        <div
+          v-if="monthSheetOpen"
+          class="mh5-agent-overlay-mask"
+          @click.self="closeMonthSheet"
+        >
+          <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet" role="dialog" aria-modal="true" aria-label="选择月份">
+            <h2 class="mh5-xcoin-sheet__title">选择月份</h2>
+            <button
+              v-for="opt in rebateMonthOptions"
+              :key="opt.key"
+              type="button"
+              class="mh5-xcoin-sheet__option"
+              :class="{ 'mh5-xcoin-sheet__option--active': rebateMonth === opt.key }"
+              @click="pickRebateMonth(opt.key)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+.mh5-agent-my-profit-sheet-enter-active,
+.mh5-agent-my-profit-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-agent-my-profit-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-agent-my-profit-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-agent-my-profit-sheet-enter-from,
+.mh5-agent-my-profit-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-agent-my-profit-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-agent-my-profit-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
+}
+</style>

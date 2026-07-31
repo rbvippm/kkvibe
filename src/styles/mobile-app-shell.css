@@ -16003,6 +16003,15 @@
   min-width: 0;
 }
 
+.mh5-agent-my-profit-date__picker--action {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .mh5-agent-my-profit-date__range {
   display: flex;
   flex: 1;

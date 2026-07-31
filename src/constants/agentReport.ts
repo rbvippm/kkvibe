@@ -129,6 +129,47 @@ export function getReportDetail(
   return VENDOR_DETAIL
 }
 
+/** 代理详情 · 游戏数据（返佣）：结构同「我的报表」，Mock 为下级代理口径（数字不同） */
+const DETAIL_OVERALL = buildDetail('52,180.00', 8640, 720, 96, 420)
+const DETAIL_CATEGORY_ALL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
+  sports: buildDetail('24,600.00', 5120, 480, 68, 210),
+  chess: buildDetail('11,280.00', 1860, 160, 28, 72),
+  esports: buildDetail('6,420.00', 980, 95, 16, 38),
+  fishing: buildDetail('3,860.00', -460, 52, 10, 22),
+  slots: buildDetail('7,020.00', 1340, 128, 24, 48),
+}
+const DETAIL_VENDOR = buildDetail('680.00', 320, 48, 18, 12)
+
+/** 代理详情页返佣「游戏数据」明细 */
+export function getAgentDetailReportDetail(
+  category: ReportCategoryKey,
+  vendor: ReportVendorKey,
+): ReportDetail {
+  if (category === 'all') return DETAIL_OVERALL
+  if (vendor === 'all') return DETAIL_CATEGORY_ALL[category]
+  return DETAIL_VENDOR
+}
+
+/** 会员详情 · 游戏统计（返佣）：无退水/赚水行，净输赢仅扣 VIP退水 */
+const MEMBER_DETAIL_OVERALL = buildDetail('68,240.00', 9860, 0, 120, 0)
+const MEMBER_DETAIL_CATEGORY_ALL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
+  sports: buildDetail('32,100.00', 5680, 0, 72, 0),
+  chess: buildDetail('14,860.00', 2140, 0, 32, 0),
+  esports: buildDetail('8,120.00', 1120, 0, 18, 0),
+  fishing: buildDetail('4,580.00', -380, 0, 12, 0),
+  slots: buildDetail('9,580.00', 1680, 0, 28, 0),
+}
+const MEMBER_DETAIL_VENDOR = buildDetail('820.00', 260, 0, 14, 0)
+
+export function getMemberDetailReportDetail(
+  category: ReportCategoryKey,
+  vendor: ReportVendorKey,
+): ReportDetail {
+  if (category === 'all') return MEMBER_DETAIL_OVERALL
+  if (vendor === 'all') return MEMBER_DETAIL_CATEGORY_ALL[category]
+  return MEMBER_DETAIL_VENDOR
+}
+
 export function reportDetailValueClass(tone: ReportValueTone) {
   if (tone === 'positive') return 'mh5-agent-report-detail__row-value--positive'
   if (tone === 'negative') return 'mh5-agent-report-detail__row-value--negative'
