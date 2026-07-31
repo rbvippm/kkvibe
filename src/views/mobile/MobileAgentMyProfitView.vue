@@ -586,14 +586,16 @@ onBeforeUnmount(() => {
               {{ rebateGameSection.amountHeader }}
             </span>
           </div>
-          <button
-            type="button"
+          <div
             class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-            :aria-expanded="gameDetailsExpanded"
-            aria-label="展开或收起游戏净输赢细项"
-            @click="toggleGameDetails"
           >
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron">
+            <button
+              type="button"
+              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+              :aria-expanded="gameDetailsExpanded"
+              aria-label="展开或收起游戏净输赢细项"
+              @click="toggleGameDetails"
+            >
               <span>{{ rebateGameSection.total.name }}</span>
               <span
                 class="mh5-agent-my-profit-table__chevron"
@@ -602,14 +604,14 @@ onBeforeUnmount(() => {
               >
                 ▾
               </span>
-            </span>
+            </button>
             <span
               class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
               :class="agentMyProfitToneClass(rebateGameSection.total.tone)"
             >
               {{ rebateGameSection.total.amountText }}
             </span>
-          </button>
+          </div>
           <Transition name="mh5-agent-my-profit-expand">
             <div v-if="gameDetailsExpanded" class="mh5-agent-my-profit-table__details">
               <component
@@ -653,14 +655,16 @@ onBeforeUnmount(() => {
               {{ rebateCostSection.amountHeader }}
             </span>
           </div>
-          <button
-            type="button"
+          <div
             class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-            :aria-expanded="costDetailsExpanded"
-            aria-label="展开或收起其他成本细项"
-            @click="toggleCostDetails"
           >
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron">
+            <button
+              type="button"
+              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+              :aria-expanded="costDetailsExpanded"
+              aria-label="展开或收起其他成本细项"
+              @click="toggleCostDetails"
+            >
               <span>{{ rebateCostSection.total.name }}</span>
               <span
                 class="mh5-agent-my-profit-table__chevron"
@@ -669,14 +673,14 @@ onBeforeUnmount(() => {
               >
                 ▾
               </span>
-            </span>
+            </button>
             <span
               class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
               :class="agentMyProfitToneClass(rebateCostSection.total.tone)"
             >
               {{ rebateCostSection.total.amountText }}
             </span>
-          </button>
+          </div>
           <Transition name="mh5-agent-my-profit-expand">
             <div v-if="costDetailsExpanded" class="mh5-agent-my-profit-table__details">
               <component

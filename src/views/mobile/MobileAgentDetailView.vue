@@ -51,7 +51,10 @@ import { isCommissionLevel1Agent } from '../../constants/agentCommissionReport'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
-import { AGENT_DETAIL_CREDIT_CURRENCY_SPEC } from '../../constants/agentDetailSpec'
+import {
+  AGENT_DETAIL_CREDIT_CURRENCY_SPEC,
+  AGENT_DETAIL_GAME_DATA_SPEC,
+} from '../../constants/agentDetailSpec'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -72,18 +75,20 @@ const reportCategory = ref<ReportCategoryKey>('all')
 const reportVendor = ref<ReportVendorKey>('all')
 
 const agent = computed(() => findAgentDetail(String(route.query.id ?? 'self')))
+/** 详情对象是否为当前登录代理本人 */
+const isViewingSelf = computed(() => String(route.query.id ?? 'self') === 'self')
 const isCredited = computed(() => Boolean(agent.value?.isCredited))
 const detailTabs = computed(() =>
   getAgentDetailTabs(isCredited.value, isRebateAgent.value),
 )
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
-/** 返佣：仅一级代理详情展示「代理赚水」 */
-const showRebateEarnWater = computed(
-  () => isRebateAgent.value && isCommissionLevel1Agent(),
-)
 const profitTabLabel = computed(() => (isRebateAgent.value ? '代理佣金' : '代理盈亏'))
 const profitTabFormula = computed(() =>
   isRebateAgent.value ? AGENT_COMMISSION_FORMULA : AGENT_PROFIT_FORMULA,
+)
+/** 仅「查看本人 + 一级代理」时展示并计入代理赚水；查看下级一律不含 */
+const showRebateEarnWater = computed(
+  () => isRebateAgent.value && isViewingSelf.value && isCommissionLevel1Agent(),
 )
 
 watch(isCredited, (credited) => {
@@ -119,7 +124,11 @@ const rebateGameSectionTitle = computed(() =>
 )
 const rebateGameFormula = computed(() => rebateGameNetProfitFormula(showRebateEarnWater.value))
 const rebateGameDetail = computed(() => {
-  const detail = getAgentDetailReportDetail(reportCategory.value, reportVendor.value)
+  const detail = getAgentDetailReportDetail(
+    reportCategory.value,
+    reportVendor.value,
+    showRebateEarnWater.value,
+  )
   return {
     ...detail,
     rows: detail.rows.filter((row) => {
@@ -203,7 +212,11 @@ function closeProfitFormulaTips() {
     <Mh5SubPageHeader title="代理详情">
       <template #right>
         <div class="mh5-agent-detail-header-actions">
-          <Mh5SpecAnnot :spec="AGENT_DETAIL_CREDIT_CURRENCY_SPEC" placement="bottom" />
+          <Mh5SpecAnnot
+            v-if="!isRebateAgent"
+            :spec="AGENT_DETAIL_CREDIT_CURRENCY_SPEC"
+            placement="bottom"
+          />
           <button
             type="button"
             class="mh5-agent-detail-currency"
@@ -237,19 +250,27 @@ function closeProfitFormulaTips() {
         </div>
       </section>
 
-      <div class="mh5-agent-detail-tabs" role="tablist" aria-label="代理详情分类">
-        <button
-          v-for="tab in detailTabs"
-          :key="tab.key"
-          type="button"
-          role="tab"
-          class="mh5-agent-detail-tab"
-          :class="{ 'mh5-agent-detail-tab--active': activeTab === tab.key }"
-          :aria-selected="activeTab === tab.key"
-          @click="activeTab = tab.key"
-        >
-          {{ tab.label }}
-        </button>
+      <div class="mh5-agent-detail-tabs-row">
+        <div class="mh5-agent-detail-tabs" role="tablist" aria-label="代理详情分类">
+          <template v-for="tab in detailTabs" :key="tab.key">
+            <button
+              type="button"
+              role="tab"
+              class="mh5-agent-detail-tab"
+              :class="{ 'mh5-agent-detail-tab--active': activeTab === tab.key }"
+              :aria-selected="activeTab === tab.key"
+              @click="activeTab = tab.key"
+            >
+              {{ tab.label }}
+            </button>
+            <span
+              v-if="tab.key === 'game' && isRebateAgent"
+              class="mh5-agent-detail-tab-annot"
+            >
+              <Mh5SpecAnnot :spec="AGENT_DETAIL_GAME_DATA_SPEC" placement="bottom" />
+            </span>
+          </template>
+        </div>
       </div>
 
       <template v-if="activeTab === 'wallet'">

@@ -8,7 +8,9 @@ import {
   MOCK_AGENT_ME_UPDATED_AT,
   type AgentMeMenuItem,
 } from '../../constants/agentMe'
+import { AGENT_ME_REBATE_SPEC } from '../../constants/agentMeSpec'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 
 const router = useRouter()
 const { isRebateAgent, withAgentQuery } = useAgentIdentity()
@@ -19,6 +21,9 @@ const REBATE_PROFIT_LABELS: Record<string, string> = {
   kkv: 'KKV总佣金',
   usdt: 'USDT总佣金',
 }
+
+/** 返佣：模块名「我的佣金」；占成：「我的盈亏」 */
+const profitSectionTitle = computed(() => (isRebateAgent.value ? '我的佣金' : '我的盈亏'))
 
 /** 返佣代理无信用额度行，文案为「总佣金」 */
 const profitRows = computed(() => {
@@ -49,7 +54,14 @@ function openMenu(item: AgentMeMenuItem) {
 <template>
   <div class="agent-me-page">
     <header class="agent-me-header">
-      <h1 class="agent-me-header__title">我的</h1>
+      <h1 class="agent-me-header__title">
+        我的
+        <Mh5SpecAnnot
+          v-if="isRebateAgent"
+          :spec="AGENT_ME_REBATE_SPEC"
+          placement="bottom"
+        />
+      </h1>
     </header>
 
     <main class="agent-me-main">
@@ -75,7 +87,7 @@ function openMenu(item: AgentMeMenuItem) {
       </section>
 
       <section class="agent-me-profit">
-        <h2 class="agent-me-profit__title">我的盈亏</h2>
+        <h2 class="agent-me-profit__title">{{ profitSectionTitle }}</h2>
         <div class="agent-me-profit__rows">
           <div
             v-for="row in profitRows"

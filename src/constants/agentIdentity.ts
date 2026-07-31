@@ -36,3 +36,19 @@ export const AGENT_MY_REBATE_RATIO_ROWS = [
   { key: 'extra_l1', name: '下一级额外佣金', shareText: '5%' },
   { key: 'extra_l2', name: '下二级额外佣金', shareText: '2.5%' },
 ] as const
+
+export type AgentRebateRatioRow = (typeof AGENT_MY_REBATE_RATIO_ROWS)[number]
+
+/**
+ * 按代理层级过滤返佣比例行：
+ * 一级 3 行；二级去掉下二级；三级仅直属佣金
+ */
+export function agentMyRebateRatioRowsByLevel(agentLevel: 1 | 2 | 3 = 1): AgentRebateRatioRow[] {
+  if (agentLevel >= 3) {
+    return AGENT_MY_REBATE_RATIO_ROWS.filter((row) => row.key === 'platform')
+  }
+  if (agentLevel === 2) {
+    return AGENT_MY_REBATE_RATIO_ROWS.filter((row) => row.key !== 'extra_l2')
+  }
+  return [...AGENT_MY_REBATE_RATIO_ROWS]
+}

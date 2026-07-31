@@ -28,7 +28,7 @@ import {
   type ReportRangePreset,
   type ReportVendorKey,
 } from '../../constants/agentReport'
-import { AGENT_REPORT_CURRENCY_SUMMARY_SPEC } from '../../constants/agentReportSpec'
+import { AGENT_REPORT_GAME_STATS_SPEC } from '../../constants/agentReportSpec'
 import '../../styles/mobile-app-shell.css'
 
 const { isRebateAgent } = useAgentIdentity()
@@ -94,7 +94,11 @@ function closeGameProfitFormulaTip() {
     <header class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">我的报表</h1>
       <div class="mh5-agent-report-header__actions">
-        <Mh5SpecAnnot :spec="AGENT_REPORT_CURRENCY_SUMMARY_SPEC" placement="bottom" />
+        <Mh5SpecAnnot
+          v-if="isRebateAgent"
+          :spec="AGENT_REPORT_GAME_STATS_SPEC"
+          placement="bottom"
+        />
         <button
           type="button"
           class="mh5-agent-detail-currency"

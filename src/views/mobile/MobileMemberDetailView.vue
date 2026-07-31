@@ -31,11 +31,13 @@ import {
   getMemberProfitDetail,
   getMemberProfitSummaryRows,
   getMemberTotalProfit,
+  memberRebateGameNetProfitFormula,
   profitTotalClass,
   profitValueClass,
   type MemberProfitCategoryKey,
   type MemberProfitVendorKey,
 } from '../../constants/memberDetailProfit'
+import { isCommissionLevel1Agent } from '../../constants/agentCommissionReport'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_VENDOR_PILLS,
@@ -46,9 +48,11 @@ import {
   type ReportCategoryKey,
   type ReportVendorKey,
 } from '../../constants/agentReport'
-import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
-import { MEMBER_DETAIL_CREDIT_CURRENCY_SPEC } from '../../constants/memberDetailSpec'
+import {
+  MEMBER_DETAIL_CREDIT_CURRENCY_SPEC,
+  MEMBER_DETAIL_GAME_STATS_SPEC,
+} from '../../constants/memberDetailSpec'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
@@ -84,13 +88,26 @@ const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value))
 const rebateGameSectionTitle = computed(() =>
   reportCategoryTitle(reportCategory.value, reportVendor.value),
 )
-/** 会员侧无代理赚水，公式用不含赚水口径 */
-const rebateGameFormula = computed(() => rebateGameNetProfitFormula(false))
+/** 仅一级代理看直属会员时展示代理赚水 */
+const showMemberRebateEarnWater = computed(
+  () => isRebateAgent.value && isCommissionLevel1Agent(),
+)
+const rebateGameFormula = computed(() =>
+  memberRebateGameNetProfitFormula(showMemberRebateEarnWater.value),
+)
 const rebateGameDetail = computed(() => {
-  const detail = getMemberDetailReportDetail(reportCategory.value, reportVendor.value)
+  const detail = getMemberDetailReportDetail(
+    reportCategory.value,
+    reportVendor.value,
+    showMemberRebateEarnWater.value,
+  )
   return {
     ...detail,
-    rows: detail.rows.filter((row) => row.key !== 'rebate' && row.key !== 'commission'),
+    rows: detail.rows.filter((row) => {
+      if (row.key === 'rebate') return false
+      if (row.key === 'commission' && !showMemberRebateEarnWater.value) return false
+      return true
+    }),
   }
 })
 
@@ -222,7 +239,11 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         </button>
         <h1 class="mh5-member-detail-nav__title">会员详情</h1>
         <div class="mh5-member-detail-nav__actions">
-          <Mh5SpecAnnot :spec="MEMBER_DETAIL_CREDIT_CURRENCY_SPEC" placement="bottom" />
+          <Mh5SpecAnnot
+            v-if="!isRebateAgent"
+            :spec="MEMBER_DETAIL_CREDIT_CURRENCY_SPEC"
+            placement="bottom"
+          />
           <button
             type="button"
             class="mh5-member-detail-nav__currency"
@@ -416,16 +437,22 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 
       <template v-else-if="activeTab === 'game'">
         <div class="mh5-member-detail-subtabs">
-          <button
-            v-for="sub in MEMBER_GAME_SUB_TABS"
-            :key="sub.key"
-            type="button"
-            class="mh5-member-detail-subtab"
-            :class="{ 'mh5-member-detail-subtab--active': gameSubTab === sub.key }"
-            @click="gameSubTab = sub.key"
-          >
-            {{ sub.label }}
-          </button>
+          <template v-for="sub in MEMBER_GAME_SUB_TABS" :key="sub.key">
+            <button
+              type="button"
+              class="mh5-member-detail-subtab"
+              :class="{ 'mh5-member-detail-subtab--active': gameSubTab === sub.key }"
+              @click="gameSubTab = sub.key"
+            >
+              {{ sub.label }}
+            </button>
+            <span
+              v-if="sub.key === 'stats' && isRebateAgent"
+              class="mh5-member-detail-subtab-annot"
+            >
+              <Mh5SpecAnnot :spec="MEMBER_DETAIL_GAME_STATS_SPEC" placement="bottom" />
+            </span>
+          </template>
         </div>
 
         <section

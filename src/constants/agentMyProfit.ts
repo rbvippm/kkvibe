@@ -7,11 +7,11 @@ export { AGENT_GAME_PROFIT_FORMULA, AGENT_PROFIT_FORMULA }
 
 /** 返佣 · 游戏净输赢（一级代理：含代理赚水） */
 export const REBATE_GAME_NET_PROFIT_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【-团队VIP退水】 + 【-代理赚水】'
+  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-代理赚水】'
 
 /** 返佣 · 游戏净输赢（非一级：无代理赚水） */
 export const REBATE_GAME_NET_PROFIT_FORMULA_NO_EARN =
-  '游戏净输赢 = 【游戏输赢】 + 【-团队VIP退水】'
+  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】'
 
 /** 按代理层级返回返佣游戏净输赢公式 tip */
 export function rebateGameNetProfitFormula(isLevel1Agent: boolean) {

@@ -26,9 +26,23 @@ export {
 export const MEMBER_PROFIT_FORMULA =
   '会员盈亏 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
 
-/** 场馆明细标题与公式左侧统一为「游戏净输赢」（不含成本三项） */
+/** 场馆明细标题与公式左侧统一为「游戏净输赢」（不含成本三项；占成） */
 export const MEMBER_GAME_PROFIT_FORMULA =
   '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】'
+
+/** 返佣查看会员游戏统计：无会员退水（返佣不给会员设退水） */
+export const MEMBER_REBATE_GAME_NET_PROFIT_FORMULA =
+  '游戏净输赢 = 【游戏输赢】 + 【-VIP退水】'
+
+/** 一级代理看直属会员：另含代理赚水 */
+export const MEMBER_REBATE_GAME_NET_PROFIT_FORMULA_WITH_EARN =
+  '游戏净输赢 = 【游戏输赢】 + 【-VIP退水】 + 【-代理赚水】'
+
+export function memberRebateGameNetProfitFormula(includeEarnWater: boolean) {
+  return includeEarnWater
+    ? MEMBER_REBATE_GAME_NET_PROFIT_FORMULA_WITH_EARN
+    : MEMBER_REBATE_GAME_NET_PROFIT_FORMULA
+}
 
 type MemberProfitSummaryMock = {
   gameProfit: number

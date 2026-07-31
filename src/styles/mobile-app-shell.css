@@ -1684,6 +1684,13 @@
   color: var(--mh5-app-text);
 }
 
+.mh5-wallet-sheet__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .mh5-wallet-sheet__close {
   display: grid;
   place-items: center;
@@ -9949,6 +9956,9 @@
 }
 
 .agent-me-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 17px;
   font-weight: 600;
@@ -14334,14 +14344,25 @@
   color: #999;
 }
 
+.mh5-agent-detail-tabs-row {
+  margin-top: 14px;
+}
+
 .mh5-agent-detail-tabs {
   display: flex;
   gap: 0;
-  margin-top: 14px;
   padding: 0 4px;
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+}
+
+.mh5-agent-detail-tab-annot {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin: 0 2px 0 -4px;
+  align-self: center;
 }
 
 .mh5-agent-detail-tabs::-webkit-scrollbar {
@@ -14939,6 +14960,7 @@
 
 .mh5-member-detail-subtabs {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 12px;
   padding: 0 4px;
@@ -14956,6 +14978,13 @@
   color: #888;
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.mh5-member-detail-subtab-annot {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: -4px;
 }
 
 .mh5-member-detail-subtab--active {
@@ -16173,7 +16202,7 @@
 
 .mh5-agent-my-profit-formula-card {
   margin-top: 14px;
-  padding: 14px 12px 10px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid #eadfce;
   background: linear-gradient(180deg, #fffaf3 0%, #fff 60%);
@@ -16185,14 +16214,76 @@
   padding-right: 10px;
 }
 
+/** 公式卡：标签同行、金额同行、运算符对齐数值中线 */
 .mh5-agent-my-profit-formula {
+  --mh5-formula-label-h: 18px;
+  --mh5-formula-gap: 4px;
+  --mh5-formula-value-lh: 1.25;
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
 }
 
 .mh5-agent-my-profit-formula--extra {
-  gap: 2px;
+  gap: 3px;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--mh5-formula-gap);
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-cell__label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  min-height: var(--mh5-formula-label-h);
+  height: var(--mh5-formula-label-h);
+  width: 100%;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #8a8494;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-cell__value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  min-height: calc(var(--mh5-my-profit-amount-size, 15px) * var(--mh5-formula-value-lh));
+  width: 100%;
+  line-height: var(--mh5-formula-value-lh);
+  text-align: right;
+}
+
+.mh5-agent-my-profit-formula .mh5-agent-commission-formula__op {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  /* 跳过标签行高度，与数值垂直居中对齐 */
+  margin-top: calc(var(--mh5-formula-label-h) + var(--mh5-formula-gap));
+  padding: 0;
+  min-height: calc(var(--mh5-my-profit-amount-size, 15px) * var(--mh5-formula-value-lh));
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: #999;
 }
 
 .mh5-agent-my-profit-formula--extra .mh5-agent-commission-cell__label {
@@ -16203,20 +16294,13 @@
   font-size: 13px;
 }
 
+.mh5-agent-my-profit-formula--extra .mh5-agent-commission-formula__op {
+  min-height: calc(13px * var(--mh5-formula-value-lh));
+  font-size: 13px;
+}
+
 .mh5-agent-my-profit-formula--extra .mh5-agent-my-profit-formula__result-value {
-  font-size: 14px !important;
-}
-
-.mh5-agent-my-profit-formula .mh5-agent-commission-cell__label {
-  display: flex;
-  justify-content: flex-end;
-  text-align: right;
-  font-size: 11px;
-  color: #8a8494;
-}
-
-.mh5-agent-my-profit-formula .mh5-agent-commission-cell__value {
-  text-align: right;
+  font-size: 13px !important;
 }
 
 .mh5-agent-my-profit-formula__rate {
@@ -16225,18 +16309,20 @@
 }
 
 .mh5-agent-my-profit-formula__result {
-  flex: 1.15;
+  flex: 1.12;
   min-width: 0;
-  padding: 6px 8px;
+  /* 与左右格同结构，仅加横向内边距与底色，避免标签/金额整体下沉 */
+  padding: 0 8px;
   border: none;
   border-radius: 8px;
-  background: rgba(24, 175, 145, 0.06);
+  background: rgba(24, 175, 145, 0.08);
   text-align: right;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mh5-agent-my-profit-formula__result-value {
-  font-size: 16px !important;
+  font-size: var(--mh5-my-profit-amount-size, 15px) !important;
   font-weight: 700 !important;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -16266,20 +16352,37 @@
 
 .mh5-agent-my-profit-table__row--expand {
   width: 100%;
-  border: none;
   border-bottom: 1px solid #f0e6dc;
-  cursor: pointer;
+  cursor: default;
   text-align: left;
 }
 
 .mh5-agent-my-profit-table__row--expand:active {
-  background: #fff1e4;
+  opacity: 1;
 }
 
 .mh5-agent-my-profit-table__name-with-chevron {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/** 仅「合计 ▾」可点展开，右侧金额不响应 */
+.mh5-agent-my-profit-table__expand-trigger {
+  box-sizing: border-box;
+  margin: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mh5-agent-my-profit-table__expand-trigger:active {
+  background: rgba(255, 140, 0, 0.1);
 }
 
 .mh5-agent-my-profit-table__chevron {
@@ -16731,6 +16834,23 @@
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 8px 32px rgb(0 0 0 / 16%);
+}
+
+.mh5-agent-my-share-dialog__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 310px;
+  max-width: 100%;
+  margin-bottom: 12px;
+}
+
+.mh5-agent-my-share-dialog__title-text {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1d1d1f;
+  line-height: 1.3;
 }
 
 .mh5-agent-my-share-dialog__body {

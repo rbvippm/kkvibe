@@ -1,4 +1,4 @@
-/** 团队管理 · 移动端 PRD 标注（注1/注2/注3） */
+/** 团队管理 · 移动端 PRD 标注（注1/注2/注3/注4） */
 
 import { buildMobilePrdSections, type MobilePrdSpec } from './mobilePrdSpec'
 
@@ -6,6 +6,8 @@ export const AGENT_TEAM_SPEC_ANNOT_NO = {
   inviteExisting: 1,
   inviteRecords: 2,
   memberInvites: 3,
+  /** 返佣代理 · 团队管理范围与创建能力 */
+  rebateTeam: 4,
 } as const
 
 export const AGENT_TEAM_INVITE_EXISTING_SPEC: MobilePrdSpec = {
@@ -141,6 +143,48 @@ export const MEMBER_AGENT_INVITES_SPEC: MobilePrdSpec = {
       '同意 → 代理端「我的邀请记录」（注2）对应条变已同意 + 团队管理直属下级列表追加；「我的」→「代理中心」。',
       '拒绝 → 仅会员端该条变已拒绝，代理端记录同步（原型可后续补全）。',
       '返回顶栏 ← → router.back()。',
+    ],
+  }),
+}
+
+/** 注4 · 返佣代理团队管理（无信用 / 创建无占成退水） */
+export const AGENT_TEAM_REBATE_SPEC: MobilePrdSpec = {
+  no: AGENT_TEAM_SPEC_ANNOT_NO.rebateTeam,
+  title: '返佣代理团队管理',
+  sections: buildMobilePrdSections({
+    logic: [
+      '返佣代理的团队管理仅覆盖「无信用」体系：团队树与筛选项只含普通代理、直属会员，不包含信用代理、信用会员。',
+      '创建/邀请能力不含占成、退水配置：添加代理、邀请现有会员为下级均不设置占成与退水；添加会员不设置退水。',
+      '返佣代理不提供代理授信、会员授信入口；快捷菜单亦不出现退水比例、收益比例等占成侧能力。',
+    ],
+    interaction: [
+      '筛选 Tab：全部 / 直属代理 / 直属会员；不展示「信用代理」「信用会员」。',
+      '顶栏「+」创建账户：可选添加代理、添加会员、邀请现有会员为下级；无「会员授信」等信用类选项。',
+      '添加代理 / 邀请下级：流程中不出现占成滑块、退水滑块、其他成本及各产品比例表（邀请链路见注1返佣两步）。',
+      '添加会员：进入创建会员页，无退水比例设置项。',
+      '行内「···」：返佣下不展示退水比例、代理授信、会员授信；可保留备注等通用项。',
+    ],
+    visual: [
+      '顶栏标题「团队管理」旁身份胶囊「返佣代理」，标题侧「注4」。',
+      '筛选区仅三个 pill；团队树节点不出现信用标识（如「信」标）与信用分类节点。',
+      '创建账户 Sheet 仅三条非信用选项；无占成/退水配置页穿插。',
+    ],
+    data: [
+      '团队节点类型：本人、下级代理、直属会员；不含信用代理、信用会员。',
+      '筛选枚举（返佣）：全部、直属代理、直属会员。',
+      '创建账户枚举（返佣）：添加代理、添加会员、邀请现有会员为下级。',
+      '原型树数据在返佣身份下过滤信用节点；人数统计「代 / 会」不含信用账号。',
+    ],
+    exception: [
+      '若本地态残留信用筛选 Tab，进入返佣后自动回退「全部」。',
+      '误触授信类入口 → 提示「返佣代理不支持…授信」。',
+      '占成身份不受本注约束：仍可展示信用筛选、授信与占成/退水配置。',
+    ],
+    routing: [
+      '承载页：代理中心 · 团队管理 Tab（AgentTeamPage，返佣身份）。',
+      '添加代理 → mobile-agent-create-account（返佣无占成/退水步）。',
+      '添加会员 → mobile-agent-create-member（无退水设置）。',
+      '邀请现有会员为下级 → mobile-agent-invite-member（注1 返佣两步，无收益比例）。',
     ],
   }),
 }

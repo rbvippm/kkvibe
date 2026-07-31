@@ -3,6 +3,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
 import { findAgentDetail } from '../../constants/agentDetail'
 import {
@@ -33,6 +34,8 @@ import {
   type BetTimePreset,
 } from '../../constants/betOrderQuery'
 import '../../styles/mobile-app-shell.css'
+
+const { isRebateAgent } = useAgentIdentity()
 
 withDefaults(
   defineProps<{
@@ -295,14 +298,22 @@ function summaryWinLoseClass(value: number) {
     <header v-if="embedded" class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
       <div class="mh5-agent-report-header__actions">
-        <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
+        <Mh5SpecAnnot
+          v-if="!isRebateAgent"
+          :spec="AGENT_BET_ORDER_QUERY_SPEC"
+          placement="bottom"
+        />
         <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
       </div>
     </header>
     <Mh5SubPageHeader v-else :title="pageTitle">
       <template #right>
         <div class="mh5-sub-header__actions">
-          <Mh5SpecAnnot :spec="AGENT_BET_ORDER_QUERY_SPEC" placement="bottom" />
+          <Mh5SpecAnnot
+            v-if="!isRebateAgent"
+            :spec="AGENT_BET_ORDER_QUERY_SPEC"
+            placement="bottom"
+          />
           <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
         </div>
       </template>

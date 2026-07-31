@@ -8,6 +8,7 @@ import {
 } from '../constants/agentOverview'
 import {
   agentAppCurrency,
+  isAgentCreditCurrency,
   overviewCurrencyToWallet,
   setAgentAppCurrency,
   walletCurrencyToOverview,
@@ -30,11 +31,19 @@ const route = useRoute()
 const router = useRouter()
 const { agentType, isRebateAgent, agentTypeLabel, withAgentQuery } = useAgentIdentity()
 
-watch(isRebateAgent, (rebate) => {
-  /** 返佣无「上周」快捷；若当前仍落在上周则切到本月 */
-  if (rebate && preset.value === 'lastWeek') preset.value = 'thisMonth'
-  if (!rebate && preset.value === 'thisMonth') preset.value = 'lastWeek'
-})
+watch(
+  isRebateAgent,
+  (rebate) => {
+    /** 返佣无「上周」快捷；若当前仍落在上周则切到本月 */
+    if (rebate && preset.value === 'lastWeek') preset.value = 'thisMonth'
+    if (!rebate && preset.value === 'thisMonth') preset.value = 'lastWeek'
+    /** 返佣无信用额度：若当前为信用币种则回退 KKC */
+    if (rebate && isAgentCreditCurrency(agentAppCurrency.value)) {
+      setAgentAppCurrency('KKC')
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.query.tab,

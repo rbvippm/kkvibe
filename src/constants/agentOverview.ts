@@ -41,6 +41,16 @@ export const AGENT_OVERVIEW_CURRENCY_OPTIONS: AgentOverviewCurrencyOption[] = [
   { value: '信用额度-USD', label: '信用额度-USD', symbol: '$', color: '#0ea5e9' },
 ]
 
+/** 返佣代理无信用额度，币种列表仅现金三项 */
+export function getAgentOverviewCurrencyOptions(
+  identity: 'share' | 'rebate' = 'share',
+): AgentOverviewCurrencyOption[] {
+  if (identity === 'rebate') {
+    return AGENT_OVERVIEW_CURRENCY_OPTIONS.filter((opt) => !opt.value.startsWith('信用额度'))
+  }
+  return AGENT_OVERVIEW_CURRENCY_OPTIONS
+}
+
 export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, string> = {
   KKC: '236,188,666.00',
   KKV: '12,880.50',

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
 import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
-  AGENT_OVERVIEW_CURRENCY_OPTIONS,
+  getAgentOverviewCurrencyOptions,
   chunkOverviewStats,
   DIRECT_STAT_ROW_SIZES,
   MOCK_DIRECT_STATS,
@@ -16,7 +16,9 @@ import {
   type ProfitRankTab,
 } from '../../constants/agentOverview'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
+import { AGENT_OVERVIEW_CURRENCY_SHEET_SPEC } from '../../constants/agentOverviewSpec'
 import type { AgentIdentityType } from '../../constants/agentIdentity'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   findCommissionBill,
   formatCommissionAmount,
@@ -53,6 +55,7 @@ const props = withDefaults(
 const isRebate = computed(() => props.agentType === 'rebate')
 const ratioTabLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
 const profitTabLabel = computed(() => (isRebate.value ? '预计佣金' : '我的盈亏'))
+const currencyOptions = computed(() => getAgentOverviewCurrencyOptions(props.agentType))
 
 /** 返佣：取本月预计总佣金（与「我的佣金」页同口径） */
 const profitTabValue = computed(() => {
@@ -390,7 +393,10 @@ function pickCurrency(value: AgentOverviewCurrency) {
             aria-labelledby="agent-currency-sheet-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">选择币种</h2>
+              <div class="mh5-wallet-sheet__title-row">
+                <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">选择币种</h2>
+                <Mh5SpecAnnot :spec="AGENT_OVERVIEW_CURRENCY_SHEET_SPEC" placement="bottom" />
+              </div>
               <button
                 type="button"
                 class="mh5-wallet-sheet__close"
@@ -409,7 +415,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
             </div>
             <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
               <button
-                v-for="opt in AGENT_OVERVIEW_CURRENCY_OPTIONS"
+                v-for="opt in currencyOptions"
                 :key="opt.value"
                 type="button"
                 class="agent-currency-sheet__item"

@@ -22,7 +22,9 @@ import {
   type TeamListItem,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
+import { AGENT_TEAM_REBATE_SPEC } from '../../constants/agentTeamSpec'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -337,6 +339,11 @@ onUnmounted(() => {
       <h1 class="agent-team-header__title">
         团队管理
         <span class="agent-team-header__identity">{{ agentTypeLabel }}</span>
+        <Mh5SpecAnnot
+          v-if="isRebateAgent"
+          :spec="AGENT_TEAM_REBATE_SPEC"
+          placement="bottom"
+        />
       </h1>
       <div class="agent-team-header__actions">
         <button

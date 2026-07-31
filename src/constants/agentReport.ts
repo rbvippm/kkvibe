@@ -129,45 +129,75 @@ export function getReportDetail(
   return VENDOR_DETAIL
 }
 
-/** 代理详情 · 游戏数据（返佣）：结构同「我的报表」，Mock 为下级代理口径（数字不同） */
-const DETAIL_OVERALL = buildDetail('52,180.00', 8640, 720, 96, 420)
-const DETAIL_CATEGORY_ALL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
-  sports: buildDetail('24,600.00', 5120, 480, 68, 210),
-  chess: buildDetail('11,280.00', 1860, 160, 28, 72),
-  esports: buildDetail('6,420.00', 980, 95, 16, 38),
-  fishing: buildDetail('3,860.00', -460, 52, 10, 22),
-  slots: buildDetail('7,020.00', 1340, 128, 24, 48),
-}
-const DETAIL_VENDOR = buildDetail('680.00', 320, 48, 18, 12)
+/**
+ * 代理详情 · 游戏数据（返佣）
+ * - 始终无「退水」行（rebate 入参为 0）
+ * - 代理赚水仅「查看本人 + 一级代理」时计入（includeCommission）
+ */
+const DETAIL_NUMS = {
+  overall: { validBet: '52,180.00', win: 8640, vip: 96, commission: 420 },
+  sports: { validBet: '24,600.00', win: 5120, vip: 68, commission: 210 },
+  chess: { validBet: '11,280.00', win: 1860, vip: 28, commission: 72 },
+  esports: { validBet: '6,420.00', win: 980, vip: 16, commission: 38 },
+  fishing: { validBet: '3,860.00', win: -460, vip: 10, commission: 22 },
+  slots: { validBet: '7,020.00', win: 1340, vip: 24, commission: 48 },
+  vendor: { validBet: '680.00', win: 320, vip: 18, commission: 12 },
+} as const
 
 /** 代理详情页返佣「游戏数据」明细 */
 export function getAgentDetailReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
+  includeCommission = false,
 ): ReportDetail {
-  if (category === 'all') return DETAIL_OVERALL
-  if (vendor === 'all') return DETAIL_CATEGORY_ALL[category]
-  return DETAIL_VENDOR
+  const nums =
+    category === 'all'
+      ? DETAIL_NUMS.overall
+      : vendor === 'all'
+        ? DETAIL_NUMS[category]
+        : DETAIL_NUMS.vendor
+  return buildDetail(
+    nums.validBet,
+    nums.win,
+    0,
+    nums.vip,
+    includeCommission ? nums.commission : 0,
+  )
 }
 
-/** 会员详情 · 游戏统计（返佣）：无退水/赚水行，净输赢仅扣 VIP退水 */
-const MEMBER_DETAIL_OVERALL = buildDetail('68,240.00', 9860, 0, 120, 0)
-const MEMBER_DETAIL_CATEGORY_ALL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
-  sports: buildDetail('32,100.00', 5680, 0, 72, 0),
-  chess: buildDetail('14,860.00', 2140, 0, 32, 0),
-  esports: buildDetail('8,120.00', 1120, 0, 18, 0),
-  fishing: buildDetail('4,580.00', -380, 0, 12, 0),
-  slots: buildDetail('9,580.00', 1680, 0, 28, 0),
-}
-const MEMBER_DETAIL_VENDOR = buildDetail('820.00', 260, 0, 14, 0)
+/**
+ * 会员详情 · 游戏统计（返佣）
+ * - 始终无「退水/会员退水」
+ * - 代理赚水仅一级代理看直属会员时计入（includeCommission）
+ */
+const MEMBER_DETAIL_NUMS = {
+  overall: { validBet: '68,240.00', win: 9860, vip: 120, commission: 200 },
+  sports: { validBet: '32,100.00', win: 5680, vip: 72, commission: 95 },
+  chess: { validBet: '14,860.00', win: 2140, vip: 32, commission: 48 },
+  esports: { validBet: '8,120.00', win: 1120, vip: 18, commission: 28 },
+  fishing: { validBet: '4,580.00', win: -380, vip: 12, commission: 18 },
+  slots: { validBet: '9,580.00', win: 1680, vip: 28, commission: 42 },
+  vendor: { validBet: '820.00', win: 260, vip: 14, commission: 22 },
+} as const
 
 export function getMemberDetailReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
+  includeCommission = false,
 ): ReportDetail {
-  if (category === 'all') return MEMBER_DETAIL_OVERALL
-  if (vendor === 'all') return MEMBER_DETAIL_CATEGORY_ALL[category]
-  return MEMBER_DETAIL_VENDOR
+  const nums =
+    category === 'all'
+      ? MEMBER_DETAIL_NUMS.overall
+      : vendor === 'all'
+        ? MEMBER_DETAIL_NUMS[category]
+        : MEMBER_DETAIL_NUMS.vendor
+  return buildDetail(
+    nums.validBet,
+    nums.win,
+    0,
+    nums.vip,
+    includeCommission ? nums.commission : 0,
+  )
 }
 
 export function reportDetailValueClass(tone: ReportValueTone) {
