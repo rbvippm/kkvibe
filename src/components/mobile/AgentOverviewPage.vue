@@ -10,7 +10,7 @@ import {
   MOCK_DIRECT_STATS,
   MOCK_PROFIT_RANKINGS,
   MOCK_SUB_AGENT_STATS,
-  PROFIT_RANK_TABS,
+  getProfitRankTabs,
   SUB_AGENT_STAT_ROW_SIZES,
   type AgentOverviewCurrency,
   type ProfitRankTab,
@@ -112,7 +112,20 @@ const presetOptions = computed(() =>
 
 const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
 const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
-const profitRankRows = computed(() => MOCK_PROFIT_RANKINGS[props.profitRankTab])
+const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
+const profitRankRows = computed(() => {
+  const tabs = profitRankTabs.value
+  const key = tabs.some((tab) => tab.key === props.profitRankTab)
+    ? props.profitRankTab
+    : (tabs[0]?.key ?? 'member_win')
+  return MOCK_PROFIT_RANKINGS[key]
+})
+
+watch(isRebate, (rebate) => {
+  if (rebate && props.profitRankTab === 'agent_win') {
+    emit('pickProfitRankTab', 'member_win')
+  }
+})
 
 function goMyProfit() {
   router.push({ name: 'mobile-agent-my-profit', query: withAgentQuery() })
@@ -331,7 +344,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
 
           <div class="agent-home__rank-tabs" data-name="tab" role="tablist" aria-label="盈亏排行类型">
             <button
-              v-for="tab in PROFIT_RANK_TABS"
+              v-for="tab in profitRankTabs"
               :key="tab.key"
               type="button"
               role="tab"

@@ -71,6 +71,13 @@ const currency = computed(() => walletCurrencyToOverview(agentAppCurrency.value)
 const balance = computed(() => AGENT_OVERVIEW_CURRENCY_BALANCES[currency.value])
 const profitRankTab = ref<ProfitRankTab>('member_win')
 
+watch(isRebateAgent, (rebate) => {
+  /** 返佣无代理盈利 TOP：若当前落在该 Tab 则回退会员盈利 */
+  if (rebate && profitRankTab.value === 'agent_win') {
+    profitRankTab.value = 'member_win'
+  }
+})
+
 function pad2(n: number) {
   return String(n).padStart(2, '0')
 }

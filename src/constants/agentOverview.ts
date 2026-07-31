@@ -123,6 +123,14 @@ export const PROFIT_RANK_TABS: { key: ProfitRankTab; label: string }[] = [
   { key: 'agent_win', label: '代理盈利TOP10' },
 ]
 
+/** 返佣仅会员盈利/亏损 TOP；占成另含代理盈利 TOP */
+export function getProfitRankTabs(identity: 'share' | 'rebate' = 'share') {
+  if (identity === 'rebate') {
+    return PROFIT_RANK_TABS.filter((tab) => tab.key !== 'agent_win')
+  }
+  return PROFIT_RANK_TABS
+}
+
 const FIGMA_MEMBER_WIN_ROWS: Omit<ProfitRankRow, 'rank'>[] = [
   { accountId: 'asda****', nickname: 'KingKong001', profit: '123,456,789' },
   { accountId: 'asda****', nickname: '棋牌大王', profit: '123,456,789' },
