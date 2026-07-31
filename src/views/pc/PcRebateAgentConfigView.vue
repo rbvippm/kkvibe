@@ -4,7 +4,6 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfRebateAgentConfigAnnot from '../../components/wireframe/WfRebateAgentConfigAnnot.vue'
 import {
   REBATE_AGENT_LEVEL_OPTIONS,
-  REBATE_EARN_OPTIONS,
   MOCK_REBATE_AGENT_ROWS,
   genRebateAgentBackendAccount,
   genRebateAgentBackendPassword,
@@ -18,14 +17,12 @@ import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
   userId: string
-  superiorAgentId: string
-  agentLevel: '' | RebateAgentLevel
+  agentLevel: RebateAgentLevel
 }
 
 const defaultFilter = (): ListFilter => ({
   userId: '',
-  superiorAgentId: '',
-  agentLevel: '',
+  agentLevel: 1,
 })
 
 const filter = ref<ListFilter>(defaultFilter())
@@ -35,8 +32,7 @@ const rows = ref<RebateAgentRow[]>(MOCK_REBATE_AGENT_ROWS.map((r) => ({ ...r }))
 function applyFilter() {
   applied.value = {
     userId: filter.value.userId.trim(),
-    superiorAgentId: filter.value.superiorAgentId.trim(),
-    agentLevel: filter.value.agentLevel,
+    agentLevel: 1,
   }
 }
 
@@ -48,8 +44,7 @@ function resetFilter() {
 function matchRow(row: RebateAgentRow) {
   const f = applied.value
   if (f.userId && !row.userId.includes(f.userId)) return false
-  if (f.superiorAgentId && !row.superiorAgentId.includes(f.superiorAgentId)) return false
-  if (f.agentLevel !== '' && row.agentLevel !== f.agentLevel) return false
+  if (row.agentLevel !== 1) return false
   return true
 }
 
@@ -65,43 +60,19 @@ const searchUserId = ref('')
 const searchHint = ref('')
 const searchResults = ref<RebateAgentCandidate[]>([])
 const selectedUser = ref<RebateAgentCandidate | null>(null)
-const addLevel = ref<RebateAgentLevel>(1)
-const addSuperiorId = ref('')
-const addEarnRebate = ref('')
 const formHint = ref('')
-
-const superiorOptions = computed(() => {
-  const needLevel = (addLevel.value - 1) as RebateAgentLevel
-  if (needLevel < 1) return []
-  return rows.value
-    .filter((row) => row.agentLevel === needLevel && !row.disabled)
-    .map((row) => ({
-      userId: row.userId,
-      username: row.username,
-      label: `${row.username}（${row.userId}）`,
-    }))
-})
 
 function openAddModal() {
   searchUserId.value = ''
   searchHint.value = ''
   searchResults.value = []
   selectedUser.value = null
-  addLevel.value = 1
-  addSuperiorId.value = ''
-  addEarnRebate.value = ''
   formHint.value = ''
   addVisible.value = true
 }
 
 function closeAddModal() {
   addVisible.value = false
-}
-
-function onAddLevelChange() {
-  addSuperiorId.value = ''
-  addEarnRebate.value = ''
-  formHint.value = ''
 }
 
 function searchUser() {
@@ -130,15 +101,6 @@ function confirmAdd() {
     formHint.value = '请先搜索并选择用户'
     return
   }
-  if (addLevel.value === 1) {
-    if (!addEarnRebate.value) {
-      formHint.value = '请选择赚取退水'
-      return
-    }
-  } else if (!addSuperiorId.value) {
-    formHint.value = '请选择上级代理'
-    return
-  }
 
   const exists = rows.value.some((r) => r.userId === selectedUser.value!.userId)
   if (exists) {
@@ -147,22 +109,16 @@ function confirmAdd() {
   }
 
   const user = selectedUser.value
-  const superior =
-    addLevel.value === 1
-      ? null
-      : rows.value.find((r) => r.userId === addSuperiorId.value) ?? null
-
   rows.value.unshift({
     id: `ra_${Date.now()}`,
     username: user.username,
     userId: user.userId,
     kingKongId: user.kingKongId,
-    agentLevel: addLevel.value,
-    superiorAgent: superior?.username ?? '-',
-    superiorAgentId: superior?.userId ?? '0',
+    agentLevel: 1,
+    superiorAgent: '-',
+    superiorAgentId: '0',
     backendAccount: genRebateAgentBackendAccount(user.userId),
     backendPassword: genRebateAgentBackendPassword(),
-    earnRebate: addLevel.value === 1 ? addEarnRebate.value : '-',
     disabled: false,
   })
   closeAddModal()
@@ -178,17 +134,8 @@ function confirmAdd() {
         <label class="wf-label">用户ID：</label>
         <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
 
-        <label class="wf-label">上级代理ID：</label>
-        <input
-          v-model="filter.superiorAgentId"
-          type="text"
-          class="wf-input"
-          placeholder="请输入上级代理ID"
-        />
-
         <label class="wf-label">代理级别：</label>
         <select v-model="filter.agentLevel" class="wf-input wf-input--select">
-          <option value="">全部</option>
           <option
             v-for="opt in REBATE_AGENT_LEVEL_OPTIONS"
             :key="opt.value"
@@ -219,8 +166,6 @@ function confirmAdd() {
               <th class="wf-th">用户ID</th>
               <th class="wf-th">金刚号</th>
               <th class="wf-th">代理级别</th>
-              <th class="wf-th">上级代理</th>
-              <th class="wf-th">上级代理ID</th>
               <th class="wf-th">代理后台账号</th>
               <th class="wf-th">代理后台密码</th>
               <th class="wf-th wf-th--status">状态</th>
@@ -234,8 +179,6 @@ function confirmAdd() {
               <td class="wf-td">{{ row.userId }}</td>
               <td class="wf-td">{{ row.kingKongId }}</td>
               <td class="wf-td">{{ rebateAgentLevelLabel(row.agentLevel) }}</td>
-              <td class="wf-td">{{ row.superiorAgent }}</td>
-              <td class="wf-td">{{ row.superiorAgentId }}</td>
               <td class="wf-td">{{ row.backendAccount }}</td>
               <td class="wf-td">{{ row.backendPassword }}</td>
               <td class="wf-td wf-td--center wf-td--status">
@@ -258,7 +201,7 @@ function confirmAdd() {
               </td>
             </tr>
             <tr v-if="!filteredRows.length">
-              <td colspan="11" class="wf-td wf-td--empty">暂无返佣代理数据</td>
+              <td colspan="9" class="wf-td wf-td--empty">暂无返佣代理数据</td>
             </tr>
           </tbody>
         </table>
@@ -341,47 +284,8 @@ function confirmAdd() {
             </div>
 
             <div class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">代理级别</label>
-              <select
-                v-model="addLevel"
-                class="wf-input wf-input--select wf-input--full"
-                @change="onAddLevelChange"
-              >
-                <option
-                  v-for="opt in REBATE_AGENT_LEVEL_OPTIONS"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
-            </div>
-
-            <div v-if="addLevel !== 1" class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">上级代理</label>
-              <select v-model="addSuperiorId" class="wf-input wf-input--select wf-input--full">
-                <option value="" disabled>请选择上级代理</option>
-                <option
-                  v-for="opt in superiorOptions"
-                  :key="opt.userId"
-                  :value="opt.userId"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
-              <p v-if="!superiorOptions.length" class="wf-modal__hint">
-                暂无可用的{{ addLevel === 2 ? '1' : '2' }}级代理，请先新增上级
-              </p>
-            </div>
-
-            <div v-if="addLevel === 1" class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">赚取退水</label>
-              <select v-model="addEarnRebate" class="wf-input wf-input--select wf-input--full">
-                <option value="" disabled>请选择赚取退水</option>
-                <option v-for="opt in REBATE_EARN_OPTIONS" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <label class="wf-form-row__label">代理级别</label>
+              <span class="wf-form-row__text">1级代理</span>
             </div>
 
             <p v-if="formHint" class="wf-modal__hint">{{ formHint }}</p>
@@ -396,3 +300,11 @@ function confirmAdd() {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.wf-form-row__text {
+  font-size: 14px;
+  color: var(--pc-text, #333);
+  line-height: 32px;
+}
+</style>

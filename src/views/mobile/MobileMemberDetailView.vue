@@ -28,16 +28,22 @@ import {
   MEMBER_PROFIT_CATEGORY_TABS,
   MEMBER_PROFIT_FORMULA,
   MEMBER_PROFIT_VENDORS,
+  getMemberProfitCostSection,
   getMemberProfitDetail,
+  getMemberProfitDialogDetail,
+  getMemberProfitFormula,
+  getMemberProfitGameSection,
   getMemberProfitSummaryRows,
   getMemberTotalProfit,
+  memberProfitDialogTitle,
   memberRebateGameNetProfitFormula,
   profitTotalClass,
   profitValueClass,
   type MemberProfitCategoryKey,
+  type MemberProfitDialogKind,
   type MemberProfitVendorKey,
 } from '../../constants/memberDetailProfit'
-import { isCommissionLevel1Agent } from '../../constants/agentCommissionReport'
+import { agentMyProfitToneClass } from '../../constants/agentMyProfit'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_VENDOR_PILLS,
@@ -70,8 +76,21 @@ const profitVendor = ref<MemberProfitVendorKey>('all')
 /** 返佣 · 游戏统计：对齐返佣代理游戏数据品类 */
 const reportCategory = ref<ReportCategoryKey>('all')
 const reportVendor = ref<ReportVendorKey>('all')
-const profitFormulaTipOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
+const profitFormulaTipOpen = ref(false)
+/**
+ * 会员盈亏展示：默认经典汇总卡；
+ * 已在「会员盈亏」Tab 时快速连点两次 → 切换分区新结构（隐藏预览）
+ */
+const profitLayoutMode = ref<'classic' | 'sections'>('classic')
+const lastProfitTabTapAt = ref(0)
+const PROFIT_TAB_DOUBLE_TAP_MS = 400
+/** 会员盈亏分区模式：游戏净输赢默认收起、其他成本默认展开 */
+const profitGameDetailsExpanded = ref(false)
+const profitCostDetailsExpanded = ref(true)
+/** 会员盈亏分区模式 · 明细弹框 */
+const profitDialogKind = ref<MemberProfitDialogKind | null>(null)
+const profitDialogFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
@@ -84,30 +103,41 @@ const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.
 const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, profitVendor.value))
 const profitSummaryRows = computed(() => getMemberProfitSummaryRows(currency.value))
 const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value))
+const useProfitSections = computed(() => profitLayoutMode.value === 'sections')
+const profitGameSection = computed(() => getMemberProfitGameSection(currency.value))
+const profitCostSection = computed(() => getMemberProfitCostSection(currency.value))
+const profitFormula = computed(() => getMemberProfitFormula(currency.value))
+const profitDialogTitle = computed(() =>
+  profitDialogKind.value ? memberProfitDialogTitle(profitDialogKind.value) : '',
+)
+const profitDialogRows = computed(() =>
+  profitDialogKind.value
+    ? getMemberProfitDialogDetail(profitDialogKind.value, currency.value)
+    : [],
+)
+const profitDialogFormulaText = computed(
+  () => profitDialogRows.value.find((row) => row.formulaTip)?.formulaTip ?? '',
+)
+
+watch(currency, () => {
+  profitGameDetailsExpanded.value = false
+  profitCostDetailsExpanded.value = true
+  profitFormulaTipOpen.value = false
+  closeProfitDialog()
+})
 
 const rebateGameSectionTitle = computed(() =>
   reportCategoryTitle(reportCategory.value, reportVendor.value),
 )
-/** 仅一级代理看直属会员时展示代理赚水 */
-const showMemberRebateEarnWater = computed(
-  () => isRebateAgent.value && isCommissionLevel1Agent(),
-)
-const rebateGameFormula = computed(() =>
-  memberRebateGameNetProfitFormula(showMemberRebateEarnWater.value),
-)
+const rebateGameFormula = computed(() => memberRebateGameNetProfitFormula())
 const rebateGameDetail = computed(() => {
   const detail = getMemberDetailReportDetail(
     reportCategory.value,
     reportVendor.value,
-    showMemberRebateEarnWater.value,
   )
   return {
     ...detail,
-    rows: detail.rows.filter((row) => {
-      if (row.key === 'rebate') return false
-      if (row.key === 'commission' && !showMemberRebateEarnWater.value) return false
-      return true
-    }),
+    rows: detail.rows.filter((row) => row.key !== 'rebate' && row.key !== 'commission'),
   }
 })
 
@@ -183,6 +213,27 @@ function selectReportCategory(key: ReportCategoryKey) {
   reportVendor.value = 'all'
 }
 
+/** Tab 点击：会员盈亏连点两次切换经典 / 分区预览 */
+function onDetailTabClick(key: MemberDetailTab) {
+  if (key === 'profit') {
+    const now = Date.now()
+    if (
+      activeTab.value === 'profit' &&
+      now - lastProfitTabTapAt.value < PROFIT_TAB_DOUBLE_TAP_MS
+    ) {
+      profitLayoutMode.value = profitLayoutMode.value === 'classic' ? 'sections' : 'classic'
+      profitFormulaTipOpen.value = false
+      closeProfitDialog()
+      lastProfitTabTapAt.value = 0
+      return
+    }
+    lastProfitTabTapAt.value = now
+  } else {
+    lastProfitTabTapAt.value = 0
+  }
+  activeTab.value = key
+}
+
 function toggleProfitFormulaTip() {
   gameProfitFormulaTipOpen.value = false
   profitFormulaTipOpen.value = !profitFormulaTipOpen.value
@@ -192,8 +243,33 @@ function closeProfitFormulaTip() {
   profitFormulaTipOpen.value = false
 }
 
+function toggleProfitGameDetails() {
+  profitGameDetailsExpanded.value = !profitGameDetailsExpanded.value
+}
+
+function toggleProfitCostDetails() {
+  profitCostDetailsExpanded.value = !profitCostDetailsExpanded.value
+}
+
+function openProfitDialog(kind: MemberProfitDialogKind) {
+  profitDialogFormulaTipOpen.value = false
+  profitDialogKind.value = kind
+}
+
+function closeProfitDialog() {
+  profitDialogKind.value = null
+  profitDialogFormulaTipOpen.value = false
+}
+
+function toggleProfitDialogFormulaTip() {
+  profitDialogFormulaTipOpen.value = !profitDialogFormulaTipOpen.value
+}
+
+function closeProfitDialogFormulaTip() {
+  profitDialogFormulaTipOpen.value = false
+}
+
 function toggleGameProfitFormulaTip() {
-  profitFormulaTipOpen.value = false
   gameProfitFormulaTipOpen.value = !gameProfitFormulaTipOpen.value
 }
 
@@ -296,7 +372,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           class="mh5-member-detail-tab"
           :class="{ 'mh5-member-detail-tab--active': activeTab === tab.key }"
           :aria-selected="activeTab === tab.key"
-          @click="activeTab = tab.key"
+          @click="onDetailTabClick(tab.key)"
         >
           {{ tab.label }}
         </button>
@@ -374,8 +450,13 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         </section>
       </template>
 
+      <!-- 占成会员盈亏：默认经典汇总；连点 Tab 切分区预览 -->
       <template v-else-if="activeTab === 'profit'">
-        <section class="mh5-member-detail-profit" @click="closeProfitFormulaTip">
+        <section
+          v-if="!useProfitSections"
+          class="mh5-member-detail-profit"
+          @click="closeProfitFormulaTip"
+        >
           <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
             <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
               <span class="mh5-agent-detail-profit-summary__label-wrap">
@@ -430,6 +511,177 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               >
                 {{ row.value }}
               </span>
+            </div>
+          </section>
+        </section>
+
+        <section
+          v-else
+          class="mh5-member-detail-profit mh5-agent-my-profit-main mh5-agent-my-profit-main--rebate"
+        >
+          <section
+            class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+            aria-label="游戏净输赢金额"
+          >
+            <div class="mh5-agent-my-profit-table__head">
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ profitGameSection.nameHeader }}
+              </span>
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                {{ profitGameSection.amountHeader }}
+              </span>
+            </div>
+            <div
+              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+            >
+              <button
+                type="button"
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+                :aria-expanded="profitGameDetailsExpanded"
+                aria-label="展开或收起游戏净输赢细项"
+                @click="toggleProfitGameDetails"
+              >
+                <span>{{ profitGameSection.total.label }}</span>
+                <span
+                  class="mh5-agent-my-profit-table__chevron"
+                  :class="{ 'mh5-agent-my-profit-table__chevron--open': profitGameDetailsExpanded }"
+                  aria-hidden="true"
+                >
+                  ▾
+                </span>
+              </button>
+              <button
+                type="button"
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+                :class="agentMyProfitToneClass(profitGameSection.total.tone)"
+                aria-label="查看游戏净输赢明细"
+                @click="openProfitDialog('game')"
+              >
+                {{ profitGameSection.total.value }}
+              </button>
+            </div>
+            <Transition name="mh5-agent-my-profit-expand">
+              <div v-if="profitGameDetailsExpanded" class="mh5-agent-my-profit-table__details">
+                <button
+                  v-for="(row, index) in profitGameSection.rows"
+                  :key="row.key"
+                  type="button"
+                  class="mh5-agent-my-profit-table__row"
+                  :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+                  @click="openProfitDialog('game')"
+                >
+                  <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                    {{ row.label }}
+                  </span>
+                  <span
+                    class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+                    :class="agentMyProfitToneClass(row.tone)"
+                  >
+                    {{ row.value }}
+                  </span>
+                </button>
+              </div>
+            </Transition>
+          </section>
+
+          <section
+            class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+            aria-label="其他成本金额"
+          >
+            <div class="mh5-agent-my-profit-table__head">
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ profitCostSection.nameHeader }}
+              </span>
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                {{ profitCostSection.amountHeader }}
+              </span>
+            </div>
+            <div
+              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+            >
+              <button
+                type="button"
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+                :aria-expanded="profitCostDetailsExpanded"
+                aria-label="展开或收起其他成本细项"
+                @click="toggleProfitCostDetails"
+              >
+                <span>{{ profitCostSection.total.label }}</span>
+                <span
+                  class="mh5-agent-my-profit-table__chevron"
+                  :class="{ 'mh5-agent-my-profit-table__chevron--open': profitCostDetailsExpanded }"
+                  aria-hidden="true"
+                >
+                  ▾
+                </span>
+              </button>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                :class="agentMyProfitToneClass(profitCostSection.total.tone)"
+              >
+                {{ profitCostSection.total.value }}
+              </span>
+            </div>
+            <Transition name="mh5-agent-my-profit-expand">
+              <div v-if="profitCostDetailsExpanded" class="mh5-agent-my-profit-table__details">
+                <div
+                  v-for="(row, index) in profitCostSection.rows"
+                  :key="row.key"
+                  class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
+                  :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+                >
+                  <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                    {{ row.label }}
+                  </span>
+                  <span
+                    class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                    :class="agentMyProfitToneClass(row.tone)"
+                  >
+                    {{ row.value }}
+                  </span>
+                </div>
+              </div>
+            </Transition>
+          </section>
+
+          <section
+            class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
+            aria-label="游戏净输赢减去其他成本等于总盈亏"
+          >
+            <div
+              class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
+            >
+              <div class="mh5-agent-commission-cell">
+                <p class="mh5-agent-commission-cell__label">游戏净输赢</p>
+                <p
+                  class="mh5-agent-commission-cell__value"
+                  :class="agentMyProfitToneClass(profitFormula.gameTone)"
+                >
+                  {{ profitFormula.gameAmountText }}
+                </p>
+              </div>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
+              <div class="mh5-agent-commission-cell">
+                <p class="mh5-agent-commission-cell__label">其他成本</p>
+                <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
+                  {{ profitFormula.costAmountText }}
+                </p>
+              </div>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+              <button
+                type="button"
+                class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+                aria-label="查看总盈亏明细"
+                @click="openProfitDialog('total')"
+              >
+                <p class="mh5-agent-commission-cell__label">总盈亏</p>
+                <p
+                  class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+                  :class="agentMyProfitToneClass(profitFormula.totalTone)"
+                >
+                  {{ profitFormula.totalAmountText }}
+                </p>
+              </button>
             </div>
           </section>
         </section>
@@ -679,6 +931,81 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
     <main v-else class="mh5-member-detail-body">
       <p class="mh5-member-detail-empty">未找到该会员信息</p>
     </main>
+
+    <Transition name="mh5-agent-my-profit-dialog">
+      <div
+        v-if="profitDialogKind"
+        class="mh5-agent-my-profit-dialog-mask"
+        @click.self="closeProfitDialog"
+      >
+        <div
+          class="mh5-agent-my-profit-dialog"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="profitDialogTitle"
+          @click="closeProfitDialogFormulaTip"
+        >
+          <h2 class="mh5-agent-my-profit-dialog__title">{{ profitDialogTitle }}</h2>
+          <div class="mh5-agent-my-profit-dialog__table">
+            <div class="mh5-agent-my-profit-dialog__head">
+              <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
+                盈亏细项
+              </span>
+              <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value">
+                金额
+              </span>
+            </div>
+            <div
+              v-for="row in profitDialogRows"
+              :key="row.label"
+              class="mh5-agent-my-profit-dialog__row"
+              :class="{ 'mh5-agent-my-profit-dialog__row--emphasize': row.emphasize }"
+            >
+              <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
+                <span class="mh5-agent-my-profit-dialog__label-wrap">
+                  <span>{{ row.label }}</span>
+                  <button
+                    v-if="row.formulaTip"
+                    type="button"
+                    class="mh5-agent-my-profit-dialog__tip-btn"
+                    :aria-label="`查看${row.label}计算公式`"
+                    :aria-expanded="profitDialogFormulaTipOpen"
+                    @click.stop="toggleProfitDialogFormulaTip"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                      <path
+                        d="M8 4.6v5.2M8 11.6h.01"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                      />
+                    </svg>
+                  </button>
+                </span>
+              </span>
+              <span
+                class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value"
+                :class="agentMyProfitToneClass(row.tone)"
+              >
+                {{ row.amountText }}
+              </span>
+            </div>
+          </div>
+          <div
+            v-if="profitDialogFormulaTipOpen && profitDialogFormulaText"
+            class="mh5-agent-my-profit-dialog__tip-panel"
+            role="tooltip"
+            @click.stop
+          >
+            {{ profitDialogFormulaText }}
+          </div>
+          <button type="button" class="mh5-agent-my-profit-dialog__btn" @click="closeProfitDialog">
+            我知道了
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <Transition name="mh5-member-detail-sheet">
       <div

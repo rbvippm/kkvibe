@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import { AGENT_MY_SHARE_RATIO_ROWS } from '../../constants/agentMyShareRatio'
 import {
-  agentMyRebateRatioRowsByLevel,
+  getMatchedRebateTierId,
+  getRebateCommissionTiers,
   type AgentIdentityType,
 } from '../../constants/agentIdentity'
-import { MOCK_COMMISSION_AGENT_LEVEL } from '../../constants/agentCommissionReport'
+import { formatPct, formatProfit } from '../../constants/agentCommissionSetting'
 import {
   AGENT_MY_REBATE_RATIO_SPEC,
   AGENT_MY_SHARE_RATIO_SPEC,
@@ -16,8 +17,10 @@ const props = withDefaults(
   defineProps<{
     open: boolean
     mode?: AgentIdentityType
+    /** 概况当前币种，返佣档位按币种读取 BI 配置 */
+    currency?: string
   }>(),
-  { mode: 'share' },
+  { mode: 'share', currency: 'KKC' },
 )
 
 const emit = defineEmits<{
@@ -25,14 +28,12 @@ const emit = defineEmits<{
 }>()
 
 const isRebate = computed(() => props.mode === 'rebate')
-const rows = computed(() =>
-  isRebate.value
-    ? agentMyRebateRatioRowsByLevel(MOCK_COMMISSION_AGENT_LEVEL)
-    : AGENT_MY_SHARE_RATIO_ROWS,
+const shareRows = computed(() => AGENT_MY_SHARE_RATIO_ROWS)
+const rebateTiers = computed(() => getRebateCommissionTiers(props.currency))
+const matchedTierId = computed(() =>
+  isRebate.value ? getMatchedRebateTierId(props.currency) : null,
 )
 const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
-const typeHeader = computed(() => (isRebate.value ? '代理' : '占成类型'))
-const ratioHeader = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
 </script>
 
 <template>
@@ -45,6 +46,7 @@ const ratioHeader = computed(() => (isRebate.value ? '返佣比例' : '占成比
     >
       <div
         class="mh5-agent-my-share-dialog"
+        :class="{ 'mh5-agent-my-share-dialog--rebate-tiers': isRebate }"
         role="dialog"
         aria-modal="true"
         :aria-label="dialogLabel"
@@ -67,23 +69,99 @@ const ratioHeader = computed(() => (isRebate.value ? '返佣比例' : '占成比
         </div>
 
         <div class="mh5-agent-my-share-dialog__body">
-          <div class="mh5-agent-my-share-dialog__table" data-node-id="1433:25541" role="table">
+          <!-- 返佣：对齐 BI「返佣金设置」当月档位 -->
+          <div
+            v-if="isRebate"
+            class="mh5-agent-my-share-dialog__table mh5-agent-my-share-dialog__table--tiers"
+            role="table"
+            aria-label="当月佣金档位"
+          >
+            <div class="mh5-agent-my-share-dialog__head" role="row">
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
+                role="columnheader"
+              >
+                团队游戏输赢
+              </div>
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
+                role="columnheader"
+              >
+                活跃人数
+              </div>
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
+                role="columnheader"
+              >
+                比例
+              </div>
+            </div>
+            <div
+              v-if="rebateTiers.length === 0"
+              class="mh5-agent-my-share-dialog__row mh5-agent-my-share-dialog__row--empty"
+              role="row"
+            >
+              <div class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--empty" role="cell">
+                暂无返佣比例
+              </div>
+            </div>
+            <div
+              v-for="tier in rebateTiers"
+              :key="tier.id"
+              class="mh5-agent-my-share-dialog__row"
+              :class="{ 'mh5-agent-my-share-dialog__row--matched': tier.id === matchedTierId }"
+              role="row"
+              :aria-current="tier.id === matchedTierId ? 'true' : undefined"
+            >
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
+                role="cell"
+              >
+                {{ formatProfit(tier.monthlyProfit) }}
+              </div>
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
+                role="cell"
+              >
+                {{ tier.minActiveMembers }}
+              </div>
+              <div
+                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
+                role="cell"
+              >
+                <span>{{ formatPct(tier.commissionPct) }}</span>
+                <span
+                  v-if="tier.id === matchedTierId"
+                  class="mh5-agent-my-share-dialog__matched-mark"
+                  aria-label="当前满足档位"
+                >✅</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 占成：各游戏类型比例 -->
+          <div
+            v-else
+            class="mh5-agent-my-share-dialog__table"
+            data-node-id="1433:25541"
+            role="table"
+          >
             <div class="mh5-agent-my-share-dialog__head" role="row">
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
                 role="columnheader"
               >
-                {{ typeHeader }}
+                占成类型
               </div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
                 role="columnheader"
               >
-                {{ ratioHeader }}
+                占成比例
               </div>
             </div>
             <div
-              v-for="row in rows"
+              v-for="row in shareRows"
               :key="row.key"
               class="mh5-agent-my-share-dialog__row"
               role="row"

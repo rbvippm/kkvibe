@@ -14,18 +14,18 @@ export type RebateAgentConfigFeatureRow = PcPrdFeatureRow
 export const REBATE_AGENT_CONFIG_META = {
   title: '返佣代理配置',
   module: '推广返利',
-  updatedAt: '2026-07-29',
-  prdVersion: 'v1.0',
+  updatedAt: '2026-07-31',
+  prdVersion: 'v1.2',
 } as const
 
 export const REBATE_AGENT_CONFIG_BACKGROUND = [
-  '返佣代理按层级管理团队，后台需支持按代理级别筛选与新增不同级别代理。',
-  '代理级别共三级：1 级可配置赚取退水；2 / 3 级需指定上级代理，不配置赚取退水。',
+  '返佣代理仅一层（一级），后台按一级返佣代理筛选与新增，不发展下级代理。',
+  '一级返佣代理不再配置赚取退水；新增时仅绑定用户并生成代理后台账密。',
 ] as const
 
 export const REBATE_AGENT_CONFIG_GOALS = [
-  '列表支持按代理级别（全部 / 1 级 / 2 级 / 3 级）筛选。',
-  '新增时按级别展示差异化表单项：仅 1 级设置赚取退水，2 / 3 级选择上级。',
+  '列表默认展示一级返佣代理，可按用户 ID 搜索。',
+  '新增时固定为一级代理，无需选择赚取退水或上级。',
 ] as const
 
 export const REBATE_AGENT_CONFIG_FEATURE_LIST: RebateAgentConfigFeatureRow[] = [
@@ -35,11 +35,11 @@ export const REBATE_AGENT_CONFIG_FEATURE_LIST: RebateAgentConfigFeatureRow[] = [
     feature: '代理级别',
     pageLocation: '筛选区「代理级别」',
     prd: {
-      functionalLogic: '按代理级别过滤返佣代理列表，支持查看全部或指定一级 / 二级 / 三级代理。',
+      functionalLogic: '返佣代理仅一级；筛选区固定展示「1级代理」，列表仅含一级数据。',
       interactiveBehavior:
-        '选择级别后点「搜索」过滤；选「全部」不过滤级别；点「清除」重置为全部。',
-      visualPresentation: '标签「代理级别：」+ 下拉（全部 / 1级代理 / 2级代理 / 3级代理）；旁侧「注1」。',
-      dataRules: '枚举共三级：1级代理 / 2级代理 / 3级代理；默认「全部」；与列表 agentLevel 精确匹配。',
+        '代理级别下拉仅「1级代理」可选；配合用户ID搜索后点「搜索」过滤；点「清除」重置条件。',
+      visualPresentation: '标签「代理级别：」+ 下拉（仅 1级代理）；旁侧「注1」。无上级代理ID、无赚取退水列。',
+      dataRules: '枚举仅一级：1级代理；与列表 agentLevel=1 匹配。',
       exceptions: '无匹配记录 -> 表格空态「暂无返佣代理数据」。',
       routing: '停留列表页，不跳转。',
     },
@@ -51,15 +51,14 @@ export const REBATE_AGENT_CONFIG_FEATURE_LIST: RebateAgentConfigFeatureRow[] = [
     pageLocation: '「+ 新增」弹框标题',
     prd: {
       functionalLogic:
-        '搜索并选择用户后新增为返佣代理；按代理级别差异配置：仅 1 级设置赚取退水，2 / 3 级必选上级代理且不展示赚取退水。',
+        '搜索并选择用户后新增为一级返佣代理；无级别切换、无上级代理、无赚取退水配置。',
       interactiveBehavior:
-        '输入用户ID搜索 -> 表格选择用户 -> 选代理级别；1 级选赚取退水，2 / 3 级选上级代理 -> 确认写入列表。取消/关闭不保存。',
+        '输入用户ID搜索 -> 表格选择用户 -> 确认写入列表。取消/关闭不保存。',
       visualPresentation:
-        '弹框标题「新增返佣代理」旁「注2」；表单项随级别切换显隐；无上级候选时提示先新增上级。',
-      dataRules:
-        '级别共三级；2 级上级须为启用中的 1 级代理，3 级上级须为启用中的 2 级代理；非 1 级赚取退水记为「-」。',
+        '弹框标题「新增返佣代理」旁「注2」；代理级别只读「1级代理」；不展示赚取退水。',
+      dataRules: '固定一级；无上级（展示为「-」）；自动生成代理后台账密。',
       exceptions:
-        '未选用户/未选赚水或上级 -> 底部提示；用户已是返佣代理 -> 提示勿重复；无可用上级 -> 提示先新增上级。',
+        '未选用户 -> 底部提示；用户已是返佣代理 -> 提示勿重复。',
       routing: '确认成功关闭弹框并刷新列表；不跳转路由。',
     },
   },
@@ -73,13 +72,13 @@ export const REBATE_AGENT_CONFIG_SPEC_ANNOT_NO = {
 export type RebateAgentConfigAnnotContext = keyof typeof REBATE_AGENT_CONFIG_SPEC_ANNOT_NO
 
 export const REBATE_AGENT_CONFIG_FILTER_AGENT_LEVEL_SPEC = [
-  '代理级别共三级：1级代理 / 2级代理 / 3级代理，可按级别筛选列表。',
-  '选「全部」不过滤；配合「搜索」「清除」生效。',
+  '返佣代理仅一级；筛选固定为「1级代理」，列表不展示二/三级。',
+  '配合用户ID「搜索」「清除」生效；列表无赚取退水列。',
 ] as const
 
 export const REBATE_AGENT_CONFIG_ADD_MODAL_SPEC = [
-  '搜索用户并选择后新增返佣代理；级别共三级。',
-  '仅 1 级展示并必填「赚取退水」；2 / 3 级改选「上级代理」，不展示赚取退水入口。',
+  '搜索用户并选择后新增一级返佣代理。',
+  '级别固定一级；不配置赚取退水；无上级代理选择。',
 ] as const
 
 export const REBATE_AGENT_CONFIG_ANNOT_MAP: Record<

@@ -16,9 +16,6 @@ export type CommissionMonthBill = {
   /** 负佣金累计：仅 0 或负数 */
   negativeAccum: number
   monthCommission: number
-  extraCommission: number
-  /** 赚水（仅一级代理展示） */
-  earnWater: number
 }
 
 /** 当前登录代理层级 Mock：1 一级 / 2 二级 / 3 三级 */
@@ -39,11 +36,9 @@ export const COMMISSION_STATUS_META: Record<
   none: { label: '无佣金', tone: 'none' },
 }
 
-/** 非一级：不含赚水；一级：公式末项含赚水 */
-export function getCommissionTotalCostTip(isLevel1 = isCommissionLevel1Agent()) {
-  return isLevel1
-    ? '总成本 = VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金 + 赚水'
-    : '总成本 = VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金'
+/** 返佣总成本口径（含其他成本中的充提手续费） */
+export function getCommissionTotalCostTip() {
+  return '总成本 = VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费'
 }
 
 export const COMMISSION_NEGATIVE_TIP =
@@ -52,15 +47,14 @@ export const COMMISSION_NEGATIVE_TIP =
 export const COMMISSION_NET_WIN_TIP = '净输赢 = 游戏输赢 - 总成本'
 
 export const COMMISSION_TOTAL_TIP =
-  '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计\n当月佣金 = 直属佣金\n额外佣金 = 下一级佣金 + 下二级佣金'
+  '总佣金 = 当月佣金 - 负佣金累计（若有）\n当月佣金 = 佣金'
 
 /** 近半年 Mock（新→旧）；当前月为待派发「预计佣金」，历史月为已派发「发放佣金」 */
 /**
  * 口径（与「我的佣金」页一致）：
  * - 净输赢 = totalPnl - totalCost
- * - 当月佣金 = 直属佣金 = max(净输赢, 0) × 佣金比例
- * - 额外佣金 = 下一级佣金 + 下二级佣金
- * - 总佣金 = 当月佣金 + 额外佣金 + 负佣金累计
+ * - 当月佣金 = 平台佣金 = max(净输赢, 0) × 佣金比例
+ * - 总佣金 = 当月佣金 - 负佣金累计（若有）
  */
 export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
   {
@@ -74,8 +68,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 120.5,
     negativeAccum: -100,
     monthCommission: 118.98,
-    extraCommission: 118.98,
-    earnWater: 36.8,
   },
   {
     month: '2026-06',
@@ -88,8 +80,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 120.5,
     negativeAccum: -100,
     monthCommission: 118.98,
-    extraCommission: 118.98,
-    earnWater: 36.8,
   },
   {
     month: '2026-05',
@@ -102,8 +92,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 108.2,
     negativeAccum: -80,
     monthCommission: 87.59,
-    extraCommission: 87.6,
-    earnWater: 28.4,
   },
   {
     month: '2026-04',
@@ -116,8 +104,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 98.4,
     negativeAccum: -60,
     monthCommission: 66.08,
-    extraCommission: 66.08,
-    earnWater: 22.1,
   },
   {
     month: '2026-03',
@@ -130,8 +116,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 55,
     negativeAccum: -100,
     monthCommission: 0,
-    extraCommission: 0,
-    earnWater: 0,
   },
   {
     month: '2026-02',
@@ -144,8 +128,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     totalCost: 76,
     negativeAccum: 0,
     monthCommission: 45.2,
-    extraCommission: 45.2,
-    earnWater: 15.6,
   },
 ]
 
@@ -230,9 +212,9 @@ export function commissionHeroTitle(month: string, date = new Date()) {
   return month === getDefaultCommissionMonth(date) ? '预计佣金' : '发放佣金'
 }
 
-/** 总佣金 = 当月佣金(直属) + 额外佣金(下一级+下二级) + 负佣金累计 */
+/** 总佣金 = 当月佣金 - 负佣金累计（若有）。 */
 export function getCommissionTotal(bill: CommissionMonthBill) {
-  return bill.monthCommission + bill.extraCommission + bill.negativeAccum
+  return bill.monthCommission + bill.negativeAccum
 }
 
 /** 净输赢 = 游戏输赢 - 总成本 */

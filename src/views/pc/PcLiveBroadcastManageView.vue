@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfLiveBroadcastAnnot from '../../components/wireframe/WfLiveBroadcastAnnot.vue'
-import { useLiveDanmakuMute, type DanmakuMessage, type MuteType } from '../../composables/useLiveDanmakuMute'
+import {
+  danmakuSenderRoleLabel,
+  isDanmakuMuteDisabled,
+  useLiveDanmakuMute,
+  type DanmakuMessage,
+  type MuteType,
+} from '../../composables/useLiveDanmakuMute'
 import '../../styles/pc-wireframe.css'
 
 const {
@@ -27,6 +33,13 @@ const muteReason = ref('')
 const muteType = ref<MuteType>('房间禁言')
 const muteReasonHint = ref('')
 let skipNextDocumentClose = false
+
+const activeMessageRoleLabel = computed(() =>
+  activeMessage.value ? danmakuSenderRoleLabel(activeMessage.value) : null,
+)
+const activeMessageMuteDisabled = computed(() =>
+  activeMessage.value ? isDanmakuMuteDisabled(activeMessage.value) : true,
+)
 
 function openActionMenu(event: MouseEvent, message: DanmakuMessage) {
   event.preventDefault()
@@ -68,7 +81,7 @@ onUnmounted(() => {
 
 function openMuteModal() {
   const message = activeMessage.value
-  if (!message || message.isSystem) return
+  if (!message || isDanmakuMuteDisabled(message)) return
   muteTargetMessage.value = message
   muteReason.value = ''
   muteType.value = '房间禁言'
@@ -227,13 +240,18 @@ function displayContent(message: DanmakuMessage) {
       >
         <p class="live-danmaku-action-menu__title">
           {{ activeMessage.username }}
-          <span v-if="activeMessage.isSystem" class="live-danmaku-action-menu__tag">系统</span>
+          <span
+            v-if="activeMessageRoleLabel"
+            class="live-danmaku-action-menu__tag"
+          >
+            {{ activeMessageRoleLabel }}
+          </span>
           <WfLiveBroadcastAnnot context="danmakuActionMenu" placement="top" />
         </p>
         <button
           type="button"
           class="live-danmaku-action-menu__item"
-          :disabled="activeMessage.isSystem"
+          :disabled="activeMessageMuteDisabled"
           role="menuitem"
           @click="openMuteModal"
         >

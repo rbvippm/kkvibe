@@ -4,6 +4,9 @@ export type MuteSource = '主播' | '运营'
 
 export type MuteType = '房间禁言' | '全局禁言'
 
+/** 弹幕发送方身份：主播 / 超管消息不可禁言（交互同系统消息） */
+export type DanmakuSenderRole = 'user' | 'host' | 'superAdmin'
+
 export type DanmakuMessage = {
   id: string
   userId: string
@@ -12,6 +15,8 @@ export type DanmakuMessage = {
   content: string
   sentAt: string
   isSystem?: boolean
+  /** 缺省按普通用户；主播也可由 userId === 当前房主判定 */
+  senderRole?: DanmakuSenderRole
 }
 
 export type MuteRecord = {
@@ -43,6 +48,22 @@ const CURRENT_ROOM = {
   sessionId: 'sess_live_20260609_8829103',
 }
 
+/** 是否禁止对该弹幕发起禁言（系统 / 主播 / 超管） */
+export function isDanmakuMuteDisabled(message: DanmakuMessage, hostId = CURRENT_ROOM.hostId) {
+  if (message.isSystem) return true
+  if (message.senderRole === 'host' || message.senderRole === 'superAdmin') return true
+  if (message.userId === hostId) return true
+  return false
+}
+
+/** 操作菜单身份标签：系统 / 主播 / 超管；普通用户无标签 */
+export function danmakuSenderRoleLabel(message: DanmakuMessage, hostId = CURRENT_ROOM.hostId) {
+  if (message.isSystem) return '系统'
+  if (message.senderRole === 'superAdmin') return '超管'
+  if (message.senderRole === 'host' || message.userId === hostId) return '主播'
+  return null
+}
+
 const danmakuMessages = ref<DanmakuMessage[]>([
   {
     id: 'dm1',
@@ -60,6 +81,7 @@ const danmakuMessages = ref<DanmakuMessage[]>([
     avatar: 'E',
     content: '1',
     sentAt: '2026/6/9 16:57:20',
+    senderRole: 'host',
   },
   {
     id: 'dm3',
@@ -68,6 +90,7 @@ const danmakuMessages = ref<DanmakuMessage[]>([
     avatar: 'E',
     content: '2',
     sentAt: '2026/6/9 16:57:22',
+    senderRole: 'host',
   },
   {
     id: 'dm4',
@@ -76,6 +99,7 @@ const danmakuMessages = ref<DanmakuMessage[]>([
     avatar: 'E',
     content: '3',
     sentAt: '2026/6/9 16:57:25',
+    senderRole: 'host',
   },
   {
     id: 'dm5',
@@ -92,6 +116,15 @@ const danmakuMessages = ref<DanmakuMessage[]>([
     avatar: 'D',
     content: '666',
     sentAt: '2026/6/9 16:58:15',
+  },
+  {
+    id: 'dm7',
+    userId: '9000000000000001',
+    username: '超管小王',
+    avatar: '超',
+    content: '请文明发言，违规将被禁言',
+    sentAt: '2026/6/9 16:58:40',
+    senderRole: 'superAdmin',
   },
 ])
 

@@ -90,7 +90,7 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'vipRebate', label: 'VIP退水', value: '0.00' },
   { key: 'vipUpgradeBonus', label: 'VIP晋级礼金', value: '0.00' },
   { key: 'vipExtraBonus', label: 'VIP额外奖金', value: '0.00' },
-  { key: 'fee', label: '充值手续费', value: '0.00' },
+  { key: 'fee', label: '充提手续费', value: '0.00' },
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
   { key: 'netLose', label: '游戏净输赢', value: '0.00' },
   { key: 'netPnl', label: '净输赢', value: '0.00' },

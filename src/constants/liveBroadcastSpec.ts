@@ -14,8 +14,8 @@ export type LiveBroadcastFeatureRow = PcPrdFeatureRow
 export const LIVE_BROADCAST_META = {
   title: '直播中控台',
   module: '直播管理',
-  updatedAt: '2026-07-04',
-  prdVersion: 'v1.1',
+  updatedAt: '2026-07-28',
+  prdVersion: 'v1.2',
 } as const
 
 /** 1. 需求背景 */
@@ -28,7 +28,7 @@ export const LIVE_BROADCAST_BACKGROUND = [
 /** 2. 需求目标 */
 export const LIVE_BROADCAST_GOALS = [
   '提供直播画面区、直播提醒发送与弹幕消息侧栏，支撑直播过程基础管控。',
-  '弹幕支持点击/右键唤起操作菜单，对非系统消息执行禁言；已禁言用户在弹幕列表展示标识。',
+  '弹幕支持点击/右键唤起操作菜单，对普通用户消息执行禁言；系统消息、主播、超管消息禁言入口禁用；已禁言用户在弹幕列表展示标识。',
   '禁言弹框支持选择禁言类型（默认房间禁言）、填写禁言原因，成功后写入禁言列表并提示运营查看。',
 ] as const
 
@@ -99,11 +99,12 @@ export const LIVE_BROADCAST_FEATURE_LIST: LiveBroadcastFeatureRow[] = [
     pageLocation: '右侧「弹幕消息」面板',
     prd: {
       functionalLogic: '实时展示当前直播间弹幕流，含用户消息、进入直播间系统消息及直播提醒，供处置参考。',
-      interactiveBehavior: '列表只读滚动浏览；点击或右键单条弹幕 -> 打开操作菜单（系统消息禁言入口禁用）。',
+      interactiveBehavior:
+        '列表只读滚动浏览；点击或右键单条弹幕 -> 打开操作菜单（系统消息、主播、超管禁言入口禁用）。',
       visualPresentation:
         '侧栏标题「弹幕消息」+ 点赞/观看统计胶囊；列表项含头像、内容、时间；空态「暂无弹幕消息」；标题区旁侧「注5」标注。',
       dataRules:
-        '进入直播间系统消息展示为「{用户名} 进入直播间」；普通消息为「{用户名}：{内容}」；统计每 2 分钟更新（文案提示，原型静态 Mock）。',
+        '进入直播间系统消息展示为「{用户名} 进入直播间」；普通消息为「{用户名}：{内容}」；主播/超管消息带 senderRole；统计每 2 分钟更新（文案提示，原型静态 Mock）。',
       exceptions: '无弹幕 -> 空态文案；超长内容换行展示不截断。',
       routing: '停留中控台；操作菜单与禁言弹框为页内浮层。',
     },
@@ -118,7 +119,7 @@ export const LIVE_BROADCAST_FEATURE_LIST: LiveBroadcastFeatureRow[] = [
       interactiveBehavior: '禁言成功后列表项自动刷新样式与「已禁言」标签；解除禁言后标签消失（与禁言列表联动）。',
       visualPresentation: '整行 opacity 降低；内容下方红色小标签「已禁言」；列表区旁侧「注6」标注。',
       dataRules:
-        'isUserMuted 判定：存在 muted=true 的全局禁言，或 muted=true 且 roomId 匹配的房间禁言；系统消息同样参与判定但不开放禁言入口。',
+        'isUserMuted 判定：存在 muted=true 的全局禁言，或 muted=true 且 roomId 匹配的房间禁言；系统/主播/超管消息不开放禁言入口。',
       exceptions: '同一用户仅房间禁言在其他直播间中控台不展示已禁言（全局禁言则任意直播间均展示）。',
       routing: '无跳转。',
     },
@@ -131,10 +132,12 @@ export const LIVE_BROADCAST_FEATURE_LIST: LiveBroadcastFeatureRow[] = [
     prd: {
       functionalLogic: '对单条弹幕提供快捷处置入口，当前仅保留「禁言」操作（已移除删除消息类操作）。',
       interactiveBehavior:
-        '点击或右键弹幕 -> 在鼠标位置弹出菜单；点击页面其他区域或右键非弹幕区 -> 关闭菜单；系统消息「禁言」按钮禁用。',
-      visualPresentation: '固定定位白底菜单，标题为用户名（系统消息带「系统」标签）；菜单项「禁言」；菜单标题旁侧「注7」标注。',
-      dataRules: '仅非 isSystem 消息可点击「禁言」进入禁言弹框；菜单跟随 clientX/clientY 定位。',
-      exceptions: '系统消息、直播提醒 -> 禁言按钮 disabled，hover 无高亮。',
+        '点击或右键弹幕 -> 在鼠标位置弹出菜单；点击页面其他区域或右键非弹幕区 -> 关闭菜单；系统消息、主播、超管的「禁言」按钮禁用（交互一致）。',
+      visualPresentation:
+        '固定定位白底菜单，标题为用户名；系统/主播/超管分别带「系统」「主播」「超管」标签；菜单项「禁言」；菜单标题旁侧「注7」标注。',
+      dataRules:
+        '仅普通用户消息可点击「禁言」；isSystem、senderRole=host/superAdmin、或 userId=当前房主 均不可禁言；菜单跟随 clientX/clientY 定位。',
+      exceptions: '系统消息、直播提醒、主播发言、超管发言 -> 禁言按钮 disabled，hover 无高亮。',
       routing: '点击「禁言」-> 打开禁言用户弹框，关闭操作菜单。',
     },
   },
@@ -219,7 +222,8 @@ export const LIVE_BROADCAST_MUTED_BADGE_SPEC = [
 ] as const
 
 export const LIVE_BROADCAST_DANMAKU_ACTION_MENU_SPEC = [
-  '对非系统弹幕提供「禁言」入口；系统消息（如进入直播间）禁言按钮禁用。',
+  '对普通用户弹幕提供「禁言」入口。',
+  '系统消息、主播发言、超管发言：禁言按钮禁用（交互同系统消息，菜单旁展示对应身份标签）。',
   '已移除删除单条/当前直播间/全直播间消息等操作，仅保留禁言。',
 ] as const
 

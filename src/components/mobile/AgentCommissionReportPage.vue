@@ -28,7 +28,6 @@ import {
   getCommissionTotal,
   getCommissionTotalCostTip,
   getDefaultCommissionMonth,
-  isCommissionLevel1Agent,
   sumPaidCommissionTotal,
   type CommissionMonthBill,
 } from '../../constants/agentCommissionReport'
@@ -58,8 +57,7 @@ const paidTotal = computed(() => sumPaidCommissionTotal(filteredListBills.value)
 const listUpdatedAt = computed(() => getCommissionListUpdatedAt(listMonthFilter.value))
 const currentBill = computed(() => findCommissionBill(selectedMonth.value))
 const heroTitle = computed(() => commissionHeroTitle(selectedMonth.value))
-const showEarnWater = computed(() => isCommissionLevel1Agent())
-const totalCostTip = computed(() => getCommissionTotalCostTip(showEarnWater.value))
+const totalCostTip = computed(() => getCommissionTotalCostTip())
 
 watch(selectedMonth, () => {
   tipKey.value = null
@@ -400,7 +398,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
           </section>
 
           <section class="mh5-agent-commission-card">
-            <h2 class="mh5-agent-commission-card__title">佣金与赚水</h2>
+            <h2 class="mh5-agent-commission-card__title">佣金计算</h2>
             <div class="mh5-agent-commission-formula" aria-label="净输赢乘以佣金比例等于当月佣金">
               <div class="mh5-agent-commission-cell">
                 <p class="mh5-agent-commission-cell__label">
@@ -444,26 +442,6 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
                   :class="toneClass(currentBill.monthCommission)"
                 >
                   {{ formatCommissionAmount(currentBill.monthCommission) }}
-                </p>
-              </div>
-            </div>
-            <div
-              class="mh5-agent-commission-cols"
-              :class="showEarnWater ? 'mh5-agent-commission-cols--2' : 'mh5-agent-commission-cols--1'"
-            >
-              <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">额外佣金</p>
-                <p
-                  class="mh5-agent-commission-cell__value"
-                  :class="toneClass(currentBill.extraCommission)"
-                >
-                  {{ formatCommissionAmount(currentBill.extraCommission) }}
-                </p>
-              </div>
-              <div v-if="showEarnWater" class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">赚水</p>
-                <p class="mh5-agent-commission-cell__value">
-                  {{ formatCommissionAmount(currentBill.earnWater) }}
                 </p>
               </div>
             </div>

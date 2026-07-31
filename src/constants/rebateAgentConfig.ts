@@ -1,6 +1,6 @@
-/** 推广返利 · 返佣代理配置 · Mock */
+/** 推广返利 · 返佣代理配置 · Mock（单层：仅一级返佣代理，无赚取退水） */
 
-export type RebateAgentLevel = 1 | 2 | 3
+export type RebateAgentLevel = 1
 
 export type RebateAgentRow = {
   id: string
@@ -12,8 +12,6 @@ export type RebateAgentRow = {
   superiorAgentId: string
   backendAccount: string
   backendPassword: string
-  /** 赚取退水配置文案 */
-  earnRebate: string
   disabled: boolean
 }
 
@@ -26,25 +24,10 @@ export type RebateAgentCandidate = {
 
 export const REBATE_AGENT_LEVEL_OPTIONS = [
   { value: 1 as RebateAgentLevel, label: '1级代理' },
-  { value: 2 as RebateAgentLevel, label: '2级代理' },
-  { value: 3 as RebateAgentLevel, label: '3级代理' },
-] as const
-
-export const REBATE_EARN_OPTIONS = [
-  { value: '其他', label: '其他' },
-  { value: '赚取所有退水', label: '赚取所有退水' },
-  { value: '水全退到底', label: '水全退到底' },
-  { value: '赚取0.1%退水', label: '赚取0.1%退水' },
-  { value: '赚取0.2%退水', label: '赚取0.2%退水' },
-  { value: '赚取0.3%退水', label: '赚取0.3%退水' },
-  { value: '赚取0.4%退水', label: '赚取0.4%退水' },
-  { value: '赚取0.5%退水', label: '赚取0.5%退水' },
 ] as const
 
 export function rebateAgentLevelLabel(level: RebateAgentLevel) {
-  if (level === 1) return '1级代理'
-  if (level === 2) return '2级代理'
-  return '3级代理'
+  return level === 1 ? '1级代理' : '1级代理'
 }
 
 export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
@@ -58,7 +41,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     superiorAgentId: '0',
     backendAccount: 'wlqjblfm',
     backendPassword: 'eskvsl7oi',
-    earnRebate: '赚取所有退水',
     disabled: false,
   },
   {
@@ -71,7 +53,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     superiorAgentId: '0',
     backendAccount: 'stgkk6000',
     backendPassword: 'stgkk6000',
-    earnRebate: '赚取0.3%退水',
     disabled: false,
   },
   {
@@ -84,7 +65,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     superiorAgentId: '0',
     backendAccount: 'l7ds8yad',
     backendPassword: 'l7ds8ypw',
-    earnRebate: '水全退到底',
     disabled: false,
   },
   {
@@ -97,46 +77,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     superiorAgentId: '0',
     backendAccount: 'traps02ac',
     backendPassword: 'traps02pw',
-    earnRebate: '赚取0.2%退水',
-    disabled: false,
-  },
-  {
-    id: 'ra-5',
-    username: '小雨代理',
-    userId: '880088001001',
-    kingKongId: 'mid_xiaoyu88aa',
-    agentLevel: 2,
-    superiorAgent: 'trap s02',
-    superiorAgentId: '59617',
-    backendAccount: 'xiaoyu88',
-    backendPassword: 'xy88pass',
-    earnRebate: '赚取0.1%退水',
-    disabled: false,
-  },
-  {
-    id: 'ra-6',
-    username: '阿凯返佣',
-    userId: '880010010088',
-    kingKongId: 'mid_akai_rb001',
-    agentLevel: 2,
-    superiorAgent: '哈哈',
-    superiorAgentId: '5352005406534464230',
-    backendAccount: 'akai_rb01',
-    backendPassword: 'akai_rbpw',
-    earnRebate: '赚取0.4%退水',
-    disabled: true,
-  },
-  {
-    id: 'ra-7',
-    username: '小北三级',
-    userId: '880020020099',
-    kingKongId: 'mid_xiaobei3',
-    agentLevel: 3,
-    superiorAgent: '小雨代理',
-    superiorAgentId: '880088001001',
-    backendAccount: 'xiaobei3',
-    backendPassword: 'xb3pass01',
-    earnRebate: '赚取0.1%退水',
     disabled: false,
   },
 ]

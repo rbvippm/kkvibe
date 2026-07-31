@@ -1,18 +1,12 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_MY_PROFIT_ASSETS,
   AGENT_MY_PROFIT_FOOTNOTE,
-  AGENT_MY_PROFIT_PRODUCT_ROWS,
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
-  AGENT_MY_PROFIT_REBATE_LEVEL_TABS,
-  AGENT_MY_PROFIT_SUMMARY_ROW,
-  agentMyProfitRebateLevelTabs,
   AGENT_MY_PROFIT_TOTAL,
   REBATE_DEFAULT_SECTION_SCALE,
-  REBATE_EXTRA_COMMISSION_RATE,
-  agentMyProfitAmountHeader,
   agentMyProfitDateFilterLabel,
   agentMyProfitDateRangeText,
   agentMyProfitDefaultPreset,
@@ -23,23 +17,20 @@ import {
   agentMyProfitPresets,
   agentMyProfitRebateCostSection,
   agentMyProfitRebateGameSection,
-  agentMyProfitRebateExtraCommission,
   agentMyProfitRebateLevelFormula,
   agentMyProfitRebateMonthKey,
   agentMyProfitRebatePresetFromMonthKey,
-  agentMyProfitRebateSummaryRow,
-  agentMyProfitTableNameHeader,
+  agentMyProfitShareCostSection,
+  agentMyProfitShareFormula,
+  agentMyProfitShareGameSection,
   agentMyProfitToneClass,
   type AgentMyProfitProductRow,
   type ProfitDatePreset,
-  type RebateProfitLevel,
   type RebateSectionScale,
 } from '../../constants/agentMyProfit'
 import {
   COMMISSION_NEGATIVE_TIP,
   COMMISSION_STATUS_META,
-  COMMISSION_TOTAL_TIP,
-  MOCK_COMMISSION_AGENT_LEVEL,
   commissionHeroTitle,
   commissionTone,
   findCommissionBill,
@@ -54,43 +45,55 @@ import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import '../../styles/mobile-app-shell.css'
 
+const props = withDefaults(
+  defineProps<{
+    /** 嵌入「我的报表」时隐藏独立顶栏，并由报表页承载导航 */
+    embedded?: boolean
+  }>(),
+  { embedded: false },
+)
+
 const route = useRoute()
 const router = useRouter()
 const { agentType, isRebateAgent, withAgentQuery } = useAgentIdentity()
 
+onMounted(() => {
+  if (props.embedded) return
+  /** 独立路由收敛到「我的报表 · 佣金/盈亏」 */
+  router.replace({
+    name: 'mobile-agent',
+    query: withAgentQuery({
+      ...(typeof route.query.from === 'string' && route.query.from
+        ? { from: route.query.from }
+        : {}),
+      tab: 'report',
+      reportTab: 'finance',
+    }),
+  })
+})
+
 const preset = ref<ProfitDatePreset>(agentMyProfitDefaultPreset(agentType.value))
 /** 返佣结算月（月份选择与快捷 Tab 共用） */
 const rebateMonth = ref(getDefaultCommissionMonth())
-const rebateLevel = ref<RebateProfitLevel>('l1')
 const detailProduct = ref<AgentMyProfitProductRow | null>(null)
 const detailFormulaTipOpen = ref(false)
-const totalTipOpen = ref(false)
 const netWinTipOpen = ref(false)
 const negativeTipOpen = ref(false)
 const monthSheetOpen = ref(false)
 /** 游戏净输赢 / 其他成本：合计下展开细项 */
 const gameDetailsExpanded = ref(false)
-const costDetailsExpanded = ref(false)
+/** 其他成本细项默认展开 */
+const costDetailsExpanded = ref(true)
 
 const dateFilterLabel = computed(() => agentMyProfitDateFilterLabel(agentType.value))
 const datePresets = computed(() => agentMyProfitPresets(agentType.value))
 const rebateMonthOptions = computed(() => getCommissionMonthOptions())
-const rebateLevelTabs = computed(() => agentMyProfitRebateLevelTabs(MOCK_COMMISSION_AGENT_LEVEL))
 const dateRangeText = computed(() =>
   isRebateAgent.value
     ? formatCommissionMonthLabel(rebateMonth.value)
     : agentMyProfitDateRangeText(preset.value),
 )
 
-watch(
-  rebateLevelTabs,
-  (tabs) => {
-    if (!tabs.some((tab) => tab.key === rebateLevel.value)) {
-      rebateLevel.value = tabs[0]?.key ?? 'l1'
-    }
-  },
-  { immediate: true },
-)
 const currency = agentAppCurrency
 const rebateMonthKey = computed(() => rebateMonth.value)
 const rebateCommissionBill = computed(() => findCommissionBill(rebateMonthKey.value))
@@ -113,29 +116,26 @@ const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissi
 const totalBlock = computed(() => AGENT_MY_PROFIT_TOTAL)
 
 watch(preset, () => {
-  totalTipOpen.value = false
   netWinTipOpen.value = false
   negativeTipOpen.value = false
   gameDetailsExpanded.value = false
-  costDetailsExpanded.value = false
+  costDetailsExpanded.value = true
 })
 
-watch(rebateLevel, () => {
-  netWinTipOpen.value = false
-  negativeTipOpen.value = false
-  gameDetailsExpanded.value = false
-  costDetailsExpanded.value = false
-})
-const productRows = computed(() => AGENT_MY_PROFIT_PRODUCT_ROWS)
-const rebateGameSection = computed(() =>
-  agentMyProfitRebateGameSection(rebateLevel.value, rebateSectionScale.value),
+/** 游戏净输赢 / 其他成本：占成与返佣共用分区结构 */
+const gameSection = computed(() =>
+  isRebateAgent.value
+    ? agentMyProfitRebateGameSection('l1', rebateSectionScale.value)
+    : agentMyProfitShareGameSection(),
 )
-const rebateCostSection = computed(() =>
-  agentMyProfitRebateCostSection(rebateLevel.value, rebateSectionScale.value),
+const costSection = computed(() =>
+  isRebateAgent.value
+    ? agentMyProfitRebateCostSection('l1', rebateSectionScale.value)
+    : agentMyProfitShareCostSection(),
 )
 const rebateLevelFormula = computed(() =>
   agentMyProfitRebateLevelFormula(
-    rebateLevel.value,
+    'l1',
     rebateCommissionRate.value,
     rebateSectionScale.value,
   ),
@@ -146,74 +146,37 @@ const rebateFormulaResultLabel = '佣金'
 const rebateL1Formula = computed(() =>
   agentMyProfitRebateLevelFormula('l1', rebateCommissionRate.value, rebateSectionScale.value),
 )
-const rebateL2Formula = computed(() =>
-  agentMyProfitRebateLevelFormula('l2', rebateCommissionRate.value, rebateSectionScale.value),
-)
-const rebateL3Formula = computed(() =>
-  agentMyProfitRebateLevelFormula('l3', rebateCommissionRate.value, rebateSectionScale.value),
-)
-/** 当月佣金 = 直属佣金 */
+/** 当月佣金 = 佣金 */
 const rebateMonthCommission = computed(() => rebateL1Formula.value.monthCommission)
-/** 额外佣金 = 下一级 + 下二级 */
-const rebateExtraCommission = computed(() =>
-  agentMyProfitRebateExtraCommission(rebateCommissionRate.value, rebateSectionScale.value),
-)
-const showExtraCommissionRate = computed(
-  () => rebateLevel.value === 'l2' || rebateLevel.value === 'l3',
-)
-/** 总佣金 = 当月 + 额外（+ 本月预计时的负佣金累计） */
+/** 总佣金 = 当月佣金 - 本月预计时的负佣金累计（若有）。 */
 const rebateTotalCommission = computed(() =>
   Number(
-    (
-      rebateMonthCommission.value +
-      rebateExtraCommission.value +
-      rebateNegativeForTotal.value
-    ).toFixed(2),
+    (rebateMonthCommission.value + rebateNegativeForTotal.value).toFixed(2),
   ),
 )
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
-const summaryRow = computed(() => {
-  if (!isRebateAgent.value) return AGENT_MY_PROFIT_SUMMARY_ROW
-  return agentMyProfitRebateSummaryRow(
-    rebateMonthCommission.value,
-    rebateExtraCommission.value,
-    rebateNegativeForTotal.value,
-  )
-})
+/** 占成公式：游戏净输赢 − 其他成本 = 总盈亏 */
+const shareFormula = computed(() => agentMyProfitShareFormula())
 const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
-  l2Commission: rebateL2Formula.value.monthCommission,
-  l3Commission: rebateL3Formula.value.monthCommission,
   monthCommission: rebateMonthCommission.value,
-  extraCommission: rebateExtraCommission.value,
   negativeAccum: rebateNegativeAccum.value,
   includeNegativeAccum: showRebateNegativeAccum.value,
   gameTotal: rebateSectionScale.value.gameTotal,
 }))
-const rebateTotalTip = computed(() =>
-  showRebateNegativeAccum.value
-    ? COMMISSION_TOTAL_TIP
-    : '总佣金 = 当月佣金 + 额外佣金\n当月佣金 = 直属佣金\n额外佣金 = 下一级佣金 + 下二级佣金',
-)
 const footnoteLines = computed(() =>
   (isRebateAgent.value ? AGENT_MY_PROFIT_REBATE_FOOTNOTE : AGENT_MY_PROFIT_FOOTNOTE).split('\n'),
 )
 const pageTitle = computed(() => agentMyProfitPageTitle(agentType.value))
-const tableNameHeader = computed(() => agentMyProfitTableNameHeader(agentType.value))
-const amountHeader = computed(() => agentMyProfitAmountHeader(agentType.value))
 const dialogLabelHeader = computed(() => agentMyProfitDialogLabelHeader(agentType.value))
-const tableAriaLabel = computed(() =>
-  isRebateAgent.value ? '游戏净输赢与其他成本' : '占成项盈亏',
-)
 
 const detailTitle = computed(() => {
   if (!detailProduct.value) return isRebateAgent.value ? '佣金明细' : '盈亏明细'
   if (detailProduct.value.key === 'total') {
-    return isRebateAgent.value ? '总佣金明细' : '总计盈亏明细'
+    return isRebateAgent.value ? '总佣金明细' : '总盈亏明细'
   }
   if (detailProduct.value.key.startsWith('level_')) {
-    const tab = AGENT_MY_PROFIT_REBATE_LEVEL_TABS.find((item) => `level_${item.key}` === detailProduct.value?.key)
-    return tab ? `${tab.label}明细` : '本级佣金明细'
+    return '佣金明细'
   }
   return `${detailProduct.value.name}明细`
 })
@@ -222,7 +185,7 @@ const detailRows = computed(() =>
     ? agentMyProfitDetailRows(
         detailProduct.value.key,
         agentType.value,
-        rebateLevel.value,
+        'l1',
         isRebateAgent.value ? rebateDetailContext.value : undefined,
       )
     : [],
@@ -244,14 +207,6 @@ function closeDetailFormulaTip() {
   detailFormulaTipOpen.value = false
 }
 
-function toggleTotalTip() {
-  totalTipOpen.value = !totalTipOpen.value
-}
-
-function closeTotalTip() {
-  totalTipOpen.value = false
-}
-
 function toggleNetWinTip() {
   netWinTipOpen.value = !netWinTipOpen.value
 }
@@ -269,23 +224,11 @@ function closeNegativeTip() {
 }
 
 function closeHeroTips() {
-  closeTotalTip()
   closeNegativeTip()
-}
-
-function onTotalTipClick() {
-  closeNegativeTip()
-  toggleTotalTip()
 }
 
 function onNegativeTipClick() {
-  closeTotalTip()
   toggleNegativeTip()
-}
-
-function openTotalDetail() {
-  closeHeroTips()
-  openDetail(summaryRow.value)
 }
 
 function pickPreset(key: ProfitDatePreset) {
@@ -293,7 +236,6 @@ function pickPreset(key: ProfitDatePreset) {
   if (isRebateAgent.value) {
     rebateMonth.value = agentMyProfitRebateMonthKey(key)
   }
-  closeTotalTip()
   closeNetWinTip()
   closeNegativeTip()
 }
@@ -318,7 +260,6 @@ function pickRebateMonth(month: string) {
   const matched = agentMyProfitRebatePresetFromMonthKey(month)
   if (matched) preset.value = matched
   closeMonthSheet()
-  closeTotalTip()
   closeNetWinTip()
   closeNegativeTip()
 }
@@ -338,7 +279,6 @@ function commissionToneClass(value: number) {
 function goBack() {
   closeDetail()
   closeMonthSheet()
-  closeTotalTip()
   closeNetWinTip()
   closeNegativeTip()
   const from = typeof route.query.from === 'string' ? route.query.from : undefined
@@ -354,12 +294,6 @@ function openDetail(row: AgentMyProfitProductRow) {
   detailProduct.value = row
 }
 
-function switchRebateLevel(level: RebateProfitLevel) {
-  rebateLevel.value = level
-  closeDetail()
-  closeNetWinTip()
-}
-
 function toggleGameDetails() {
   gameDetailsExpanded.value = !gameDetailsExpanded.value
 }
@@ -371,7 +305,6 @@ function toggleCostDetails() {
 onBeforeUnmount(() => {
   closeDetail()
   closeDetailFormulaTip()
-  closeTotalTip()
   closeNetWinTip()
   closeNegativeTip()
 })
@@ -381,12 +314,13 @@ onBeforeUnmount(() => {
   <!-- Figma 1433:17568 · 代理中心-首页-我的盈亏；返佣身份展示为「我的佣金」 -->
   <div
     class="mh5-agent-my-profit-page"
+    :class="{ 'mh5-agent-my-profit-page--embedded': embedded }"
     :data-name="isRebateAgent ? '代理中心-首页-我的佣金' : '代理中心-首页-我的盈亏'"
     :data-agent-type="agentType"
     @click="closeHeroTips"
   >
     <div class="mh5-agent-my-profit-hero">
-      <header class="mh5-agent-my-profit-nav">
+      <header v-if="!embedded" class="mh5-agent-my-profit-nav">
         <button type="button" class="mh5-agent-my-profit-nav__back" aria-label="返回" @click="goBack">
           <img :src="AGENT_MY_PROFIT_ASSETS.backIcon" alt="" width="24" height="24" />
         </button>
@@ -417,41 +351,10 @@ onBeforeUnmount(() => {
           :class="{ 'mh5-agent-my-profit-hero-metrics--with-neg': showRebateNegativeAccum }"
         >
           <div class="mh5-agent-my-profit-hero-metric">
-            <p class="mh5-agent-commission-hero__unit">
-              <span class="mh5-agent-commission-tip-wrap mh5-agent-commission-tip-wrap--center">
-                总佣金({{ currency }})
-                <button
-                  type="button"
-                  class="mh5-agent-commission-q"
-                  aria-label="查看总佣金说明"
-                  :aria-expanded="totalTipOpen"
-                  @click.stop="onTotalTipClick"
-                >
-                  ?
-                </button>
-                <span
-                  v-if="totalTipOpen"
-                  class="mh5-agent-commission-tip-bubble"
-                  :class="
-                    showRebateNegativeAccum
-                      ? 'mh5-agent-commission-tip-bubble--start'
-                      : 'mh5-agent-commission-tip-bubble--center'
-                  "
-                  role="tooltip"
-                >
-                  {{ rebateTotalTip }}
-                </span>
-              </span>
+            <p class="mh5-agent-commission-hero__unit">总佣金({{ currency }})</p>
+            <p class="mh5-agent-commission-hero__amount">
+              {{ rebateHeroAmount }}
             </p>
-            <button
-              type="button"
-              class="mh5-agent-commission-hero__amount mh5-agent-my-profit-hero-amount-btn"
-              aria-label="查看总佣金明细"
-              @click="openTotalDetail"
-            >
-              <span>{{ rebateHeroAmount }}</span>
-              <span class="mh5-agent-my-profit-hero-amount-btn__arrow" aria-hidden="true">›</span>
-            </button>
           </div>
           <div
             v-if="showRebateNegativeAccum"
@@ -552,298 +455,249 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <main class="mh5-agent-my-profit-main" :class="{ 'mh5-agent-my-profit-main--rebate': isRebateAgent }">
-      <!-- 返佣：级次 Tab + 明细表 + 公式 + 汇总 -->
-      <template v-if="isRebateAgent">
-        <div
-          class="mh5-agent-my-profit-level-tabs"
-          role="tablist"
-          aria-label="代理佣金级次"
-        >
-          <button
-            v-for="tab in rebateLevelTabs"
-            :key="tab.key"
-            type="button"
-            role="tab"
-            class="mh5-agent-my-profit-level-tab"
-            :class="{ 'mh5-agent-my-profit-level-tab--active': rebateLevel === tab.key }"
-            :aria-selected="rebateLevel === tab.key"
-            @click="switchRebateLevel(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-
-        <section
-          class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-          aria-label="游戏净输赢金额"
-        >
-          <div class="mh5-agent-my-profit-table__head">
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-              {{ rebateGameSection.nameHeader }}
-            </span>
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
-              {{ rebateGameSection.amountHeader }}
-            </span>
-          </div>
-          <div
-            class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-          >
-            <button
-              type="button"
-              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
-              :aria-expanded="gameDetailsExpanded"
-              aria-label="展开或收起游戏净输赢细项"
-              @click="toggleGameDetails"
-            >
-              <span>{{ rebateGameSection.total.name }}</span>
-              <span
-                class="mh5-agent-my-profit-table__chevron"
-                :class="{ 'mh5-agent-my-profit-table__chevron--open': gameDetailsExpanded }"
-                aria-hidden="true"
-              >
-                ▾
-              </span>
-            </button>
-            <span
-              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-              :class="agentMyProfitToneClass(rebateGameSection.total.tone)"
-            >
-              {{ rebateGameSection.total.amountText }}
-            </span>
-          </div>
-          <Transition name="mh5-agent-my-profit-expand">
-            <div v-if="gameDetailsExpanded" class="mh5-agent-my-profit-table__details">
-              <component
-                :is="agentMyProfitHasDetail(row.key, agentType) ? 'button' : 'div'"
-                v-for="(row, index) in rebateGameSection.rows"
-                :key="`${rebateLevel}-${row.key}`"
-                :type="agentMyProfitHasDetail(row.key, agentType) ? 'button' : undefined"
-                class="mh5-agent-my-profit-table__row"
-                :class="{
-                  'mh5-agent-my-profit-table__row--alt': index % 2 === 1,
-                  'mh5-agent-my-profit-table__row--static': !agentMyProfitHasDetail(row.key, agentType),
-                }"
-                @click="openDetail(row)"
-              >
-                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                  {{ row.name }}
-                </span>
-                <span
-                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-                  :class="[
-                    agentMyProfitToneClass(row.tone),
-                    { 'mh5-agent-my-profit-table__link': agentMyProfitHasDetail(row.key, agentType) },
-                  ]"
-                >
-                  {{ row.amountText }}
-                </span>
-              </component>
-            </div>
-          </Transition>
-        </section>
-
-        <section
-          class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-          aria-label="其他成本金额"
-        >
-          <div class="mh5-agent-my-profit-table__head">
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-              {{ rebateCostSection.nameHeader }}
-            </span>
-            <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
-              {{ rebateCostSection.amountHeader }}
-            </span>
-          </div>
-          <div
-            class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-          >
-            <button
-              type="button"
-              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
-              :aria-expanded="costDetailsExpanded"
-              aria-label="展开或收起其他成本细项"
-              @click="toggleCostDetails"
-            >
-              <span>{{ rebateCostSection.total.name }}</span>
-              <span
-                class="mh5-agent-my-profit-table__chevron"
-                :class="{ 'mh5-agent-my-profit-table__chevron--open': costDetailsExpanded }"
-                aria-hidden="true"
-              >
-                ▾
-              </span>
-            </button>
-            <span
-              class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-              :class="agentMyProfitToneClass(rebateCostSection.total.tone)"
-            >
-              {{ rebateCostSection.total.amountText }}
-            </span>
-          </div>
-          <Transition name="mh5-agent-my-profit-expand">
-            <div v-if="costDetailsExpanded" class="mh5-agent-my-profit-table__details">
-              <component
-                :is="agentMyProfitHasDetail(row.key, agentType) ? 'button' : 'div'"
-                v-for="(row, index) in rebateCostSection.rows"
-                :key="`${rebateLevel}-${row.key}`"
-                :type="agentMyProfitHasDetail(row.key, agentType) ? 'button' : undefined"
-                class="mh5-agent-my-profit-table__row"
-                :class="{
-                  'mh5-agent-my-profit-table__row--alt': index % 2 === 1,
-                  'mh5-agent-my-profit-table__row--static': !agentMyProfitHasDetail(row.key, agentType),
-                }"
-                @click="openDetail(row)"
-              >
-                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                  {{ row.name }}
-                </span>
-                <span
-                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-                  :class="[
-                    agentMyProfitToneClass(row.tone),
-                    { 'mh5-agent-my-profit-table__link': agentMyProfitHasDetail(row.key, agentType) },
-                  ]"
-                >
-                  {{ row.amountText }}
-                </span>
-              </component>
-            </div>
-          </Transition>
-        </section>
-
-        <!-- 直属：净输赢×佣金比例；下一级/下二级：再×额外佣金比例 -->
-        <section
-          class="mh5-agent-my-profit-formula-card"
-          :class="{ 'mh5-agent-my-profit-formula-card--extra': showExtraCommissionRate }"
-          :aria-label="
-            showExtraCommissionRate
-              ? '净输赢乘以佣金比例再乘以额外佣金比例等于本级佣金'
-              : '净输赢乘以佣金比例等于佣金'
-          "
-          @click.stop
-        >
-          <div
-            class="mh5-agent-commission-formula mh5-agent-my-profit-formula"
-            :class="{ 'mh5-agent-my-profit-formula--extra': showExtraCommissionRate }"
-          >
-            <div class="mh5-agent-commission-cell">
-              <p class="mh5-agent-commission-cell__label">
-                <span class="mh5-agent-commission-tip-wrap">
-                  净输赢
-                  <button
-                    type="button"
-                    class="mh5-agent-commission-q"
-                    aria-label="查看净输赢说明"
-                    :aria-expanded="netWinTipOpen"
-                    @click.stop="toggleNetWinTip"
-                  >
-                    ?
-                  </button>
-                  <span
-                    v-if="netWinTipOpen"
-                    class="mh5-agent-commission-tip-bubble"
-                    role="tooltip"
-                  >
-                    净输赢 = 游戏净输赢 - 其他成本
-                  </span>
-                </span>
-              </p>
-              <p
-                class="mh5-agent-commission-cell__value"
-                :class="commissionToneClass(rebateLevelFormula.netWin)"
-              >
-                {{ formatCommissionAmount(rebateLevelFormula.netWin) }}
-              </p>
-            </div>
-            <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
-            <div class="mh5-agent-commission-cell">
-              <p class="mh5-agent-commission-cell__label">佣金比例</p>
-              <p class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__rate">
-                {{ rebateLevelFormula.commissionRate }}
-              </p>
-            </div>
-            <template v-if="showExtraCommissionRate">
-              <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
-              <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">额外比例</p>
-                <p class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__rate">
-                  {{ rebateLevelFormula.extraCommissionRate ?? REBATE_EXTRA_COMMISSION_RATE }}
-                </p>
-              </div>
-            </template>
-            <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
-            <button
-              type="button"
-              class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-              :aria-label="`查看${rebateFormulaResultLabel}明细`"
-              @click="openDetail(levelSummaryRow)"
-            >
-              <p class="mh5-agent-commission-cell__label">{{ rebateFormulaResultLabel }}</p>
-              <p
-                class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
-                :class="commissionToneClass(rebateLevelFormula.monthCommission)"
-              >
-                {{ formatCommissionAmount(rebateLevelFormula.monthCommission) }}
-              </p>
-            </button>
-          </div>
-        </section>
-      </template>
-
-      <section v-else class="mh5-agent-my-profit-table" :aria-label="tableAriaLabel">
+    <main class="mh5-agent-my-profit-main mh5-agent-my-profit-main--rebate">
+      <!-- 占成 / 返佣共用：游戏净输赢 + 其他成本（可展开） -->
+      <section
+        class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+        aria-label="游戏净输赢金额"
+      >
         <div class="mh5-agent-my-profit-table__head">
           <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-            {{ tableNameHeader }}
+            {{ gameSection.nameHeader }}
           </span>
           <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
-            {{ amountHeader }}
+            {{ gameSection.amountHeader }}
           </span>
         </div>
-        <component
-          :is="agentMyProfitHasDetail(row.key, agentType) ? 'button' : 'div'"
-          v-for="(row, index) in productRows"
-          :key="row.key"
-          :type="agentMyProfitHasDetail(row.key, agentType) ? 'button' : undefined"
-          class="mh5-agent-my-profit-table__row"
-          :class="{
-            'mh5-agent-my-profit-table__row--alt': index % 2 === 1,
-            'mh5-agent-my-profit-table__row--static': !agentMyProfitHasDetail(row.key, agentType),
-          }"
-          @click="openDetail(row)"
+        <div
+          class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
         >
-          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-            {{ row.name }}
-          </span>
+          <button
+            type="button"
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+            :aria-expanded="gameDetailsExpanded"
+            aria-label="展开或收起游戏净输赢细项"
+            @click="toggleGameDetails"
+          >
+            <span>{{ gameSection.total.name }}</span>
+            <span
+              class="mh5-agent-my-profit-table__chevron"
+              :class="{ 'mh5-agent-my-profit-table__chevron--open': gameDetailsExpanded }"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
           <span
             class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-            :class="[
-              agentMyProfitToneClass(row.tone),
-              { 'mh5-agent-my-profit-table__link': agentMyProfitHasDetail(row.key, agentType) },
-            ]"
+            :class="agentMyProfitToneClass(gameSection.total.tone)"
           >
-            {{ row.amountText }}
+            {{ gameSection.total.amountText }}
           </span>
-        </component>
+        </div>
+        <Transition name="mh5-agent-my-profit-expand">
+          <div v-if="gameDetailsExpanded" class="mh5-agent-my-profit-table__details">
+            <component
+              :is="agentMyProfitHasDetail(row.key, agentType) ? 'button' : 'div'"
+              v-for="(row, index) in gameSection.rows"
+              :key="row.key"
+              :type="agentMyProfitHasDetail(row.key, agentType) ? 'button' : undefined"
+              class="mh5-agent-my-profit-table__row"
+              :class="{
+                'mh5-agent-my-profit-table__row--alt': index % 2 === 1,
+                'mh5-agent-my-profit-table__row--static': !agentMyProfitHasDetail(row.key, agentType),
+              }"
+              @click="openDetail(row)"
+            >
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ row.name }}
+              </span>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                :class="[
+                  agentMyProfitToneClass(row.tone),
+                  { 'mh5-agent-my-profit-table__link': agentMyProfitHasDetail(row.key, agentType) },
+                ]"
+              >
+                {{ row.amountText }}
+              </span>
+            </component>
+          </div>
+        </Transition>
       </section>
 
-      <button
-        v-if="!isRebateAgent"
-        type="button"
-        class="mh5-agent-my-profit-summary"
-        :aria-label="`查看${summaryRow.name}明细`"
-        @click="openDetail(summaryRow)"
+      <section
+        class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+        aria-label="其他成本金额"
       >
-        <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-          {{ summaryRow.name }}
-        </span>
-        <span
-          class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
-          :class="agentMyProfitToneClass(summaryRow.tone)"
+        <div class="mh5-agent-my-profit-table__head">
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+            {{ costSection.nameHeader }}
+          </span>
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+            {{ costSection.amountHeader }}
+          </span>
+        </div>
+        <div
+          class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
         >
-          {{ summaryRow.amountText }}
-        </span>
-      </button>
+          <button
+            type="button"
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+            :aria-expanded="costDetailsExpanded"
+            aria-label="展开或收起其他成本细项"
+            @click="toggleCostDetails"
+          >
+            <span>{{ costSection.total.name }}</span>
+            <span
+              class="mh5-agent-my-profit-table__chevron"
+              :class="{ 'mh5-agent-my-profit-table__chevron--open': costDetailsExpanded }"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
+          <span
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+            :class="agentMyProfitToneClass(costSection.total.tone)"
+          >
+            {{ costSection.total.amountText }}
+          </span>
+        </div>
+        <Transition name="mh5-agent-my-profit-expand">
+          <div v-if="costDetailsExpanded" class="mh5-agent-my-profit-table__details">
+            <component
+              :is="agentMyProfitHasDetail(row.key, agentType) ? 'button' : 'div'"
+              v-for="(row, index) in costSection.rows"
+              :key="row.key"
+              :type="agentMyProfitHasDetail(row.key, agentType) ? 'button' : undefined"
+              class="mh5-agent-my-profit-table__row"
+              :class="{
+                'mh5-agent-my-profit-table__row--alt': index % 2 === 1,
+                'mh5-agent-my-profit-table__row--static': !agentMyProfitHasDetail(row.key, agentType),
+              }"
+              @click="openDetail(row)"
+            >
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ row.name }}
+              </span>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                :class="[
+                  agentMyProfitToneClass(row.tone),
+                  { 'mh5-agent-my-profit-table__link': agentMyProfitHasDetail(row.key, agentType) },
+                ]"
+              >
+                {{ row.amountText }}
+              </span>
+            </component>
+          </div>
+        </Transition>
+      </section>
+
+      <!-- 返佣：净输赢 × 佣金比例 = 佣金 -->
+      <section
+        v-if="isRebateAgent"
+        class="mh5-agent-my-profit-formula-card"
+        aria-label="净输赢乘以佣金比例等于佣金"
+        @click.stop
+      >
+        <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula">
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">
+              <span class="mh5-agent-commission-tip-wrap">
+                净输赢
+                <button
+                  type="button"
+                  class="mh5-agent-commission-q"
+                  aria-label="查看净输赢说明"
+                  :aria-expanded="netWinTipOpen"
+                  @click.stop="toggleNetWinTip"
+                >
+                  ?
+                </button>
+                <span
+                  v-if="netWinTipOpen"
+                  class="mh5-agent-commission-tip-bubble"
+                  role="tooltip"
+                >
+                  净输赢 = 游戏净输赢 - 其他成本
+                </span>
+              </span>
+            </p>
+            <p
+              class="mh5-agent-commission-cell__value"
+              :class="commissionToneClass(rebateLevelFormula.netWin)"
+            >
+              {{ formatCommissionAmount(rebateLevelFormula.netWin) }}
+            </p>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">佣金比例</p>
+            <p class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__rate">
+              {{ rebateLevelFormula.commissionRate }}
+            </p>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+          <button
+            type="button"
+            class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+            :aria-label="`查看${rebateFormulaResultLabel}明细`"
+            @click="openDetail(levelSummaryRow)"
+          >
+            <p class="mh5-agent-commission-cell__label">{{ rebateFormulaResultLabel }}</p>
+            <p
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+              :class="commissionToneClass(rebateLevelFormula.monthCommission)"
+            >
+              {{ formatCommissionAmount(rebateLevelFormula.monthCommission) }}
+            </p>
+          </button>
+        </div>
+      </section>
+
+      <!-- 占成：游戏净输赢 − 其他成本 = 总盈亏 -->
+      <section
+        v-else
+        class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
+        aria-label="游戏净输赢减去其他成本等于总盈亏"
+        @click.stop
+      >
+        <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra">
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">游戏净输赢</p>
+            <p
+              class="mh5-agent-commission-cell__value"
+              :class="agentMyProfitToneClass(shareFormula.gameTone)"
+            >
+              {{ shareFormula.gameAmountText }}
+            </p>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">其他成本</p>
+            <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
+              {{ shareFormula.costAmountText }}
+            </p>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+          <button
+            type="button"
+            class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+            :aria-label="`查看${shareFormula.total.name}明细`"
+            @click="openDetail(shareFormula.total)"
+          >
+            <p class="mh5-agent-commission-cell__label">{{ shareFormula.total.name }}</p>
+            <p
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+              :class="agentMyProfitToneClass(shareFormula.total.tone)"
+            >
+              {{ shareFormula.total.amountText }}
+            </p>
+          </button>
+        </div>
+      </section>
 
       <p class="mh5-agent-my-profit-footnote">
         <span v-for="(line, i) in footnoteLines" :key="i">

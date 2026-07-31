@@ -13,7 +13,7 @@ export type ReportDetailRow = {
   tone: ReportValueTone
 }
 
-/** 游戏净输赢 = 输赢 − 退水 − VIP退水 − 代理赚水（对齐游戏净输赢公式） */
+/** 基础报表明细按占成口径生成，页面可按身份过滤并重算 */
 export type ReportDetail = {
   netProfit: string
   netProfitTone: ReportValueTone
@@ -51,7 +51,7 @@ export const REPORT_SUMMARY_CARDS_CREDIT = [
 ] as const
 
 export const REPORT_SUMMARY_CARDS_CASH = [
-  { key: 'fee', label: '充值后续费', value: '86.00' },
+  { key: 'fee', label: '充提手续费', value: '86.00' },
   { key: 'deposit', label: '会员充值总额', value: '12,800.00' },
   { key: 'withdraw', label: '会员提款总额', value: '6,420.00' },
 ] as const
@@ -60,62 +60,76 @@ export function getReportSummaryCards(isCreditCurrency: boolean) {
   return isCreditCurrency ? REPORT_SUMMARY_CARDS_CREDIT : REPORT_SUMMARY_CARDS_CASH
 }
 
+function formatReportValue(n: number, signed = true) {
+  const abs = Math.abs(n).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  if (!signed) return abs
+  if (n > 0) return `+${abs}`
+  if (n < 0) return `-${abs}`
+  return '0.00'
+}
+
+function reportValueTone(n: number): ReportValueTone {
+  if (n > 0) return 'positive'
+  if (n < 0) return 'negative'
+  return 'neutral'
+}
+
 function buildDetail(
   validBet: string,
   win: number,
   rebate: number,
   vipRebate: number,
   commission: number,
+  /** 传入时计入游戏净输赢并展示「场馆费」行（占成 / 返佣均支持） */
+  venueFee?: number,
 ): ReportDetail {
-  const net = win - rebate - vipRebate - commission
-  const fmt = (n: number, signed = true) => {
-    const abs = Math.abs(n).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+  const venue = venueFee ?? 0
+  const net = win - rebate - vipRebate - commission - venue
+  const rows: ReportDetailRow[] = [
+    { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
+    { key: 'winLose', label: '输赢', value: formatReportValue(win), tone: reportValueTone(win) },
+    { key: 'rebate', label: '退水', value: formatReportValue(-rebate), tone: reportValueTone(-rebate) },
+    { key: 'vipRebate', label: 'VIP退水', value: formatReportValue(-vipRebate), tone: reportValueTone(-vipRebate) },
+    {
+      key: 'commission',
+      label: '代理赚水',
+      value: formatReportValue(-commission),
+      tone: reportValueTone(-commission),
+    },
+  ]
+  if (venueFee !== undefined) {
+    rows.push({
+      key: 'venueFee',
+      label: '场馆费',
+      value: formatReportValue(-venue),
+      tone: reportValueTone(-venue),
     })
-    if (!signed) return abs
-    if (n > 0) return `+${abs}`
-    if (n < 0) return `-${abs}`
-    return '0.00'
-  }
-  const tone = (n: number): ReportValueTone => {
-    if (n > 0) return 'positive'
-    if (n < 0) return 'negative'
-    return 'neutral'
   }
 
   return {
-    netProfit: fmt(net),
-    netProfitTone: tone(net),
-    rows: [
-      { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
-      { key: 'winLose', label: '输赢', value: fmt(win), tone: tone(win) },
-      { key: 'rebate', label: '退水', value: fmt(-rebate), tone: tone(-rebate) },
-      { key: 'vipRebate', label: 'VIP退水', value: fmt(-vipRebate), tone: tone(-vipRebate) },
-      {
-        key: 'commission',
-        label: '代理赚水',
-        value: fmt(-commission),
-        tone: tone(-commission),
-      },
-    ],
+    netProfit: formatReportValue(net),
+    netProfitTone: reportValueTone(net),
+    rows,
   }
 }
 
-/** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 860 = 10060 */
-const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860)
+/** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 860 − 80 = 9980（占成含场馆费） */
+const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860, 80)
 
 /** 品类二级「全部」 */
 const CATEGORY_ALL_DETAIL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
-  sports: buildDetail('42,800.00', 9860, 980, 120, 340), // 8420
-  chess: buildDetail('18,640.00', 3200, 280, 45, 95), // 2780
-  esports: buildDetail('9,820.00', 1560, 160, 28, 52), // 1320
-  fishing: buildDetail('6,450.00', -820, 90, 15, 35), // -960
-  slots: buildDetail('11,200.00', 2140, 210, 38, 72), // 1820
+  sports: buildDetail('42,800.00', 9860, 980, 120, 340, 40), // 8380
+  chess: buildDetail('18,640.00', 3200, 280, 45, 95, 20), // 2760
+  esports: buildDetail('9,820.00', 1560, 160, 28, 52, 12), // 1308
+  fishing: buildDetail('6,450.00', -820, 90, 15, 35, 8), // -968
+  slots: buildDetail('11,200.00', 2140, 210, 38, 72, 15), // 1805
 }
 
-/** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 10 = 340 */
-const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10)
+/** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 10 − 20 = 320 */
+const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10, 20)
 
 /** @deprecated 请使用 getReportDetail */
 export const REPORT_DETAIL_ROWS = OVERALL_DETAIL.rows
@@ -123,32 +137,46 @@ export const REPORT_DETAIL_ROWS = OVERALL_DETAIL.rows
 export function getReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
+  includeCommission = true,
 ): ReportDetail {
-  if (category === 'all') return OVERALL_DETAIL
-  if (vendor === 'all') return CATEGORY_ALL_DETAIL[category]
-  return VENDOR_DETAIL
+  const detail =
+    category === 'all'
+      ? OVERALL_DETAIL
+      : vendor === 'all'
+        ? CATEGORY_ALL_DETAIL[category]
+        : VENDOR_DETAIL
+  if (includeCommission) return detail
+  const net = Number(detail.netProfit.replace(/[,+]/g, ''))
+  const commission = Number(
+    detail.rows.find((row) => row.key === 'commission')?.value.replace(/,/g, '') ?? 0,
+  )
+  const netWithoutCommission = net - commission
+  return {
+    ...detail,
+    netProfit: formatReportValue(netWithoutCommission),
+    netProfitTone: reportValueTone(netWithoutCommission),
+  }
 }
 
 /**
  * 代理详情 · 游戏数据（返佣）
  * - 始终无「退水」行（rebate 入参为 0）
- * - 代理赚水仅「查看本人 + 一级代理」时计入（includeCommission）
+ * - 无代理赚水；含场馆费
  */
 const DETAIL_NUMS = {
-  overall: { validBet: '52,180.00', win: 8640, vip: 96, commission: 420 },
-  sports: { validBet: '24,600.00', win: 5120, vip: 68, commission: 210 },
-  chess: { validBet: '11,280.00', win: 1860, vip: 28, commission: 72 },
-  esports: { validBet: '6,420.00', win: 980, vip: 16, commission: 38 },
-  fishing: { validBet: '3,860.00', win: -460, vip: 10, commission: 22 },
-  slots: { validBet: '7,020.00', win: 1340, vip: 24, commission: 48 },
-  vendor: { validBet: '680.00', win: 320, vip: 18, commission: 12 },
+  overall: { validBet: '52,180.00', win: 8640, vip: 96, venueFee: 80 },
+  sports: { validBet: '24,600.00', win: 5120, vip: 68, venueFee: 40 },
+  chess: { validBet: '11,280.00', win: 1860, vip: 28, venueFee: 20 },
+  esports: { validBet: '6,420.00', win: 980, vip: 16, venueFee: 12 },
+  fishing: { validBet: '3,860.00', win: -460, vip: 10, venueFee: 8 },
+  slots: { validBet: '7,020.00', win: 1340, vip: 24, venueFee: 15 },
+  vendor: { validBet: '680.00', win: 320, vip: 18, venueFee: 6 },
 } as const
 
 /** 代理详情页返佣「游戏数据」明细 */
 export function getAgentDetailReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
-  includeCommission = false,
 ): ReportDetail {
   const nums =
     category === 'all'
@@ -156,34 +184,57 @@ export function getAgentDetailReportDetail(
       : vendor === 'all'
         ? DETAIL_NUMS[category]
         : DETAIL_NUMS.vendor
-  return buildDetail(
-    nums.validBet,
-    nums.win,
-    0,
-    nums.vip,
-    includeCommission ? nums.commission : 0,
-  )
+  return buildDetail(nums.validBet, nums.win, 0, nums.vip, 0, nums.venueFee)
+}
+
+/**
+ * 我的报表 · 返佣游戏统计（含场馆费，无退水/代理赚水）
+ */
+const REPORT_REBATE_NUMS = {
+  overall: { validBet: '86,420.00', win: 12350, vip: 150, venueFee: 80 },
+  sports: { validBet: '42,800.00', win: 9860, vip: 120, venueFee: 40 },
+  chess: { validBet: '18,640.00', win: 3200, vip: 45, venueFee: 20 },
+  esports: { validBet: '9,820.00', win: 1560, vip: 28, venueFee: 12 },
+  fishing: { validBet: '6,450.00', win: -820, vip: 15, venueFee: 8 },
+  slots: { validBet: '11,200.00', win: 2140, vip: 38, venueFee: 15 },
+  vendor: { validBet: '1,000.00', win: 500, vip: 50, venueFee: 10 },
+} as const
+
+export function getRebateReportDetail(
+  category: ReportCategoryKey,
+  vendor: ReportVendorKey,
+): ReportDetail {
+  const nums =
+    category === 'all'
+      ? REPORT_REBATE_NUMS.overall
+      : vendor === 'all'
+        ? REPORT_REBATE_NUMS[category]
+        : REPORT_REBATE_NUMS.vendor
+  const detail = buildDetail(nums.validBet, nums.win, 0, nums.vip, 0, nums.venueFee)
+  return {
+    ...detail,
+    rows: detail.rows.filter((row) => row.key !== 'rebate' && row.key !== 'commission'),
+  }
 }
 
 /**
  * 会员详情 · 游戏统计（返佣）
  * - 始终无「退水/会员退水」
- * - 代理赚水仅一级代理看直属会员时计入（includeCommission）
+ * - 无代理赚水；含场馆费
  */
 const MEMBER_DETAIL_NUMS = {
-  overall: { validBet: '68,240.00', win: 9860, vip: 120, commission: 200 },
-  sports: { validBet: '32,100.00', win: 5680, vip: 72, commission: 95 },
-  chess: { validBet: '14,860.00', win: 2140, vip: 32, commission: 48 },
-  esports: { validBet: '8,120.00', win: 1120, vip: 18, commission: 28 },
-  fishing: { validBet: '4,580.00', win: -380, vip: 12, commission: 18 },
-  slots: { validBet: '9,580.00', win: 1680, vip: 28, commission: 42 },
-  vendor: { validBet: '820.00', win: 260, vip: 14, commission: 22 },
+  overall: { validBet: '68,240.00', win: 9860, vip: 120, venueFee: 90 },
+  sports: { validBet: '32,100.00', win: 5680, vip: 72, venueFee: 45 },
+  chess: { validBet: '14,860.00', win: 2140, vip: 32, venueFee: 22 },
+  esports: { validBet: '8,120.00', win: 1120, vip: 18, venueFee: 14 },
+  fishing: { validBet: '4,580.00', win: -380, vip: 12, venueFee: 9 },
+  slots: { validBet: '9,580.00', win: 1680, vip: 28, venueFee: 16 },
+  vendor: { validBet: '820.00', win: 260, vip: 14, venueFee: 7 },
 } as const
 
 export function getMemberDetailReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
-  includeCommission = false,
 ): ReportDetail {
   const nums =
     category === 'all'
@@ -191,13 +242,7 @@ export function getMemberDetailReportDetail(
       : vendor === 'all'
         ? MEMBER_DETAIL_NUMS[category]
         : MEMBER_DETAIL_NUMS.vendor
-  return buildDetail(
-    nums.validBet,
-    nums.win,
-    0,
-    nums.vip,
-    includeCommission ? nums.commission : 0,
-  )
+  return buildDetail(nums.validBet, nums.win, 0, nums.vip, 0, nums.venueFee)
 }
 
 export function reportDetailValueClass(tone: ReportValueTone) {

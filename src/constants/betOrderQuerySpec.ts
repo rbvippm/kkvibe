@@ -61,6 +61,7 @@ export const AGENT_BET_ORDER_QUERY_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '入口：代理中心 → 底部导航「注单查询」（mobile-agent?tab=bet-order）。',
+      '团队管理行内「···」→「注单查询」：带 keyword（备注/昵称/金刚号）进入本 Tab 并自动填入搜索框查询。',
       '详情弹层内「关闭」或点击遮罩返回列表。',
       '独立路由 mine/bet-orders 重定向至代理中心注单 Tab。',
     ],

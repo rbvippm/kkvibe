@@ -5,50 +5,36 @@ import type { AgentIdentityType } from './agentIdentity'
 
 export { AGENT_GAME_PROFIT_FORMULA, AGENT_PROFIT_FORMULA }
 
-/** 返佣 · 游戏净输赢（一级代理：含代理赚水） */
+/** 返佣 · 游戏净输赢 */
 export const REBATE_GAME_NET_PROFIT_FORMULA =
-  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-代理赚水】'
+  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-场馆费】'
 
-/** 返佣 · 游戏净输赢（非一级：无代理赚水） */
-export const REBATE_GAME_NET_PROFIT_FORMULA_NO_EARN =
-  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】'
+/** @deprecated 返佣各层级已统一公式 */
+export const REBATE_GAME_NET_PROFIT_FORMULA_NO_EARN = REBATE_GAME_NET_PROFIT_FORMULA
 
-/** 按代理层级返回返佣游戏净输赢公式 tip */
-export function rebateGameNetProfitFormula(isLevel1Agent: boolean) {
-  return isLevel1Agent ? REBATE_GAME_NET_PROFIT_FORMULA : REBATE_GAME_NET_PROFIT_FORMULA_NO_EARN
+/** 返佣各层级统一使用同一游戏净输赢公式 */
+export function rebateGameNetProfitFormula(_isLevel1Agent?: boolean) {
+  return REBATE_GAME_NET_PROFIT_FORMULA
 }
 
 /** 返佣 · 总佣金（与顶部 tip 一致） */
 export const REBATE_AGENT_PROFIT_FORMULA =
-  '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计'
+  '总佣金 = 当月佣金 - 负佣金累计'
 
 /** 总佣金公式 tip：仅一行；负佣金仅本月预计佣金计入 */
 export function rebateTotalCommissionFormulaTip(
   _monthCommission: number,
-  _l2Commission: number,
-  _l3Commission: number,
   _negativeAccum: number,
   includeNegative = true,
 ) {
   return includeNegative
-    ? '总佣金 = 当月佣金 + 额外佣金 + 负佣金累计'
-    : '总佣金 = 当月佣金 + 额外佣金'
+    ? '总佣金 = 当月佣金 - 负佣金累计'
+    : '总佣金 = 当月佣金'
 }
 
-/** 返佣 · 直属佣金（原一级） */
+/** 返佣 · 佣金（原平台佣金 / 一级） */
 export const REBATE_L1_PROFIT_FORMULA =
-  '直属佣金 = （【直属输赢】 + 【-直属VIP退水】 + 【-代理赚水】 + 【-直属VIP晋级礼金】 + 【-直属VIP额外奖金】 + 【-直属活动金】） × 平台佣金比例'
-
-/** 返佣 · 下一级佣金（原二级；与三级公式结构相同） */
-export const REBATE_L2_PROFIT_FORMULA =
-  '下一级佣金 = （【直属输赢】 + 【-直属VIP退水】 + 【-直属VIP晋级礼金】 + 【-直属VIP额外奖金】 + 【-直属活动金】） × 平台佣金比例 × 额外佣金比例'
-
-/** 返佣 · 下二级佣金（原三级） */
-export const REBATE_L3_PROFIT_FORMULA =
-  '下二级佣金 = （【直属输赢】 + 【-直属VIP退水】 + 【-直属VIP晋级礼金】 + 【-直属VIP额外奖金】 + 【-直属活动金】） × 平台佣金比例 × 额外佣金比例'
-
-/** @deprecated 请用 REBATE_L2_PROFIT_FORMULA / REBATE_L3_PROFIT_FORMULA */
-export const REBATE_L2_L3_PROFIT_FORMULA = REBATE_L2_PROFIT_FORMULA
+  '佣金 = （【输赢】 + 【-VIP退水】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】） × 佣金比例'
 
 export type AgentMyProfitTone = 'neutral' | 'positive' | 'negative'
 
@@ -105,8 +91,8 @@ export const AGENT_MY_PROFIT_TOTAL = {
   tone: 'positive' as const,
 }
 
-/** 产品 / 成本盈亏列表（对齐设计稿斑马纹与正负色；捕鱼后接成本类型） */
-export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
+/** 占成 · 游戏净输赢细项 */
+export const AGENT_MY_PROFIT_SHARE_GAME_ROWS: AgentMyProfitProductRow[] = [
   { key: 'scratch', name: '刮刮乐', amountText: '+123,567.88', tone: 'positive' },
   { key: 'marble', name: '弹珠', amountText: '-23,567.88', tone: 'negative' },
   { key: 'chess', name: '棋牌', amountText: '+123,567.88', tone: 'positive' },
@@ -116,22 +102,34 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
   { key: 'live', name: '真人', amountText: '+123,567.88', tone: 'positive' },
   { key: 'slots', name: '老虎机', amountText: '-23,567.88', tone: 'negative' },
   { key: 'fishing', name: '捕鱼', amountText: '+123,567.88', tone: 'positive' },
+]
+
+/** 占成 · 其他成本细项（对齐返佣：含充提手续费） */
+export const AGENT_MY_PROFIT_SHARE_COST_ROWS: AgentMyProfitProductRow[] = [
   { key: 'vip_bonus', name: 'VIP晋级礼金', amountText: '-23,567.88', tone: 'negative' },
   { key: 'vip_extra', name: 'VIP额外奖金', amountText: '-12,345.67', tone: 'negative' },
   { key: 'activity', name: '活动金', amountText: '-123,567.88', tone: 'negative' },
+  { key: 'deposit_withdraw_fee', name: '充提手续费', amountText: '-8,888.88', tone: 'negative' },
 ]
 
+/** @deprecated 请用分区列表；兼容旧引用 */
+export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
+  ...AGENT_MY_PROFIT_SHARE_GAME_ROWS,
+  ...AGENT_MY_PROFIT_SHARE_COST_ROWS,
+]
+
+/** 兼容旧引用；请优先用 agentMyProfitShareSummaryRow() */
 export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
   key: 'total',
-  name: '总计',
-  amountText: '+123,567.88',
+  name: '总盈亏',
+  amountText: '+355,197.57',
   tone: 'positive',
 }
 
 export const AGENT_MY_PROFIT_FOOTNOTE =
   '数据每十分钟更新一次\n最多可查询近 6 个月的数据'
 
-/** 游戏占成项盈亏明细（口径对齐场馆净输赢：含代理赚水，不含成本项） */
+/** 游戏占成项盈亏明细（口径对齐场馆净输赢：含代理赚水、场馆费，不含成本项） */
 export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   {
     label: '下注有效金额',
@@ -142,9 +140,10 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: '退水', amountText: '-100.00', tone: 'negative' },
   { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
   { label: '代理赚水', amountText: '-10.00', tone: 'negative' },
+  { label: '场馆费', amountText: '-20.00', tone: 'negative' },
   {
     label: '游戏净输赢',
-    amountText: '+340.00',
+    amountText: '+320.00',
     tone: 'positive',
     emphasize: true,
     formulaTip: AGENT_GAME_PROFIT_FORMULA,
@@ -152,8 +151,8 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
 ]
 
 /**
- * 总计盈亏明细：对齐代理盈亏七项
- * 代理盈亏 = 实占游戏输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金
+ * 总计盈亏明细：对齐代理盈亏八项（含充提手续费）
+ * 代理盈亏 = 实占游戏输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金 − 实占充提手续费
  */
 export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: '输赢', amountText: '+500.00', tone: 'positive' },
@@ -163,9 +162,10 @@ export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
   { label: 'VIP晋级礼金', amountText: '-20.00', tone: 'negative' },
   { label: 'VIP额外奖金', amountText: '-15.00', tone: 'negative' },
   { label: '活动金', amountText: '-30.00', tone: 'negative' },
+  { label: '充提手续费', amountText: '-15.00', tone: 'negative' },
   {
     label: '代理盈亏',
-    amountText: '+275.00',
+    amountText: '+260.00',
     tone: 'positive',
     emphasize: true,
     formulaTip: AGENT_PROFIT_FORMULA,
@@ -177,13 +177,15 @@ const AGENT_MY_PROFIT_NO_DETAIL_KEYS = new Set([
   'vip_bonus',
   'vip_extra',
   'activity',
+  'deposit_withdraw_fee',
   'game_sum',
   'cost_sum',
 ])
 
 /** ---------- 返佣代理 · Mock（口径对齐返佣公式） ---------- */
 
-export type RebateProfitLevel = 'l1' | 'l2' | 'l3'
+/** 返佣代理固定为单层，仅保留平台佣金。 */
+export type RebateProfitLevel = 'l1'
 
 /** 列表缩放：一级游戏合计 / 成本合计（对齐账单 totalPnl、-totalCost） */
 export type RebateSectionScale = {
@@ -198,32 +200,26 @@ export const REBATE_DEFAULT_SECTION_SCALE: RebateSectionScale = {
   costTotal: -120.5,
 }
 
-/** 顶部总佣金（示意；页面主路径由一级/二三级/负佣金动态汇总） */
+/** 顶部总佣金（示意；由当月平台佣金与负佣金累计动态汇总） */
 export const AGENT_MY_PROFIT_REBATE_TOTAL = {
   label: '总佣金',
-  valueText: '137.96',
+  valueText: '18.98',
   tone: 'positive' as const,
 }
 
-/** 顶栏 Tab：直属 / 下一级 / 下二级佣金（小计随公式动态算，此处为默认月示意） */
+/** 返佣单层口径，仅保留平台佣金。 */
 export const AGENT_MY_PROFIT_REBATE_LEVEL_TABS: {
   key: RebateProfitLevel
   label: string
   subtotalText: string
   tone: AgentMyProfitTone
 }[] = [
-  { key: 'l1', label: '直属佣金', subtotalText: '+118.98', tone: 'positive' },
-  { key: 'l2', label: '下一级佣金', subtotalText: '+59.49', tone: 'positive' },
-  { key: 'l3', label: '下二级佣金', subtotalText: '+59.49', tone: 'positive' },
+  { key: 'l1', label: '佣金', subtotalText: '+118.98', tone: 'positive' },
 ]
 
-/**
- * 按代理层级截取可见 Tab：
- * 一级 → 直属 / 下一级 / 下二级；二级 → 直属 / 下一级；三级 → 仅直属
- */
-export function agentMyProfitRebateLevelTabs(agentLevel: 1 | 2 | 3 = 1) {
-  const maxCount = agentLevel === 1 ? 3 : agentLevel === 2 ? 2 : 1
-  return AGENT_MY_PROFIT_REBATE_LEVEL_TABS.slice(0, maxCount)
+/** 兼容既有调用；返佣单层化后代理层级不影响可见佣金项。 */
+export function agentMyProfitRebateLevelTabs(_agentLevel: 1 | 2 | 3 = 1) {
+  return [...AGENT_MY_PROFIT_REBATE_LEVEL_TABS]
 }
 
 /** 返佣 · 游戏项（净输赢） */
@@ -244,6 +240,7 @@ const REBATE_COST_BASE: { key: string; name: string }[] = [
   { key: 'vip_bonus', name: 'VIP晋级礼金' },
   { key: 'vip_extra', name: 'VIP额外奖金' },
   { key: 'activity', name: '活动金' },
+  { key: 'deposit_withdraw_fee', name: '充提手续费' },
 ]
 
 type RebateAmountCell = { amountText: string; tone: AgentMyProfitTone }
@@ -252,7 +249,7 @@ type RebateAmountCell = { amountText: string; tone: AgentMyProfitTone }
 const REBATE_L1_GAME_NUMS = [950, -133, 622, -112, 489, -154, 438, -121, 521]
 
 /** 一级成本分布（合计 -120.5，与默认账单 -totalCost 一致） */
-const REBATE_L1_COST_NUMS = [-45, -25.5, -50]
+const REBATE_L1_COST_NUMS = [-40, -22.5, -43, -15]
 
 function parseProfitAmountText(text: string) {
   return Number(text.replace(/,/g, '').replace(/^\+/, '')) || 0
@@ -278,19 +275,10 @@ function scaleAmountList(amounts: number[], targetSum: number): number[] {
   return scaled
 }
 
-/**
- * 各级列表合计：直属 / 下一级 / 下二级共用同一游戏与成本合计；
- * 下一级、下二级在公式中再乘「额外佣金比例」，不再用半量列表近似。
- */
-function levelScaleTarget(
-  _level: RebateProfitLevel,
-  scale: RebateSectionScale,
-): RebateSectionScale {
+/** 单层返佣列表使用直属游戏与成本合计。 */
+function levelScaleTarget(_level: RebateProfitLevel, scale: RebateSectionScale): RebateSectionScale {
   return scale
 }
-
-/** 下一级 / 下二级 · 额外佣金比例（与明细 Mock 一致） */
-export const REBATE_EXTRA_COMMISSION_RATE = '50%'
 
 export function parseCommissionRatePercent(rate: string) {
   const n = Number.parseFloat(rate.replace('%', ''))
@@ -326,11 +314,66 @@ function sumRebateRows(
   }
 }
 
-export type RebateProfitSection = {
+export type MyProfitSection = {
   nameHeader: string
   amountHeader: string
   rows: AgentMyProfitProductRow[]
   total: AgentMyProfitProductRow
+}
+
+/** @deprecated 请用 MyProfitSection */
+export type RebateProfitSection = MyProfitSection
+
+/** 占成 · 游戏净输赢分区（结构对齐返佣；金额列带实占） */
+export function agentMyProfitShareGameSection(): MyProfitSection {
+  const rows = AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row) => ({ ...row }))
+  return {
+    nameHeader: '游戏净输赢',
+    amountHeader: '金额（实占）',
+    rows,
+    total: sumRebateRows(rows, 'game_sum'),
+  }
+}
+
+/** 占成 · 其他成本分区（结构对齐返佣；金额列带实占） */
+export function agentMyProfitShareCostSection(): MyProfitSection {
+  const rows = AGENT_MY_PROFIT_SHARE_COST_ROWS.map((row) => ({ ...row }))
+  return {
+    nameHeader: '其他成本',
+    amountHeader: '金额（实占）',
+    rows,
+    total: sumRebateRows(rows, 'cost_sum'),
+  }
+}
+
+/** 占成 · 总盈亏 = 游戏净输赢合计 + 其他成本合计（成本为负） */
+export function agentMyProfitShareSummaryRow(): AgentMyProfitProductRow {
+  const game = agentMyProfitShareGameSection().total
+  const cost = agentMyProfitShareCostSection().total
+  const sum =
+    parseProfitAmountText(game.amountText) + parseProfitAmountText(cost.amountText)
+  const cell = formatProfitAmountText(sum)
+  return {
+    key: 'total',
+    name: '总盈亏',
+    amountText: cell.amountText,
+    tone: cell.tone,
+  }
+}
+
+/** 占成公式卡：游戏净输赢 − 其他成本 = 总盈亏 */
+export function agentMyProfitShareFormula() {
+  const game = agentMyProfitShareGameSection().total
+  const cost = agentMyProfitShareCostSection().total
+  const costAbs = Math.abs(parseProfitAmountText(cost.amountText))
+  const costCell = formatProfitAmountText(costAbs)
+  return {
+    gameAmountText: game.amountText,
+    gameTone: game.tone,
+    /** 减数展示绝对值（配合「−」运算符） */
+    costAmountText: costCell.amountText.replace(/^\+/, ''),
+    total: agentMyProfitShareSummaryRow(),
+  }
 }
 
 /** 当前 Tab · 游戏项（净输赢）+ 合计 */
@@ -379,32 +422,22 @@ export function agentMyProfitRebateLevelSummary(
   return agentMyProfitRebateLevelFormula(level, commissionRate, scale).levelRow
 }
 
-/**
- * 本级输出：
- * - 直属：净输赢 × 佣金比例 = 佣金
- * - 下一级 / 下二级：净输赢 × 佣金比例 × 额外佣金比例 = 本级佣金
- */
+/** 平台佣金 = max(净输赢, 0) × 佣金比例。 */
 export function agentMyProfitRebateLevelFormula(
   level: RebateProfitLevel,
   commissionRate = '5.00%',
   scale: RebateSectionScale = REBATE_DEFAULT_SECTION_SCALE,
-  extraCommissionRate = REBATE_EXTRA_COMMISSION_RATE,
 ) {
   const game = agentMyProfitRebateGameSection(level, scale)
   const cost = agentMyProfitRebateCostSection(level, scale)
   const netWin =
     parseProfitAmountText(game.total.amountText) + parseProfitAmountText(cost.total.amountText)
   const rateNum = parseCommissionRatePercent(commissionRate)
-  const applyExtra = level === 'l2' || level === 'l3'
-  const extraRateNum = applyExtra ? parseCommissionRatePercent(extraCommissionRate) : 1
-  const monthCommission = Number(
-    (Math.max(netWin, 0) * rateNum * extraRateNum).toFixed(2),
-  )
+  const monthCommission = Number((Math.max(netWin, 0) * rateNum).toFixed(2))
   const monthCell = formatProfitAmountText(monthCommission)
   return {
     netWin,
     commissionRate,
-    extraCommissionRate: applyExtra ? extraCommissionRate : null,
     monthCommission,
     levelRow: {
       key: `level_${level}`,
@@ -415,23 +448,12 @@ export function agentMyProfitRebateLevelFormula(
   }
 }
 
-/** 当月佣金 = 直属；额外佣金 = 下一级 + 下二级 */
-export function agentMyProfitRebateExtraCommission(
-  commissionRate = '5.00%',
-  scale: RebateSectionScale = REBATE_DEFAULT_SECTION_SCALE,
-) {
-  const l2 = agentMyProfitRebateLevelFormula('l2', commissionRate, scale).monthCommission
-  const l3 = agentMyProfitRebateLevelFormula('l3', commissionRate, scale).monthCommission
-  return Number((l2 + l3).toFixed(2))
-}
-
-/** 总佣金 = 当月佣金(直属) + 额外佣金(下一级+下二级) + 负佣金累计（正数不加 + 号） */
+/** 总佣金 = 当月佣金 - 负佣金累计（若有）。 */
 export function agentMyProfitRebateSummaryRow(
   monthCommission = 118.98,
-  extraCommission = 118.98,
   negativeAccum = -100,
 ): AgentMyProfitProductRow {
-  const total = Number((monthCommission + extraCommission + negativeAccum).toFixed(2))
+  const total = Number((monthCommission + negativeAccum).toFixed(2))
   const abs = Math.abs(total).toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -452,12 +474,12 @@ export const AGENT_MY_PROFIT_REBATE_SUMMARY_ROW: AgentMyProfitProductRow =
 
 export const AGENT_MY_PROFIT_REBATE_FOOTNOTE = '本月数据每十分钟更新一次'
 
-/** 佣金项（游戏）明细：下注有效金额（展示项，不参与净输赢） / 输赢 / VIP退水 / 代理赚水 / 游戏净输赢 */
+/** 佣金项（游戏）明细：下注有效金额（展示项）/ 输赢 / VIP退水 / 场馆费 / 游戏净输赢 */
 export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
   { label: '下注有效金额', amountText: '18,650.00', tone: 'neutral' },
-  { label: '输赢', amountText: '+2,723.30', tone: 'positive' },
+  { label: '输赢', amountText: '+2,766.50', tone: 'positive' },
   { label: 'VIP退水', amountText: '-186.50', tone: 'negative' },
-  { label: '代理赚水', amountText: '-36.80', tone: 'negative' },
+  { label: '场馆费', amountText: '-80.00', tone: 'negative' },
   {
     label: '游戏净输赢',
     amountText: '+2,500.00',
@@ -467,17 +489,17 @@ export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
   },
 ]
 
-/** 直属佣金明细（含代理赚水；末行对齐公式当月佣金） */
+/** 佣金明细（末行对齐公式当月佣金） */
 export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
-  { label: '输赢', amountText: '+2,723.30', tone: 'positive' },
+  { label: '输赢', amountText: '+2,686.50', tone: 'positive' },
   { label: 'VIP退水', amountText: '-186.50', tone: 'negative' },
-  { label: '代理赚水', amountText: '-36.80', tone: 'negative' },
-  { label: 'VIP晋级礼金', amountText: '-45.00', tone: 'negative' },
-  { label: 'VIP额外奖金', amountText: '-25.50', tone: 'negative' },
-  { label: '活动金', amountText: '-50.00', tone: 'negative' },
-  { label: '平台佣金比例', amountText: '5%', tone: 'neutral' },
+  { label: 'VIP晋级礼金', amountText: '-40.00', tone: 'negative' },
+  { label: 'VIP额外奖金', amountText: '-22.50', tone: 'negative' },
+  { label: '活动金', amountText: '-43.00', tone: 'negative' },
+  { label: '充提手续费', amountText: '-15.00', tone: 'negative' },
+  { label: '佣金比例', amountText: '5%', tone: 'neutral' },
   {
-    label: '直属佣金',
+    label: '佣金',
     amountText: '+118.98',
     tone: 'positive',
     emphasize: true,
@@ -485,57 +507,16 @@ export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
   },
 ]
 
-/** 下一级 / 下二级佣金共用细项（不含代理赚水，含额外佣金比例） */
-function buildRebateL2L3Detail(
-  resultLabel: '下一级佣金' | '下二级佣金',
-  formulaTip: string,
-  resultAmountText = '+59.49',
-): AgentMyProfitDetailRow[] {
-  return [
-    { label: '输赢', amountText: '+2,723.30', tone: 'positive' },
-    { label: 'VIP退水', amountText: '-186.50', tone: 'negative' },
-    { label: 'VIP晋级礼金', amountText: '-45.00', tone: 'negative' },
-    { label: 'VIP额外奖金', amountText: '-25.50', tone: 'negative' },
-    { label: '活动金', amountText: '-50.00', tone: 'negative' },
-    { label: '平台佣金比例', amountText: '5%', tone: 'neutral' },
-    { label: '额外佣金比例', amountText: '50%', tone: 'neutral' },
-    {
-      label: resultLabel,
-      amountText: resultAmountText,
-      tone: 'positive',
-      emphasize: true,
-      formulaTip,
-    },
-  ]
-}
-
-/** 下一级佣金明细 */
-export const AGENT_MY_PROFIT_REBATE_L2_DETAIL = buildRebateL2L3Detail(
-  '下一级佣金',
-  REBATE_L2_PROFIT_FORMULA,
-)
-
-/** 下二级佣金明细 */
-export const AGENT_MY_PROFIT_REBATE_L3_DETAIL = buildRebateL2L3Detail(
-  '下二级佣金',
-  REBATE_L3_PROFIT_FORMULA,
-)
-
-/** @deprecated 请用 AGENT_MY_PROFIT_REBATE_L2_DETAIL / L3 */
-export const AGENT_MY_PROFIT_REBATE_L2_L3_DETAIL = AGENT_MY_PROFIT_REBATE_L2_DETAIL
-
 export const AGENT_MY_PROFIT_REBATE_TOTAL_DETAIL: AgentMyProfitDetailRow[] = [
   {
-    label: '直属佣金',
+    label: '佣金',
     amountText: '+118.98',
     tone: 'positive',
   },
-  { label: '下一级佣金', amountText: '+59.49', tone: 'positive' },
-  { label: '下二级佣金', amountText: '+59.49', tone: 'positive' },
   { label: '负佣金累计', amountText: '-100.00', tone: 'negative' },
   {
     label: '总佣金',
-    amountText: '+137.96',
+    amountText: '+18.98',
     tone: 'positive',
     emphasize: true,
     formulaTip: REBATE_AGENT_PROFIT_FORMULA,
@@ -544,10 +525,7 @@ export const AGENT_MY_PROFIT_REBATE_TOTAL_DETAIL: AgentMyProfitDetailRow[] = [
 
 export type RebateDetailContext = {
   l1Commission: number
-  l2Commission: number
-  l3Commission: number
   monthCommission: number
-  extraCommission: number
   negativeAccum: number
   /** 仅本月预计佣金计入 / 展示负佣金累计 */
   includeNegativeAccum: boolean
@@ -574,28 +552,14 @@ export function agentMyProfitRebateDetailRowsWithContext(
 ): AgentMyProfitDetailRow[] {
   if (rowKey === 'total') {
     const neg = ctx.includeNegativeAccum ? ctx.negativeAccum : 0
-    const total = Number(
-      (ctx.l1Commission + ctx.l2Commission + ctx.l3Commission + neg).toFixed(2),
-    )
+    const total = Number((ctx.monthCommission + neg).toFixed(2))
     const totalCell = formatProfitAmountText(total)
     const l1Cell = formatProfitAmountText(ctx.l1Commission)
-    const l2Cell = formatProfitAmountText(ctx.l2Commission)
-    const l3Cell = formatProfitAmountText(ctx.l3Commission)
     const rows: AgentMyProfitDetailRow[] = [
       {
-        label: '直属佣金',
+        label: '佣金',
         amountText: l1Cell.amountText,
         tone: l1Cell.tone,
-      },
-      {
-        label: '下一级佣金',
-        amountText: l2Cell.amountText,
-        tone: l2Cell.tone,
-      },
-      {
-        label: '下二级佣金',
-        amountText: l3Cell.amountText,
-        tone: l3Cell.tone,
       },
     ]
     if (ctx.includeNegativeAccum) {
@@ -612,9 +576,7 @@ export function agentMyProfitRebateDetailRowsWithContext(
       tone: totalCell.tone,
       emphasize: true,
       formulaTip: rebateTotalCommissionFormulaTip(
-        ctx.l1Commission,
-        ctx.l2Commission,
-        ctx.l3Commission,
+        ctx.monthCommission,
         ctx.negativeAccum,
         ctx.includeNegativeAccum,
       ),
@@ -622,13 +584,7 @@ export function agentMyProfitRebateDetailRowsWithContext(
     return rows
   }
   if (rowKey === 'level_l1') {
-    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L1_DETAIL, '直属佣金', ctx.l1Commission)
-  }
-  if (rowKey === 'level_l2') {
-    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L2_DETAIL, '下一级佣金', ctx.l2Commission)
-  }
-  if (rowKey === 'level_l3') {
-    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L3_DETAIL, '下二级佣金', ctx.l3Commission)
+    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L1_DETAIL, '佣金', ctx.l1Commission)
   }
   const gameCell = formatProfitAmountText(ctx.gameTotal)
   return AGENT_MY_PROFIT_REBATE_GAME_DETAIL.map((row) =>
@@ -646,9 +602,9 @@ export function agentMyProfitHasDetail(
 }
 
 /**
- * 按身份 / 返佣级次返回明细
- * - 占成：游戏净输赢 / 总计七项
- * - 返佣：佣金项（游戏）走游戏净输赢细项（含展示项下注有效金额）；本级小计按 Tab 级次公式；合计为三级汇总
+ * 按身份返回明细
+ * - 占成：游戏净输赢 / 总计八项（含充提手续费）
+ * - 返佣：佣金项（游戏）走游戏净输赢细项（含展示项下注有效金额）；仅保留平台佣金
  * - 传入 rebateContext 时，末行金额与当前月份列表自洽
  */
 export function agentMyProfitDetailRows(
@@ -661,8 +617,6 @@ export function agentMyProfitDetailRows(
     if (rebateContext) return agentMyProfitRebateDetailRowsWithContext(rowKey, rebateContext)
     if (rowKey === 'total') return AGENT_MY_PROFIT_REBATE_TOTAL_DETAIL
     if (rowKey === 'level_l1') return AGENT_MY_PROFIT_REBATE_L1_DETAIL
-    if (rowKey === 'level_l2') return AGENT_MY_PROFIT_REBATE_L2_DETAIL
-    if (rowKey === 'level_l3') return AGENT_MY_PROFIT_REBATE_L3_DETAIL
     return AGENT_MY_PROFIT_REBATE_GAME_DETAIL
   }
   if (rowKey === 'total') return AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS

@@ -20,6 +20,7 @@ import AgentMePage from '../components/mobile/AgentMePage.vue'
 import MobileBetOrderQueryView from './mobile/MobileBetOrderQueryView.vue'
 import AgentBottomNav from '../components/mobile/AgentBottomNav.vue'
 import { useAgentIdentity } from '../composables/useAgentIdentity'
+import { useBetOrderSearchSeed } from '../composables/useBetOrderSearchSeed'
 import '../styles/mobile-app-shell.css'
 
 type BottomTab = 'overview' | 'team' | 'bet-order' | 'report' | 'me'
@@ -30,6 +31,7 @@ const preset = ref<RangePreset>('today')
 const route = useRoute()
 const router = useRouter()
 const { agentType, isRebateAgent, agentTypeLabel, withAgentQuery } = useAgentIdentity()
+const { betOrderSearchSeed, setBetOrderSearchSeed } = useBetOrderSearchSeed()
 
 watch(
   isRebateAgent,
@@ -50,10 +52,40 @@ watch(
   (tab) => {
     if (tab === 'overview' || tab === 'team' || tab === 'bet-order' || tab === 'report' || tab === 'me') {
       activeTab.value = tab
+      return
+    }
+    if (!tab) activeTab.value = 'overview'
+  },
+  { immediate: true },
+)
+
+/** 团队快捷入口：把 keyword 同步到代理中心级 seed，供注单页填入搜索框 */
+watch(
+  () => route.query.keyword,
+  (raw) => {
+    if (typeof raw === 'string' && raw.trim()) {
+      setBetOrderSearchSeed(raw.trim())
     }
   },
   { immediate: true },
 )
+
+function clearBetOrderKeywordQuery() {
+  if (typeof route.query.keyword !== 'string' || !route.query.keyword) return
+  const nextQuery: Record<string, string> = {}
+  for (const [key, value] of Object.entries(route.query)) {
+    if (key === 'keyword' || typeof value !== 'string' || !value) continue
+    nextQuery[key] = value
+  }
+  router.replace({ name: 'mobile-agent', query: withAgentQuery(nextQuery) })
+}
+
+/** 离开注单 Tab 后再清空 seed，避免 Strict 双挂载时第二次拿到空关键词 */
+watch(activeTab, (tab, prev) => {
+  if (prev === 'bet-order' && tab !== 'bet-order') {
+    setBetOrderSearchSeed('')
+  }
+})
 
 const user = computed(() =>
   isRebateAgent.value
@@ -199,6 +231,8 @@ function switchTab(tab: BottomTab) {
       v-else-if="showBetOrderSection"
       embedded
       class="relative z-10 flex h-full min-h-0 w-full flex-col"
+      :seed-keyword="betOrderSearchSeed"
+      @seed-applied="clearBetOrderKeywordQuery"
     />
 
     <!-- 我的报表 -->

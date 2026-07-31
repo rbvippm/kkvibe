@@ -17,7 +17,10 @@ import {
 } from '../../constants/agentOverview'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
 import { AGENT_OVERVIEW_CURRENCY_SHEET_SPEC } from '../../constants/agentOverviewSpec'
-import type { AgentIdentityType } from '../../constants/agentIdentity'
+import {
+  getRebateRatioDisplayText,
+  type AgentIdentityType,
+} from '../../constants/agentIdentity'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   findCommissionBill,
@@ -57,15 +60,23 @@ const ratioTabLabel = computed(() => (isRebate.value ? '返佣比例' : '占成�
 const profitTabLabel = computed(() => (isRebate.value ? '预计佣金' : '我的盈亏'))
 const currencyOptions = computed(() => getAgentOverviewCurrencyOptions(props.agentType))
 
+const currentCommissionBill = computed(
+  () =>
+    findCommissionBill(getDefaultCommissionMonth()) ??
+    MOCK_COMMISSION_MONTH_BILLS.find((item) => item.status === 'pending') ??
+    MOCK_COMMISSION_MONTH_BILLS[0],
+)
+
 /** 返佣：取本月预计总佣金（与「我的佣金」页同口径） */
 const profitTabValue = computed(() => {
   if (!isRebate.value) return props.profit
-  const bill =
-    findCommissionBill(getDefaultCommissionMonth()) ??
-    MOCK_COMMISSION_MONTH_BILLS.find((item) => item.status === 'pending') ??
-    MOCK_COMMISSION_MONTH_BILLS[0]
-  return formatCommissionAmount(getCommissionTotal(bill), { signed: true })
+  return formatCommissionAmount(getCommissionTotal(currentCommissionBill.value), { signed: true })
 })
+
+/** 返佣：账号卡外露当前适用比例；点感叹号看全部档位 */
+const rebateRatioText = computed(() =>
+  getRebateRatioDisplayText(props.currency, currentCommissionBill.value?.commissionRate),
+)
 
 /** + 绿 / - 红 */
 const profitTabValueToneClass = computed(() => {
@@ -128,7 +139,11 @@ watch(isRebate, (rebate) => {
 })
 
 function goMyProfit() {
-  router.push({ name: 'mobile-agent-my-profit', query: withAgentQuery() })
+  /** 概况预计佣金 / 我的盈亏 → 我的报表 · 佣金/盈亏 Tab */
+  router.push({
+    name: 'mobile-agent',
+    query: withAgentQuery({ tab: 'report', reportTab: 'finance' }),
+  })
 }
 
 function openShareRatioDialog() {
@@ -247,7 +262,27 @@ function pickCurrency(value: AgentOverviewCurrency) {
               </span>
               <span class="agent-home__profit-tab-arrow" aria-hidden="true">›</span>
             </button>
+            <!-- 返佣：比例直接外露，仅感叹号打开档位详情 -->
+            <div
+              v-if="isRebate"
+              class="agent-home__profit-tab agent-home__profit-tab--ratio"
+              data-name="agent_tab_/inactive"
+              role="group"
+              :aria-label="`${ratioTabLabel} ${rebateRatioText}`"
+            >
+              <span class="agent-home__profit-tab-label">{{ ratioTabLabel }}</span>
+              <span class="agent-home__profit-tab-value">{{ rebateRatioText }}</span>
+              <button
+                type="button"
+                class="agent-home__profit-tab-info"
+                aria-label="查看返佣比例详情"
+                @click="openShareRatioDialog"
+              >
+                <img :src="AGENT_OVERVIEW_ASSETS.ratioInfoIcon" alt="" width="16" height="16" />
+              </button>
+            </div>
             <button
+              v-else
               type="button"
               class="agent-home__profit-tab agent-home__profit-tab--ratio"
               data-name="agent_tab_/inactive"
@@ -317,7 +352,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
         </div>
       </div>
 
-      <div class="agent-home__section agent-home__section--sub">
+      <div v-if="!isRebate" class="agent-home__section agent-home__section--sub">
         <div class="agent-home__panel">
           <p class="agent-home__panel-title">下级代理</p>
           <div class="agent-home__stat-rows">
@@ -389,6 +424,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
     <AgentMyShareRatioDialog
       :open="shareRatioOpen"
       :mode="agentType"
+      :currency="currency"
       @close="closeShareRatioDialog"
     />
 

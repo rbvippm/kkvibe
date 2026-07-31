@@ -37,12 +37,18 @@ import '../../styles/mobile-app-shell.css'
 
 const { isRebateAgent } = useAgentIdentity()
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     embedded?: boolean
+    /** 团队快捷入口带入的会员关键词（备注/昵称/金刚号） */
+    seedKeyword?: string
   }>(),
-  { embedded: false },
+  { embedded: false, seedKeyword: '' },
 )
+
+const emit = defineEmits<{
+  seedApplied: []
+}>()
 
 const { uiText, fork } = useWorkspaceFork()
 const pageTitle = computed(() => uiText('pageTitle', '注单查询'))
@@ -68,6 +74,25 @@ function createDefaultFilter(): BetOrderFilter {
 const searchInput = ref('')
 const appliedFilter = ref<BetOrderFilter>(createDefaultFilter())
 const filterDraft = ref<BetOrderFilter>(createDefaultFilter())
+
+function applyKeyword(keyword: string) {
+  const next = keyword.trim()
+  searchInput.value = next
+  appliedFilter.value = { ...appliedFilter.value, keyword: next }
+  filterDraft.value = { ...filterDraft.value, keyword: next }
+}
+
+/** 由代理中心传入 seed，填入搜索并立即按该会员查询 */
+watch(
+  () => props.seedKeyword,
+  (keyword) => {
+    const next = keyword?.trim() ?? ''
+    if (!next) return
+    applyKeyword(next)
+    emit('seedApplied')
+  },
+  { immediate: true },
+)
 const filterOpen = ref(false)
 const filterError = ref('')
 const page = ref(1)

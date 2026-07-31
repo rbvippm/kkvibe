@@ -11,18 +11,21 @@ import {
   canShowAgentCreditAction,
   canShowMemberCreditAction,
   collectTeamFullExpandState,
+  formatTeamMemberBetSearchKeyword,
   getTeamTreeRows,
   isCreditTeamKind,
   memberKindLabel,
   showAgentSubordinateTag,
   showMemberBadge,
   teamStatsLabel,
+  updateTeamMemberRemark,
   type CreateAccountOption,
   type TeamFilterTab,
   type TeamListItem,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
 import { AGENT_TEAM_REBATE_SPEC } from '../../constants/agentTeamSpec'
+import { setBetOrderSearchSeed } from '../../composables/useBetOrderSearchSeed'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 
@@ -32,42 +35,61 @@ const { isRebateAgent, withAgentQuery, agentTypeLabel } = useAgentIdentity()
 
 const createAccountOptions = computed(() =>
   isRebateAgent.value
-    ? CREATE_ACCOUNT_OPTIONS.filter(
-        (item) => item.key === 'agent' || item.key === 'member' || item.key === 'invite_existing',
-      )
+    ? CREATE_ACCOUNT_OPTIONS.filter((item) => item.key === 'member')
     : CREATE_ACCOUNT_OPTIONS,
 )
 
-/** 返佣代理无信用代理 / 信用会员 */
-const teamFilterTabs = computed(() =>
-  isRebateAgent.value
-    ? TEAM_FILTER_TABS.filter((tab) => tab.key !== 'credit_agent' && tab.key !== 'credit_member')
-    : TEAM_FILTER_TABS,
+/** 占成：完整筛选 Tab；返佣无 Tab，固定只看直属会员 */
+const teamFilterTabs = computed(() => TEAM_FILTER_TABS)
+
+const teamFilterTab = ref<TeamFilterTab>(isRebateAgent.value ? 'direct_member' : 'all')
+
+/** 返佣固定「直属会员」，不提供全部/直属代理切换 */
+const effectiveTeamFilterTab = computed<TeamFilterTab>(() =>
+  isRebateAgent.value ? 'direct_member' : teamFilterTab.value,
 )
 
-const teamFilterTab = ref<TeamFilterTab>('all')
-
 watch(isRebateAgent, (rebate) => {
-  if (rebate && (teamFilterTab.value === 'credit_agent' || teamFilterTab.value === 'credit_member')) {
+  if (rebate) {
+    teamFilterTab.value = 'direct_member'
+    applyFilterExpand('direct_member')
+    return
+  }
+  if (teamFilterTab.value === 'credit_agent' || teamFilterTab.value === 'credit_member') {
     teamFilterTab.value = 'all'
   }
-  if (teamFilterTab.value === 'all') applyAllTabFullExpand()
+  if (teamFilterTab.value === 'all') applyFilterExpand('all')
 })
 const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
 /** parentId → 该层已展开可见条数（「查看更多」累加） */
 const moreVisibleCount = ref<Record<string, number>>({})
 
-const teamTreeOptions = computed(() => ({ includeCredit: !isRebateAgent.value }))
+const teamTreeOptions = computed(() => ({
+  includeCredit: !isRebateAgent.value,
+  singleLayer: isRebateAgent.value,
+  flatDirectMembers: isRebateAgent.value,
+}))
 
-function applyAllTabFullExpand() {
-  const state = collectTeamFullExpandState('all', teamTreeOptions.value)
-  expandedIds.value = state.expandedIds
-  moreVisibleCount.value = state.moreVisibleCount
+function applyFilterExpand(tab: TeamFilterTab) {
+  if (tab === 'all') {
+    const state = collectTeamFullExpandState('all', teamTreeOptions.value)
+    expandedIds.value = state.expandedIds
+    moreVisibleCount.value = state.moreVisibleCount
+    return
+  }
+  moreVisibleCount.value = {}
+  expandedIds.value = new Set(TEAM_TREE_DEFAULT_EXPANDED)
 }
 
-applyAllTabFullExpand()
+applyFilterExpand(effectiveTeamFilterTab.value)
 
-type TeamQuickAction = 'profit_ratio' | 'rebate_ratio' | 'remark' | 'agent_credit' | 'member_credit'
+type TeamQuickAction =
+  | 'profit_ratio'
+  | 'rebate_ratio'
+  | 'remark'
+  | 'bet_order'
+  | 'agent_credit'
+  | 'member_credit'
 
 const teamQuickMenuRow = ref<TeamListItem | null>(null)
 const teamQuickMenuPos = ref({ top: 0, right: 0 })
@@ -79,7 +101,7 @@ const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTIO
 
 const teamTreeRows = computed(() =>
   getTeamTreeRows(
-    teamFilterTab.value,
+    effectiveTeamFilterTab.value,
     expandedIds.value,
     moreVisibleCount.value,
     teamTreeOptions.value,
@@ -100,12 +122,8 @@ function showMoreChildren(parentId: string) {
 }
 
 watch(teamFilterTab, (tab) => {
-  if (tab === 'all') {
-    applyAllTabFullExpand()
-    return
-  }
-  moreVisibleCount.value = {}
-  expandedIds.value = new Set(TEAM_TREE_DEFAULT_EXPANDED)
+  if (isRebateAgent.value) return
+  applyFilterExpand(tab)
 })
 
 const pendingInviteCount = computed(
@@ -168,6 +186,18 @@ function onTeamDocumentClick() {
 async function onTeamQuickAction(action: TeamQuickAction) {
   const row = teamQuickMenuRow.value
   if (!row) return
+
+  if (action === 'bet_order') {
+    const keyword = formatTeamMemberBetSearchKeyword(row)
+    setBetOrderSearchSeed(keyword)
+    closeTeamQuickMenu()
+    await router.replace({
+      name: 'mobile-agent',
+      query: withAgentQuery({ tab: 'bet-order', keyword }),
+    })
+    return
+  }
+
   closeTeamQuickMenu()
 
   if (action === 'profit_ratio') {
@@ -210,8 +240,9 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   if (action === 'remark') {
-    const next = window.prompt(`为「${row.nickname}」添加备注`, '')
+    const next = window.prompt(`为「${row.nickname}」添加备注`, row.remark ?? '')
     if (next === null) return
+    updateTeamMemberRemark(row.id, next)
     await mh5Alert(next.trim() ? `备注已保存：${next.trim()}` : '备注已清空')
     return
   }
@@ -280,7 +311,7 @@ watch(
 )
 
 function resetCreateAccountDraft() {
-  createAccountDraft.value = DEFAULT_CREATE_ACCOUNT_OPTION
+  createAccountDraft.value = isRebateAgent.value ? 'member' : DEFAULT_CREATE_ACCOUNT_OPTION
 }
 
 async function confirmCreateAccount() {
@@ -347,6 +378,7 @@ onUnmounted(() => {
       </h1>
       <div class="agent-team-header__actions">
         <button
+          v-if="!isRebateAgent"
           type="button"
           class="agent-team-header__icon-btn agent-team-header__icon-btn--invite"
           aria-label="我的邀请记录"
@@ -383,7 +415,7 @@ onUnmounted(() => {
       </div>
     </header>
 
-    <div class="agent-team-toolbar">
+    <div v-if="!isRebateAgent" class="agent-team-toolbar">
       <div class="agent-team-toolbar__tabs" role="tablist" aria-label="团队筛选">
         <button
           v-for="tab in teamFilterTabs"
@@ -467,7 +499,7 @@ onUnmounted(() => {
                 <div class="agent-team-row__tags">
                   <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
                   <span
-                    v-if="teamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
+                    v-if="effectiveTeamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
                     class="agent-team-tag agent-team-tag--credit"
                   >
                     信用
@@ -574,6 +606,14 @@ onUnmounted(() => {
           </button>
           <button type="button" class="agent-team-quick-menu__btn" role="menuitem" @click="onTeamQuickAction('remark')">
             备注
+          </button>
+          <button
+            type="button"
+            class="agent-team-quick-menu__btn"
+            role="menuitem"
+            @click.stop="onTeamQuickAction('bet_order')"
+          >
+            注单查询
           </button>
           <button
             v-if="!isRebateAgent && teamQuickMenuRow && canShowMemberCreditAction(teamQuickMenuRow.kind)"

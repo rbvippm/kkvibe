@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
@@ -13,11 +14,11 @@ import {
 } from '../../constants/agentAppCurrency'
 import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
 import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
-import { isCommissionLevel1Agent } from '../../constants/agentCommissionReport'
 import {
   REPORT_CATEGORY_TABS,
   REPORT_RANGE_PRESETS,
   REPORT_VENDOR_PILLS,
+  getRebateReportDetail,
   getReportDetail,
   getReportSummaryCards,
   reportCategoryTitle,
@@ -29,13 +30,36 @@ import {
   type ReportVendorKey,
 } from '../../constants/agentReport'
 import { AGENT_REPORT_GAME_STATS_SPEC } from '../../constants/agentReportSpec'
+import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
+import MobileAgentMyProfitView from '../../views/mobile/MobileAgentMyProfitView.vue'
 import '../../styles/mobile-app-shell.css'
 
-const { isRebateAgent } = useAgentIdentity()
-/** 返佣：仅一级代理有「代理赚水」成本项 */
-const showRebateEarnWater = computed(
-  () => isRebateAgent.value && isCommissionLevel1Agent(),
+export type AgentReportPageTab = 'finance' | 'game'
+
+const route = useRoute()
+const router = useRouter()
+const { isRebateAgent, withAgentQuery } = useAgentIdentity()
+
+function parseReportTab(raw: unknown): AgentReportPageTab {
+  return raw === 'game' ? 'game' : 'finance'
+}
+
+const pageTab = ref<AgentReportPageTab>(parseReportTab(route.query.reportTab))
+
+watch(
+  () => route.query.reportTab,
+  (tab) => {
+    pageTab.value = parseReportTab(tab)
+  },
 )
+
+const pageTabs = computed(() => [
+  { key: 'finance' as const, label: isRebateAgent.value ? '佣金' : '盈亏' },
+  { key: 'game' as const, label: '游戏' },
+])
+
+const financeAnnotSpec = AGENT_MY_PROFIT_SPEC
+const gameAnnotSpec = AGENT_REPORT_GAME_STATS_SPEC
 
 const preset = ref<ReportRangePreset>('today')
 const category = ref<ReportCategoryKey>('all')
@@ -45,25 +69,31 @@ const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
-const sectionTitle = computed(() => reportCategoryTitle(category.value, vendor.value))
+/** 占成对齐代理详情：标题带「（实占）」；返佣不加 */
+const sectionTitle = computed(() => {
+  const base = reportCategoryTitle(category.value, vendor.value)
+  return isRebateAgent.value ? base : `${base}（实占）`
+})
 const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(currency.value)))
 const gameProfitFormula = computed(() =>
   isRebateAgent.value
-    ? rebateGameNetProfitFormula(showRebateEarnWater.value)
+    ? rebateGameNetProfitFormula()
     : AGENT_GAME_PROFIT_FORMULA,
 )
-const reportDetail = computed(() => {
-  const detail = getReportDetail(category.value, vendor.value)
-  if (!isRebateAgent.value) return detail
-  return {
-    ...detail,
-    rows: detail.rows.filter((row) => {
-      if (row.key === 'rebate') return false
-      if (row.key === 'commission' && !showRebateEarnWater.value) return false
-      return true
-    }),
-  }
-})
+const reportDetail = computed(() =>
+  isRebateAgent.value
+    ? getRebateReportDetail(category.value, vendor.value)
+    : getReportDetail(category.value, vendor.value, true),
+)
+
+function pickPageTab(tab: AgentReportPageTab) {
+  pageTab.value = tab
+  closeGameProfitFormulaTip()
+  const query: Record<string, string> = { tab: 'report', reportTab: tab }
+  const from = route.query.from
+  if (typeof from === 'string' && from) query.from = from
+  router.replace({ name: 'mobile-agent', query: withAgentQuery(query) })
+}
 
 function pickPreset(v: ReportRangePreset) {
   preset.value = v
@@ -91,12 +121,30 @@ function closeGameProfitFormulaTip() {
 
 <template>
   <div class="mh5-agent-report-page">
-    <header class="mh5-agent-report-header">
-      <h1 class="mh5-agent-report-header__title">我的报表</h1>
+    <header class="mh5-agent-report-header mh5-agent-report-header--with-tabs">
+      <div class="mh5-agent-report-page-tabs" role="tablist" aria-label="报表类型">
+        <button
+          v-for="tab in pageTabs"
+          :key="tab.key"
+          type="button"
+          role="tab"
+          class="mh5-agent-report-page-tab"
+          :class="{ 'mh5-agent-report-page-tab--active': pageTab === tab.key }"
+          :aria-selected="pageTab === tab.key"
+          @click="pickPageTab(tab.key)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
       <div class="mh5-agent-report-header__actions">
         <Mh5SpecAnnot
-          v-if="isRebateAgent"
-          :spec="AGENT_REPORT_GAME_STATS_SPEC"
+          v-if="pageTab === 'finance'"
+          :spec="financeAnnotSpec"
+          placement="bottom"
+        />
+        <Mh5SpecAnnot
+          v-else-if="isRebateAgent"
+          :spec="gameAnnotSpec"
           placement="bottom"
         />
         <button
@@ -111,7 +159,17 @@ function closeGameProfitFormulaTip() {
       </div>
     </header>
 
-    <main class="mh5-agent-report-main" @click="closeGameProfitFormulaTip">
+    <MobileAgentMyProfitView
+      v-if="pageTab === 'finance'"
+      embedded
+      class="mh5-agent-report-finance"
+    />
+
+    <main
+      v-else
+      class="mh5-agent-report-main"
+      @click="closeGameProfitFormulaTip"
+    >
       <section class="mh5-agent-report-period">
         <p class="mh5-agent-report-period__label">时间段</p>
         <div class="mh5-agent-report-period__row">

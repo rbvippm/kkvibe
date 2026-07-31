@@ -200,6 +200,7 @@ export function acceptMemberAgentInvite(inviteId: string) {
     id: memberId,
     nickname,
     kind: 'member',
+    kingkongId: invite.memberAccount,
     subordinateCount: 0,
     avatarEmoji: invite.memberNickname?.slice(0, 1) ?? invite.agentAvatar,
   })
@@ -216,6 +217,7 @@ function syncAcceptedInvitesToTeam() {
       id: sent.memberId ?? sent.id,
       nickname: sent.memberNickname ?? sent.memberAccount,
       kind: 'member',
+      kingkongId: sent.memberAccount,
       subordinateCount: 0,
     })
   })

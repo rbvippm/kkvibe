@@ -16,6 +16,10 @@ export type TeamListItem = {
   nickname: string
   kind: TeamMemberKind
   avatarEmoji?: string
+  /** 代理备注（优先于昵称展示/带入注单查询） */
+  remark?: string
+  /** 金刚号 */
+  kingkongId?: string
   /** 下级代理人数（展示「代(n人)」） */
   subordinateCount: number
   /** 下级会员人数（展示「会(n人)」） */
@@ -24,6 +28,17 @@ export type TeamListItem = {
   online?: boolean
   expanded?: boolean
   children?: TeamListItem[]
+}
+
+/** 带入注单查询：备注 → 昵称 → 金刚号（与注单会员展示口径一致） */
+export function formatTeamMemberBetSearchKeyword(item: TeamListItem): string {
+  const remark = item.remark?.trim()
+  if (remark) return remark
+  const nickname = item.nickname?.trim()
+  if (nickname) return nickname
+  const kingkongId = item.kingkongId?.trim()
+  if (kingkongId) return kingkongId
+  return item.id
 }
 
 export type TeamTreeRow =
@@ -76,6 +91,7 @@ export const MOCK_TEAM_MEMBERS: TeamListItem[] = [
     nickname: 'oo12300939',
     kind: 'member',
     avatarEmoji: '👨🏻',
+    kingkongId: '12300939',
     subordinateCount: 0,
     online: true,
   },
@@ -189,6 +205,35 @@ export function addTeamDirectMember(member: TeamListItem) {
   teamDirectMembers.value.unshift({ ...member, kind: 'member' })
 }
 
+/** 更新团队节点备注（本人树 / 直属 / 信用列表） */
+export function updateTeamMemberRemark(id: string, remark: string) {
+  const next = remark.trim()
+  const lists = [
+    teamDirectMembers,
+    teamDirectAgents,
+    teamCreditAgents,
+    teamCreditMembers,
+  ] as const
+  for (const list of lists) {
+    const target = list.value.find((item) => item.id === id)
+    if (target) {
+      target.remark = next || undefined
+      return
+    }
+    const walk = (nodes: TeamListItem[]): boolean => {
+      for (const node of nodes) {
+        if (node.id === id) {
+          node.remark = next || undefined
+          return true
+        }
+        if (node.children?.length && walk(node.children)) return true
+      }
+      return false
+    }
+    if (walk(list.value)) return
+  }
+}
+
 /**
  * 创建代理账户：写入团队列表 Mock
  * - 占成：信用代理（走收益比例后创建）
@@ -288,6 +333,10 @@ export function promoteToCreditMember(input: {
 export type BuildTeamTreeOptions = {
   /** 是否包含信用代理 / 信用会员；返佣代理为 false */
   includeCredit?: boolean
+  /** 是否仅展示本人直属一层；返佣代理为 true */
+  singleLayer?: boolean
+  /** 返佣：扁平直属会员列表，不展示「我」节点、无树形缩进 */
+  flatDirectMembers?: boolean
 }
 
 function stripCreditTeamNodes(items: TeamListItem[]): TeamListItem[] {
@@ -301,6 +350,7 @@ function stripCreditTeamNodes(items: TeamListItem[]): TeamListItem[] {
 
 function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): TeamListItem {
   const includeCredit = options.includeCredit !== false
+  const singleLayer = options.singleLayer === true
   const members = teamDirectMembers.value
   const agents = teamDirectAgents.value
   const creditAgents = includeCredit ? teamCreditAgents.value : []
@@ -341,7 +391,9 @@ function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): 
 
   return {
     ...MOCK_TEAM_SELF,
-    children: includeCredit ? children : stripCreditTeamNodes(children),
+    children: (includeCredit ? children : stripCreditTeamNodes(children)).map((item) =>
+      singleLayer ? { ...item, children: undefined } : item,
+    ),
   }
 }
 
@@ -379,6 +431,34 @@ export function getTeamTreeRows(
   moreVisibleCount: Record<string, number> = {},
   options: BuildTeamTreeOptions = {},
 ): TeamTreeRow[] {
+  /** 返佣：仅扁平直属会员，不渲染本人层级 */
+  if (options.flatDirectMembers) {
+    const members = teamDirectMembers.value.map((item) => ({ ...item, children: undefined }))
+    const flatParentId = MOCK_TEAM_SELF.id
+    const limit = moreVisibleCount[flatParentId] ?? TEAM_TREE_DEFAULT_VISIBLE
+    const visible = members.slice(0, limit)
+    const remaining = Math.max(0, members.length - visible.length)
+    const rows: TeamTreeRow[] = visible.map((item, index) => ({
+      type: 'node' as const,
+      item,
+      depth: 0,
+      hasChildren: false,
+      isLast: index === visible.length - 1 && remaining === 0,
+      ancestorLastFlags: [] as boolean[],
+    }))
+    if (remaining > 0) {
+      rows.push({
+        type: 'more',
+        parentId: flatParentId,
+        depth: 0,
+        remaining,
+        isLast: true,
+        ancestorLastFlags: [],
+      })
+    }
+    return rows
+  }
+
   const root = buildTeamTree(tab, options)
   const rows: TeamTreeRow[] = []
 
