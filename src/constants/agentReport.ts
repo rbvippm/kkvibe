@@ -52,8 +52,8 @@ export const REPORT_SUMMARY_CARDS_CREDIT = [
 
 export const REPORT_SUMMARY_CARDS_CASH = [
   { key: 'fee', label: '充提手续费', value: '86.00' },
-  { key: 'deposit', label: '会员充值总额', value: '12,800.00' },
-  { key: 'withdraw', label: '会员提款总额', value: '6,420.00' },
+  { key: 'deposit', label: '团队充值总额', value: '12,800.00' },
+  { key: 'withdraw', label: '团队提款总额', value: '6,420.00' },
 ] as const
 
 export function getReportSummaryCards(isCreditCurrency: boolean) {

@@ -85,7 +85,7 @@ const profitFormulaTipOpen = ref(false)
 const profitLayoutMode = ref<'classic' | 'sections'>('classic')
 const lastProfitTabTapAt = ref(0)
 const PROFIT_TAB_DOUBLE_TAP_MS = 400
-/** 会员盈亏分区模式：游戏净输赢默认收起、其他成本默认展开 */
+/** 会员盈亏分区模式：游戏净输赢默认收起、其他奖励默认展开 */
 const profitGameDetailsExpanded = ref(false)
 const profitCostDetailsExpanded = ref(true)
 /** 会员盈亏分区模式 · 明细弹框 */
@@ -586,7 +586,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 
           <section
             class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-            aria-label="其他成本金额"
+            aria-label="其他奖励金额"
           >
             <div class="mh5-agent-my-profit-table__head">
               <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
@@ -603,7 +603,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                 type="button"
                 class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
                 :aria-expanded="profitCostDetailsExpanded"
-                aria-label="展开或收起其他成本细项"
+                aria-label="展开或收起其他奖励细项"
                 @click="toggleProfitCostDetails"
               >
                 <span>{{ profitCostSection.total.label }}</span>
@@ -646,7 +646,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 
           <section
             class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-            aria-label="游戏净输赢减去其他成本等于总盈亏"
+            aria-label="游戏净输赢加其他奖励等于总盈亏"
           >
             <div
               class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
@@ -660,10 +660,13 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                   {{ profitFormula.gameAmountText }}
                 </p>
               </div>
-              <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
               <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">其他成本</p>
-                <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
+                <p class="mh5-agent-commission-cell__label">{{ profitFormula.costLabel }}</p>
+                <p
+                  class="mh5-agent-commission-cell__value"
+                  :class="agentMyProfitToneClass(profitFormula.costTone)"
+                >
                   {{ profitFormula.costAmountText }}
                 </p>
               </div>

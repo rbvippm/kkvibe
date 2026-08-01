@@ -14673,6 +14673,12 @@ div.agent-home__profit-tab--ratio {
   margin-top: 0;
 }
 
+/** 代理盈亏 · 团队充提汇总卡（复用报表 summary 样式，两列） */
+.mh5-agent-detail-profit-team-flow.mh5-agent-report-summary {
+  grid-template-columns: repeat(2, 1fr);
+  margin: 0 0 12px;
+}
+
 .mh5-agent-detail-profit-summary .mh5-agent-detail-wallet__head {
   display: none;
 }

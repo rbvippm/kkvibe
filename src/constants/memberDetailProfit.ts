@@ -26,20 +26,22 @@ export {
   profitValueClass,
 }
 
-/** 经典汇总卡 · 会员盈亏公式 tip */
+/** 经典汇总卡 / 总盈亏明细 · 会员盈亏公式 tip */
 export const MEMBER_PROFIT_FORMULA =
   '会员盈亏 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
 
-/** 分区新结构 · 总盈亏公式（隐藏预览模式） */
-export const MEMBER_PROFIT_SECTION_FORMULA = '总盈亏 = 游戏净输赢 - 其他成本'
+/** 分区新结构 · 总盈亏公式 */
+export const MEMBER_PROFIT_SECTION_FORMULA = '总盈亏 = 游戏净输赢 + 其他奖励'
 
-/** 会员 · 游戏净输赢细项 tip */
+/**
+ * 会员 · 游戏净输赢公式（分区明细 / 与代理盈亏游戏净输赢同构）
+ * 代理为实占输赢/退水；会员对应游戏输赢/会员退水，并扣代理赚水、场馆费
+ */
 export const MEMBER_PROFIT_GAME_NET_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】'
-
-/** 场馆明细标题与公式左侧统一为「游戏净输赢」（不含成本三项；占成含场馆费） */
-export const MEMBER_GAME_PROFIT_FORMULA =
   '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】'
+
+/** 场馆明细标题与公式左侧统一为「游戏净输赢」（与上式一致） */
+export const MEMBER_GAME_PROFIT_FORMULA = MEMBER_PROFIT_GAME_NET_FORMULA
 
 /** 返佣查看会员游戏统计：无会员退水（返佣不给会员设退水） */
 export const MEMBER_REBATE_GAME_NET_PROFIT_FORMULA =
@@ -53,12 +55,14 @@ type MemberProfitSummaryMock = {
   gameProfit: number
   memberRebate: number
   vipRebate: number
-  /** 代理赚水（公式中取负） */
+  /** 代理赚水（游戏净输赢中取负） */
   rebateEarn: number
+  /** 场馆费（游戏净输赢中取负；对齐代理盈亏） */
+  venueFee: number
   vipBonus: number
   vipExtraBonus: number
   activityGold: number
-  /** 充提手续费（公式中取负） */
+  /** 充提手续费（游戏统计等场景用；不计入会员盈亏分区） */
   depositWithdrawFee: number
 }
 
@@ -68,6 +72,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     memberRebate: 1280,
     vipRebate: 150,
     rebateEarn: 860,
+    venueFee: 80,
     vipBonus: 320,
     vipExtraBonus: 100,
     activityGold: 180,
@@ -78,6 +83,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     memberRebate: 210,
     vipRebate: 35,
     rebateEarn: 180,
+    venueFee: 22,
     vipBonus: 80,
     vipExtraBonus: 25,
     activityGold: 50,
@@ -88,6 +94,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     memberRebate: 520,
     vipRebate: 80,
     rebateEarn: 420,
+    venueFee: 55,
     vipBonus: 210,
     vipExtraBonus: 65,
     activityGold: 120,
@@ -98,6 +105,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     memberRebate: 128,
     vipRebate: 18,
     rebateEarn: 90,
+    venueFee: 18,
     vipBonus: 60,
     vipExtraBonus: 20,
     activityGold: 40,
@@ -108,6 +116,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     memberRebate: 48,
     vipRebate: 8,
     rebateEarn: 36,
+    venueFee: 8,
     vipBonus: 22,
     vipExtraBonus: 8,
     activityGold: 15,
@@ -120,6 +129,7 @@ const EMPTY_SUMMARY_MOCK: MemberProfitSummaryMock = {
   memberRebate: 0,
   vipRebate: 0,
   rebateEarn: 0,
+  venueFee: 0,
   vipBonus: 0,
   vipExtraBonus: 0,
   activityGold: 0,
@@ -146,23 +156,27 @@ function getMemberProfitSummaryMock(currency: string) {
   return PROFIT_SUMMARY_BY_CURRENCY[currency] ?? EMPTY_SUMMARY_MOCK
 }
 
-/** 游戏净输赢合计：游戏输赢 − 会员退水 − VIP退水 − 代理赚水 */
+/** 游戏净输赢合计：对齐代理盈亏 —— 游戏输赢 − 会员退水 − VIP退水 − 代理赚水 − 场馆费 */
 export function getMemberGameNetTotal(currency: string) {
   const stats = getMemberProfitSummaryMock(currency)
   return (
-    stats.gameProfit - stats.memberRebate - stats.vipRebate - stats.rebateEarn
+    stats.gameProfit -
+    stats.memberRebate -
+    stats.vipRebate -
+    stats.rebateEarn -
+    stats.venueFee
   )
 }
 
-/** 其他成本合计（绝对值，正数） */
-export function getMemberOtherCostAbs(currency: string) {
+/** 其他奖励合计（VIP晋级礼金 + VIP额外奖金 + 活动金） */
+export function getMemberOtherRewardTotal(currency: string) {
   const stats = getMemberProfitSummaryMock(currency)
-  return (
-    stats.vipBonus +
-    stats.vipExtraBonus +
-    stats.activityGold +
-    stats.depositWithdrawFee
-  )
+  return stats.vipBonus + stats.vipExtraBonus + stats.activityGold
+}
+
+/** @deprecated 请用 getMemberOtherRewardTotal */
+export function getMemberOtherCostAbs(currency: string) {
+  return getMemberOtherRewardTotal(currency)
 }
 
 /** 经典汇总卡 · 会员盈亏总值（六项累加口径） */
@@ -181,9 +195,9 @@ export function getMemberTotalProfit(currency: string) {
   }
 }
 
-/** 分区新结构 · 总盈亏 = 游戏净输赢 − 其他成本 */
+/** 分区 · 总盈亏 = 游戏净输赢 + 其他奖励 */
 export function getMemberSectionTotalProfit(currency: string) {
-  const total = getMemberGameNetTotal(currency) - getMemberOtherCostAbs(currency)
+  const total = getMemberGameNetTotal(currency) + getMemberOtherRewardTotal(currency)
   return {
     value: formatProfitAmount(total),
     tone: profitTone(total),
@@ -203,10 +217,32 @@ function sumSectionRows(rows: MemberProfitSectionRow[], totalKey: string): Membe
   }
 }
 
-/** 占成 · 游戏净输赢分区（对齐代理盈亏） */
-export function getMemberProfitGameSection(currency: string): MemberProfitSection {
+/** 与代理盈亏 /「我的报表-盈亏」一致的游戏大类权重（合计缩放至会员游戏净输赢） */
+const MEMBER_GAME_CATEGORY_BASE: { key: string; label: string; weight: number }[] = [
+  { key: 'scratch', label: '刮刮乐', weight: 123567.88 },
+  { key: 'marble', label: '弹珠', weight: -23567.88 },
+  { key: 'chess', label: '棋牌', weight: 123567.88 },
+  { key: 'lottery', label: '彩票', weight: -23567.88 },
+  { key: 'qutou', label: '趣投', weight: 123567.88 },
+  { key: 'sports', label: '体育', weight: -23567.88 },
+  { key: 'live', label: '真人', weight: 123567.88 },
+  { key: 'slots', label: '老虎机', weight: -23567.88 },
+  { key: 'fishing', label: '捕鱼', weight: 123567.88 },
+]
+
+function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
+  const sum = weights.reduce((acc, n) => acc + n, 0)
+  if (!sum) return weights.map(() => 0)
+  const scaled = weights.map((n) => Number(((n * targetSum) / sum).toFixed(2)))
+  const drift = Number((targetSum - scaled.reduce((acc, n) => acc + n, 0)).toFixed(2))
+  scaled[scaled.length - 1] = Number((scaled[scaled.length - 1] + drift).toFixed(2))
+  return scaled
+}
+
+/** 游戏净输赢公式构成项（明细弹框；与代理盈亏游戏净输赢同构，会员文案） */
+function getMemberProfitGameFormulaRows(currency: string): MemberProfitSectionRow[] {
   const stats = getMemberProfitSummaryMock(currency)
-  const rows: MemberProfitSectionRow[] = [
+  return [
     {
       key: 'win',
       label: '游戏输赢',
@@ -231,7 +267,34 @@ export function getMemberProfitGameSection(currency: string): MemberProfitSectio
       value: formatProfitAmount(-stats.rebateEarn),
       tone: profitTone(-stats.rebateEarn),
     },
+    {
+      key: 'venue_fee',
+      label: '场馆费',
+      value: formatProfitAmount(-stats.venueFee),
+      tone: profitTone(-stats.venueFee),
+    },
   ]
+}
+
+/**
+ * 占成 · 游戏净输赢分区（结构对齐代理盈亏：展开为游戏大类）
+ * 大类金额等比缩放至当前币种会员游戏净输赢合计；金额列无「实占」
+ */
+export function getMemberProfitGameSection(currency: string): MemberProfitSection {
+  const target = getMemberGameNetTotal(currency)
+  const scaled = scaleWeightsToTarget(
+    MEMBER_GAME_CATEGORY_BASE.map((item) => item.weight),
+    target,
+  )
+  const rows: MemberProfitSectionRow[] = MEMBER_GAME_CATEGORY_BASE.map((item, index) => {
+    const value = scaled[index] ?? 0
+    return {
+      key: item.key,
+      label: item.label,
+      value: formatProfitAmount(value),
+      tone: profitTone(value),
+    }
+  })
   return {
     nameHeader: '游戏净输赢',
     amountHeader: '金额',
@@ -240,55 +303,50 @@ export function getMemberProfitGameSection(currency: string): MemberProfitSectio
   }
 }
 
-/** 占成 · 其他成本分区（对齐代理盈亏，含充提手续费；无实占文案） */
+/** 占成 · 其他奖励分区（VIP晋级礼金 / VIP额外奖金 / 活动金；无实占文案） */
 export function getMemberProfitCostSection(currency: string): MemberProfitSection {
   const stats = getMemberProfitSummaryMock(currency)
   const rows: MemberProfitSectionRow[] = [
     {
       key: 'vip_bonus',
       label: 'VIP晋级礼金',
-      value: formatProfitAmount(-stats.vipBonus),
-      tone: profitTone(-stats.vipBonus),
+      value: formatProfitAmount(stats.vipBonus),
+      tone: profitTone(stats.vipBonus),
     },
     {
       key: 'vip_extra',
       label: 'VIP额外奖金',
-      value: formatProfitAmount(-stats.vipExtraBonus),
-      tone: profitTone(-stats.vipExtraBonus),
+      value: formatProfitAmount(stats.vipExtraBonus),
+      tone: profitTone(stats.vipExtraBonus),
     },
     {
       key: 'activity',
       label: '活动金',
-      value: formatProfitAmount(-stats.activityGold),
-      tone: profitTone(-stats.activityGold),
-    },
-    {
-      key: 'deposit_withdraw_fee',
-      label: '充提手续费',
-      value: formatProfitAmount(-stats.depositWithdrawFee),
-      tone: profitTone(-stats.depositWithdrawFee),
+      value: formatProfitAmount(stats.activityGold),
+      tone: profitTone(stats.activityGold),
     },
   ]
   return {
-    nameHeader: '其他成本',
+    nameHeader: '其他奖励',
     amountHeader: '金额',
     rows,
-    total: sumSectionRows(rows, 'cost_sum'),
+    total: sumSectionRows(rows, 'reward_sum'),
   }
 }
 
-/** 占成公式卡：游戏净输赢 − 其他成本 = 总盈亏 */
+/** 占成公式卡：游戏净输赢 + 其他奖励 = 总盈亏 */
 export function getMemberProfitFormula(currency: string) {
   const game = getMemberProfitGameSection(currency).total
-  const costAbs = getMemberOtherCostAbs(currency)
+  const reward = getMemberProfitCostSection(currency).total
   const total = getMemberSectionTotalProfit(currency)
   return {
     gameAmountText: game.value,
     gameTone: game.tone,
-    costAmountText: Math.abs(costAbs).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }),
+    /** 加数展示带符号金额 */
+    costAmountText: reward.value,
+    costTone: reward.tone,
+    costLabel: '其他奖励',
+    operator: '+' as const,
     totalAmountText: total.value,
     totalTone: total.tone,
   }
@@ -318,8 +376,10 @@ export function getMemberProfitDialogDetail(
   })
 
   if (kind === 'game') {
+    /** 弹框展示会员公式构成项（非列表大类） */
+    const formulaRows = getMemberProfitGameFormulaRows(currency)
     return [
-      ...game.rows.map(mapRow),
+      ...formulaRows.map(mapRow),
       {
         label: '游戏净输赢',
         amountText: game.total.value,
@@ -330,16 +390,20 @@ export function getMemberProfitDialogDetail(
     ]
   }
 
+  /**
+   * 总盈亏明细：六项加法口径（游戏输赢 / 会员退水 / VIP退水 + 其他奖励三项）
+   */
   const total = getMemberSectionTotalProfit(currency)
+  const formulaRows = getMemberProfitGameFormulaRows(currency)
   return [
-    ...game.rows.map(mapRow),
+    ...formulaRows.map(mapRow),
     ...cost.rows.map(mapRow),
     {
       label: '总盈亏',
       amountText: total.value,
       tone: total.tone,
       emphasize: true,
-      formulaTip: MEMBER_PROFIT_SECTION_FORMULA,
+      formulaTip: MEMBER_PROFIT_FORMULA,
     },
   ]
 }

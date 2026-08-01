@@ -31,6 +31,7 @@ import {
   getAgentProfitCostSection,
   getAgentProfitDetail,
   getAgentProfitDialogDetail,
+  getAgentProfitFlowRows,
   getAgentProfitFormula,
   getAgentProfitGameSection,
   getAgentProfitSummaryRows,
@@ -135,6 +136,7 @@ const agentTotalProfit = computed(() =>
     ? getAgentTotalCommission(currency.value)
     : getAgentTotalProfit(currency.value),
 )
+const profitFlowRows = computed(() => getAgentProfitFlowRows(currency.value))
 const profitGameSection = computed(() => getAgentProfitGameSection(currency.value))
 const profitCostSection = computed(() => getAgentProfitCostSection(currency.value))
 const profitFormula = computed(() => getAgentProfitFormula(currency.value))
@@ -431,6 +433,19 @@ function closeProfitFormulaTips() {
           class="mh5-agent-detail-profit"
           @click="closeProfitFormulaTips"
         >
+          <section
+            class="mh5-agent-report-summary mh5-agent-detail-profit-team-flow"
+            aria-label="团队充提总额"
+          >
+            <div
+              v-for="row in profitFlowRows"
+              :key="row.label"
+              class="mh5-agent-report-summary-card"
+            >
+              <p class="mh5-agent-report-summary-card__label">{{ row.label }}</p>
+              <p class="mh5-agent-report-summary-card__value">{{ row.value }}</p>
+            </div>
+          </section>
           <section class="mh5-agent-detail-wallet mh5-agent-detail-profit-summary">
             <div class="mh5-agent-detail-wallet__row mh5-agent-detail-profit-summary__total">
               <span class="mh5-agent-detail-profit-summary__label-wrap">
@@ -493,6 +508,19 @@ function closeProfitFormulaTips() {
           v-else
           class="mh5-agent-detail-profit mh5-agent-my-profit-main mh5-agent-my-profit-main--rebate"
         >
+          <section
+            class="mh5-agent-report-summary mh5-agent-detail-profit-team-flow"
+            aria-label="团队充提总额"
+          >
+            <div
+              v-for="row in profitFlowRows"
+              :key="row.label"
+              class="mh5-agent-report-summary-card"
+            >
+              <p class="mh5-agent-report-summary-card__label">{{ row.label }}</p>
+              <p class="mh5-agent-report-summary-card__value">{{ row.value }}</p>
+            </div>
+          </section>
           <section
             class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
             aria-label="游戏净输赢金额"

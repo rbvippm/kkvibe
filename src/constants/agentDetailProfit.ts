@@ -406,6 +406,7 @@ export function getAgentProfitDialogDetail(
   })
 
   if (kind === 'game') {
+    /** 游戏净输赢明细：公式构成项（非列表大类） */
     const formulaRows = getAgentProfitGameFormulaRows(currency)
     return [
       ...formulaRows.map(mapRow),
@@ -419,22 +420,38 @@ export function getAgentProfitDialogDetail(
     ]
   }
 
+  /**
+   * 总盈亏明细：对齐「我的报表-盈亏」九项构成
+   * 输赢 / 退水 / VIP退水 / 代理赚水 / 场馆费 + 其他成本四项 + 总盈亏
+   */
   const total = getAgentSectionTotalProfit(currency)
+  const formulaRows = getAgentProfitGameFormulaRows(currency)
   return [
-    ...game.rows.map(mapRow),
+    ...formulaRows.map(mapRow),
     ...cost.rows.map(mapRow),
     {
       label: '总盈亏',
       amountText: total.value,
       tone: total.tone,
       emphasize: true,
-      formulaTip: AGENT_PROFIT_SECTION_FORMULA,
+      formulaTip: AGENT_PROFIT_FORMULA,
     },
   ]
 }
 
 export function agentProfitDialogTitle(kind: AgentProfitDialogKind) {
   return kind === 'game' ? '游戏净输赢明细' : '总盈亏明细'
+}
+
+/**
+ * 代理盈亏上方汇总卡：团队充值总额 / 团队提款总额（不参与盈亏公式）
+ * 样式与数值口径对齐「我的报表」现金汇总卡
+ */
+export function getAgentProfitFlowRows(_currency: string): AgentProfitSummaryRow[] {
+  return [
+    { label: '团队充值总额', value: '12,800.00', tone: 'neutral' },
+    { label: '团队提款总额', value: '6,420.00', tone: 'neutral' },
+  ]
 }
 
 /** 经典汇总卡 · 九项构成（代理赚水后含场馆费，末项充提手续费） */
