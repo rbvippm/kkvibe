@@ -5,7 +5,6 @@ import {
   AGENT_MY_PROFIT_ASSETS,
   AGENT_MY_PROFIT_FOOTNOTE,
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
-  AGENT_MY_PROFIT_TOTAL,
   REBATE_DEFAULT_SECTION_SCALE,
   agentMyProfitDateFilterLabel,
   agentMyProfitDateRangeText,
@@ -23,6 +22,7 @@ import {
   agentMyProfitShareCostSection,
   agentMyProfitShareFormula,
   agentMyProfitShareGameSection,
+  agentMyProfitShareTotalBlock,
   agentMyProfitToneClass,
   type AgentMyProfitProductRow,
   type ProfitDatePreset,
@@ -113,25 +113,28 @@ const rebateSectionScale = computed<RebateSectionScale>(() => {
   }
 })
 const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissionRate ?? '5.00%')
-const totalBlock = computed(() => AGENT_MY_PROFIT_TOTAL)
+/** 占成顶部总盈亏 = 游戏净输赢合计 − 其他成本合计（与公式卡同源；随日期快捷变化） */
+const totalBlock = computed(() => agentMyProfitShareTotalBlock(preset.value))
 
 watch(preset, () => {
   netWinTipOpen.value = false
   negativeTipOpen.value = false
   gameDetailsExpanded.value = false
   costDetailsExpanded.value = true
+  detailProduct.value = null
+  detailFormulaTipOpen.value = false
 })
 
 /** 游戏净输赢 / 其他成本：占成与返佣共用分区结构 */
 const gameSection = computed(() =>
   isRebateAgent.value
     ? agentMyProfitRebateGameSection('l1', rebateSectionScale.value)
-    : agentMyProfitShareGameSection(),
+    : agentMyProfitShareGameSection(preset.value),
 )
 const costSection = computed(() =>
   isRebateAgent.value
     ? agentMyProfitRebateCostSection('l1', rebateSectionScale.value)
-    : agentMyProfitShareCostSection(),
+    : agentMyProfitShareCostSection(preset.value),
 )
 const rebateLevelFormula = computed(() =>
   agentMyProfitRebateLevelFormula(
@@ -156,7 +159,7 @@ const rebateTotalCommission = computed(() =>
 )
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
 /** 占成公式：游戏净输赢 − 其他成本 = 总盈亏 */
-const shareFormula = computed(() => agentMyProfitShareFormula())
+const shareFormula = computed(() => agentMyProfitShareFormula(preset.value))
 const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
   monthCommission: rebateMonthCommission.value,
@@ -187,6 +190,7 @@ const detailRows = computed(() =>
         agentType.value,
         'l1',
         isRebateAgent.value ? rebateDetailContext.value : undefined,
+        preset.value,
       )
     : [],
 )

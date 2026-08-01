@@ -84,14 +84,10 @@ export const AGENT_MY_PROFIT_REBATE_MONTH_PRESETS: { key: RebateMonthPreset; lab
   { key: 'april', label: '四月' },
 ]
 
-/** 顶部总盈亏（即代理盈亏；公式见 AGENT_PROFIT_FORMULA） */
-export const AGENT_MY_PROFIT_TOTAL = {
-  label: '总盈亏',
-  valueText: '+ 123,019.99',
-  tone: 'positive' as const,
-}
-
-/** 占成 · 游戏净输赢细项 */
+/**
+ * 占成 · 游戏净输赢细项
+ * 合计 = +523,567.88（5×123,567.88 − 4×23,567.88）
+ */
 export const AGENT_MY_PROFIT_SHARE_GAME_ROWS: AgentMyProfitProductRow[] = [
   { key: 'scratch', name: '刮刮乐', amountText: '+123,567.88', tone: 'positive' },
   { key: 'marble', name: '弹珠', amountText: '-23,567.88', tone: 'negative' },
@@ -104,7 +100,10 @@ export const AGENT_MY_PROFIT_SHARE_GAME_ROWS: AgentMyProfitProductRow[] = [
   { key: 'fishing', name: '捕鱼', amountText: '+123,567.88', tone: 'positive' },
 ]
 
-/** 占成 · 其他成本细项（对齐返佣：含充提手续费） */
+/**
+ * 占成 · 其他成本细项（对齐返佣：含充提手续费）
+ * 合计 = −168,370.31
+ */
 export const AGENT_MY_PROFIT_SHARE_COST_ROWS: AgentMyProfitProductRow[] = [
   { key: 'vip_bonus', name: 'VIP晋级礼金', amountText: '-23,567.88', tone: 'negative' },
   { key: 'vip_extra', name: 'VIP额外奖金', amountText: '-12,345.67', tone: 'negative' },
@@ -117,14 +116,6 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
   ...AGENT_MY_PROFIT_SHARE_GAME_ROWS,
   ...AGENT_MY_PROFIT_SHARE_COST_ROWS,
 ]
-
-/** 兼容旧引用；请优先用 agentMyProfitShareSummaryRow() */
-export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
-  key: 'total',
-  name: '总盈亏',
-  amountText: '+355,197.57',
-  tone: 'positive',
-}
 
 export const AGENT_MY_PROFIT_FOOTNOTE =
   '数据每十分钟更新一次\n最多可查询近 6 个月的数据'
@@ -151,21 +142,24 @@ export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
 ]
 
 /**
- * 总计盈亏明细：对齐代理盈亏八项（含充提手续费）
- * 代理盈亏 = 实占游戏输赢 − 实占退水 − 实占VIP退水 − 代理赚水 − 实占VIP晋级礼金 − 实占VIP额外奖金 − 实占活动金 − 实占充提手续费
+ * 总计盈亏明细：九项构成对齐 AGENT_PROFIT_FORMULA，且与列表分区合计自洽
+ * 游戏侧（输赢−退水−VIP退水−代理赚水−场馆费）= +523,567.88
+ * 成本侧（VIP晋级+VIP额外+活动金+充提）= 168,370.31
+ * 总盈亏 = 523,567.88 − 168,370.31 = +355,197.57
  */
 export const AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
-  { label: '输赢', amountText: '+500.00', tone: 'positive' },
-  { label: '退水', amountText: '-100.00', tone: 'negative' },
-  { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
-  { label: '代理赚水', amountText: '-10.00', tone: 'negative' },
-  { label: 'VIP晋级礼金', amountText: '-20.00', tone: 'negative' },
-  { label: 'VIP额外奖金', amountText: '-15.00', tone: 'negative' },
-  { label: '活动金', amountText: '-30.00', tone: 'negative' },
-  { label: '充提手续费', amountText: '-15.00', tone: 'negative' },
+  { label: '输赢', amountText: '+818,074.81', tone: 'positive' },
+  { label: '退水', amountText: '-163,614.96', tone: 'negative' },
+  { label: 'VIP退水', amountText: '-81,807.48', tone: 'negative' },
+  { label: '代理赚水', amountText: '-16,361.50', tone: 'negative' },
+  { label: '场馆费', amountText: '-32,722.99', tone: 'negative' },
+  { label: 'VIP晋级礼金', amountText: '-23,567.88', tone: 'negative' },
+  { label: 'VIP额外奖金', amountText: '-12,345.67', tone: 'negative' },
+  { label: '活动金', amountText: '-123,567.88', tone: 'negative' },
+  { label: '充提手续费', amountText: '-8,888.88', tone: 'negative' },
   {
-    label: '代理盈亏',
-    amountText: '+260.00',
+    label: '总盈亏',
+    amountText: '+355,197.57',
     tone: 'positive',
     emphasize: true,
     formulaTip: AGENT_PROFIT_FORMULA,
@@ -324,9 +318,52 @@ export type MyProfitSection = {
 /** @deprecated 请用 MyProfitSection */
 export type RebateProfitSection = MyProfitSection
 
-/** 占成 · 游戏净输赢分区（结构对齐返佣；金额列带实占） */
-export function agentMyProfitShareGameSection(): MyProfitSection {
-  const rows = AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row) => ({ ...row }))
+/**
+ * 占成 · 各日期快捷对应游戏/成本合计目标（列表等比缩放，切换可见差异）
+ * today 对齐默认行合计：游戏 +523,567.88 / 成本 −168,370.31
+ */
+export const SHARE_SECTION_SCALE_BY_PRESET: Record<
+  RangePreset,
+  { gameTotal: number; costTotal: number }
+> = {
+  today: { gameTotal: 523567.88, costTotal: -168370.31 },
+  yesterday: { gameTotal: 186420.5, costTotal: -52480.2 },
+  thisWeek: { gameTotal: 892340.66, costTotal: -245680.4 },
+  lastWeek: { gameTotal: 410250.33, costTotal: -132890.15 },
+}
+
+function sharePresetKey(preset: ProfitDatePreset = 'today'): RangePreset {
+  if (
+    preset === 'today' ||
+    preset === 'yesterday' ||
+    preset === 'thisWeek' ||
+    preset === 'lastWeek'
+  ) {
+    return preset
+  }
+  return 'today'
+}
+
+function shareRowsScaledToTotal(
+  baseRows: AgentMyProfitProductRow[],
+  targetSum: number,
+): AgentMyProfitProductRow[] {
+  const baseNums = baseRows.map((row) => parseProfitAmountText(row.amountText))
+  const scaled = scaleAmountList(baseNums, targetSum)
+  return baseRows.map((row, index) => {
+    const cell = formatProfitAmountText(scaled[index] ?? 0)
+    return {
+      ...row,
+      amountText: cell.amountText,
+      tone: cell.tone,
+    }
+  })
+}
+
+/** 占成 · 游戏净输赢分区（结构对齐返佣；金额列带实占；随日期快捷缩放） */
+export function agentMyProfitShareGameSection(preset: ProfitDatePreset = 'today'): MyProfitSection {
+  const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
+  const rows = shareRowsScaledToTotal(AGENT_MY_PROFIT_SHARE_GAME_ROWS, target.gameTotal)
   return {
     nameHeader: '游戏净输赢',
     amountHeader: '金额（实占）',
@@ -335,9 +372,10 @@ export function agentMyProfitShareGameSection(): MyProfitSection {
   }
 }
 
-/** 占成 · 其他成本分区（结构对齐返佣；金额列带实占） */
-export function agentMyProfitShareCostSection(): MyProfitSection {
-  const rows = AGENT_MY_PROFIT_SHARE_COST_ROWS.map((row) => ({ ...row }))
+/** 占成 · 其他成本分区（结构对齐返佣；金额列带实占；随日期快捷缩放） */
+export function agentMyProfitShareCostSection(preset: ProfitDatePreset = 'today'): MyProfitSection {
+  const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
+  const rows = shareRowsScaledToTotal(AGENT_MY_PROFIT_SHARE_COST_ROWS, target.costTotal)
   return {
     nameHeader: '其他成本',
     amountHeader: '金额（实占）',
@@ -347,9 +385,11 @@ export function agentMyProfitShareCostSection(): MyProfitSection {
 }
 
 /** 占成 · 总盈亏 = 游戏净输赢合计 + 其他成本合计（成本为负） */
-export function agentMyProfitShareSummaryRow(): AgentMyProfitProductRow {
-  const game = agentMyProfitShareGameSection().total
-  const cost = agentMyProfitShareCostSection().total
+export function agentMyProfitShareSummaryRow(
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitProductRow {
+  const game = agentMyProfitShareGameSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset).total
   const sum =
     parseProfitAmountText(game.amountText) + parseProfitAmountText(cost.amountText)
   const cell = formatProfitAmountText(sum)
@@ -361,10 +401,40 @@ export function agentMyProfitShareSummaryRow(): AgentMyProfitProductRow {
   }
 }
 
+/** 占成顶部汇总卡：金额由分区合计推导，与公式卡一致 */
+export function agentMyProfitShareTotalBlock(preset: ProfitDatePreset = 'today') {
+  const row = agentMyProfitShareSummaryRow(preset)
+  const abs = row.amountText.replace(/^[+-]/, '')
+  if (row.tone === 'neutral') {
+    return { label: '总盈亏' as const, valueText: abs, tone: row.tone }
+  }
+  const sign = row.amountText.startsWith('-') ? '-' : '+'
+  return {
+    label: '总盈亏' as const,
+    valueText: `${sign} ${abs}`,
+    tone: row.tone,
+  }
+}
+
+/** @deprecated 请用 agentMyProfitShareTotalBlock() */
+export const AGENT_MY_PROFIT_TOTAL = {
+  label: '总盈亏',
+  valueText: '+ 355,197.57',
+  tone: 'positive' as const,
+}
+
+/** 兼容旧引用；请优先用 agentMyProfitShareSummaryRow() */
+export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
+  key: 'total',
+  name: '总盈亏',
+  amountText: '+355,197.57',
+  tone: 'positive',
+}
+
 /** 占成公式卡：游戏净输赢 − 其他成本 = 总盈亏 */
-export function agentMyProfitShareFormula() {
-  const game = agentMyProfitShareGameSection().total
-  const cost = agentMyProfitShareCostSection().total
+export function agentMyProfitShareFormula(preset: ProfitDatePreset = 'today') {
+  const game = agentMyProfitShareGameSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset).total
   const costAbs = Math.abs(parseProfitAmountText(cost.amountText))
   const costCell = formatProfitAmountText(costAbs)
   return {
@@ -372,8 +442,94 @@ export function agentMyProfitShareFormula() {
     gameTone: game.tone,
     /** 减数展示绝对值（配合「−」运算符） */
     costAmountText: costCell.amountText.replace(/^\+/, ''),
-    total: agentMyProfitShareSummaryRow(),
+    total: agentMyProfitShareSummaryRow(preset),
   }
+}
+
+/** 占成总盈亏明细：九项随日期合计缩放，末行与列表总盈亏一致 */
+export function agentMyProfitShareTotalDetailRows(
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitDetailRow[] {
+  const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
+  const summary = agentMyProfitShareSummaryRow(preset)
+  const base = AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS.filter((row) => !row.emphasize)
+  const gameLabels = new Set(['输赢', '退水', 'VIP退水', '代理赚水', '场馆费'])
+  const gameBase = base.filter((row) => gameLabels.has(row.label))
+  const costBase = base.filter((row) => !gameLabels.has(row.label))
+  const gameNums = scaleAmountList(
+    gameBase.map((row) => parseProfitAmountText(row.amountText)),
+    target.gameTotal,
+  )
+  const costNums = scaleAmountList(
+    costBase.map((row) => parseProfitAmountText(row.amountText)),
+    target.costTotal,
+  )
+  const gameRows = gameBase.map((row, index) => {
+    const cell = formatProfitAmountText(gameNums[index] ?? 0)
+    return { ...row, amountText: cell.amountText, tone: cell.tone }
+  })
+  const costRows = costBase.map((row, index) => {
+    const cell = formatProfitAmountText(costNums[index] ?? 0)
+    return { ...row, amountText: cell.amountText, tone: cell.tone }
+  })
+  return [
+    ...gameRows,
+    ...costRows,
+    {
+      label: '总盈亏',
+      amountText: summary.amountText,
+      tone: summary.tone,
+      emphasize: true,
+      formulaTip: AGENT_PROFIT_FORMULA,
+    },
+  ]
+}
+
+/** 占成游戏细项明细：结果行随当前日期该场馆金额对齐（其余行等比缩放） */
+export function agentMyProfitShareGameDetailRows(
+  rowKey: string,
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitDetailRow[] {
+  const section = agentMyProfitShareGameSection(preset)
+  const product = section.rows.find((row) => row.key === rowKey)
+  const targetNet = product
+    ? parseProfitAmountText(product.amountText)
+    : parseProfitAmountText(
+        AGENT_MY_PROFIT_DETAIL_ROWS.find((row) => row.emphasize)?.amountText ?? '0',
+      )
+  const base = AGENT_MY_PROFIT_DETAIL_ROWS.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
+  const scaled = scaleAmountList(
+    base.map((row) => parseProfitAmountText(row.amountText)),
+    targetNet,
+  )
+  const betRow = AGENT_MY_PROFIT_DETAIL_ROWS.find((row) => row.label === '下注有效金额')
+  const betScale =
+    SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)].gameTotal /
+    SHARE_SECTION_SCALE_BY_PRESET.today.gameTotal
+  const betValue = Number((10000 * betScale).toFixed(2))
+  const result = formatProfitAmountText(targetNet)
+  return [
+    betRow
+      ? {
+          ...betRow,
+          amountText: betValue.toLocaleString('zh-CN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }),
+        }
+      : { label: '下注有效金额', amountText: '10,000.00', tone: 'neutral' as const },
+    ...base.map((row, index) => {
+      const cell = formatProfitAmountText(scaled[index] ?? 0)
+      return { ...row, amountText: cell.amountText, tone: cell.tone }
+    }),
+    {
+      label: '游戏净输赢',
+      amountText: result.amountText,
+      tone: result.tone,
+      emphasize: true,
+      formulaTip: AGENT_GAME_PROFIT_FORMULA,
+    },
+  ]
 }
 
 /** 当前 Tab · 游戏项（净输赢）+ 合计 */
@@ -603,7 +759,7 @@ export function agentMyProfitHasDetail(
 
 /**
  * 按身份返回明细
- * - 占成：游戏净输赢 / 总计八项（含充提手续费）
+ * - 占成：游戏净输赢 / 总计九项（含场馆费、充提手续费）
  * - 返佣：佣金项（游戏）走游戏净输赢细项（含展示项下注有效金额）；仅保留平台佣金
  * - 传入 rebateContext 时，末行金额与当前月份列表自洽
  */
@@ -612,6 +768,7 @@ export function agentMyProfitDetailRows(
   identity: AgentIdentityType = 'share',
   _rebateLevel: RebateProfitLevel = 'l1',
   rebateContext?: RebateDetailContext,
+  sharePreset: ProfitDatePreset = 'today',
 ): AgentMyProfitDetailRow[] {
   if (identity === 'rebate') {
     if (rebateContext) return agentMyProfitRebateDetailRowsWithContext(rowKey, rebateContext)
@@ -619,8 +776,8 @@ export function agentMyProfitDetailRows(
     if (rowKey === 'level_l1') return AGENT_MY_PROFIT_REBATE_L1_DETAIL
     return AGENT_MY_PROFIT_REBATE_GAME_DETAIL
   }
-  if (rowKey === 'total') return AGENT_MY_PROFIT_TOTAL_DETAIL_ROWS
-  return AGENT_MY_PROFIT_DETAIL_ROWS
+  if (rowKey === 'total') return agentMyProfitShareTotalDetailRows(sharePreset)
+  return agentMyProfitShareGameDetailRows(rowKey, sharePreset)
 }
 
 export function agentMyProfitTableNameHeader(identity: AgentIdentityType) {

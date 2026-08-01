@@ -19,7 +19,7 @@ export type AgentProfitSummaryRow = {
 
 /** 经典汇总卡 · 代理盈亏公式 tip */
 export const AGENT_PROFIT_FORMULA =
-  '代理盈亏 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 + 【-实占充提手续费】'
+  '代理盈亏 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-场馆费】 + 【-实占VIP晋级礼金】 + 【-实占VIP额外奖金】 + 【-实占活动金】 + 【-实占充提手续费】'
 
 /** 分区新结构 · 总盈亏公式（隐藏预览模式） */
 export const AGENT_PROFIT_SECTION_FORMULA = '总盈亏 = 游戏净输赢 - 其他成本'
@@ -41,6 +41,8 @@ type AgentProfitSummaryMock = {
   actualVipRebate: number
   /** 代理赚水（公式中取负） */
   rebateEarn: number
+  /** 场馆费（公式中取负） */
+  venueFee: number
   /** 实占 VIP 晋级礼金（公式中取负） */
   vipBonus: number
   /** 实占 VIP 额外奖金（公式中取负） */
@@ -57,6 +59,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     actualRebate: 1280,
     actualVipRebate: 150,
     rebateEarn: 860,
+    venueFee: 80,
     vipBonus: 320,
     vipExtraBonus: 100,
     activityGold: 180,
@@ -67,6 +70,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     actualRebate: 280,
     actualVipRebate: 50,
     rebateEarn: 210,
+    venueFee: 22,
     vipBonus: 80,
     vipExtraBonus: 25,
     activityGold: 50,
@@ -77,6 +81,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     actualRebate: 780,
     actualVipRebate: 96,
     rebateEarn: 520,
+    venueFee: 55,
     vipBonus: 210,
     vipExtraBonus: 65,
     activityGold: 120,
@@ -87,6 +92,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     actualRebate: 135,
     actualVipRebate: 35,
     rebateEarn: 128,
+    venueFee: 18,
     vipBonus: 60,
     vipExtraBonus: 20,
     activityGold: 40,
@@ -97,6 +103,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     actualRebate: 118,
     actualVipRebate: 12,
     rebateEarn: 48,
+    venueFee: 8,
     vipBonus: 22,
     vipExtraBonus: 8,
     activityGold: 15,
@@ -109,6 +116,7 @@ const EMPTY_SUMMARY_MOCK: AgentProfitSummaryMock = {
   actualRebate: 0,
   actualVipRebate: 0,
   rebateEarn: 0,
+  venueFee: 0,
   vipBonus: 0,
   vipExtraBonus: 0,
   activityGold: 0,
@@ -154,7 +162,7 @@ export function getAgentOtherCostAbs(currency: string) {
   )
 }
 
-/** 经典汇总卡 · 代理盈亏总值（八项，含充提手续费） */
+/** 经典汇总卡 · 代理盈亏总值（九项：含场馆费、充提手续费） */
 export function getAgentTotalProfit(currency: string) {
   const stats = getAgentProfitSummaryMock(currency)
   const total =
@@ -162,6 +170,7 @@ export function getAgentTotalProfit(currency: string) {
     stats.actualRebate -
     stats.actualVipRebate -
     stats.rebateEarn -
+    stats.venueFee -
     stats.vipBonus -
     stats.vipExtraBonus -
     stats.activityGold -
@@ -374,7 +383,7 @@ export function agentProfitDialogTitle(kind: AgentProfitDialogKind) {
   return kind === 'game' ? '游戏净输赢明细' : '总盈亏明细'
 }
 
-/** 经典汇总卡 · 八项构成（含充提手续费） */
+/** 经典汇总卡 · 九项构成（代理赚水后含场馆费，末项充提手续费） */
 export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
   const stats = getAgentProfitSummaryMock(currency)
   return [
@@ -397,6 +406,11 @@ export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryR
       label: '代理赚水',
       value: formatProfitAmount(-stats.rebateEarn),
       tone: profitTone(-stats.rebateEarn),
+    },
+    {
+      label: '场馆费',
+      value: formatProfitAmount(-stats.venueFee),
+      tone: profitTone(-stats.venueFee),
     },
     {
       label: 'VIP晋级礼金',
