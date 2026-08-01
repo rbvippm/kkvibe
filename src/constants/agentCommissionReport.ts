@@ -49,16 +49,30 @@ export const COMMISSION_NET_WIN_TIP = '净输赢 = 游戏输赢 - 总成本'
 export const COMMISSION_TOTAL_TIP =
   '总佣金 = 当月佣金 - 负佣金累计（若有）\n当月佣金 = 佣金'
 
-/** 近半年 Mock（新→旧）；当前月为待派发「预计佣金」，历史月为已派发「发放佣金」 */
+export function getDefaultCommissionMonth(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
+/** 相对当前月偏移（0=本月，-1=上月）→ YYYY-MM */
+export function shiftCommissionMonth(month: string, offset: number) {
+  const [ys, ms] = month.split('-')
+  const y = Number(ys)
+  const m = Number(ms)
+  if (!y || !m) return month
+  const d = new Date(y, m - 1 + offset, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+type CommissionBillTemplate = Omit<CommissionMonthBill, 'month'>
+
 /**
- * 口径（与「我的佣金」页一致）：
- * - 净输赢 = totalPnl - totalCost
- * - 当月佣金 = 平台佣金 = max(净输赢, 0) × 佣金比例
- * - 总佣金 = 当月佣金 - 负佣金累计（若有）
+ * 近半年模板（新→旧，相对当前月偏移 0…-5）
+ * 本月待派发「预计佣金」含负佣金累计；历史已派发不展示负佣金累计
  */
-export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
+const COMMISSION_BILL_TEMPLATES: CommissionBillTemplate[] = [
   {
-    month: '2026-07',
     status: 'pending',
     activeUsers: 12,
     totalPnl: 2500,
@@ -70,7 +84,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     monthCommission: 118.98,
   },
   {
-    month: '2026-06',
     status: 'paid',
     activeUsers: 12,
     totalPnl: 2500,
@@ -82,7 +95,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     monthCommission: 118.98,
   },
   {
-    month: '2026-05',
     status: 'paid',
     activeUsers: 9,
     totalPnl: 1860,
@@ -94,7 +106,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     monthCommission: 87.59,
   },
   {
-    month: '2026-04',
     status: 'paid',
     activeUsers: 7,
     totalPnl: 1420,
@@ -106,7 +117,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     monthCommission: 66.08,
   },
   {
-    month: '2026-03',
     status: 'none',
     activeUsers: 1,
     totalPnl: -320,
@@ -118,7 +128,6 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
     monthCommission: 0,
   },
   {
-    month: '2026-02',
     status: 'paid',
     activeUsers: 5,
     totalPnl: 980,
@@ -131,11 +140,38 @@ export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = [
   },
 ]
 
-export function getDefaultCommissionMonth(date = new Date()) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  return `${y}-${m}`
+/** 按系统当前月滚动生成近半年账单（保证本月始终为待派发） */
+export function getCommissionMonthBills(date = new Date()): CommissionMonthBill[] {
+  const current = getDefaultCommissionMonth(date)
+  return COMMISSION_BILL_TEMPLATES.map((tpl, index) => ({
+    ...tpl,
+    month: shiftCommissionMonth(current, -index),
+  }))
 }
+
+/**
+ * 近半年 Mock（新→旧）；访问时按当前月滚动
+ * 注意：为兼容既有 `MOCK_COMMISSION_MONTH_BILLS.find` 写法，此处用 getter 代理数组
+ */
+export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = new Proxy(
+  [] as CommissionMonthBill[],
+  {
+    get(_target, prop, receiver) {
+      const bills = getCommissionMonthBills()
+      const value = Reflect.get(bills, prop, receiver)
+      return typeof value === 'function' ? value.bind(bills) : value
+    },
+    ownKeys() {
+      return Reflect.ownKeys(getCommissionMonthBills())
+    },
+    getOwnPropertyDescriptor(_target, prop) {
+      return Reflect.getOwnPropertyDescriptor(getCommissionMonthBills(), prop)
+    },
+    has(_target, prop) {
+      return Reflect.has(getCommissionMonthBills(), prop)
+    },
+  },
+)
 
 /** 展示用：2026-7（月不补零，对齐设计稿） */
 export function formatCommissionMonthShort(month: string) {
@@ -151,7 +187,7 @@ export function formatCommissionMonthLabel(month: string) {
 }
 
 export function getCommissionMonthOptions(
-  bills: CommissionMonthBill[] = MOCK_COMMISSION_MONTH_BILLS,
+  bills: CommissionMonthBill[] = getCommissionMonthBills(),
   date = new Date(),
 ) {
   const current = getDefaultCommissionMonth(date)
@@ -166,7 +202,7 @@ export function getCommissionMonthOptions(
 
 /** 列表页月份筛选项（含全部） */
 export function getCommissionListMonthOptions(
-  bills: CommissionMonthBill[] = MOCK_COMMISSION_MONTH_BILLS,
+  bills: CommissionMonthBill[] = getCommissionMonthBills(),
   date = new Date(),
 ) {
   return [
@@ -204,12 +240,25 @@ export function getCommissionListUpdatedAt(month: string | 'all', date = new Dat
 }
 
 export function findCommissionBill(month: string) {
-  return MOCK_COMMISSION_MONTH_BILLS.find((bill) => bill.month === month) ?? null
+  return getCommissionMonthBills().find((bill) => bill.month === month) ?? null
 }
 
-/** 当月展示「预计佣金」，历史月展示「发放佣金」 */
+/**
+ * 待派发月展示「预计佣金」（含负佣金累计）；
+ * 已派发 / 无佣金历史月展示「发放佣金」
+ */
 export function commissionHeroTitle(month: string, date = new Date()) {
-  return month === getDefaultCommissionMonth(date) ? '预计佣金' : '发放佣金'
+  const bill = findCommissionBill(month)
+  if (bill?.status === 'pending') return '预计佣金'
+  if (month === getDefaultCommissionMonth(date)) return '预计佣金'
+  return '发放佣金'
+}
+
+/** 待派发（预计）月展示并计入负佣金累计 */
+export function shouldShowCommissionNegativeAccum(month: string) {
+  const bill = findCommissionBill(month)
+  if (bill) return bill.status === 'pending'
+  return month === getDefaultCommissionMonth()
 }
 
 /** 总佣金 = 当月佣金 - 负佣金累计（若有）。 */
@@ -227,12 +276,14 @@ export function formatCommissionAmount(
   options?: { signed?: boolean; digits?: number },
 ) {
   const digits = options?.digits ?? 2
-  const abs = Math.abs(value).toLocaleString('zh-CN', {
+  const abs = Math.abs(value).toLocaleString('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   })
-  if (!options?.signed) return abs
-  if (value > 0) return `+${abs}`
+  if (options?.signed) {
+    if (value > 0) return `+${abs}`
+    if (value < 0) return `-${abs}`
+  }
   if (value < 0) return `-${abs}`
   return abs
 }

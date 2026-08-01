@@ -38,6 +38,7 @@ import {
   formatCommissionMonthLabel,
   getCommissionMonthOptions,
   getDefaultCommissionMonth,
+  shouldShowCommissionNegativeAccum,
 } from '../../constants/agentCommissionReport'
 import { agentAppCurrency } from '../../constants/agentAppCurrency'
 import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
@@ -57,7 +58,32 @@ const route = useRoute()
 const router = useRouter()
 const { agentType, isRebateAgent, withAgentQuery } = useAgentIdentity()
 
+const preset = ref<ProfitDatePreset>(agentMyProfitDefaultPreset(agentType.value))
+/** 返佣结算月（月份选择与快捷 Tab 共用）；默认本月 */
+const rebateMonth = ref(
+  isRebateAgent.value
+    ? agentMyProfitRebateMonthKey('thisMonth')
+    : getDefaultCommissionMonth(),
+)
+const detailProduct = ref<AgentMyProfitProductRow | null>(null)
+const detailFormulaTipOpen = ref(false)
+const netWinTipOpen = ref(false)
+const negativeTipOpen = ref(false)
+const monthSheetOpen = ref(false)
+/** 游戏净输赢 / 其他成本：合计下展开细项 */
+const gameDetailsExpanded = ref(false)
+/** 其他成本细项默认展开 */
+const costDetailsExpanded = ref(true)
+
+/** 返佣进入页 / 切身份：强制默认「本月」并同步结算月 */
+function syncRebateDefaultThisMonth() {
+  if (!isRebateAgent.value) return
+  preset.value = 'thisMonth'
+  rebateMonth.value = agentMyProfitRebateMonthKey('thisMonth')
+}
+
 onMounted(() => {
+  syncRebateDefaultThisMonth()
   if (props.embedded) return
   /** 独立路由收敛到「我的报表 · 佣金/盈亏」 */
   router.replace({
@@ -72,18 +98,13 @@ onMounted(() => {
   })
 })
 
-const preset = ref<ProfitDatePreset>(agentMyProfitDefaultPreset(agentType.value))
-/** 返佣结算月（月份选择与快捷 Tab 共用） */
-const rebateMonth = ref(getDefaultCommissionMonth())
-const detailProduct = ref<AgentMyProfitProductRow | null>(null)
-const detailFormulaTipOpen = ref(false)
-const netWinTipOpen = ref(false)
-const negativeTipOpen = ref(false)
-const monthSheetOpen = ref(false)
-/** 游戏净输赢 / 其他成本：合计下展开细项 */
-const gameDetailsExpanded = ref(false)
-/** 其他成本细项默认展开 */
-const costDetailsExpanded = ref(true)
+watch(isRebateAgent, (rebate) => {
+  if (rebate) {
+    syncRebateDefaultThisMonth()
+    return
+  }
+  preset.value = agentMyProfitDefaultPreset('share')
+})
 
 const dateFilterLabel = computed(() => agentMyProfitDateFilterLabel(agentType.value))
 const datePresets = computed(() => agentMyProfitPresets(agentType.value))
@@ -98,8 +119,10 @@ const currency = agentAppCurrency
 const rebateMonthKey = computed(() => rebateMonth.value)
 const rebateCommissionBill = computed(() => findCommissionBill(rebateMonthKey.value))
 const rebateHeroTitle = computed(() => commissionHeroTitle(rebateMonthKey.value))
-/** 负佣金累计仅本月「预计佣金」展示与计入总佣金 */
-const showRebateNegativeAccum = computed(() => rebateHeroTitle.value === '预计佣金')
+/** 待派发（预计佣金）展示并计入负佣金累计；已派发历史月不展示 */
+const showRebateNegativeAccum = computed(() =>
+  shouldShowCommissionNegativeAccum(rebateMonthKey.value),
+)
 const rebateNegativeAccum = computed(() => rebateCommissionBill.value?.negativeAccum ?? 0)
 const rebateNegativeForTotal = computed(() =>
   showRebateNegativeAccum.value ? rebateNegativeAccum.value : 0,

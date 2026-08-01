@@ -218,7 +218,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
             </div>
             <p class="mh5-agent-commission-list-card__total-label">
               {{
-                bill.month === getDefaultCommissionMonth()
+                bill.status === 'pending'
                   ? '预计佣金'
                   : `总佣金 (${currency})`
               }}

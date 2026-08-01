@@ -24,9 +24,9 @@ export const AGENT_PROFIT_FORMULA =
 /** 分区新结构 · 总盈亏公式（隐藏预览模式） */
 export const AGENT_PROFIT_SECTION_FORMULA = '总盈亏 = 游戏净输赢 - 其他成本'
 
-/** 游戏净输赢细项 tip（展开区 / 明细弹框说明用） */
+/** @deprecated 请用 AGENT_GAME_PROFIT_FORMULA（含场馆费） */
 export const AGENT_PROFIT_GAME_FORMULA =
-  '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】'
+  '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-场馆费】'
 
 /** 返佣 · 代理佣金（不含退水、代理赚水） */
 export const AGENT_COMMISSION_FORMULA =
@@ -143,11 +143,15 @@ function getAgentProfitSummaryMock(currency: string) {
   return PROFIT_SUMMARY_BY_CURRENCY[currency] ?? EMPTY_SUMMARY_MOCK
 }
 
-/** 游戏净输赢合计（实占）：输赢 − 退水 − VIP退水 − 代理赚水 */
+/** 游戏净输赢合计（实占）：输赢 − 退水 − VIP退水 − 代理赚水 − 场馆费 */
 export function getAgentGameNetTotal(currency: string) {
   const stats = getAgentProfitSummaryMock(currency)
   return (
-    stats.actualWin - stats.actualRebate - stats.actualVipRebate - stats.rebateEarn
+    stats.actualWin -
+    stats.actualRebate -
+    stats.actualVipRebate -
+    stats.rebateEarn -
+    stats.venueFee
   )
 }
 
@@ -237,10 +241,32 @@ function sumSectionRows(rows: AgentProfitSectionRow[], totalKey: string): AgentP
   }
 }
 
-/** 占成 · 游戏净输赢分区（对齐「我的盈亏」） */
-export function getAgentProfitGameSection(currency: string): AgentProfitSection {
+/** 与「我的报表-盈亏」一致的游戏大类权重（合计缩放至当前币种游戏净输赢） */
+const SHARE_GAME_CATEGORY_BASE: { key: string; label: string; weight: number }[] = [
+  { key: 'scratch', label: '刮刮乐', weight: 123567.88 },
+  { key: 'marble', label: '弹珠', weight: -23567.88 },
+  { key: 'chess', label: '棋牌', weight: 123567.88 },
+  { key: 'lottery', label: '彩票', weight: -23567.88 },
+  { key: 'qutou', label: '趣投', weight: 123567.88 },
+  { key: 'sports', label: '体育', weight: -23567.88 },
+  { key: 'live', label: '真人', weight: 123567.88 },
+  { key: 'slots', label: '老虎机', weight: -23567.88 },
+  { key: 'fishing', label: '捕鱼', weight: 123567.88 },
+]
+
+function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
+  const sum = weights.reduce((acc, n) => acc + n, 0)
+  if (!sum) return weights.map(() => 0)
+  const scaled = weights.map((n) => Number(((n * targetSum) / sum).toFixed(2)))
+  const drift = Number((targetSum - scaled.reduce((acc, n) => acc + n, 0)).toFixed(2))
+  scaled[scaled.length - 1] = Number((scaled[scaled.length - 1] + drift).toFixed(2))
+  return scaled
+}
+
+/** 游戏净输赢公式构成项（明细弹框用；列表展开为游戏大类） */
+function getAgentProfitGameFormulaRows(currency: string): AgentProfitSectionRow[] {
   const stats = getAgentProfitSummaryMock(currency)
-  const rows: AgentProfitSectionRow[] = [
+  return [
     {
       key: 'win',
       label: '输赢',
@@ -265,7 +291,34 @@ export function getAgentProfitGameSection(currency: string): AgentProfitSection 
       value: formatProfitAmount(-stats.rebateEarn),
       tone: profitTone(-stats.rebateEarn),
     },
+    {
+      key: 'venue_fee',
+      label: '场馆费',
+      value: formatProfitAmount(-stats.venueFee),
+      tone: profitTone(-stats.venueFee),
+    },
   ]
+}
+
+/**
+ * 占成 · 游戏净输赢分区（对齐「我的报表-盈亏」：展开为游戏大类）
+ * 大类金额等比缩放至当前币种游戏净输赢合计
+ */
+export function getAgentProfitGameSection(currency: string): AgentProfitSection {
+  const target = getAgentGameNetTotal(currency)
+  const scaled = scaleWeightsToTarget(
+    SHARE_GAME_CATEGORY_BASE.map((item) => item.weight),
+    target,
+  )
+  const rows: AgentProfitSectionRow[] = SHARE_GAME_CATEGORY_BASE.map((item, index) => {
+    const value = scaled[index] ?? 0
+    return {
+      key: item.key,
+      label: item.label,
+      value: formatProfitAmount(value),
+      tone: profitTone(value),
+    }
+  })
   return {
     nameHeader: '游戏净输赢',
     amountHeader: '金额（实占）',
@@ -353,14 +406,15 @@ export function getAgentProfitDialogDetail(
   })
 
   if (kind === 'game') {
+    const formulaRows = getAgentProfitGameFormulaRows(currency)
     return [
-      ...game.rows.map(mapRow),
+      ...formulaRows.map(mapRow),
       {
         label: '游戏净输赢',
         amountText: game.total.value,
         tone: game.total.tone,
         emphasize: true,
-        formulaTip: AGENT_PROFIT_GAME_FORMULA,
+        formulaTip: AGENT_GAME_PROFIT_FORMULA,
       },
     ]
   }

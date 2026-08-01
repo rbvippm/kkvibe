@@ -1,5 +1,9 @@
 /** 代理中心 · 我的盈亏（Figma 1433:17568；返佣身份另套公式） */
 
+import {
+  getDefaultCommissionMonth,
+  shiftCommissionMonth,
+} from './agentCommissionReport'
 import { AGENT_GAME_PROFIT_FORMULA, AGENT_PROFIT_FORMULA } from './agentDetailProfit'
 import type { AgentIdentityType } from './agentIdentity'
 
@@ -822,23 +826,25 @@ export function agentMyProfitPresets(identity: AgentIdentityType) {
   return identity === 'rebate' ? AGENT_MY_PROFIT_REBATE_MONTH_PRESETS : AGENT_MY_PROFIT_PRESETS
 }
 
-/** 返佣月份快捷项 → 结算月 YYYY-MM（对齐佣金报表 Mock） */
+/** 返佣月份快捷项 → 结算月 YYYY-MM（相对当前月，对齐佣金报表 Mock） */
 export function agentMyProfitRebateMonthKey(preset: ProfitDatePreset): string {
-  if (preset === 'thisMonth') return '2026-07'
-  if (preset === 'lastMonth') return '2026-06'
-  if (preset === 'may') return '2026-05'
-  if (preset === 'april') return '2026-04'
-  return '2026-07'
+  const current = getDefaultCommissionMonth()
+  if (preset === 'thisMonth') return current
+  if (preset === 'lastMonth') return shiftCommissionMonth(current, -1)
+  if (preset === 'may') return shiftCommissionMonth(current, -2)
+  if (preset === 'april') return shiftCommissionMonth(current, -3)
+  return current
 }
 
 /** 结算月 YYYY-MM → 快捷项（无匹配则 null，仍可选中该月） */
 export function agentMyProfitRebatePresetFromMonthKey(
   month: string,
 ): ProfitDatePreset | null {
-  if (month === '2026-07') return 'thisMonth'
-  if (month === '2026-06') return 'lastMonth'
-  if (month === '2026-05') return 'may'
-  if (month === '2026-04') return 'april'
+  const current = getDefaultCommissionMonth()
+  if (month === current) return 'thisMonth'
+  if (month === shiftCommissionMonth(current, -1)) return 'lastMonth'
+  if (month === shiftCommissionMonth(current, -2)) return 'may'
+  if (month === shiftCommissionMonth(current, -3)) return 'april'
   return null
 }
 
