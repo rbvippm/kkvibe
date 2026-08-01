@@ -3,26 +3,22 @@ import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfRebateAgentConfigAnnot from '../../components/wireframe/WfRebateAgentConfigAnnot.vue'
 import {
-  REBATE_AGENT_LEVEL_OPTIONS,
   MOCK_REBATE_AGENT_ROWS,
   genRebateAgentBackendAccount,
   genRebateAgentBackendPassword,
   rebateAgentLevelLabel,
   searchRebateAgentCandidates,
   type RebateAgentCandidate,
-  type RebateAgentLevel,
   type RebateAgentRow,
 } from '../../constants/rebateAgentConfig'
 import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
   userId: string
-  agentLevel: RebateAgentLevel
 }
 
 const defaultFilter = (): ListFilter => ({
   userId: '',
-  agentLevel: 1,
 })
 
 const filter = ref<ListFilter>(defaultFilter())
@@ -32,7 +28,6 @@ const rows = ref<RebateAgentRow[]>(MOCK_REBATE_AGENT_ROWS.map((r) => ({ ...r }))
 function applyFilter() {
   applied.value = {
     userId: filter.value.userId.trim(),
-    agentLevel: 1,
   }
 }
 
@@ -44,7 +39,6 @@ function resetFilter() {
 function matchRow(row: RebateAgentRow) {
   const f = applied.value
   if (f.userId && !row.userId.includes(f.userId)) return false
-  if (row.agentLevel !== 1) return false
   return true
 }
 
@@ -133,18 +127,6 @@ function confirmAdd() {
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">用户ID：</label>
         <input v-model="filter.userId" type="text" class="wf-input" placeholder="请输入用户ID" />
-
-        <label class="wf-label">代理级别：</label>
-        <select v-model="filter.agentLevel" class="wf-input wf-input--select">
-          <option
-            v-for="opt in REBATE_AGENT_LEVEL_OPTIONS"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-        <WfRebateAgentConfigAnnot context="filterAgentLevel" placement="bottom" />
       </div>
 
       <div class="wf-toolbar">
