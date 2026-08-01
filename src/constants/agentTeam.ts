@@ -74,12 +74,14 @@ export const TEAM_TREE_DEFAULT_VISIBLE = 2
 
 export const MOCK_TEAM_SELF: TeamListItem = {
   id: 'self',
-  nickname: 'gg12345678',
+  nickname: 'kk5858',
   kind: 'me',
   avatarEmoji: '🧕',
-  subordinateCount: 2,
-  memberCount: 3,
-  vipLevel: 2,
+  /** 金刚号：搜索原型可输入 581 精准命中本人 */
+  kingkongId: '581',
+  subordinateCount: 3,
+  memberCount: 2,
+  vipLevel: 1,
   online: true,
   expanded: true,
 }
@@ -524,6 +526,146 @@ export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
     return [MOCK_TEAM_SELF, ...teamCreditAgents.value]
   }
   return [MOCK_TEAM_SELF, ...teamCreditMembers.value]
+}
+
+/** 团队搜索提示（搜索前 / 未出结果时） */
+export const TEAM_SEARCH_HINT = '精准匹配上述任一字段，请完整输入'
+
+/** 精准匹配：昵称 / 金刚号 / 备注（去首尾空格后全等） */
+export function teamItemExactMatch(item: TeamListItem, keyword: string): boolean {
+  const q = keyword.trim()
+  if (!q) return false
+  if (item.nickname.trim() === q) return true
+  if (item.kingkongId?.trim() === q) return true
+  if (item.remark?.trim() === q) return true
+  return false
+}
+
+function pruneTeamTreeByExactMatch(node: TeamListItem, keyword: string): TeamListItem | null {
+  const matchedSelf = teamItemExactMatch(node, keyword)
+  const prunedChildren = (node.children ?? [])
+    .map((child) => pruneTeamTreeByExactMatch(child, keyword))
+    .filter((child): child is TeamListItem => Boolean(child))
+
+  if (matchedSelf) {
+    /** 命中本人或节点：保留原下级，便于树结果展开查看 */
+    return {
+      ...node,
+      children: node.children?.length ? node.children.map((c) => ({ ...c })) : undefined,
+    }
+  }
+  if (prunedChildren.length) {
+    return { ...node, children: prunedChildren }
+  }
+  return null
+}
+
+function flattenSearchTreeRows(
+  root: TeamListItem,
+  expandedIds: Set<string>,
+): TeamTreeRow[] {
+  const rows: TeamTreeRow[] = []
+  function walk(
+    node: TeamListItem,
+    depth: number,
+    ancestorLastFlags: boolean[],
+    isLast: boolean,
+  ) {
+    const children = node.children ?? []
+    const hasChildren = children.length > 0
+    rows.push({
+      type: 'node',
+      item: node,
+      depth,
+      hasChildren,
+      isLast,
+      ancestorLastFlags,
+    })
+    if (!hasChildren || !expandedIds.has(node.id)) return
+    const childFlags = [...ancestorLastFlags, isLast]
+    children.forEach((child, index) => {
+      walk(child, depth + 1, childFlags, index === children.length - 1)
+    })
+  }
+  walk(root, 0, [], true)
+  return rows
+}
+
+export type TeamSearchTreeOptions = {
+  /** 占成 true：结果树含「我」；返佣 false */
+  includeSelf: boolean
+  flatDirectMembers?: boolean
+  includeCredit?: boolean
+}
+
+/**
+ * 构建搜索结果树根
+ * - 占成：从「我」剪枝，命中路径/子树保留「我」
+ * - 返佣：返回合成扁平根（children=命中会员），调用方不渲染根本人
+ */
+export function buildTeamSearchRoot(
+  keyword: string,
+  options: TeamSearchTreeOptions,
+): TeamListItem | null {
+  const q = keyword.trim()
+  if (!q) return null
+
+  if (options.flatDirectMembers || !options.includeSelf) {
+    const members = teamDirectMembers.value
+      .filter((item) => teamItemExactMatch(item, q))
+      .map((item) => ({ ...item, children: undefined }))
+    if (!members.length) return null
+    return {
+      ...MOCK_TEAM_SELF,
+      id: '__search_flat__',
+      kind: 'me',
+      children: members,
+    }
+  }
+
+  const root = buildTeamTree('all', {
+    includeCredit: options.includeCredit !== false,
+    singleLayer: false,
+  })
+  return pruneTeamTreeByExactMatch(root, q)
+}
+
+/** 默认展开搜索结果中全部可展开节点 */
+export function collectSearchExpandIds(root: TeamListItem | null): string[] {
+  if (!root) return []
+  const ids: string[] = []
+  function walk(node: TeamListItem) {
+    if (node.children?.length) {
+      ids.push(node.id)
+      node.children.forEach(walk)
+    }
+  }
+  walk(root)
+  return ids
+}
+
+/**
+ * 将搜索树拍平为行
+ * - skipRoot：返佣扁平结果不展示合成根「我」
+ */
+export function getSearchTeamTreeRows(
+  root: TeamListItem | null,
+  expandedIds: Set<string>,
+  skipRoot = false,
+): TeamTreeRow[] {
+  if (!root) return []
+  if (skipRoot) {
+    const children = root.children ?? []
+    return children.map((item, index) => ({
+      type: 'node' as const,
+      item,
+      depth: 0,
+      hasChildren: false,
+      isLast: index === children.length - 1,
+      ancestorLastFlags: [] as boolean[],
+    }))
+  }
+  return flattenSearchTreeRows(root, expandedIds)
 }
 
 export function isCreditTeamKind(kind: TeamMemberKind) {

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
   TEAM_FILTER_TABS,
+  TEAM_SEARCH_HINT,
   TEAM_TREE_DEFAULT_EXPANDED,
   TEAM_TREE_DEFAULT_VISIBLE,
   CREATE_ACCOUNT_OPTIONS,
@@ -15,6 +16,9 @@ import {
   getTeamTreeRows,
   isCreditTeamKind,
   memberKindLabel,
+  buildTeamSearchRoot,
+  collectSearchExpandIds,
+  getSearchTeamTreeRows,
   showAgentSubordinateTag,
   showMemberBadge,
   teamStatsLabel,
@@ -24,7 +28,7 @@ import {
   type TeamListItem,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
-import { AGENT_TEAM_REBATE_SPEC } from '../../constants/agentTeamSpec'
+import { AGENT_TEAM_REBATE_SPEC, AGENT_TEAM_SEARCH_SPEC } from '../../constants/agentTeamSpec'
 import { setBetOrderSearchSeed } from '../../composables/useBetOrderSearchSeed'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
@@ -98,6 +102,98 @@ let skipTeamMenuClose = false
 const createAccountSheetOpen = ref(false)
 const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
 const createAccountDraft = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
+
+/** 顶栏搜索 Sheet：搜索前仅提示；搜索后展示树结果 */
+const teamSearchOpen = ref(false)
+const teamSearchDraft = ref('')
+const teamSearchKeyword = ref('')
+const teamSearchSubmitted = ref(false)
+const teamSearchExpandedIds = ref<Set<string>>(new Set())
+
+const teamSearchRoot = computed(() => {
+  if (!teamSearchSubmitted.value) return null
+  return buildTeamSearchRoot(teamSearchKeyword.value, {
+    includeSelf: !isRebateAgent.value,
+    flatDirectMembers: isRebateAgent.value,
+    includeCredit: !isRebateAgent.value,
+  })
+})
+
+const teamSearchRows = computed(() =>
+  getSearchTeamTreeRows(
+    teamSearchRoot.value,
+    teamSearchExpandedIds.value,
+    isRebateAgent.value,
+  ),
+)
+
+const teamSearchEmpty = computed(
+  () => teamSearchSubmitted.value && teamSearchRows.value.length === 0,
+)
+
+const teamSearchInputRef = ref<HTMLInputElement | null>(null)
+
+async function openTeamSearch() {
+  closeTeamQuickMenu()
+  closeCreateAccountSheet()
+  teamSearchOpen.value = true
+  teamSearchDraft.value = ''
+  teamSearchKeyword.value = ''
+  teamSearchSubmitted.value = false
+  teamSearchExpandedIds.value = new Set()
+  await nextTick()
+  teamSearchInputRef.value?.focus()
+}
+
+function closeTeamSearch() {
+  teamSearchOpen.value = false
+  teamSearchDraft.value = ''
+  teamSearchKeyword.value = ''
+  teamSearchSubmitted.value = false
+  teamSearchExpandedIds.value = new Set()
+}
+
+function clearTeamSearchDraft() {
+  teamSearchDraft.value = ''
+  if (teamSearchSubmitted.value) {
+    teamSearchKeyword.value = ''
+    teamSearchSubmitted.value = false
+    teamSearchExpandedIds.value = new Set()
+  }
+}
+
+function submitTeamSearch() {
+  const q = teamSearchDraft.value.trim()
+  teamSearchDraft.value = q
+  teamSearchKeyword.value = q
+  teamSearchSubmitted.value = true
+  if (!q) {
+    teamSearchExpandedIds.value = new Set()
+    return
+  }
+  const root = buildTeamSearchRoot(q, {
+    includeSelf: !isRebateAgent.value,
+    flatDirectMembers: isRebateAgent.value,
+    includeCredit: !isRebateAgent.value,
+  })
+  teamSearchExpandedIds.value = new Set(collectSearchExpandIds(root))
+}
+
+function isSearchExpanded(id: string) {
+  return teamSearchExpandedIds.value.has(id)
+}
+
+function toggleSearchExpand(id: string) {
+  const next = new Set(teamSearchExpandedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  teamSearchExpandedIds.value = next
+}
+
+function searchTreeRowKey(row: (typeof teamSearchRows.value)[number]) {
+  if (row.type === 'more') return `search-more-${row.parentId}`
+  return `search-${row.item.id}`
+}
 
 const teamTreeRows = computed(() =>
   getTeamTreeRows(
@@ -283,6 +379,7 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 
 function openCreateAccountSheet() {
   closeTeamQuickMenu()
+  closeTeamSearch()
   const allowed = createAccountOptions.value.map((item) => item.key)
   const preferred = createAccountSelection.value
   createAccountDraft.value = allowed.includes(preferred) ? preferred : (allowed[0] ?? 'agent')
@@ -300,6 +397,7 @@ function goInviteRecords() {
 
 function closeAllSheets() {
   createAccountSheetOpen.value = false
+  closeTeamSearch()
   closeTeamQuickMenu()
 }
 
@@ -406,12 +504,15 @@ onUnmounted(() => {
             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
-        <button type="button" class="agent-team-header__icon-btn" aria-label="搜索">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
-            <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </button>
+        <span class="agent-team-header__search-wrap">
+          <button type="button" class="agent-team-header__icon-btn" aria-label="搜索" @click="openTeamSearch">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
+              <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+          <Mh5SpecAnnot class="agent-team-header__search-annot" :spec="AGENT_TEAM_SEARCH_SPEC" placement="bottom" />
+        </span>
       </div>
     </header>
 
@@ -687,6 +788,166 @@ onUnmounted(() => {
               <button type="button" class="agent-team-create-sheet__btn agent-team-create-sheet__btn--primary" @click="confirmCreateAccount">
                 确定
               </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="agent-team-search-sheet">
+        <div
+          v-if="teamSearchOpen"
+          class="mh5-agent-overlay-mask agent-team-search-mask"
+          @click.self="closeTeamSearch"
+        >
+          <div
+            class="mh5-agent-overlay-sheet agent-team-search-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="搜索团队成员"
+          >
+            <div class="agent-team-search-sheet__bar">
+              <label class="agent-team-search-sheet__field">
+                <svg class="agent-team-search-sheet__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <input
+                  ref="teamSearchInputRef"
+                  v-model="teamSearchDraft"
+                  type="search"
+                  class="agent-team-search-sheet__input"
+                  placeholder="昵称 / 金刚号 / 备注"
+                  enterkeyhint="search"
+                  autocomplete="off"
+                  @keydown.enter.prevent="submitTeamSearch"
+                />
+                <button
+                  v-if="teamSearchDraft"
+                  type="button"
+                  class="agent-team-search-sheet__clear"
+                  aria-label="清空"
+                  @click="clearTeamSearchDraft"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="6.2" fill="#c8c8c8" />
+                    <path d="M4.6 4.6 9.4 9.4M9.4 4.6 4.6 9.4" stroke="#fff" stroke-width="1.4" stroke-linecap="round" />
+                  </svg>
+                </button>
+              </label>
+              <button type="button" class="agent-team-search-sheet__submit" @click="submitTeamSearch">
+                搜索
+              </button>
+            </div>
+
+            <p class="agent-team-search-sheet__hint">{{ TEAM_SEARCH_HINT }}</p>
+
+            <div v-if="teamSearchSubmitted" class="agent-team-search-sheet__results">
+              <p v-if="teamSearchEmpty" class="agent-team-search-sheet__empty">未找到匹配成员</p>
+              <template v-else>
+                <div
+                  v-for="row in teamSearchRows"
+                  :key="searchTreeRowKey(row)"
+                  class="agent-team-row agent-team-search-sheet__row"
+                  :class="{
+                    'agent-team-row--self': row.type === 'node' && row.item.kind === 'me',
+                    'agent-team-row--member': row.type === 'node' && showMemberBadge(row.item.kind),
+                  }"
+                  :style="row.type === 'node' ? { paddingLeft: `${12 + row.depth * 18}px` } : undefined"
+                >
+                  <template v-if="row.type === 'node'">
+                    <div class="agent-team-row__body">
+                      <button
+                        v-if="row.hasChildren"
+                        type="button"
+                        class="agent-team-row__caret"
+                        :class="{ 'agent-team-row__caret--open': isSearchExpanded(row.item.id) }"
+                        aria-label="展开下级"
+                        :aria-expanded="isSearchExpanded(row.item.id)"
+                        @click.stop="toggleSearchExpand(row.item.id)"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+                          <path d="M2 1.2 8 5 2 8.8V1.2Z" />
+                        </svg>
+                      </button>
+                      <span v-else class="agent-team-row__caret-spacer" aria-hidden="true" />
+
+                      <div class="agent-team-row__avatar" :class="{ 'agent-team-row__avatar--online': row.item.online }">
+                        <span>{{ row.item.avatarEmoji || '👤' }}</span>
+                      </div>
+
+                      <div class="agent-team-row__main">
+                        <button
+                          type="button"
+                          class="agent-team-row__name agent-team-row__name--link"
+                          @click="goTeamDetailByNickname(row.item)"
+                        >
+                          {{ row.item.nickname }}
+                        </button>
+                        <div class="agent-team-row__tags">
+                          <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
+                          <span
+                            v-if="!isRebateAgent && isCreditTeamKind(row.item.kind)"
+                            class="agent-team-tag agent-team-tag--credit"
+                          >
+                            信用
+                          </span>
+                          <span
+                            v-if="showAgentSubordinateTag(row.item)"
+                            class="agent-team-tag agent-team-tag--stats"
+                          >
+                            <span
+                              v-if="row.item.vipLevel"
+                              class="agent-team-vip-badge"
+                              :aria-label="`V${row.item.vipLevel}`"
+                            >
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--1" src="/images/agent-team/vip-f1.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--2" src="/images/agent-team/vip-f2.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--3" src="/images/agent-team/vip-f3.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--4" src="/images/agent-team/vip-f4.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--5" src="/images/agent-team/vip-f5.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--6" src="/images/agent-team/vip-f6.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--7" src="/images/agent-team/vip-f7.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--8" src="/images/agent-team/vip-f8.svg" alt="" draggable="false" />
+                              <img class="agent-team-vip-badge__f agent-team-vip-badge__f--9" src="/images/agent-team/vip-f9.svg" alt="" draggable="false" />
+                              <span class="agent-team-vip-badge__text">
+                                <i>V</i>{{ row.item.vipLevel }}
+                              </span>
+                            </span>
+                            <img
+                              class="agent-team-org-icon"
+                              src="/images/agent-team/org-tree.svg"
+                              alt=""
+                              width="10"
+                              height="10"
+                              draggable="false"
+                            />
+                            <span class="agent-team-tag__stats-text">{{ teamStatsLabel(row.item) }}</span>
+                          </span>
+                          <span v-else-if="showMemberBadge(row.item.kind)" class="agent-team-tag agent-team-tag--member">
+                            {{ memberKindLabel(row.item.kind) }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      v-if="row.item.kind !== 'me'"
+                      type="button"
+                      class="agent-team-row__menu"
+                      aria-label="更多操作"
+                      @click.stop="openTeamQuickMenu(row.item, $event)"
+                    >
+                      <svg class="agent-team-row__menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <circle cx="4" cy="10" r="1.75" fill="currentColor" />
+                        <circle cx="10" cy="10" r="1.75" fill="currentColor" />
+                        <circle cx="16" cy="10" r="1.75" fill="currentColor" />
+                      </svg>
+                    </button>
+                  </template>
+                </div>
+              </template>
             </div>
           </div>
         </div>

@@ -35,6 +35,24 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
 
 /** 代理端 H5 路由目录（含 Tab 页、二级页、三级流程页） */
 const AGENT_H5_CATALOG: PageCatalogItem[] = [
+  {
+    id: 'agent-field-definitions',
+    platform: 'agent',
+    routeName: 'agent-field-definitions',
+    path: '/docs/agent-field-definitions',
+    title: '字段定义',
+    group: '文档',
+    pagePath: ['代理端', '占成代理', '字段定义'],
+  },
+  {
+    id: 'agent-rebate-field-definitions',
+    platform: 'agent',
+    routeName: 'agent-rebate-field-definitions',
+    path: '/docs/agent-rebate-field-definitions',
+    title: '字段定义',
+    group: '文档',
+    pagePath: ['代理端', '返佣代理', '字段定义'],
+  },
   { id: 'mobile-agent', platform: 'agent', routeName: 'mobile-agent', path: '/mobile/agent', title: '代理中心', group: '概况', pagePath: ['代理端', '代理中心'] },
   { id: 'mobile-agent-overview', platform: 'agent', routeName: 'mobile-agent', path: '/mobile/agent', title: '概况', group: '概况', query: { tab: 'overview' }, pagePath: ['代理端', '代理中心', '概况'] },
   { id: 'mobile-agent-team', platform: 'agent', routeName: 'mobile-agent', path: '/mobile/agent', title: '团队管理', group: '团队', query: { tab: 'team' }, pagePath: ['代理端', '代理中心', '团队管理'] },

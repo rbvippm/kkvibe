@@ -6,8 +6,7 @@ import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
   getAgentOverviewCurrencyOptions,
   chunkOverviewStats,
-  DIRECT_STAT_ROW_SIZES,
-  MOCK_DIRECT_STATS,
+  getDirectStatRows,
   MOCK_PROFIT_RANKINGS,
   MOCK_SUB_AGENT_STATS,
   getProfitRankTabs,
@@ -121,7 +120,7 @@ const presetOptions = computed(() =>
       ] as const),
 )
 
-const directStatRows = computed(() => chunkOverviewStats(MOCK_DIRECT_STATS, DIRECT_STAT_ROW_SIZES))
+const directStatRows = computed(() => getDirectStatRows(props.agentType))
 const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
 const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
 const profitRankRows = computed(() => {

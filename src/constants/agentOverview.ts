@@ -59,7 +59,7 @@ export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, str
   '信用额度-USD': '86.50',
 }
 
-/** 行分组：3 + 3 + 2 + 3 + 3（VIP晋级礼金右侧为 VIP额外奖金；末行三项） */
+/** 行分组：3 + 3 + 2 + 3 + 3（占成：VIP晋级礼金 / VIP额外奖金同排） */
 export const DIRECT_STAT_ROW_SIZES = [3, 3, 2, 3, 3] as const
 
 /** 行分组：3 + 3 + 3 + 3 + 3 + 3（VIP晋级礼金右侧为 VIP额外奖金） */
@@ -78,7 +78,20 @@ export function chunkOverviewStats(
   return rows
 }
 
-/** 我的直属 · 14 项（占成 / 返佣共用；VIP晋级礼金右侧为 VIP额外奖金） */
+/** 按列数从左到右、从上到下顺序分行（返佣「我的直属」用） */
+export function chunkOverviewStatsByColumns(
+  stats: AgentOverviewStat[],
+  columns = 3,
+): AgentOverviewStat[][] {
+  if (columns <= 0) return [stats]
+  const rows: AgentOverviewStat[][] = []
+  for (let i = 0; i < stats.length; i += columns) {
+    rows.push(stats.slice(i, i + columns))
+  }
+  return rows
+}
+
+/** 我的直属 · 14 项（占成含投注退水；VIP晋级礼金右侧为 VIP额外奖金） */
 export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'new', label: '新增会员', value: '126' },
   { key: 'active', label: '活跃人数', value: '126' },
@@ -95,6 +108,21 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'netLose', label: '游戏净输赢', value: '0.00' },
   { key: 'netPnl', label: '净输赢', value: '0.00' },
 ]
+
+/** 返佣代理无「投注退水」指标 */
+export function getDirectStats(identity: 'share' | 'rebate' = 'share'): AgentOverviewStat[] {
+  if (identity === 'rebate') {
+    return MOCK_DIRECT_STATS.filter((item) => item.key !== 'rebate')
+  }
+  return MOCK_DIRECT_STATS
+}
+
+/** 占成按业务分组；返佣按三列顺序铺满 */
+export function getDirectStatRows(identity: 'share' | 'rebate' = 'share') {
+  const stats = getDirectStats(identity)
+  if (identity === 'rebate') return chunkOverviewStatsByColumns(stats, 3)
+  return chunkOverviewStats(stats, DIRECT_STAT_ROW_SIZES)
+}
 
 /** 下级代理 · 18 项（占成 / 返佣共用；VIP晋级礼金右侧为 VIP额外奖金） */
 export const MOCK_SUB_AGENT_STATS: AgentOverviewStat[] = [

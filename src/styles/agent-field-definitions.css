@@ -1,0 +1,235 @@
+/**
+ * 占成代理 · 字段定义页（首页入口文档）
+ */
+
+.agent-field-def {
+  min-height: 100svh;
+  box-sizing: border-box;
+  background: #f5f6f8;
+  color: #1a1a1a;
+  color-scheme: light only;
+  -webkit-font-smoothing: antialiased;
+}
+
+.agent-field-def__header {
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.agent-field-def__header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px 18px;
+}
+
+.agent-field-def__back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c45c26;
+  text-decoration: none;
+}
+
+.agent-field-def__back:hover {
+  opacity: 0.8;
+}
+
+.agent-field-def__eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c45c26;
+  letter-spacing: 0.02em;
+}
+
+.agent-field-def--rebate .agent-field-def__back,
+.agent-field-def--rebate .agent-field-def__eyebrow {
+  color: #0d9488;
+}
+
+.agent-field-def--rebate .agent-field-def__nav-link {
+  background: #ecfdf5;
+  color: #0d9488;
+}
+
+.agent-field-def--rebate .agent-field-def__nav-link:hover {
+  background: #d1fae5;
+}
+
+.agent-field-def--rebate .agent-field-def__table th {
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.agent-field-def--rebate .agent-field-def__scenario {
+  background: #f0fdfa;
+  border-color: #ccfbf1;
+}
+
+.agent-field-def--rebate .agent-field-def__scenario h3 {
+  color: #0d9488;
+}
+
+.agent-field-def__title {
+  margin: 6px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  line-height: 1.25;
+}
+
+.agent-field-def__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.agent-field-def__nav-link {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff4ed;
+  color: #c45c26;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.agent-field-def__nav-link:hover {
+  background: #ffe8d6;
+}
+
+.agent-field-def__main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.agent-field-def__section {
+  scroll-margin-top: 16px;
+  padding: 18px 18px 16px;
+  border: 1px solid #eef0f3;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 12px rgb(0 0 0 / 4%);
+}
+
+.agent-field-def__section-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.agent-field-def__table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agent-field-def__table {
+  width: 100%;
+  min-width: 880px;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.agent-field-def__table th,
+.agent-field-def__table td {
+  padding: 10px 12px;
+  border: 1px solid #eceff3;
+  text-align: left;
+  vertical-align: top;
+}
+
+.agent-field-def__table th {
+  background: #fff4ed;
+  color: #8a3f16;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-field-def__table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+
+.agent-field-def__td--no {
+  width: 52px;
+  text-align: center;
+  color: #8a8f98;
+  font-variant-numeric: tabular-nums;
+}
+
+.agent-field-def__td--name {
+  min-width: 96px;
+  font-weight: 600;
+  color: #1a1a1a;
+  white-space: nowrap;
+}
+
+.agent-field-def__td--method,
+.agent-field-def__td--handler {
+  white-space: nowrap;
+  color: #5c6370;
+}
+
+.agent-field-def__formulas {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.agent-field-def__scenarios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.agent-field-def__scenario {
+  padding: 14px 14px 12px;
+  border-radius: 10px;
+  background: #faf7f4;
+  border: 1px solid #f0e4da;
+}
+
+.agent-field-def__scenario h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #c45c26;
+}
+
+.agent-field-def__scenario ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #444;
+}
+
+@media (max-width: 720px) {
+  .agent-field-def__header-inner,
+  .agent-field-def__main {
+    padding-inline: 16px;
+  }
+
+  .agent-field-def__title {
+    font-size: 22px;
+  }
+}

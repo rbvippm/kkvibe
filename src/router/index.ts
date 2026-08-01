@@ -43,6 +43,18 @@ export const router = createRouter({
       meta: { title: 'KK Vibe' },
     },
     {
+      path: '/docs/agent-field-definitions',
+      name: 'agent-field-definitions',
+      component: () => import('../views/AgentFieldDefinitionsView.vue'),
+      meta: { title: '占成代理 · 字段定义' },
+    },
+    {
+      path: '/docs/agent-rebate-field-definitions',
+      name: 'agent-rebate-field-definitions',
+      component: () => import('../views/AgentRebateFieldDefinitionsView.vue'),
+      meta: { title: '返佣代理 · 字段定义' },
+    },
+    {
       path: '/mobile',
       component: MobileAppLayout,
       redirect: '/mobile/home',

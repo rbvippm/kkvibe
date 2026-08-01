@@ -10164,6 +10164,19 @@
   position: relative;
 }
 
+.agent-team-header__search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.agent-team-header__search-annot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  z-index: 1;
+}
+
 .agent-team-header__badge {
   position: absolute;
   top: 2px;
@@ -11007,6 +11020,148 @@
 
 .agent-team-create-sheet-enter-from .agent-team-create-sheet,
 .agent-team-create-sheet-leave-to .agent-team-create-sheet {
+  transform: translateY(100%);
+}
+
+/* ---------- 团队管理 · 顶栏搜索 Sheet ---------- */
+.agent-team-search-mask {
+  z-index: 2000;
+}
+
+.agent-team-search-sheet {
+  display: flex;
+  flex-direction: column;
+  min-height: min(52vh, 420px);
+  max-height: min(78%, calc(100% - 48px));
+  padding: 14px 12px calc(12px + env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+.agent-team-search-sheet__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.agent-team-search-sheet__field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px 0 12px;
+  border-radius: 18px;
+  background: #f3f3f3;
+  box-sizing: border-box;
+}
+
+.agent-team-search-sheet__icon {
+  flex-shrink: 0;
+  color: #b0b0b0;
+}
+
+.agent-team-search-sheet__input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1a1a1a;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.agent-team-search-sheet__input::placeholder {
+  color: #b0b0b0;
+}
+
+.agent-team-search-sheet__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.agent-team-search-sheet__clear {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.agent-team-search-sheet__clear:active {
+  opacity: 0.75;
+}
+
+.agent-team-search-sheet__submit {
+  flex-shrink: 0;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1a1a1a;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.agent-team-search-sheet__submit:active {
+  opacity: 0.7;
+}
+
+.agent-team-search-sheet__hint {
+  flex-shrink: 0;
+  margin: 10px 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b0b0b0;
+}
+
+.agent-team-search-sheet__results {
+  flex: 1;
+  min-height: 0;
+  margin-top: 8px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agent-team-search-sheet__empty {
+  margin: 28px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #999;
+}
+
+.agent-team-search-sheet__row {
+  padding-right: 4px;
+}
+
+.agent-team-search-sheet-enter-active,
+.agent-team-search-sheet-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.agent-team-search-sheet-enter-active .agent-team-search-sheet,
+.agent-team-search-sheet-leave-active .agent-team-search-sheet {
+  transition: transform 0.22s ease;
+}
+
+.agent-team-search-sheet-enter-from,
+.agent-team-search-sheet-leave-to {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.agent-team-search-sheet-enter-from .agent-team-search-sheet,
+.agent-team-search-sheet-leave-to .agent-team-search-sheet {
   transform: translateY(100%);
 }
 

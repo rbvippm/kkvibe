@@ -43,14 +43,20 @@ onUnmounted(() => {
         </span>
       </RouterLink>
 
-      <RouterLink
-        :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
-        class="home-entry__card home-entry__card--agent"
-      >
+      <div class="home-entry__card home-entry__card--agent home-entry__card--split">
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--agent">🤝</span>
           <div class="home-entry__card-body">
-            <h2 class="home-entry__card-title">占成代理 H5</h2>
+            <div class="home-entry__card-title-row">
+              <h2 class="home-entry__card-title">占成代理 H5</h2>
+              <RouterLink
+                :to="{ name: 'agent-field-definitions' }"
+                class="home-entry__card-title-link"
+              >
+                字段定义
+                <span class="ml-1">→</span>
+              </RouterLink>
+            </div>
             <p class="home-entry__card-text">
               占成代理身份：概况占成比例、团队授信与占成配置等能力演示。
             </p>
@@ -61,20 +67,29 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <span class="home-entry__card-action home-entry__card-action--agent">
+        <RouterLink
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
+          class="home-entry__card-action home-entry__card-action--agent"
+        >
           进入占成代理
           <span class="ml-1">→</span>
-        </span>
-      </RouterLink>
+        </RouterLink>
+      </div>
 
-      <RouterLink
-        :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'rebate' } }"
-        class="home-entry__card home-entry__card--agent-rebate"
-      >
+      <div class="home-entry__card home-entry__card--agent-rebate home-entry__card--split">
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--agent-rebate">💸</span>
           <div class="home-entry__card-body">
-            <h2 class="home-entry__card-title">返佣代理 H5</h2>
+            <div class="home-entry__card-title-row">
+              <h2 class="home-entry__card-title">返佣代理 H5</h2>
+              <RouterLink
+                :to="{ name: 'agent-rebate-field-definitions' }"
+                class="home-entry__card-title-link home-entry__card-title-link--rebate"
+              >
+                字段定义
+                <span class="ml-1">→</span>
+              </RouterLink>
+            </div>
             <p class="home-entry__card-text">
               返佣代理身份：概况返佣比例、邀请下级配置退水等能力演示（无占成授信）。
             </p>
@@ -85,11 +100,14 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <span class="home-entry__card-action home-entry__card-action--agent-rebate">
+        <RouterLink
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'rebate' } }"
+          class="home-entry__card-action home-entry__card-action--agent-rebate"
+        >
           进入返佣代理
           <span class="ml-1">→</span>
-        </span>
-      </RouterLink>
+        </RouterLink>
+      </div>
 
       <RouterLink to="/pc" class="home-entry__card home-entry__card--pc">
         <div class="home-entry__card-top">
