@@ -79,10 +79,10 @@ const reportVendor = ref<ReportVendorKey>('all')
 const gameProfitFormulaTipOpen = ref(false)
 const profitFormulaTipOpen = ref(false)
 /**
- * 会员盈亏展示：默认经典汇总卡；
- * 已在「会员盈亏」Tab 时快速连点两次 → 切换分区新结构（隐藏预览）
+ * 会员盈亏展示：默认分区新样式；
+ * 已在「会员盈亏」Tab 时快速连点两次 → 切回经典汇总卡（再连点回到新样式）
  */
-const profitLayoutMode = ref<'classic' | 'sections'>('classic')
+const profitLayoutMode = ref<'classic' | 'sections'>('sections')
 const lastProfitTabTapAt = ref(0)
 const PROFIT_TAB_DOUBLE_TAP_MS = 400
 /** 会员盈亏分区模式：游戏净输赢默认收起、其他奖励默认展开 */
@@ -213,7 +213,7 @@ function selectReportCategory(key: ReportCategoryKey) {
   reportVendor.value = 'all'
 }
 
-/** Tab 点击：会员盈亏连点两次切换经典 / 分区预览 */
+/** Tab 点击：会员盈亏连点两次切换分区新样式 / 经典汇总 */
 function onDetailTabClick(key: MemberDetailTab) {
   if (key === 'profit') {
     const now = Date.now()
@@ -450,7 +450,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         </section>
       </template>
 
-      <!-- 占成会员盈亏：默认经典汇总；连点 Tab 切分区预览 -->
+      <!-- 占成会员盈亏：默认分区新样式；连点 Tab 切经典汇总 -->
       <template v-else-if="activeTab === 'profit'">
         <section
           v-if="!useProfitSections"

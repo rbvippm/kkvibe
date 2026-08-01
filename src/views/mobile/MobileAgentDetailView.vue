@@ -75,10 +75,10 @@ const currencyPickerOpen = ref(false)
 const profitFormulaTipOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
 /**
- * 代理盈亏展示：默认经典汇总卡；
- * 已在「代理盈亏」Tab 时快速连点两次 → 切换分区新结构（隐藏预览）
+ * 代理盈亏展示：默认分区新样式；
+ * 已在「代理盈亏」Tab 时快速连点两次 → 切回经典汇总卡（再连点回到新样式）
  */
-const profitLayoutMode = ref<'classic' | 'sections'>('classic')
+const profitLayoutMode = ref<'classic' | 'sections'>('sections')
 const lastProfitTabTapAt = ref(0)
 const PROFIT_TAB_DOUBLE_TAP_MS = 400
 const profitGameDetailsExpanded = ref(false)
@@ -119,7 +119,7 @@ watch(
   isRebateAgent,
   (rebate) => {
     if (rebate && activeTab.value === 'profit') activeTab.value = 'wallet'
-    if (rebate) profitLayoutMode.value = 'classic'
+    if (rebate) profitLayoutMode.value = 'sections'
   },
   { immediate: true },
 )
@@ -185,7 +185,7 @@ function selectReportCategory(key: ReportCategoryKey) {
   reportVendor.value = 'all'
 }
 
-/** Tab 点击：代理盈亏连点两次切换经典 / 分区预览（仅占成） */
+/** Tab 点击：代理盈亏连点两次切换分区新样式 / 经典汇总（仅占成） */
 function onDetailTabClick(key: AgentDetailTab) {
   if (key === 'profit' && !isRebateAgent.value) {
     const now = Date.now()
