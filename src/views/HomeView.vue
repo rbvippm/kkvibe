@@ -44,6 +44,11 @@ onUnmounted(() => {
       </RouterLink>
 
       <div class="home-entry__card home-entry__card--agent home-entry__card--split">
+        <RouterLink
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
+          class="home-entry__card-cover"
+          aria-label="进入占成代理"
+        />
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--agent">🤝</span>
           <div class="home-entry__card-body">
@@ -67,16 +72,18 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <RouterLink
-          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
-          class="home-entry__card-action home-entry__card-action--agent"
-        >
+        <span class="home-entry__card-action home-entry__card-action--agent">
           进入占成代理
           <span class="ml-1">→</span>
-        </RouterLink>
+        </span>
       </div>
 
       <div class="home-entry__card home-entry__card--agent-rebate home-entry__card--split">
+        <RouterLink
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'rebate' } }"
+          class="home-entry__card-cover"
+          aria-label="进入返佣代理"
+        />
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--agent-rebate">💸</span>
           <div class="home-entry__card-body">
@@ -100,13 +107,10 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <RouterLink
-          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'rebate' } }"
-          class="home-entry__card-action home-entry__card-action--agent-rebate"
-        >
+        <span class="home-entry__card-action home-entry__card-action--agent-rebate">
           进入返佣代理
           <span class="ml-1">→</span>
-        </RouterLink>
+        </span>
       </div>
 
       <RouterLink to="/pc" class="home-entry__card home-entry__card--pc">

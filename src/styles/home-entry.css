@@ -263,7 +263,32 @@ html.theme-home-light #app {
 }
 
 .home-entry__card--split {
-  cursor: default;
+  position: relative;
+  cursor: pointer;
+}
+
+/** 整卡可点进代理；「字段定义」单独抬高层级避免嵌套 a */
+.home-entry__card-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  text-indent: -9999px;
+  overflow: hidden;
+  color: transparent;
+}
+
+.home-entry__card--split .home-entry__card-top,
+.home-entry__card--split .home-entry__card-action {
+  position: relative;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.home-entry__card--split .home-entry__card-title-link {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .home-entry__card-actions {
