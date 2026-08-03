@@ -36,9 +36,9 @@ export function rebateTotalCommissionFormulaTip(
     : '总佣金 = 当月佣金'
 }
 
-/** 返佣 · 佣金（原平台佣金 / 一级） */
+/** 返佣 · 佣金（原平台佣金 / 一级；场馆费与游戏净输赢口径一致） */
 export const REBATE_L1_PROFIT_FORMULA =
-  '佣金 = （【输赢】 + 【-VIP退水】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】） × 佣金比例'
+  '佣金 = （【输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】） × 佣金比例'
 
 export type AgentMyProfitTone = 'neutral' | 'positive' | 'negative'
 
@@ -649,10 +649,11 @@ export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
   },
 ]
 
-/** 佣金明细（末行对齐公式当月佣金） */
+/** 佣金明细（末行对齐公式当月佣金；输赢/VIP退水/场馆费与游戏明细一致） */
 export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
-  { label: '输赢', amountText: '+2,686.50', tone: 'positive' },
+  { label: '输赢', amountText: '+2,766.50', tone: 'positive' },
   { label: 'VIP退水', amountText: '-186.50', tone: 'negative' },
+  { label: '场馆费', amountText: '-80.00', tone: 'negative' },
   { label: 'VIP晋级礼金', amountText: '-40.00', tone: 'negative' },
   { label: 'VIP额外奖金', amountText: '-22.50', tone: 'negative' },
   { label: '活动金', amountText: '-43.00', tone: 'negative' },
