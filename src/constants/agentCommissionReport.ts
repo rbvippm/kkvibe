@@ -68,7 +68,7 @@ export function shiftCommissionMonth(month: string, offset: number) {
 type CommissionBillTemplate = Omit<CommissionMonthBill, 'month'>
 
 /**
- * 近半年模板（新→旧，相对当前月偏移 0…-5）
+ * 近 12 个月模板（新→旧，相对当前月偏移 0…-11）
  * 本月待派发「预计佣金」含负佣金累计；历史已派发不展示负佣金累计
  */
 const COMMISSION_BILL_TEMPLATES: CommissionBillTemplate[] = [
@@ -138,9 +138,75 @@ const COMMISSION_BILL_TEMPLATES: CommissionBillTemplate[] = [
     negativeAccum: 0,
     monthCommission: 45.2,
   },
+  {
+    status: 'paid',
+    activeUsers: 8,
+    totalPnl: 1680,
+    totalRebate: 132.4,
+    commissionRate: '5.00%',
+    venueFee: 68,
+    totalCost: 102.6,
+    negativeAccum: -40,
+    monthCommission: 78.87,
+  },
+  {
+    status: 'paid',
+    activeUsers: 6,
+    totalPnl: 1240,
+    totalRebate: 98.6,
+    commissionRate: '5.00%',
+    venueFee: 58,
+    totalCost: 88.2,
+    negativeAccum: -20,
+    monthCommission: 57.59,
+  },
+  {
+    status: 'paid',
+    activeUsers: 4,
+    totalPnl: 760,
+    totalRebate: 64.8,
+    commissionRate: '5.00%',
+    venueFee: 45,
+    totalCost: 62.4,
+    negativeAccum: 0,
+    monthCommission: 34.88,
+  },
+  {
+    status: 'none',
+    activeUsers: 2,
+    totalPnl: -180,
+    totalRebate: 22,
+    commissionRate: '5.00%',
+    venueFee: 35,
+    totalCost: 48,
+    negativeAccum: -50,
+    monthCommission: 0,
+  },
+  {
+    status: 'paid',
+    activeUsers: 10,
+    totalPnl: 2100,
+    totalRebate: 168.2,
+    commissionRate: '5.00%',
+    venueFee: 75,
+    totalCost: 112.8,
+    negativeAccum: -30,
+    monthCommission: 99.36,
+  },
+  {
+    status: 'paid',
+    activeUsers: 3,
+    totalPnl: 540,
+    totalRebate: 48.5,
+    commissionRate: '5.00%',
+    venueFee: 38,
+    totalCost: 52.6,
+    negativeAccum: 0,
+    monthCommission: 24.37,
+  },
 ]
 
-/** 按系统当前月滚动生成近半年账单（保证本月始终为待派发） */
+/** 按系统当前月滚动生成近 12 个月账单（保证本月始终为待派发） */
 export function getCommissionMonthBills(date = new Date()): CommissionMonthBill[] {
   const current = getDefaultCommissionMonth(date)
   return COMMISSION_BILL_TEMPLATES.map((tpl, index) => ({
@@ -150,7 +216,7 @@ export function getCommissionMonthBills(date = new Date()): CommissionMonthBill[
 }
 
 /**
- * 近半年 Mock（新→旧）；访问时按当前月滚动
+ * 近 12 个月 Mock（新→旧）；访问时按当前月滚动
  * 注意：为兼容既有 `MOCK_COMMISSION_MONTH_BILLS.find` 写法，此处用 getter 代理数组
  */
 export const MOCK_COMMISSION_MONTH_BILLS: CommissionMonthBill[] = new Proxy(

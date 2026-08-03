@@ -122,7 +122,7 @@ export const AGENT_MY_PROFIT_PRODUCT_ROWS: AgentMyProfitProductRow[] = [
 ]
 
 export const AGENT_MY_PROFIT_FOOTNOTE =
-  '数据每十分钟更新一次\n最多可查询近 6 个月的数据'
+  '数据每十分钟更新一次\n最多可查询近 12 个月的数据'
 
 /** 游戏占成项盈亏明细（口径对齐场馆净输赢：含代理赚水、场馆费，不含成本项） */
 export const AGENT_MY_PROFIT_DETAIL_ROWS: AgentMyProfitDetailRow[] = [
@@ -632,7 +632,8 @@ export function agentMyProfitRebateSummaryRow(
 export const AGENT_MY_PROFIT_REBATE_SUMMARY_ROW: AgentMyProfitProductRow =
   agentMyProfitRebateSummaryRow()
 
-export const AGENT_MY_PROFIT_REBATE_FOOTNOTE = '本月数据每十分钟更新一次'
+export const AGENT_MY_PROFIT_REBATE_FOOTNOTE =
+  '本月数据每十分钟更新一次\n最多可查询近 12 个月的数据'
 
 /** 佣金项（游戏）明细：下注有效金额（展示项）/ 输赢 / VIP退水 / 场馆费 / 游戏净输赢 */
 export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
