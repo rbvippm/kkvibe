@@ -22,7 +22,11 @@ export const MOCK_AGENT_ME_PROFILE = {
   memberCount: 30,
 }
 
-/** 各币种总盈亏与代理详情「代理盈亏」同口径 */
+/**
+ * 各币种汇总行 Mock。
+ * 占成：总盈亏口径对齐代理详情「代理盈亏」。
+ * 返佣展示为「总佣金」：历史全部已结算汇总，不限月份。
+ */
 export const MOCK_AGENT_ME_PROFIT_ROWS: AgentMeProfitRow[] = [
   { key: 'kkc', label: 'KKC 总盈亏', value: getAgentTotalProfit('KKC').value },
   { key: 'kkv', label: 'KKV 总盈亏', value: getAgentTotalProfit('KKV').value },

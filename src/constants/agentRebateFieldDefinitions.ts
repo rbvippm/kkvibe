@@ -269,8 +269,8 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 28,
         name: '我的佣金',
-        biz: '代理「我的」页佣金卡：按币种展示 KKC / KKV / USDT 总佣金（无信用额度币种）',
-        dimension: '代理账号 + 币种',
+        biz: '代理「我的」页佣金卡：按币种汇总历史全部已结算总佣金（KKC / KKV / USDT，无信用额度币种）；不限月份、不可按月筛选，与「我的佣金」明细页近 12 个月查询范围无关',
+        dimension: '汇总：代理账号+币种（历史全量，不限日期）',
         method: '10分钟',
         handler: '现金',
       },
