@@ -640,6 +640,18 @@ export const router = createRouter({
           meta: { title: '返佣金设置-文档说明' },
         },
         {
+          path: 'rebate-agent-h5-config',
+          name: 'pc-rebate-agent-h5-config',
+          component: () => import('../views/pc/PcRebateAgentH5ConfigView.vue'),
+          meta: { title: '返佣代理H5配置' },
+        },
+        {
+          path: 'rebate-agent-h5-config/doc',
+          name: 'pc-rebate-agent-h5-config-doc',
+          component: () => import('../views/pc/PcRebateAgentH5ConfigDocView.vue'),
+          meta: { title: '返佣代理H5配置-文档说明' },
+        },
+        {
           path: 'credit-limit-transfer',
           name: 'pc-credit-limit-transfer',
           component: () => import('../views/pc/PcCreditLimitTransferView.vue'),

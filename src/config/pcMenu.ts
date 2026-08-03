@@ -49,6 +49,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['推广返利', '返佣金设置', '文档说明'],
   },
   {
+    path: '/pc/rebate-agent-h5-config/doc',
+    routeName: 'pc-rebate-agent-h5-config-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '返佣代理H5配置', '文档说明'],
+  },
+  {
     path: '/pc/live-danmaku-mute-list/doc',
     routeName: 'pc-live-danmaku-mute-list-doc',
     title: '文档说明',
@@ -328,6 +334,14 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-agent-commission-setting',
         pagePath: ['推广返利', '返佣金设置'],
         docRouteName: 'pc-agent-commission-setting-doc',
+      },
+      {
+        key: 'rebate-agent-h5-config',
+        title: '返佣代理H5配置',
+        path: '/pc/rebate-agent-h5-config',
+        routeName: 'pc-rebate-agent-h5-config',
+        pagePath: ['推广返利', '返佣代理H5配置'],
+        docRouteName: 'pc-rebate-agent-h5-config-doc',
       },
       {
         key: 'credit-limit-transfer',
