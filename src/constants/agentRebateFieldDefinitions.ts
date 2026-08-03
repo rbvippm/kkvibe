@@ -37,10 +37,10 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 2,
         name: '活跃人数',
-        biz: '我的直属会员在某个日期段在线过',
+        biz: '我的直属会员在某个日期段充值过并且投注过',
         dimension: '汇总：我的直属会员+日期',
-        method: '实时',
-        handler: '金刚',
+        method: '10分钟',
+        handler: '现金',
       },
       {
         no: 3,
