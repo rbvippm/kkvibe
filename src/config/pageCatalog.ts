@@ -66,7 +66,7 @@ const AGENT_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-agent-create-account', platform: 'agent', routeName: 'mobile-agent-create-account', path: '/mobile/agent/create-account', title: '创建代理账户', group: '团队', pagePath: ['代理端', '团队', '创建代理账户'] },
   { id: 'mobile-agent-create-member', platform: 'agent', routeName: 'mobile-agent-create-member', path: '/mobile/agent/create-member', title: '创建会员账户', group: '团队', pagePath: ['代理端', '团队', '创建会员账户'] },
   { id: 'mobile-member-credit', platform: 'agent', routeName: 'mobile-member-credit', path: '/mobile/agent/member/credit', title: '会员授信', group: '授信', pagePath: ['代理端', '授信', '会员授信'] },
-  { id: 'mobile-agent-invite-member', platform: 'agent', routeName: 'mobile-agent-invite-member', path: '/mobile/agent/invite-member', title: '邀请现有会员', group: '邀请', pagePath: ['代理端', '邀请', '邀请现有会员'] },
+  { id: 'mobile-agent-invite-member', platform: 'agent', routeName: 'mobile-agent-invite-member', path: '/mobile/agent/invite-member', title: '邀请会员为下级代理', group: '邀请', pagePath: ['代理端', '邀请', '邀请会员为下级代理'] },
   { id: 'mobile-agent-invite-records', platform: 'agent', routeName: 'mobile-agent-invite-records', path: '/mobile/agent/invite-records', title: '我的邀请记录', group: '邀请', pagePath: ['代理端', '邀请', '我的邀请记录'] },
   { id: 'mobile-agent-my-profit', platform: 'agent', routeName: 'mobile-agent-my-profit', path: '/mobile/agent/my-profit', title: '我的盈亏', group: '概况', pagePath: ['代理端', '代理中心', '我的盈亏'] },
   { id: 'mobile-agent-my-share-ratio', platform: 'agent', routeName: 'mobile-agent-my-share-ratio', path: '/mobile/agent/my-share-ratio', title: '占成比例', group: '概况', pagePath: ['代理端', '代理中心', '占成比例'] },

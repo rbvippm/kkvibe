@@ -14,7 +14,7 @@ export const AGENT_TEAM_SPEC_ANNOT_NO = {
 
 export const AGENT_TEAM_INVITE_EXISTING_SPEC: MobilePrdSpec = {
   no: AGENT_TEAM_SPEC_ANNOT_NO.inviteExisting,
-  title: '邀请现有会员为下级',
+  title: '邀请会员为下级代理',
   sections: buildMobilePrdSections({
     logic: [
       '代理在团队管理中定向邀请平台已有会员成为直属下级代理，建立上下级归属关系。',
@@ -54,7 +54,7 @@ export const AGENT_TEAM_INVITE_EXISTING_SPEC: MobilePrdSpec = {
       '占成编辑比例超出上限 → 提示「不能超过最高 x%」。',
     ],
     routing: [
-      '入口：团队管理 → 创建账户 →「邀请现有会员为下级」→ 确定 → 本页。',
+      '入口：团队管理 → 创建账户 →「邀请会员为下级代理」→ 确定 → 本页。',
       '成功页「查看邀请记录」→ 我的邀请记录（注2，无收益比例入口）。',
       '成功页「继续邀请」→ 重置并回到第一步。',
       '会员在「我的 → 代理邀请」（注3）同意 → 注2 记录变已同意，团队列表追加。',
@@ -156,7 +156,7 @@ export const AGENT_TEAM_REBATE_SPEC: MobilePrdSpec = {
   sections: buildMobilePrdSections({
     logic: [
       '返佣代理仅查看直属会员：无筛选 Tab / 排序；列表扁平展示直属会员，不展示「我」本人节点与树形层级，不展示直属代理、信用账号。',
-      '顶栏「+」仅提供「创建会员账户」；不提供创建代理、邀请现有会员为下级及邀请记录入口。',
+      '顶栏「+」仅提供「创建会员账户」；不提供创建代理、邀请会员为下级代理及邀请记录入口。',
       '返佣代理不提供代理授信、会员授信入口；快捷菜单亦不出现退水比例、收益比例等占成侧能力。',
       '快捷菜单提供「备注」「注单查询」：注单查询按备注→昵称→金刚号优先级带入注单页搜索框并立即查询。',
     ],
@@ -187,7 +187,7 @@ export const AGENT_TEAM_REBATE_SPEC: MobilePrdSpec = {
       '承载页：代理中心 · 团队管理 Tab（AgentTeamPage，返佣身份）。',
       '添加会员 → mobile-agent-create-member（无退水设置）。',
       '快捷「注单查询」→ mobile-agent（tab=bet-order&keyword=展示名）。',
-      '创建代理、邀请现有会员与邀请记录路由不从返佣团队页暴露入口。',
+      '创建代理、邀请会员为下级代理与邀请记录路由不从返佣团队页暴露入口。',
     ],
   }),
 }

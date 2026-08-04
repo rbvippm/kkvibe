@@ -789,9 +789,9 @@ export function filterBetOrders(
   })
 }
 
-/** 汇总区统计：忽略游戏币种筛选，按各币种分别汇总 */
+/** 汇总区统计：与列表同口径，跟随游戏币种等筛选条件 */
 export function filterBetOrdersForSummary(rows: BetOrderRecord[], filter: BetOrderFilter) {
-  return filterBetOrders(rows, { ...filter, gameCurrency: '' })
+  return filterBetOrders(rows, filter)
 }
 
 export type BetOrderSummary = {
@@ -814,21 +814,21 @@ export function summarizeBetOrders(rows: BetOrderRecord[]): BetOrderSummary {
   )
 }
 
-/** 汇总轮播现金币种顺序 */
+/** 汇总可选现金币种顺序（与游戏币种筛选一致） */
 export const BET_ORDER_SUMMARY_CASH_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
   'KKC',
   'KKV',
   'USDT',
 ]
 
-/** 汇总轮播完整顺序（含信用额度，仅信用代理） */
+/** 汇总可选币种完整顺序（含信用额度，仅信用代理筛选可见） */
 export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
   ...BET_ORDER_SUMMARY_CASH_CURRENCIES,
   '信用额度-CNY',
   '信用额度-USD',
 ]
 
-/** 汇总轮播币种：仅本代理拥有信用代理身份时追加信用额度页 */
+/** 游戏币种筛选项对应的汇总可选币种：仅信用代理追加信用额度 */
 export function getBetOrderSummaryCurrencies(isCreditAgent: boolean) {
   return isCreditAgent ? BET_ORDER_SUMMARY_CURRENCIES : BET_ORDER_SUMMARY_CASH_CURRENCIES
 }

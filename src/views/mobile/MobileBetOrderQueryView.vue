@@ -24,9 +24,8 @@ import {
   formatBetOrderMemberLabel,
   formatMoney,
   getBetOrderCurrencyOptions,
-  getBetOrderSummaryCurrencies,
   isBetOrderCreditCurrency,
-  summarizeBetOrdersByCurrency,
+  summarizeBetOrders,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
   type BetOrderFilter,
@@ -114,14 +113,24 @@ const summaryRecords = computed(() =>
   ),
 )
 
-/** 本代理是否具备信用代理身份（决定信用额度币种统计页与筛选） */
+/** 本代理是否具备信用代理身份（决定信用额度币种筛选项） */
 const isCreditAgent = computed(() => Boolean(findAgentDetail('self')?.isCredited))
 const currencyOptions = computed(() => getBetOrderCurrencyOptions(isCreditAgent.value))
-const summaryCurrencies = computed(() => getBetOrderSummaryCurrencies(isCreditAgent.value))
 
-const currencySummaries = computed(() =>
-  summarizeBetOrdersByCurrency(summaryRecords.value, summaryCurrencies.value),
-)
+/** 汇总卡跟随游戏币种筛选，默认 KKC 仅展示一张 KKC 卡 */
+const currencySummary = computed(() => {
+  const currency = (appliedFilter.value.gameCurrency || 'KKC') as
+    | 'KKC'
+    | 'KKV'
+    | 'USDT'
+    | '信用额度-CNY'
+    | '信用额度-USD'
+  return {
+    currency,
+    label: formatBetOrderCurrency(currency),
+    ...summarizeBetOrders(summaryRecords.value),
+  }
+})
 
 watch(
   isCreditAgent,
@@ -135,30 +144,6 @@ watch(
     }
   },
   { immediate: true },
-)
-
-const summaryCarouselRef = ref<HTMLElement | null>(null)
-const summarySlideIndex = ref(0)
-
-function onSummaryCarouselScroll() {
-  const el = summaryCarouselRef.value
-  if (!el || !el.clientWidth) return
-  summarySlideIndex.value = Math.round(el.scrollLeft / el.clientWidth)
-}
-
-function resetSummaryCarousel() {
-  summarySlideIndex.value = 0
-  nextTick(() => {
-    summaryCarouselRef.value?.scrollTo({ left: 0 })
-  })
-}
-
-watch(
-  summaryRecords,
-  () => {
-    resetSummaryCarousel()
-  },
-  { deep: true },
 )
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
@@ -382,45 +367,30 @@ function summaryWinLoseClass(value: number) {
     <main class="mh5-bet-order-main">
       <div class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll">
         <div
-          ref="summaryCarouselRef"
-          class="mh5-bet-order-summary-carousel__track"
-          @scroll.passive="onSummaryCarouselScroll"
+          :key="currencySummary.currency"
+          class="mh5-bet-order-summary mh5-bet-order-summary--slide"
         >
-          <div
-            v-for="slide in currencySummaries"
-            :key="slide.currency"
-            class="mh5-bet-order-summary mh5-bet-order-summary--slide"
-          >
-            <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
-            <div class="mh5-bet-order-summary__metrics">
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总单数</span>
-                <strong>{{ slide.count }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总下注</span>
-                <strong>{{ formatMoney(slide.betAmount, slide.currency) }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总有效投注</span>
-                <strong>{{ formatMoney(slide.validBet, slide.currency) }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总输赢</span>
-                <strong :class="summaryWinLoseClass(slide.winLose)">
-                  {{ formatSummaryWinLose(slide.winLose, slide.currency) }}
-                </strong>
-              </div>
+          <span class="mh5-bet-order-summary__currency">{{ currencySummary.label }}</span>
+          <div class="mh5-bet-order-summary__metrics">
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总单数</span>
+              <strong>{{ currencySummary.count }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总下注</span>
+              <strong>{{ formatMoney(currencySummary.betAmount, currencySummary.currency) }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总有效投注</span>
+              <strong>{{ formatMoney(currencySummary.validBet, currencySummary.currency) }}</strong>
+            </div>
+            <div class="mh5-bet-order-summary__item">
+              <span class="mh5-bet-order-summary__label">总输赢</span>
+              <strong :class="summaryWinLoseClass(currencySummary.winLose)">
+                {{ formatSummaryWinLose(currencySummary.winLose, currencySummary.currency) }}
+              </strong>
             </div>
           </div>
-        </div>
-        <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
-          <span
-            v-for="(slide, idx) in currencySummaries"
-            :key="`dot-${slide.currency}`"
-            class="mh5-bet-order-summary-carousel__dot"
-            :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
-          />
         </div>
       </div>
 

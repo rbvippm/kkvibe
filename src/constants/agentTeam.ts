@@ -711,7 +711,7 @@ export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }
   { key: 'agent', label: '创建代理账户' },
   { key: 'member', label: '创建会员账户' },
   { key: 'member_credit', label: '会员账户授信' },
-  { key: 'invite_existing', label: '邀请现有会员为下级' },
+  { key: 'invite_existing', label: '邀请会员为下级代理' },
 ]
 
 export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'

@@ -64,7 +64,7 @@ const isSuccessStep = computed(() =>
 )
 
 const pageTitle = computed(() =>
-  isSuccessStep.value ? '邀请成功' : '邀请现有会员为下级',
+  isSuccessStep.value ? '邀请成功' : '邀请会员为下级代理',
 )
 
 const invitePrimaryLabel = computed(() =>

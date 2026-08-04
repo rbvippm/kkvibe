@@ -170,7 +170,7 @@ export const router = createRouter({
           path: 'agent/invite-member',
           name: 'mobile-agent-invite-member',
           component: () => import('../views/mobile/MobileAgentInviteMemberView.vue'),
-          meta: { title: '邀请现有会员', hideTabBar: true },
+          meta: { title: '邀请会员为下级代理', hideTabBar: true },
         },
         {
           path: 'agent/invite-records',
