@@ -41,6 +41,23 @@ export const CHAT_FILTERS: { key: ChatFilter; label: string }[] = [
 
 const INITIAL_CONVERSATIONS: ChatConversation[] = [
   {
+    id: 'c-h5-article',
+    roomId: 'h5-article-demo',
+    title: 'h5图文入口',
+    previewLine: {
+      fromSelf: true,
+      delivery: 'sent',
+      mediaIcon: 'photo',
+      text: '照片',
+    },
+    time: '13:32',
+    unread: 0,
+    highlighted: false,
+    pinned: true,
+    avatar: CHAT_ASSETS.avatarH5Article,
+    filter: 'direct',
+  },
+  {
     id: 'c0',
     roomId: 'direct-demo',
     title: '林晓晴',

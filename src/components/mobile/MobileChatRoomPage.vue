@@ -13,20 +13,28 @@ import {
 import { syncConversationAfterMediaSend } from '../../constants/mobileChat'
 import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC } from '../../constants/mobileChatMediaPickerSpec'
+import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
+import { CHAT_TG_H5_MEDIA_SPEC } from '../../constants/mobileChatTelegramH5Spec'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileChatMediaPicker from './MobileChatMediaPicker.vue'
+import MobileChatTelegramH5MediaFlow from './MobileChatTelegramH5MediaFlow.vue'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 
 const room = computed(() => getChatRoomDemo(String(route.params.id || '')))
+/** 「h5图文入口」走 Telegram Web 系统相册/相机流程 */
+const isTgH5Room = computed(() => room.value.id === TG_H5_ROOM_ID)
 const messages = ref<ChatRoomMessage[]>([])
 const toast = ref('')
 const draft = ref('')
 const plusOpen = ref(false)
 const mediaPickerOpen = ref(false)
+const mediaPickerStartAt = ref<'gallery' | 'camera'>('gallery')
+const tgH5Open = ref(false)
+const tgH5StartAt = ref<'attach' | 'system' | 'camera'>('attach')
 const activeMsgId = ref<string | null>(null)
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const mainEl = ref<HTMLElement | null>(null)
@@ -48,6 +56,8 @@ watch(
     activeMsgId.value = null
     plusOpen.value = false
     mediaPickerOpen.value = false
+    mediaPickerStartAt.value = 'gallery'
+    tgH5Open.value = false
   },
   { immediate: true },
 )
@@ -78,12 +88,21 @@ function closeMenu() {
 
 function togglePlusPanel() {
   closeMenu()
+  if (tgH5Open.value) tgH5Open.value = false
   plusOpen.value = !plusOpen.value
 }
 
 function onPlusAction(key: string, label: string) {
   if (key === 'photo' || key === 'camera') {
     plusOpen.value = false
+    if (isTgH5Room.value) {
+      // H5：点照片/相机后出系统来源（相册 / 拍照 / 选择文件）
+      tgH5StartAt.value = key === 'camera' ? 'camera' : 'system'
+      tgH5Open.value = true
+      return
+    }
+    // App：照片 → 相册选图；相机 → WhatsApp 全屏相机
+    mediaPickerStartAt.value = key === 'camera' ? 'camera' : 'gallery'
     mediaPickerOpen.value = true
     return
   }
@@ -159,6 +178,7 @@ function onMediaSend(payload: ChatMediaSendPayload) {
   ]
 
   mediaPickerOpen.value = false
+  tgH5Open.value = false
   plusOpen.value = false
 
   syncConversationAfterMediaSend(
@@ -171,14 +191,21 @@ function onMediaSend(payload: ChatMediaSendPayload) {
 </script>
 
 <template>
-  <div class="mh5-chat-room mh5-route-view">
+  <div class="mh5-chat-room mh5-route-view" :class="{ 'mh5-chat-room--tg-h5': isTgH5Room }">
     <header class="mh5-chat-room-header">
       <button type="button" class="mh5-chat-room-header__back" aria-label="返回" @click="goBack">
         <img :src="CHAT_ROOM_ASSETS.back" alt="" width="24" height="24" />
       </button>
       <div class="mh5-chat-room-header__title">
         <img class="mh5-chat-room-header__avatar" :src="room.avatar" :alt="room.title" width="32" height="32" />
-        <h1>{{ room.title }}</h1>
+        <h1>
+          {{ room.title }}
+          <Mh5SpecAnnot
+            v-if="isTgH5Room"
+            :spec="CHAT_TG_H5_MEDIA_SPEC"
+            placement="bottom"
+          />
+        </h1>
       </div>
       <div class="mh5-chat-room-header__actions">
         <template v-if="room.kind === 'direct'">
@@ -346,7 +373,7 @@ function onMediaSend(payload: ChatMediaSendPayload) {
               <Mh5SpecAnnot
                 v-if="action.key === 'photo'"
                 class="mh5-chat-room-plus__annot"
-                :spec="CHAT_MEDIA_PICKER_SPEC"
+                :spec="isTgH5Room ? CHAT_TG_H5_MEDIA_SPEC : CHAT_MEDIA_PICKER_SPEC"
                 placement="top"
               />
             </div>
@@ -393,9 +420,19 @@ function onMediaSend(payload: ChatMediaSendPayload) {
     </Transition>
 
     <MobileChatMediaPicker
+      v-if="!isTgH5Room"
       :open="mediaPickerOpen"
+      :start-at="mediaPickerStartAt"
       :recipient-name="room.title"
       @close="mediaPickerOpen = false"
+      @send="onMediaSend"
+    />
+
+    <MobileChatTelegramH5MediaFlow
+      v-if="isTgH5Room"
+      :open="tgH5Open"
+      :start-at="tgH5StartAt"
+      @close="tgH5Open = false"
       @send="onMediaSend"
     />
 

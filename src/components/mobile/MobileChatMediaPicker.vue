@@ -3,24 +3,32 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import {
   CHAT_GALLERY_ALBUMS,
   CHAT_GALLERY_ITEMS,
+  createCameraCaptureItem,
   galleryItemsForAlbum,
   type ChatMediaSendPayload,
   type GalleryMediaItem,
 } from '../../constants/mobileChatGallery'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 
-const props = defineProps<{
-  open: boolean
-  recipientName: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    recipientName: string
+    /** gallery：相册选图；camera：WhatsApp 全屏相机 */
+    startAt?: 'gallery' | 'camera'
+  }>(),
+  { startAt: 'gallery' },
+)
 
 const emit = defineEmits<{
   close: []
   send: [payload: ChatMediaSendPayload]
 }>()
 
-type Stage = 'gallery' | 'preview'
+type Stage = 'gallery' | 'camera' | 'preview'
 type GalleryTab = 'photos' | 'albums'
+type CameraMode = 'photo' | 'video'
+type FlashMode = 'off' | 'auto' | 'on'
 
 const stage = ref<Stage>('gallery')
 const tab = ref<GalleryTab>('photos')
@@ -28,26 +36,47 @@ const albumId = ref('recents')
 const hd = ref(false)
 const caption = ref('')
 const selectedIds = ref<string[]>([])
+/** 相机快门生成的媒体（不在静态图库列表内） */
+const capturedItems = ref<GalleryMediaItem[]>([])
 const previewIndex = ref(0)
 const toast = ref('')
 const videoPlaying = ref(false)
 const videoMuted = ref(true)
+/** 从相机入口进入；预览关闭时回到相机 */
+const fromCamera = ref(false)
+const cameraMode = ref<CameraMode>('photo')
+const flash = ref<FlashMode>('auto')
+const captureCount = ref(0)
 /** 播放块位置 0~1 */
 const playhead = ref(0)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 let playRaf: number | null = null
 
 const albumItems = computed(() => galleryItemsForAlbum(albumId.value))
+/** 相机底部最近项目缩略条 */
+const recentStrip = computed(() => CHAT_GALLERY_ITEMS.slice(0, 8))
+
+function resolveItem(id: string) {
+  return (
+    capturedItems.value.find((item) => item.id === id) ??
+    CHAT_GALLERY_ITEMS.find((item) => item.id === id)
+  )
+}
 
 const selectedItems = computed(() =>
   selectedIds.value
-    .map((id) => CHAT_GALLERY_ITEMS.find((item) => item.id === id))
+    .map((id) => resolveItem(id))
     .filter((item): item is GalleryMediaItem => Boolean(item)),
 )
 
 const previewItem = computed(() => selectedItems.value[previewIndex.value] ?? selectedItems.value[0] ?? null)
 const canSend = computed(() => selectedItems.value.length > 0)
 const isPreviewVideo = computed(() => previewItem.value?.type === 'video')
+const flashLabel = computed(() => {
+  if (flash.value === 'on') return '开'
+  if (flash.value === 'off') return '关'
+  return '自动'
+})
 
 watch(
   () => props.open,
@@ -57,6 +86,13 @@ watch(
       return
     }
     resetState()
+  },
+)
+
+watch(
+  () => props.startAt,
+  () => {
+    if (props.open) resetState()
   },
 )
 
@@ -122,14 +158,69 @@ function onStageClick() {
 }
 
 function resetState() {
-  stage.value = 'gallery'
+  const startCamera = props.startAt === 'camera'
+  stage.value = startCamera ? 'camera' : 'gallery'
+  fromCamera.value = startCamera
   tab.value = 'photos'
   albumId.value = 'recents'
   hd.value = false
   caption.value = ''
   selectedIds.value = []
+  capturedItems.value = []
   previewIndex.value = 0
+  cameraMode.value = 'photo'
+  flash.value = 'auto'
+  captureCount.value = 0
   resetVideoUi()
+}
+
+function cycleFlash() {
+  flash.value = flash.value === 'auto' ? 'on' : flash.value === 'on' ? 'off' : 'auto'
+  showTip(`手电筒：${flashLabel.value}`)
+}
+
+function openGalleryFromCamera() {
+  stage.value = 'gallery'
+  /* 保留 fromCamera，图库关闭后回到相机 */
+}
+
+function closeGallerySheet() {
+  if (fromCamera.value) {
+    stage.value = 'camera'
+    return
+  }
+  close()
+}
+
+function captureShutter() {
+  if (selectedIds.value.length >= 9) {
+    showTip('最多选择 9 张')
+    return
+  }
+  if (cameraMode.value === 'video') {
+    showTip('已录制短视频（原型演示）')
+  }
+  const shot = createCameraCaptureItem(cameraMode.value, captureCount.value)
+  captureCount.value += 1
+  capturedItems.value = [...capturedItems.value, shot]
+  // 继续添加：追加到已选；首次拍摄：仅当前一张
+  selectedIds.value = selectedIds.value.includes(shot.id)
+    ? selectedIds.value
+    : [...selectedIds.value, shot.id]
+  previewIndex.value = selectedIds.value.indexOf(shot.id)
+  stage.value = 'preview'
+}
+
+function pickFromCameraStrip(item: GalleryMediaItem) {
+  if (!selectedIds.value.includes(item.id)) {
+    if (selectedIds.value.length >= 9) {
+      showTip('最多选择 9 张')
+      return
+    }
+    selectedIds.value = [...selectedIds.value, item.id]
+  }
+  previewIndex.value = selectedIds.value.indexOf(item.id)
+  stage.value = 'preview'
 }
 
 function showTip(text: string) {
@@ -191,11 +282,33 @@ function backToGallery() {
   stage.value = 'gallery'
 }
 
+/** 配文预览「继续添加」：相机入口回到相机，相册入口回到图库 */
+function continueAddFromPreview() {
+  if (fromCamera.value) {
+    stage.value = 'camera'
+    return
+  }
+  stage.value = 'gallery'
+}
+
+function backFromPreview() {
+  if (fromCamera.value) {
+    selectedIds.value = []
+    previewIndex.value = 0
+    caption.value = ''
+    stage.value = 'camera'
+    return
+  }
+  stage.value = 'gallery'
+}
+
 function removePreviewItem() {
   if (!previewItem.value) return
-  selectedIds.value = selectedIds.value.filter((id) => id !== previewItem.value!.id)
+  const removedId = previewItem.value.id
+  selectedIds.value = selectedIds.value.filter((id) => id !== removedId)
+  capturedItems.value = capturedItems.value.filter((item) => item.id !== removedId)
   if (!selectedItems.value.length) {
-    stage.value = 'gallery'
+    stage.value = fromCamera.value ? 'camera' : 'gallery'
     previewIndex.value = 0
     return
   }
@@ -224,17 +337,141 @@ function send() {
     <div
       v-if="open"
       class="mh5-media-picker"
-      :class="{ 'mh5-media-picker--preview': stage === 'preview' }"
+      :class="{
+        'mh5-media-picker--preview': stage === 'preview',
+        'mh5-media-picker--camera': stage === 'camera',
+      }"
       role="dialog"
       aria-modal="true"
-      aria-label="选择照片"
-      @click.self="close"
+      :aria-label="stage === 'camera' ? '相机' : '选择照片'"
+      @click.self="stage === 'gallery' ? closeGallerySheet() : undefined"
     >
+      <!-- WhatsApp 全屏相机 -->
+      <div v-if="stage === 'camera'" class="mh5-media-camera" @click.stop>
+        <div class="mh5-media-camera__view">
+          <img class="mh5-media-camera__preview" src="/images/discover/cover-4.jpg" alt="取景" />
+          <!-- 手电筒：对齐 WhatsApp，叠在取景右上角 -->
+          <button
+            type="button"
+            class="mh5-media-camera__flash"
+            :class="{
+              'mh5-media-camera__flash--on': flash === 'on',
+              'mh5-media-camera__flash--off': flash === 'off',
+            }"
+            :aria-label="`手电筒${flashLabel}`"
+            @click="cycleFlash"
+          >
+            <svg class="mh5-media-camera__flash-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <!-- 手电筒轮廓 -->
+              <path
+                d="M9.2 3.8h5.6c.7 0 1.2.5 1.2 1.2v2.2c0 .4-.2.8-.5 1L14 10.2v8.4c0 .9-.7 1.6-1.6 1.6h-1.8c-.9 0-1.6-.7-1.6-1.6v-8.4L8.5 8.2c-.3-.2-.5-.6-.5-1V5c0-.7.5-1.2 1.2-1.2z"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linejoin="round"
+              />
+              <path d="M9.5 6.6h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              <path
+                d="M11.2 13.2h1.6M11.2 16h1.6"
+                stroke="currentColor"
+                stroke-width="1.7"
+                stroke-linecap="round"
+              />
+              <!-- 关闭态斜线 -->
+              <path
+                v-if="flash === 'off'"
+                class="mh5-media-camera__flash-slash"
+                d="M5 5l14 14"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+          <button type="button" class="mh5-media-camera__close" aria-label="关闭" @click="close">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <div class="mh5-media-camera__hint">点击拍照，长按录像</div>
+        </div>
+
+        <div class="mh5-media-camera__strip" aria-label="最近项目">
+          <button
+            v-for="item in recentStrip"
+            :key="item.id"
+            type="button"
+            class="mh5-media-camera__strip-item"
+            @click="pickFromCameraStrip(item)"
+          >
+            <img :src="item.src" :alt="item.type === 'video' ? '视频' : '照片'" />
+            <span v-if="item.type === 'video'" class="mh5-media-camera__strip-dur">{{ item.duration }}</span>
+          </button>
+        </div>
+
+        <div class="mh5-media-camera__controls">
+          <button
+            type="button"
+            class="mh5-media-camera__gallery"
+            aria-label="打开图库"
+            @click="openGalleryFromCamera"
+          >
+            <img :src="recentStrip[0]?.src" alt="" />
+          </button>
+          <button
+            type="button"
+            class="mh5-media-camera__shutter"
+            :class="{ 'mh5-media-camera__shutter--video': cameraMode === 'video' }"
+            :aria-label="cameraMode === 'video' ? '录制' : '快门'"
+            @click="captureShutter"
+          />
+          <button
+            type="button"
+            class="mh5-media-camera__icon-btn"
+            aria-label="翻转摄像头"
+            @click="showTip('已切换摄像头')"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M16 4h2a2 2 0 012 2v3M8 20H6a2 2 0 01-2-2v-3"
+                stroke="#fff"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+              <path d="M17 7l-3-3 3-3M7 17l3 3-3 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="12" cy="12" r="3.2" stroke="#fff" stroke-width="1.8" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="mh5-media-camera__modes" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            class="mh5-media-camera__mode"
+            :class="{ 'is-on': cameraMode === 'video' }"
+            :aria-selected="cameraMode === 'video'"
+            @click="cameraMode = 'video'"
+          >
+            视频
+          </button>
+          <button
+            type="button"
+            role="tab"
+            class="mh5-media-camera__mode"
+            :class="{ 'is-on': cameraMode === 'photo' }"
+            :aria-selected="cameraMode === 'photo'"
+            @click="cameraMode = 'photo'"
+          >
+            照片
+          </button>
+        </div>
+      </div>
+
       <!-- 图库选择 · 底部弹层 -->
-      <div v-if="stage === 'gallery'" class="mh5-media-picker__sheet" @click.stop>
+      <div v-else-if="stage === 'gallery'" class="mh5-media-picker__sheet" @click.stop>
           <div class="mh5-media-picker__handle" aria-hidden="true" />
           <header class="mh5-media-picker__header">
-            <button type="button" class="mh5-media-picker__icon-btn" aria-label="关闭" @click="close">
+            <button type="button" class="mh5-media-picker__icon-btn" aria-label="关闭" @click="closeGallerySheet">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" stroke="#111" stroke-width="2.2" stroke-linecap="round" />
               </svg>
@@ -337,9 +574,9 @@ function send() {
         </div>
 
         <!-- 深色预览编辑 · 全屏 -->
-        <div v-else class="mh5-media-preview" @click.stop>
+        <div v-else-if="stage === 'preview'" class="mh5-media-preview" @click.stop>
           <header class="mh5-media-preview__header">
-            <button type="button" class="mh5-media-preview__tool" aria-label="返回" @click="backToGallery">
+            <button type="button" class="mh5-media-preview__tool" aria-label="返回" @click="backFromPreview">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <div class="mh5-media-preview__tools">
@@ -446,7 +683,7 @@ function send() {
           </div>
 
           <div class="mh5-media-preview__caption">
-            <button type="button" class="mh5-media-preview__add" aria-label="继续添加" @click="backToGallery">＋</button>
+            <button type="button" class="mh5-media-preview__add" aria-label="继续添加" @click="continueAddFromPreview">＋</button>
             <textarea
               v-model="caption"
               class="mh5-media-picker__caption-input"

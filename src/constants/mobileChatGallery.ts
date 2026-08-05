@@ -54,3 +54,23 @@ export function galleryItemsForAlbum(albumId: string): GalleryMediaItem[] {
   if (albumId === 'recents') return CHAT_GALLERY_ITEMS
   return CHAT_GALLERY_ITEMS.filter((item) => item.albumId === albumId)
 }
+
+/** WhatsApp 相机快门后写入的演示媒体 */
+export function createCameraCaptureItem(
+  mode: 'photo' | 'video',
+  index = 0,
+): GalleryMediaItem {
+  const pool = CHAT_GALLERY_ITEMS.filter((item) =>
+    mode === 'video' ? item.type === 'video' : item.type === 'image',
+  )
+  const base = pool[index % Math.max(pool.length, 1)] ?? CHAT_GALLERY_ITEMS[0]!
+  return {
+    ...base,
+    id: `wa-cam-${mode}-${Date.now()}-${index}`,
+    type: mode === 'video' ? 'video' : 'image',
+    albumId: 'camera',
+    ...(mode === 'video'
+      ? { duration: base.duration ?? '0:03', sizeLabel: base.sizeLabel ?? '1.2 MB' }
+      : {}),
+  }
+}

@@ -224,6 +224,19 @@ export const CHAT_ROOM_DIRECT_DEMO: ChatRoomDemo = {
   })),
 }
 
+/** 单聊演示 · 会话列表「h5图文入口」（业务同单聊，仅标题不同） */
+export const CHAT_ROOM_H5_ARTICLE_DEMO: ChatRoomDemo = {
+  id: 'h5-article-demo',
+  kind: 'direct',
+  title: 'h5图文入口',
+  avatar: '/images/chat/avatar-h5-article.svg',
+  messages: CHAT_ROOM_GROUP_DEMO.messages.map((m) => ({
+    ...m,
+    senderName: undefined,
+    avatar: undefined,
+  })),
+}
+
 export const CHAT_ROOM_MENU_ACTIONS = [
   { key: 'reply', label: '回复', icon: CHAT_ROOM_ASSETS.reply, danger: false },
   { key: 'copy', label: '复制', icon: CHAT_ROOM_ASSETS.copy, danger: false },
@@ -238,5 +251,6 @@ export const CHAT_ROOM_REACTIONS = ['👍', '❤️', '😄', '😭', '🎉'] as
 
 export function getChatRoomDemo(id?: string): ChatRoomDemo {
   if (id === CHAT_ROOM_DIRECT_DEMO.id) return CHAT_ROOM_DIRECT_DEMO
+  if (id === CHAT_ROOM_H5_ARTICLE_DEMO.id) return CHAT_ROOM_H5_ARTICLE_DEMO
   return CHAT_ROOM_GROUP_DEMO
 }

@@ -9,6 +9,7 @@ export const CHAT_ASSETS = {
   previewVideo: '/images/chat/icon-preview-video.svg',
   pin: '/images/chat/icon-pin.svg',
   avatarDirect: '/images/chat-room/avatar.png',
+  avatarH5Article: '/images/chat/avatar-h5-article.svg',
   avatarWorldCup: '/images/chat/avatar-worldcup.svg',
   avatarMarbleWar: '/images/chat/avatar-marble-war.svg',
   avatarNiuniu: '/images/chat/avatar-niuniu.svg',
