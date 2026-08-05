@@ -278,10 +278,6 @@ function openPreview(fromItem?: GalleryMediaItem) {
   stage.value = 'preview'
 }
 
-function backToGallery() {
-  stage.value = 'gallery'
-}
-
 /** 配文预览「继续添加」：相机入口回到相机，相册入口回到图库 */
 function continueAddFromPreview() {
   if (fromCamera.value) {
