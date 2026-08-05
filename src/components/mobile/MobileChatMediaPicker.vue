@@ -27,7 +27,6 @@ const emit = defineEmits<{
 
 type Stage = 'gallery' | 'camera' | 'preview'
 type GalleryTab = 'photos' | 'albums'
-type CameraMode = 'photo' | 'video'
 type FlashMode = 'off' | 'auto' | 'on'
 
 const stage = ref<Stage>('gallery')
@@ -44,7 +43,6 @@ const videoPlaying = ref(false)
 const videoMuted = ref(true)
 /** 从相机入口进入；预览关闭时回到相机 */
 const fromCamera = ref(false)
-const cameraMode = ref<CameraMode>('photo')
 const flash = ref<FlashMode>('auto')
 const captureCount = ref(0)
 /** 播放块位置 0~1 */
@@ -168,7 +166,6 @@ function resetState() {
   selectedIds.value = []
   capturedItems.value = []
   previewIndex.value = 0
-  cameraMode.value = 'photo'
   flash.value = 'auto'
   captureCount.value = 0
   resetVideoUi()
@@ -197,10 +194,7 @@ function captureShutter() {
     showTip('最多选择 9 张')
     return
   }
-  if (cameraMode.value === 'video') {
-    showTip('已录制短视频（原型演示）')
-  }
-  const shot = createCameraCaptureItem(cameraMode.value, captureCount.value)
+  const shot = createCameraCaptureItem('photo', captureCount.value)
   captureCount.value += 1
   capturedItems.value = [...capturedItems.value, shot]
   // 继续添加：追加到已选；首次拍摄：仅当前一张
@@ -416,8 +410,7 @@ function send() {
           <button
             type="button"
             class="mh5-media-camera__shutter"
-            :class="{ 'mh5-media-camera__shutter--video': cameraMode === 'video' }"
-            :aria-label="cameraMode === 'video' ? '录制' : '快门'"
+            aria-label="快门"
             @click="captureShutter"
           />
           <button
@@ -436,29 +429,6 @@ function send() {
               <path d="M17 7l-3-3 3-3M7 17l3 3-3 3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
               <circle cx="12" cy="12" r="3.2" stroke="#fff" stroke-width="1.8" />
             </svg>
-          </button>
-        </div>
-
-        <div class="mh5-media-camera__modes" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            class="mh5-media-camera__mode"
-            :class="{ 'is-on': cameraMode === 'video' }"
-            :aria-selected="cameraMode === 'video'"
-            @click="cameraMode = 'video'"
-          >
-            视频
-          </button>
-          <button
-            type="button"
-            role="tab"
-            class="mh5-media-camera__mode"
-            :class="{ 'is-on': cameraMode === 'photo' }"
-            :aria-selected="cameraMode === 'photo'"
-            @click="cameraMode = 'photo'"
-          >
-            照片
           </button>
         </div>
       </div>
@@ -679,7 +649,30 @@ function send() {
           </div>
 
           <div class="mh5-media-preview__caption">
-            <button type="button" class="mh5-media-preview__add" aria-label="继续添加" @click="continueAddFromPreview">＋</button>
+            <button
+              type="button"
+              class="mh5-media-preview__add"
+              :class="{ 'mh5-media-preview__add--camera': fromCamera }"
+              :aria-label="fromCamera ? '继续拍照' : '继续添加'"
+              @click="continueAddFromPreview"
+            >
+              <svg
+                v-if="fromCamera"
+                class="mh5-media-preview__add-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <path
+                  d="M9.2 5.2L7.8 7H5.5A1.5 1.5 0 004 8.5v8A1.5 1.5 0 005.5 18h13a1.5 1.5 0 001.5-1.5v-8A1.5 1.5 0 0018.5 7h-2.3l-1.4-1.8A1.2 1.2 0 0013.8 4.8h-3.6c-.4 0-.8.2-1 .6z"
+                  stroke="currentColor"
+                  stroke-width="1.7"
+                  stroke-linejoin="round"
+                />
+                <circle cx="12" cy="12.2" r="3.1" stroke="currentColor" stroke-width="1.7" />
+              </svg>
+              <template v-else>＋</template>
+            </button>
             <textarea
               v-model="caption"
               class="mh5-media-picker__caption-input"
