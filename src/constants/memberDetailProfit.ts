@@ -26,19 +26,22 @@ export {
   profitValueClass,
 }
 
-/** 经典汇总卡 / 总盈亏明细 · 会员盈亏公式 tip */
+/**
+ * 会员盈亏 tip / 明细末行公式（退水对会员为正）
+ * 会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金
+ */
 export const MEMBER_PROFIT_FORMULA =
-  '会员盈亏 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】 + 【VIP晋级礼金】 + 【VIP额外奖金】 + 【活动金】'
+  '会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金'
 
-/** 分区新结构 · 总盈亏公式 */
-export const MEMBER_PROFIT_SECTION_FORMULA = '总盈亏 = 游戏净输赢 + 其他奖励'
+/** 分区结构公式（游戏净输赢含正退水，与六项 tip 数值自洽） */
+export const MEMBER_PROFIT_SECTION_FORMULA = '会员盈亏 = 游戏净输赢 + 其他奖励'
 
 /**
- * 会员 · 游戏净输赢公式（分区明细 / 与代理盈亏游戏净输赢同构）
- * 代理为实占输赢/退水；会员对应游戏输赢/会员退水，并扣代理赚水、场馆费
+ * 会员 · 游戏净输赢公式（占成；退水对会员为正）
+ * 游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】
  */
 export const MEMBER_PROFIT_GAME_NET_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【-会员退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】'
+  '游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】'
 
 /** 场馆明细标题与公式左侧统一为「游戏净输赢」（与上式一致） */
 export const MEMBER_GAME_PROFIT_FORMULA = MEMBER_PROFIT_GAME_NET_FORMULA
@@ -55,10 +58,6 @@ type MemberProfitSummaryMock = {
   gameProfit: number
   memberRebate: number
   vipRebate: number
-  /** 代理赚水（游戏净输赢中取负） */
-  rebateEarn: number
-  /** 场馆费（游戏净输赢中取负；对齐代理盈亏） */
-  venueFee: number
   vipBonus: number
   vipExtraBonus: number
   activityGold: number
@@ -71,8 +70,6 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 12350,
     memberRebate: 1280,
     vipRebate: 150,
-    rebateEarn: 860,
-    venueFee: 80,
     vipBonus: 320,
     vipExtraBonus: 100,
     activityGold: 180,
@@ -82,8 +79,6 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 3200,
     memberRebate: 210,
     vipRebate: 35,
-    rebateEarn: 180,
-    venueFee: 22,
     vipBonus: 80,
     vipExtraBonus: 25,
     activityGold: 50,
@@ -93,8 +88,6 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 8600,
     memberRebate: 520,
     vipRebate: 80,
-    rebateEarn: 420,
-    venueFee: 55,
     vipBonus: 210,
     vipExtraBonus: 65,
     activityGold: 120,
@@ -104,8 +97,6 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 1550,
     memberRebate: 128,
     vipRebate: 18,
-    rebateEarn: 90,
-    venueFee: 18,
     vipBonus: 60,
     vipExtraBonus: 20,
     activityGold: 40,
@@ -115,8 +106,6 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     gameProfit: 620,
     memberRebate: 48,
     vipRebate: 8,
-    rebateEarn: 36,
-    venueFee: 8,
     vipBonus: 22,
     vipExtraBonus: 8,
     activityGold: 15,
@@ -128,8 +117,6 @@ const EMPTY_SUMMARY_MOCK: MemberProfitSummaryMock = {
   gameProfit: 0,
   memberRebate: 0,
   vipRebate: 0,
-  rebateEarn: 0,
-  venueFee: 0,
   vipBonus: 0,
   vipExtraBonus: 0,
   activityGold: 0,
@@ -152,20 +139,27 @@ function profitTone(value: number): ProfitValueTone {
   return 'neutral'
 }
 
+function parseProfitAmountText(text: string) {
+  return Number(text.replace(/,/g, '').replace(/^\+/, '')) || 0
+}
+
+function scaleAmountList(values: number[], targetSum: number): number[] {
+  const sum = values.reduce((acc, n) => acc + n, 0)
+  if (!sum) return values.map(() => 0)
+  const scaled = values.map((n) => Number(((n * targetSum) / sum).toFixed(2)))
+  const drift = Number((targetSum - scaled.reduce((acc, n) => acc + n, 0)).toFixed(2))
+  scaled[scaled.length - 1] = Number((scaled[scaled.length - 1] + drift).toFixed(2))
+  return scaled
+}
+
 function getMemberProfitSummaryMock(currency: string) {
   return PROFIT_SUMMARY_BY_CURRENCY[currency] ?? EMPTY_SUMMARY_MOCK
 }
 
-/** 游戏净输赢合计：对齐代理盈亏 —— 游戏输赢 − 会员退水 − VIP退水 − 代理赚水 − 场馆费 */
+/** 游戏净输赢合计：游戏输赢 + 会员退水 + VIP退水（退水对会员为正） */
 export function getMemberGameNetTotal(currency: string) {
   const stats = getMemberProfitSummaryMock(currency)
-  return (
-    stats.gameProfit -
-    stats.memberRebate -
-    stats.vipRebate -
-    stats.rebateEarn -
-    stats.venueFee
-  )
+  return stats.gameProfit + stats.memberRebate + stats.vipRebate
 }
 
 /** 其他奖励合计（VIP晋级礼金 + VIP额外奖金 + 活动金） */
@@ -179,29 +173,31 @@ export function getMemberOtherCostAbs(currency: string) {
   return getMemberOtherRewardTotal(currency)
 }
 
-/** 经典汇总卡 · 会员盈亏总值（六项累加口径） */
-export function getMemberTotalProfit(currency: string) {
+/** 六项正数合计（与 MEMBER_PROFIT_FORMULA 一致） */
+export function getMemberSixTermTotal(currency: string) {
   const stats = getMemberProfitSummaryMock(currency)
-  const total =
+  return (
     stats.gameProfit +
     stats.memberRebate +
     stats.vipRebate +
     stats.vipBonus +
     stats.vipExtraBonus +
     stats.activityGold
+  )
+}
+
+/** 经典汇总卡 · 会员盈亏总值（六项正数） */
+export function getMemberTotalProfit(currency: string) {
+  const total = getMemberSixTermTotal(currency)
   return {
     value: formatProfitAmount(total),
     tone: profitTone(total),
   }
 }
 
-/** 分区 · 总盈亏 = 游戏净输赢 + 其他奖励 */
+/** 分区 · 会员盈亏 = 游戏净输赢 + 其他奖励（与六项正数自洽） */
 export function getMemberSectionTotalProfit(currency: string) {
-  const total = getMemberGameNetTotal(currency) + getMemberOtherRewardTotal(currency)
-  return {
-    value: formatProfitAmount(total),
-    tone: profitTone(total),
-  }
+  return getMemberTotalProfit(currency)
 }
 
 function sumSectionRows(rows: MemberProfitSectionRow[], totalKey: string): MemberProfitSectionRow {
@@ -239,7 +235,7 @@ function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
   return scaled
 }
 
-/** 游戏净输赢公式构成项（明细弹框；与代理盈亏游戏净输赢同构，会员文案） */
+/** 游戏净输赢公式构成项（三项；退水为正） */
 function getMemberProfitGameFormulaRows(currency: string): MemberProfitSectionRow[] {
   const stats = getMemberProfitSummaryMock(currency)
   return [
@@ -252,26 +248,14 @@ function getMemberProfitGameFormulaRows(currency: string): MemberProfitSectionRo
     {
       key: 'member_rebate',
       label: '会员退水',
-      value: formatProfitAmount(-stats.memberRebate),
-      tone: profitTone(-stats.memberRebate),
+      value: formatProfitAmount(stats.memberRebate),
+      tone: profitTone(stats.memberRebate),
     },
     {
       key: 'vip_rebate',
       label: 'VIP退水',
-      value: formatProfitAmount(-stats.vipRebate),
-      tone: profitTone(-stats.vipRebate),
-    },
-    {
-      key: 'rebate_earn',
-      label: '代理赚水',
-      value: formatProfitAmount(-stats.rebateEarn),
-      tone: profitTone(-stats.rebateEarn),
-    },
-    {
-      key: 'venue_fee',
-      label: '场馆费',
-      value: formatProfitAmount(-stats.venueFee),
-      tone: profitTone(-stats.venueFee),
+      value: formatProfitAmount(stats.vipRebate),
+      tone: profitTone(stats.vipRebate),
     },
   ]
 }
@@ -334,7 +318,7 @@ export function getMemberProfitCostSection(currency: string): MemberProfitSectio
   }
 }
 
-/** 占成公式卡：游戏净输赢 + 其他奖励 = 总盈亏 */
+/** 占成公式卡：游戏净输赢 + 其他奖励 = 会员盈亏 */
 export function getMemberProfitFormula(currency: string) {
   const game = getMemberProfitGameSection(currency).total
   const reward = getMemberProfitCostSection(currency).total
@@ -349,6 +333,7 @@ export function getMemberProfitFormula(currency: string) {
     operator: '+' as const,
     totalAmountText: total.value,
     totalTone: total.tone,
+    totalLabel: '会员盈亏',
   }
 }
 
@@ -360,14 +345,67 @@ export type MemberProfitDialogDetailRow = {
   formulaTip?: string
 }
 
-export type MemberProfitDialogKind = 'game' | 'total'
+/** total = 会员盈亏明细；其余为游戏大类 key */
+export type MemberProfitDialogKind = 'total' | string
 
-/** 会员盈亏 · 点击合计 / 总盈亏查看细项与公式 */
+/** 大类明细基准（对齐报表结构；会员三项口径，退水为正；无代理赚水/场馆费） */
+const MEMBER_CATEGORY_DETAIL_BASE: MemberProfitDialogDetailRow[] = [
+  { label: '下注有效金额', amountText: '10,000.00', tone: 'neutral' },
+  { label: '输赢', amountText: '+500.00', tone: 'positive' },
+  { label: '会员退水', amountText: '+100.00', tone: 'positive' },
+  { label: 'VIP退水', amountText: '+50.00', tone: 'positive' },
+  {
+    label: '游戏净输赢',
+    amountText: '+650.00',
+    tone: 'positive',
+    emphasize: true,
+    formulaTip: MEMBER_PROFIT_GAME_NET_FORMULA,
+  },
+]
+
+function getMemberCategoryDetailRows(
+  categoryKey: string,
+  currency: string,
+): MemberProfitDialogDetailRow[] {
+  const section = getMemberProfitGameSection(currency)
+  const product = section.rows.find((row) => row.key === categoryKey)
+  const targetNet = product ? parseProfitAmountText(product.value) : 650
+  const base = MEMBER_CATEGORY_DETAIL_BASE.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
+  const scaled = scaleAmountList(
+    base.map((row) => parseProfitAmountText(row.amountText)),
+    targetNet,
+  )
+  const betScale = Math.max(Math.abs(targetNet) / 650, 0.2)
+  const betValue = Number((10000 * betScale).toFixed(2))
+  return [
+    {
+      label: '下注有效金额',
+      amountText: betValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+      tone: 'neutral',
+    },
+    ...base.map((row, index) => ({
+      ...row,
+      amountText: formatProfitAmount(scaled[index] ?? 0),
+      tone: profitTone(scaled[index] ?? 0),
+    })),
+    {
+      label: '游戏净输赢',
+      amountText: formatProfitAmount(targetNet),
+      tone: profitTone(targetNet),
+      emphasize: true,
+      formulaTip: MEMBER_PROFIT_GAME_NET_FORMULA,
+    },
+  ]
+}
+
+/** 会员盈亏 · 点大类看明细；点会员盈亏看构成 */
 export function getMemberProfitDialogDetail(
   kind: MemberProfitDialogKind,
   currency: string,
 ): MemberProfitDialogDetailRow[] {
-  const game = getMemberProfitGameSection(currency)
   const cost = getMemberProfitCostSection(currency)
   const mapRow = (row: MemberProfitSectionRow): MemberProfitDialogDetailRow => ({
     label: row.label,
@@ -375,44 +413,32 @@ export function getMemberProfitDialogDetail(
     tone: row.tone,
   })
 
-  if (kind === 'game') {
-    /** 弹框展示会员公式构成项（非列表大类） */
+  if (kind === 'total') {
+    const total = getMemberTotalProfit(currency)
     const formulaRows = getMemberProfitGameFormulaRows(currency)
     return [
       ...formulaRows.map(mapRow),
+      ...cost.rows.map(mapRow),
       {
-        label: '游戏净输赢',
-        amountText: game.total.value,
-        tone: game.total.tone,
+        label: '会员盈亏',
+        amountText: total.value,
+        tone: total.tone,
         emphasize: true,
-        formulaTip: MEMBER_PROFIT_GAME_NET_FORMULA,
+        formulaTip: MEMBER_PROFIT_FORMULA,
       },
     ]
   }
 
-  /**
-   * 总盈亏明细：六项加法口径（游戏输赢 / 会员退水 / VIP退水 + 其他奖励三项）
-   */
-  const total = getMemberSectionTotalProfit(currency)
-  const formulaRows = getMemberProfitGameFormulaRows(currency)
-  return [
-    ...formulaRows.map(mapRow),
-    ...cost.rows.map(mapRow),
-    {
-      label: '总盈亏',
-      amountText: total.value,
-      tone: total.tone,
-      emphasize: true,
-      formulaTip: MEMBER_PROFIT_FORMULA,
-    },
-  ]
+  return getMemberCategoryDetailRows(kind, currency)
 }
 
-export function memberProfitDialogTitle(kind: MemberProfitDialogKind) {
-  return kind === 'game' ? '游戏净输赢明细' : '总盈亏明细'
+export function memberProfitDialogTitle(kind: MemberProfitDialogKind, currency = 'KKC') {
+  if (kind === 'total') return '会员盈亏明细'
+  const row = getMemberProfitGameSection(currency).rows.find((item) => item.key === kind)
+  return `${row?.label ?? '游戏'}明细`
 }
 
-/** 经典汇总卡 · 六项构成 */
+/** 经典汇总卡 · 构成项（退水为正） */
 export function getMemberProfitSummaryRows(currency: string): MemberProfitSummaryRow[] {
   const stats = getMemberProfitSummaryMock(currency)
   return [
@@ -450,17 +476,15 @@ export function getMemberProfitSummaryRows(currency: string): MemberProfitSummar
 }
 
 const IM_SPORTS_DETAIL: AgentProfitDetail = {
-  title: 'IM体育（实占）',
-  /** 游戏净输赢 = 输赢 − 会员退水 − VIP退水 − 代理赚水 − 场馆费 = 320 */
-  totalProfit: '+320.00',
+  title: 'IM体育',
+  /** 游戏净输赢 = 输赢 + 会员退水 + VIP退水 = 650 */
+  totalProfit: '+650.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '1000.00', tone: 'neutral' },
     { label: '输赢', value: '+500.00', tone: 'positive' },
-    { label: '会员退水', value: '-100.00', tone: 'negative' },
-    { label: 'VIP退水', value: '-50.00', tone: 'negative' },
-    { label: '代理赚水', value: '-10.00', tone: 'negative' },
-    { label: '场馆费', value: '-20.00', tone: 'negative' },
+    { label: '会员退水', value: '+100.00', tone: 'positive' },
+    { label: 'VIP退水', value: '+50.00', tone: 'positive' },
   ],
 }
 
@@ -469,22 +493,18 @@ const EMPTY_DETAIL_ROWS: AgentProfitDetailRow[] = [
   { label: '输赢', value: '0.00', tone: 'neutral' },
   { label: '会员退水', value: '0.00', tone: 'neutral' },
   { label: 'VIP退水', value: '0.00', tone: 'neutral' },
-  { label: '代理赚水', value: '0.00', tone: 'neutral' },
-  { label: '场馆费', value: '0.00', tone: 'neutral' },
 ]
 
-/** 各品类合计：游戏净输赢 = 12350 − 1280 − 150 − 860 − 80 = 9980 */
+/** 各品类合计：游戏净输赢 = 12350 + 1280 + 150 = 13780（退水为正；标题不加「实占」） */
 const OVERALL_GAME_DETAIL: AgentProfitDetail = {
-  title: '全部（实占）',
-  totalProfit: '+9,980.00',
+  title: '全部',
+  totalProfit: '+13,780.00',
   totalProfitTone: 'positive',
   rows: [
     { label: '下注有效金额', value: '86,420.00', tone: 'neutral' },
     { label: '输赢', value: '+12,350.00', tone: 'positive' },
-    { label: '会员退水', value: '-1,280.00', tone: 'negative' },
-    { label: 'VIP退水', value: '-150.00', tone: 'negative' },
-    { label: '代理赚水', value: '-860.00', tone: 'negative' },
-    { label: '场馆费', value: '-80.00', tone: 'negative' },
+    { label: '会员退水', value: '+1,280.00', tone: 'positive' },
+    { label: 'VIP退水', value: '+150.00', tone: 'positive' },
   ],
 }
 
@@ -494,24 +514,22 @@ function getMemberCategoryVendorAllDetail(category: MemberProfitCategoryKey): Ag
     AGENT_PROFIT_CATEGORY_TABS.find((item) => item.key === category)?.label ?? '明细'
 
   if (category === 'sports') {
-    /** 游戏净输赢 = 9860 − 980 − 120 − 340 − 40 = 8380 */
+    /** 游戏净输赢 = 9860 + 980 + 120 = 10960 */
     return {
-      title: `${catLabel}（实占）`,
-      totalProfit: '+8,380.00',
+      title: catLabel,
+      totalProfit: '+10,960.00',
       totalProfitTone: 'positive',
       rows: [
         { label: '下注有效金额', value: '42,800.00', tone: 'neutral' },
         { label: '输赢', value: '+9,860.00', tone: 'positive' },
-        { label: '会员退水', value: '-980.00', tone: 'negative' },
-        { label: 'VIP退水', value: '-120.00', tone: 'negative' },
-        { label: '代理赚水', value: '-340.00', tone: 'negative' },
-        { label: '场馆费', value: '-40.00', tone: 'negative' },
+        { label: '会员退水', value: '+980.00', tone: 'positive' },
+        { label: 'VIP退水', value: '+120.00', tone: 'positive' },
       ],
     }
   }
 
   return {
-    title: `${catLabel}（实占）`,
+    title: catLabel,
     totalProfit: '+0.00',
     totalProfitTone: 'positive',
     rows: EMPTY_DETAIL_ROWS,
@@ -538,7 +556,7 @@ export function getMemberProfitDetail(
     AGENT_PROFIT_VENDORS[category].find((item) => item.key === vendor)?.label ?? '明细'
 
   return {
-    title: `${vendorLabel}（实占）`,
+    title: vendorLabel,
     totalProfit: '+0.00',
     totalProfitTone: 'positive',
     rows: EMPTY_DETAIL_ROWS,

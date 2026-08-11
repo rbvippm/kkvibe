@@ -391,14 +391,82 @@ export type AgentProfitDialogDetailRow = {
   formulaTip?: string
 }
 
-export type AgentProfitDialogKind = 'game' | 'total'
+/** total = 总盈亏明细；其余为游戏大类 key（对齐「我的报表-盈亏」） */
+export type AgentProfitDialogKind = 'total' | string
 
-/** 代理盈亏 · 点击合计 / 总盈亏查看细项与公式 */
+function parseProfitAmountText(text: string) {
+  return Number(text.replace(/,/g, '').replace(/^\+/, '')) || 0
+}
+
+function scaleAmountList(values: number[], targetSum: number): number[] {
+  const sum = values.reduce((acc, n) => acc + n, 0)
+  if (!sum) return values.map(() => 0)
+  const scaled = values.map((n) => Number(((n * targetSum) / sum).toFixed(2)))
+  const drift = Number((targetSum - scaled.reduce((acc, n) => acc + n, 0)).toFixed(2))
+  scaled[scaled.length - 1] = Number((scaled[scaled.length - 1] + drift).toFixed(2))
+  return scaled
+}
+
+/** 大类明细基准（对齐「我的报表-盈亏」场馆口径） */
+const AGENT_CATEGORY_DETAIL_BASE: AgentProfitDialogDetailRow[] = [
+  { label: '下注有效金额', amountText: '10,000.00', tone: 'neutral' },
+  { label: '输赢', amountText: '+500.00', tone: 'positive' },
+  { label: '退水', amountText: '-100.00', tone: 'negative' },
+  { label: 'VIP退水', amountText: '-50.00', tone: 'negative' },
+  { label: '代理赚水', amountText: '-10.00', tone: 'negative' },
+  { label: '场馆费', amountText: '-20.00', tone: 'negative' },
+  {
+    label: '游戏净输赢',
+    amountText: '+320.00',
+    tone: 'positive',
+    emphasize: true,
+    formulaTip: AGENT_GAME_PROFIT_FORMULA,
+  },
+]
+
+function getAgentCategoryDetailRows(
+  categoryKey: string,
+  currency: string,
+): AgentProfitDialogDetailRow[] {
+  const section = getAgentProfitGameSection(currency)
+  const product = section.rows.find((row) => row.key === categoryKey)
+  const targetNet = product ? parseProfitAmountText(product.value) : 320
+  const base = AGENT_CATEGORY_DETAIL_BASE.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
+  const scaled = scaleAmountList(
+    base.map((row) => parseProfitAmountText(row.amountText)),
+    targetNet,
+  )
+  const betScale = Math.max(Math.abs(targetNet) / 320, 0.2)
+  const betValue = Number((10000 * betScale).toFixed(2))
+  return [
+    {
+      label: '下注有效金额',
+      amountText: betValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }),
+      tone: 'neutral',
+    },
+    ...base.map((row, index) => ({
+      ...row,
+      amountText: formatProfitAmount(scaled[index] ?? 0),
+      tone: profitTone(scaled[index] ?? 0),
+    })),
+    {
+      label: '游戏净输赢',
+      amountText: formatProfitAmount(targetNet),
+      tone: profitTone(targetNet),
+      emphasize: true,
+      formulaTip: AGENT_GAME_PROFIT_FORMULA,
+    },
+  ]
+}
+
+/** 代理盈亏 · 点大类看明细；点总盈亏看九项构成（合计金额不可点） */
 export function getAgentProfitDialogDetail(
   kind: AgentProfitDialogKind,
   currency: string,
 ): AgentProfitDialogDetailRow[] {
-  const game = getAgentProfitGameSection(currency)
   const cost = getAgentProfitCostSection(currency)
   const mapRow = (row: AgentProfitSectionRow): AgentProfitDialogDetailRow => ({
     label: row.label,
@@ -406,42 +474,33 @@ export function getAgentProfitDialogDetail(
     tone: row.tone,
   })
 
-  if (kind === 'game') {
-    /** 游戏净输赢明细：公式构成项（非列表大类） */
+  if (kind === 'total') {
+    /**
+     * 总盈亏明细：对齐「我的报表-盈亏」九项构成
+     * 输赢 / 退水 / VIP退水 / 代理赚水 / 场馆费 + 其他成本四项 + 总盈亏
+     */
+    const total = getAgentSectionTotalProfit(currency)
     const formulaRows = getAgentProfitGameFormulaRows(currency)
     return [
       ...formulaRows.map(mapRow),
+      ...cost.rows.map(mapRow),
       {
-        label: '游戏净输赢',
-        amountText: game.total.value,
-        tone: game.total.tone,
+        label: '总盈亏',
+        amountText: total.value,
+        tone: total.tone,
         emphasize: true,
-        formulaTip: AGENT_GAME_PROFIT_FORMULA,
+        formulaTip: AGENT_PROFIT_FORMULA,
       },
     ]
   }
 
-  /**
-   * 总盈亏明细：对齐「我的报表-盈亏」九项构成
-   * 输赢 / 退水 / VIP退水 / 代理赚水 / 场馆费 + 其他成本四项 + 总盈亏
-   */
-  const total = getAgentSectionTotalProfit(currency)
-  const formulaRows = getAgentProfitGameFormulaRows(currency)
-  return [
-    ...formulaRows.map(mapRow),
-    ...cost.rows.map(mapRow),
-    {
-      label: '总盈亏',
-      amountText: total.value,
-      tone: total.tone,
-      emphasize: true,
-      formulaTip: AGENT_PROFIT_FORMULA,
-    },
-  ]
+  return getAgentCategoryDetailRows(kind, currency)
 }
 
-export function agentProfitDialogTitle(kind: AgentProfitDialogKind) {
-  return kind === 'game' ? '游戏净输赢明细' : '总盈亏明细'
+export function agentProfitDialogTitle(kind: AgentProfitDialogKind, currency = 'KKC') {
+  if (kind === 'total') return '总盈亏明细'
+  const row = getAgentProfitGameSection(currency).rows.find((item) => item.key === kind)
+  return `${row?.label ?? '游戏'}明细`
 }
 
 /**

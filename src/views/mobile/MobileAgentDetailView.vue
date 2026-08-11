@@ -141,7 +141,9 @@ const profitGameSection = computed(() => getAgentProfitGameSection(currency.valu
 const profitCostSection = computed(() => getAgentProfitCostSection(currency.value))
 const profitFormula = computed(() => getAgentProfitFormula(currency.value))
 const profitDialogTitle = computed(() =>
-  profitDialogKind.value ? agentProfitDialogTitle(profitDialogKind.value) : '',
+  profitDialogKind.value
+    ? agentProfitDialogTitle(profitDialogKind.value, currency.value)
+    : '',
 )
 const profitDialogRows = computed(() =>
   profitDialogKind.value
@@ -552,15 +554,12 @@ function closeProfitFormulaTips() {
                   ▾
                 </span>
               </button>
-              <button
-                type="button"
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
                 :class="agentMyProfitToneClass(profitGameSection.total.tone)"
-                aria-label="查看游戏净输赢明细"
-                @click="openProfitDialog('game')"
               >
                 {{ profitGameSection.total.value }}
-              </button>
+              </span>
             </div>
             <Transition name="mh5-agent-my-profit-expand">
               <div v-if="profitGameDetailsExpanded" class="mh5-agent-my-profit-table__details">
@@ -570,7 +569,7 @@ function closeProfitFormulaTips() {
                   type="button"
                   class="mh5-agent-my-profit-table__row"
                   :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
-                  @click="openProfitDialog('game')"
+                  @click="openProfitDialog(row.key)"
                 >
                   <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
                     {{ row.label }}

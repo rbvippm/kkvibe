@@ -108,7 +108,9 @@ const profitGameSection = computed(() => getMemberProfitGameSection(currency.val
 const profitCostSection = computed(() => getMemberProfitCostSection(currency.value))
 const profitFormula = computed(() => getMemberProfitFormula(currency.value))
 const profitDialogTitle = computed(() =>
-  profitDialogKind.value ? memberProfitDialogTitle(profitDialogKind.value) : '',
+  profitDialogKind.value
+    ? memberProfitDialogTitle(profitDialogKind.value, currency.value)
+    : '',
 )
 const profitDialogRows = computed(() =>
   profitDialogKind.value
@@ -550,15 +552,12 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                   ▾
                 </span>
               </button>
-              <button
-                type="button"
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
                 :class="agentMyProfitToneClass(profitGameSection.total.tone)"
-                aria-label="查看游戏净输赢明细"
-                @click="openProfitDialog('game')"
               >
                 {{ profitGameSection.total.value }}
-              </button>
+              </span>
             </div>
             <Transition name="mh5-agent-my-profit-expand">
               <div v-if="profitGameDetailsExpanded" class="mh5-agent-my-profit-table__details">
@@ -568,7 +567,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                   type="button"
                   class="mh5-agent-my-profit-table__row"
                   :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
-                  @click="openProfitDialog('game')"
+                  @click="openProfitDialog(row.key)"
                 >
                   <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
                     {{ row.label }}
@@ -646,7 +645,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 
           <section
             class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-            aria-label="游戏净输赢加其他奖励等于总盈亏"
+            aria-label="游戏净输赢加其他奖励等于会员盈亏"
           >
             <div
               class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
@@ -674,10 +673,10 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               <button
                 type="button"
                 class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-                aria-label="查看总盈亏明细"
+                aria-label="查看会员盈亏明细"
                 @click="openProfitDialog('total')"
               >
-                <p class="mh5-agent-commission-cell__label">总盈亏</p>
+                <p class="mh5-agent-commission-cell__label">{{ profitFormula.totalLabel }}</p>
                 <p
                   class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
                   :class="agentMyProfitToneClass(profitFormula.totalTone)"
