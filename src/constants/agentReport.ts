@@ -218,19 +218,41 @@ export function getRebateReportDetail(
 }
 
 /**
- * 会员详情 · 游戏统计（返佣）
- * - 始终无「退水/会员退水」
- * - 无代理赚水；含场馆费
+ * 会员详情 · 游戏统计（返佣 · 会员视角）
+ * - 无会员退水 / 代理赚水 / 场馆费
+ * - VIP 退水对会员为正：游戏净输赢 = 游戏输赢 + VIP退水
  */
 const MEMBER_DETAIL_NUMS = {
-  overall: { validBet: '68,240.00', win: 9860, vip: 120, venueFee: 90 },
-  sports: { validBet: '32,100.00', win: 5680, vip: 72, venueFee: 45 },
-  chess: { validBet: '14,860.00', win: 2140, vip: 32, venueFee: 22 },
-  esports: { validBet: '8,120.00', win: 1120, vip: 18, venueFee: 14 },
-  fishing: { validBet: '4,580.00', win: -380, vip: 12, venueFee: 9 },
-  slots: { validBet: '9,580.00', win: 1680, vip: 28, venueFee: 16 },
-  vendor: { validBet: '820.00', win: 260, vip: 14, venueFee: 7 },
+  overall: { validBet: '68,240.00', win: 9860, vip: 120 },
+  sports: { validBet: '32,100.00', win: 5680, vip: 72 },
+  chess: { validBet: '14,860.00', win: 2140, vip: 32 },
+  esports: { validBet: '8,120.00', win: 1120, vip: 18 },
+  fishing: { validBet: '4,580.00', win: -380, vip: 12 },
+  slots: { validBet: '9,580.00', win: 1680, vip: 28 },
+  vendor: { validBet: '820.00', win: 260, vip: 14 },
 } as const
+
+function buildMemberRebateGameDetail(
+  validBet: string,
+  win: number,
+  vipRebate: number,
+): ReportDetail {
+  const net = win + vipRebate
+  return {
+    netProfit: formatReportValue(net),
+    netProfitTone: reportValueTone(net),
+    rows: [
+      { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
+      { key: 'winLose', label: '输赢', value: formatReportValue(win), tone: reportValueTone(win) },
+      {
+        key: 'vipRebate',
+        label: 'VIP退水',
+        value: formatReportValue(vipRebate),
+        tone: reportValueTone(vipRebate),
+      },
+    ],
+  }
+}
 
 export function getMemberDetailReportDetail(
   category: ReportCategoryKey,
@@ -242,7 +264,7 @@ export function getMemberDetailReportDetail(
       : vendor === 'all'
         ? MEMBER_DETAIL_NUMS[category]
         : MEMBER_DETAIL_NUMS.vendor
-  return buildDetail(nums.validBet, nums.win, 0, nums.vip, 0, nums.venueFee)
+  return buildMemberRebateGameDetail(nums.validBet, nums.win, nums.vip)
 }
 
 export function reportDetailValueClass(tone: ReportValueTone) {

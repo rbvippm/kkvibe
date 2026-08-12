@@ -46,9 +46,9 @@ export const MEMBER_PROFIT_GAME_NET_FORMULA =
 /** 场馆明细标题与公式左侧统一为「游戏净输赢」（与上式一致） */
 export const MEMBER_GAME_PROFIT_FORMULA = MEMBER_PROFIT_GAME_NET_FORMULA
 
-/** 返佣查看会员游戏统计：无会员退水（返佣不给会员设退水） */
+/** 返佣查看会员游戏统计：无会员退水；VIP 退水对会员为正；不含场馆费 */
 export const MEMBER_REBATE_GAME_NET_PROFIT_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【-VIP退水】 + 【-场馆费】'
+  '游戏净输赢 = 【游戏输赢】 + 【VIP退水】'
 
 export function memberRebateGameNetProfitFormula() {
   return MEMBER_REBATE_GAME_NET_PROFIT_FORMULA
