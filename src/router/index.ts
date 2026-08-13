@@ -343,6 +343,18 @@ export const router = createRouter({
           meta: { title: '资产明细', hideTabBar: true },
         },
         {
+          path: 'mine/wallet-transfer',
+          name: 'mobile-wallet-transfer',
+          component: () => import('../views/mobile/MobileWalletTransferView.vue'),
+          meta: { title: '充值', hideTabBar: true },
+        },
+        {
+          path: 'mine/payout-methods',
+          name: 'mobile-payout-methods',
+          component: () => import('../views/mobile/MobilePayoutMethodsView.vue'),
+          meta: { title: '收款方式', hideTabBar: true },
+        },
+        {
           path: 'mine/billing/search',
           name: 'mobile-billing-search',
           component: () => import('../views/mobile/MobileBillingSearchView.vue'),

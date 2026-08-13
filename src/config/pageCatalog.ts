@@ -28,6 +28,8 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-billing-list', platform: 'mobile', routeName: 'mobile-billing-list', path: '/mobile/mine/billing', title: '银行账单', group: '我的', pagePath: ['移动端', '我的', '银行账单'] },
   { id: 'mobile-billing-stats', platform: 'mobile', routeName: 'mobile-billing-stats', path: '/mobile/mine/billing/stats', title: '账单统计', group: '我的', pagePath: ['移动端', '我的', '账单', '账单统计'] },
   { id: 'mobile-asset-detail', platform: 'mobile', routeName: 'mobile-asset-detail', path: '/mobile/mine/assets', title: '资产明细', group: '我的', pagePath: ['移动端', '我的', '资产明细'] },
+  { id: 'mobile-wallet-transfer', platform: 'mobile', routeName: 'mobile-wallet-transfer', path: '/mobile/mine/wallet-transfer', title: '充值/提现/兑换', group: '我的', pagePath: ['移动端', '我的', '充值提现兑换'] },
+  { id: 'mobile-payout-methods', platform: 'mobile', routeName: 'mobile-payout-methods', path: '/mobile/mine/payout-methods', title: '收款方式', group: '我的', pagePath: ['移动端', '我的', '收款方式'] },
   { id: 'mobile-billing-search', platform: 'mobile', routeName: 'mobile-billing-search', path: '/mobile/mine/billing/search', title: '搜索账单', group: '我的', pagePath: ['移动端', '我的', '账单', '搜索账单'] },
   { id: 'mobile-billing-detail', platform: 'mobile', routeName: 'mobile-billing-detail', path: '/mobile/mine/billing/demo', title: '账单详情', group: '我的', pagePath: ['移动端', '我的', '账单', '账单详情'] },
   { id: 'mobile-vip', platform: 'mobile', routeName: 'mobile-vip', path: '/mobile/vip', title: 'VIP', group: '用户', pagePath: ['移动端', '用户', 'VIP'] },

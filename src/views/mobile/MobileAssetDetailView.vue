@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import {
   ASSET_DETAIL_FIAT_OPTIONS,
@@ -15,6 +16,7 @@ import {
   type AssetDetailKindFilter,
   type AssetDetailMainTab,
 } from '../../constants/assetDetail'
+import { walletTransferRoute } from '../../constants/walletTransfer'
 import '../../styles/mobile-app-shell.css'
 
 const mainTab = ref<AssetDetailMainTab>('overview')
@@ -23,6 +25,7 @@ const kindFilter = ref<AssetDetailKindFilter>('all')
 const balanceHidden = ref(false)
 const fiatPickerOpen = ref(false)
 const preferredFiatId = ref<AssetDetailFiatId>('cny')
+const router = useRouter()
 
 const preferredFiat = computed(
   () => ASSET_DETAIL_FIAT_OPTIONS.find((item) => item.id === preferredFiatId.value) ?? ASSET_DETAIL_FIAT_OPTIONS[0],
@@ -44,6 +47,10 @@ function pickFiat(id: AssetDetailFiatId) {
 
 function rowTotal(item: (typeof ASSET_DETAIL_ITEMS)[number]) {
   return item.available + item.frozen
+}
+
+function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
+  router.push(walletTransferRoute(tab))
 }
 </script>
 
@@ -111,7 +118,7 @@ function rowTotal(item: (typeof ASSET_DETAIL_ITEMS)[number]) {
         </div>
 
         <div class="mh5-asset-detail-actions">
-          <button type="button" class="mh5-asset-detail-action mh5-asset-detail-action--primary">
+          <button type="button" class="mh5-asset-detail-action mh5-asset-detail-action--primary" @click="goWalletTransfer('exchange')">
             <span class="mh5-asset-detail-action__icon" aria-hidden="true">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <path
@@ -125,7 +132,7 @@ function rowTotal(item: (typeof ASSET_DETAIL_ITEMS)[number]) {
             </span>
             <span>兑换</span>
           </button>
-          <button type="button" class="mh5-asset-detail-action">
+          <button type="button" class="mh5-asset-detail-action" @click="goWalletTransfer('deposit')">
             <span class="mh5-asset-detail-action__icon" aria-hidden="true">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <path
@@ -137,9 +144,9 @@ function rowTotal(item: (typeof ASSET_DETAIL_ITEMS)[number]) {
                 />
               </svg>
             </span>
-            <span>充币</span>
+            <span>充值</span>
           </button>
-          <button type="button" class="mh5-asset-detail-action">
+          <button type="button" class="mh5-asset-detail-action" @click="goWalletTransfer('withdraw')">
             <span class="mh5-asset-detail-action__icon" aria-hidden="true">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
                 <path
@@ -151,7 +158,7 @@ function rowTotal(item: (typeof ASSET_DETAIL_ITEMS)[number]) {
                 />
               </svg>
             </span>
-            <span>提币</span>
+            <span>提现</span>
           </button>
         </div>
       </section>

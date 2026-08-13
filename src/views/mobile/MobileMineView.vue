@@ -1,23 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
+import { WALLET_CATALOG, sumWalletsCny } from '../../constants/walletCatalog'
+import { walletTransferRoute } from '../../constants/walletTransfer'
 import '../../styles/mobile-app-shell.css'
-
-type WalletFilter = 'all' | 'fiat' | 'crypto' | 'credit'
-type WalletKind = 'fiat' | 'crypto' | 'credit'
-
-interface SimpleWalletItem {
-  id: string
-  name: string
-  color: string
-  symbol: string
-  kind: WalletKind
-  balance: number
-  /** Mock：折合人民币汇率，用于总资产汇总 */
-  cnyRate: number
-}
 
 interface PreferredFiatOption {
   id: string
@@ -33,35 +22,7 @@ const refreshing = ref(false)
 const walletSheetOpen = ref(false)
 const fiatPreferenceOpen = ref(false)
 const preferredFiatId = ref('cny')
-const walletFilter = ref<WalletFilter>('all')
 const router = useRouter()
-
-const walletFilterTabs = [
-  { key: 'all' as const, label: '全部' },
-  { key: 'fiat' as const, label: '法币' },
-  { key: 'crypto' as const, label: '虚拟币' },
-  { key: 'credit' as const, label: '信用额度' },
-]
-
-/** 钱包内法币：KKC / KKV */
-const fiatWallets: SimpleWalletItem[] = [
-  { id: 'kkc', name: 'KKC', color: '#ff8c00', symbol: 'K', kind: 'fiat', balance: 236188.66, cnyRate: 1 },
-  { id: 'kkv', name: 'KKV', color: '#ec4899', symbol: 'V', kind: 'fiat', balance: 12880.5, cnyRate: 0.5 },
-]
-
-const cryptoWallets: SimpleWalletItem[] = [
-  { id: 'usdt', name: 'USDT', color: '#26a17b', symbol: '₮', kind: 'crypto', balance: 9857.35, cnyRate: 7.2 },
-  { id: 'eth', name: 'ETH', color: '#627eea', symbol: 'Ξ', kind: 'crypto', balance: 1.256789, cnyRate: 25000 },
-  { id: 'btc', name: 'BTC', color: '#f7931a', symbol: '₿', kind: 'crypto', balance: 0.08543218, cnyRate: 650000 },
-  { id: 'trx', name: 'TRX', color: '#ef0027', symbol: 'T', kind: 'crypto', balance: 12580.45, cnyRate: 1.2 },
-  { id: 'sol', name: 'SOL', color: '#111827', symbol: 'S', kind: 'crypto', balance: 128.45012, cnyRate: 1200 },
-  { id: 'bnb', name: 'BNB', color: '#f3ba2f', symbol: 'B', kind: 'crypto', balance: 12.345678, cnyRate: 4500 },
-]
-
-const creditWallets: SimpleWalletItem[] = [
-  { id: 'credit-cny', name: 'CNY', color: '#ff8c00', symbol: '¥', kind: 'credit', balance: 50000, cnyRate: 1 },
-  { id: 'credit-usd', name: 'USD', color: '#3b82f6', symbol: '$', kind: 'credit', balance: 1280.5, cnyRate: 7.2 },
-]
 
 /** 总资产计价法币：按实时汇率汇总展示 */
 const preferredFiatOptions: PreferredFiatOption[] = [
@@ -69,37 +30,6 @@ const preferredFiatOptions: PreferredFiatOption[] = [
   { id: 'vnd', name: 'VND', symbol: '₫', color: '#ef4444', fromCny: 3500 },
   { id: 'usd', name: 'USD', symbol: '$', color: '#26a17b', fromCny: 1 / 7.2 },
 ]
-
-const walletListItems = computed(() => {
-  if (walletFilter.value === 'fiat') return fiatWallets
-  if (walletFilter.value === 'crypto') return cryptoWallets
-  if (walletFilter.value === 'credit') return creditWallets
-  return [...fiatWallets, ...cryptoWallets, ...creditWallets]
-})
-
-/** 法币 / 信用额度固定 2 位；虚拟币按币种精度，均带千分位 */
-function formatWalletBalance(item: SimpleWalletItem) {
-  if (item.kind === 'fiat' || item.kind === 'credit') {
-    return item.balance.toLocaleString('zh-CN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-  }
-
-  const maxDigits =
-    item.id === 'btc'
-      ? 8
-      : item.id === 'eth' || item.id === 'sol' || item.id === 'bnb'
-        ? 6
-        : item.id.startsWith('usdt') || item.id === 'trx'
-          ? 4
-          : 2
-
-  return item.balance.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: maxDigits,
-  })
-}
 
 function formatPreferredAmount(amount: number) {
   return amount.toLocaleString('zh-CN', {
@@ -113,19 +43,31 @@ const preferredFiat = computed(
 )
 
 /** 全部钱包按 Mock 汇率折合 CNY，再换算为所选计价法币 */
-const totalAssetsInPreferredFiat = computed(() => {
-  const totalCny = [...fiatWallets, ...cryptoWallets, ...creditWallets].reduce(
-    (sum, item) => sum + item.balance * item.cnyRate,
-    0,
-  )
-  return totalCny * preferredFiat.value.fromCny
-})
+const totalAssetsInPreferredFiat = computed(
+  () => sumWalletsCny(WALLET_CATALOG) * preferredFiat.value.fromCny,
+)
 
 const preferredFiatAmountText = computed(() => {
   const amount = formatPreferredAmount(totalAssetsInPreferredFiat.value)
-  if (balanceHidden.value) return `${preferredFiat.value.symbol} ${mask(amount)}`
-  return `${preferredFiat.value.symbol} ${amount}`
+  const value = balanceHidden.value ? mask(amount) : amount
+  return `${preferredFiat.value.symbol}\u00A0${value}`
 })
+
+const amountRef = ref<HTMLElement | null>(null)
+const AMOUNT_MAX_PX = 28
+const AMOUNT_MIN_PX = 15
+let amountResizeObs: ResizeObserver | null = null
+
+function fitAmountText() {
+  const el = amountRef.value
+  if (!el) return
+  el.style.fontSize = `${AMOUNT_MAX_PX}px`
+  let size = AMOUNT_MAX_PX
+  while (size > AMOUNT_MIN_PX && el.scrollWidth > el.clientWidth + 0.5) {
+    size -= 0.5
+    el.style.fontSize = `${size}px`
+  }
+}
 const user = {
   name: 'EZ',
   id: 'EZ888888',
@@ -156,7 +98,7 @@ const walletShortcuts: MineShortcutItem[] = [
   { key: 'assets', label: '资产明细', route: 'mobile-asset-detail' },
   { key: 'bill', label: '账单', route: 'mobile-billing-list' },
   { key: 'bank', label: '银行' },
-  { key: 'payment', label: '收款方式' },
+  { key: 'payment', label: '收款方式', route: 'mobile-payout-methods' },
 ]
 
 const pendingInviteCount = computed(
@@ -228,16 +170,16 @@ function pickPreferredFiat(id: string) {
   fiatPreferenceOpen.value = false
 }
 
-function switchWalletFilter(key: WalletFilter) {
-  walletFilter.value = key
-}
-
 function handleRefresh() {
   if (refreshing.value) return
   refreshing.value = true
   window.setTimeout(() => {
     refreshing.value = false
   }, 800)
+}
+
+function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
+  router.push(walletTransferRoute(tab))
 }
 
 function goRoute(routeName?: string) {
@@ -251,6 +193,23 @@ function goMenuItem(item: MineMenuItem) {
   }
   goRoute(item.route)
 }
+
+onMounted(() => {
+  void nextTick(fitAmountText)
+  const parent = amountRef.value?.parentElement
+  if (!parent || typeof ResizeObserver === 'undefined') return
+  amountResizeObs = new ResizeObserver(() => fitAmountText())
+  amountResizeObs.observe(parent)
+})
+
+onBeforeUnmount(() => {
+  amountResizeObs?.disconnect()
+  amountResizeObs = null
+})
+
+watch(preferredFiatAmountText, () => {
+  void nextTick(fitAmountText)
+})
 </script>
 
 <template>
@@ -305,31 +264,10 @@ function goMenuItem(item: MineMenuItem) {
       </div>
     </section>
 
-    <div class="mh5-mine-actions">
-      <button type="button" class="mh5-mine-action">
-        <span class="mh5-mine-action__icon" aria-hidden="true">
-          <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
-        </span>
-        充值
-      </button>
-      <button type="button" class="mh5-mine-action">
-        <span class="mh5-mine-action__icon" aria-hidden="true">
-          <img src="/images/mine/icon-withdraw.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
-        </span>
-        提现
-      </button>
-      <button type="button" class="mh5-mine-action">
-        <span class="mh5-mine-action__icon" aria-hidden="true">
-          <img src="/images/mine/icon-convert.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
-        </span>
-        交易
-      </button>
-    </div>
-
-    <section class="mh5-mine-wallet">
+    <div class="mh5-mine-wallet-overview">
       <div class="mh5-mine-wallet__head">
         <div class="mh5-mine-wallet__label">
-          总资产
+          <span class="mh5-mine-wallet__title">总资产</span>
           <button
             type="button"
             class="mh5-mine-wallet__currency"
@@ -366,10 +304,12 @@ function goMenuItem(item: MineMenuItem) {
           <img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
         </button>
       </div>
+    </div>
 
+    <section class="mh5-mine-wallet">
       <div class="mh5-mine-wallet__balance-row">
         <div class="mh5-mine-wallet__balance">
-          <span class="mh5-mine-wallet__amount">{{ preferredFiatAmountText }}</span>
+          <span ref="amountRef" class="mh5-mine-wallet__amount">{{ preferredFiatAmountText }}</span>
           <button
             type="button"
             class="mh5-mine-wallet__icon-btn"
@@ -380,6 +320,27 @@ function goMenuItem(item: MineMenuItem) {
             <img src="/images/mine/icon-refresh.svg" alt="" class="mh5-mine-icon mh5-mine-icon--20" />
           </button>
         </div>
+      </div>
+
+      <div class="mh5-mine-actions">
+        <button type="button" class="mh5-mine-action mh5-mine-action--deposit" @click="goWalletTransfer('deposit')">
+          <span class="mh5-mine-action__icon" aria-hidden="true">
+            <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
+          </span>
+          充值
+        </button>
+        <button type="button" class="mh5-mine-action" @click="goWalletTransfer('withdraw')">
+          <span class="mh5-mine-action__icon" aria-hidden="true">
+            <img src="/images/mine/icon-withdraw.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
+          </span>
+          提现
+        </button>
+        <button type="button" class="mh5-mine-action" @click="goWalletTransfer('exchange')">
+          <span class="mh5-mine-action__icon" aria-hidden="true">
+            <img src="/images/mine/icon-convert.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
+          </span>
+          交易
+        </button>
       </div>
 
       <div class="mh5-mine-wallet__shortcuts">
@@ -480,58 +441,7 @@ function goMenuItem(item: MineMenuItem) {
     </section>
     </div>
 
-    <Transition name="mh5-wallet-sheet">
-      <div
-        v-if="walletSheetOpen"
-        class="mh5-wallet-sheet-mask"
-        @click.self="closeWalletSheet"
-      >
-        <div class="mh5-wallet-sheet" role="dialog" aria-modal="true" aria-labelledby="wallet-sheet-title">
-          <div class="mh5-wallet-sheet__head">
-            <h2 id="wallet-sheet-title" class="mh5-wallet-sheet__title">全部钱包</h2>
-            <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="closeWalletSheet">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M6 6l12 12M18 6L6 18"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div class="mh5-wallet-sheet__filters" role="tablist" aria-label="钱包分类">
-            <button
-              v-for="tab in walletFilterTabs"
-              :key="tab.key"
-              type="button"
-              class="mh5-wallet-sheet__filter"
-              :class="{ 'mh5-wallet-sheet__filter--active': walletFilter === tab.key }"
-              role="tab"
-              :aria-selected="walletFilter === tab.key"
-              @click="switchWalletFilter(tab.key)"
-            >
-              {{ tab.label }}
-            </button>
-          </div>
-
-          <div class="mh5-wallet-sheet__list">
-            <div
-              v-for="item in walletListItems"
-              :key="item.id"
-              class="mh5-wallet-sheet__item"
-            >
-              <span class="mh5-wallet-sheet__icon" :style="{ background: item.color }">
-                {{ item.symbol }}
-              </span>
-              <span class="mh5-wallet-sheet__name">{{ item.name }}</span>
-              <span class="mh5-wallet-sheet__balance">{{ formatWalletBalance(item) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Transition>
+    <Mh5WalletSheet :open="walletSheetOpen" show-credit @close="closeWalletSheet" />
 
     <Transition name="mh5-wallet-sheet">
       <div

@@ -15,6 +15,7 @@ import {
   type LobbyMode,
 } from '../../constants/mobileLobby'
 import { LOBBY_ASSETS } from '../../constants/mobileLobbyAssets'
+import { walletTransferRoute } from '../../constants/walletTransfer'
 
 const router = useRouter()
 const activeMode = ref<LobbyMode>('social')
@@ -45,6 +46,10 @@ function goBilling() {
   router.push({ name: 'mobile-billing-list' })
 }
 
+function goDeposit() {
+  router.push(walletTransferRoute('deposit'))
+}
+
 function pickCurrency(id: LobbyCurrencyId) {
   selectedCurrencyId.value = id
   currencyPickerOpen.value = false
@@ -57,7 +62,7 @@ function pickCurrency(id: LobbyCurrencyId) {
       <img class="mh5-lobby-header__logo" :src="LOBBY_ASSETS.logo" alt="金刚 KING KONG" width="148" height="36" />
 
       <div class="mh5-lobby-wallet">
-        <button type="button" class="mh5-lobby-wallet__add" aria-label="充值">
+        <button type="button" class="mh5-lobby-wallet__add" aria-label="充值" @click="goDeposit">
           <img :src="LOBBY_ASSETS.walletAdd" alt="" width="18" height="18" />
         </button>
         <button

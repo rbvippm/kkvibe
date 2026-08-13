@@ -353,6 +353,33 @@
   color: var(--mh5-app-text, #1a1a1a);
 }
 
+.mh5-sub-header__center {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mh5-sub-header--center {
+  position: relative;
+}
+
+.mh5-sub-header--center .mh5-sub-header__back,
+.mh5-sub-header--center .mh5-sub-header__right {
+  position: relative;
+  z-index: 1;
+}
+
+.mh5-sub-header--center .mh5-sub-header__center {
+  position: absolute;
+  left: 50%;
+  z-index: 0;
+  flex: none;
+  max-width: calc(100% - 120px);
+  transform: translateX(-50%);
+}
+
 .mh5-sub-header__right {
   flex-shrink: 0;
   min-width: 44px;
@@ -1106,36 +1133,56 @@
 
 .mh5-mine-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 11px;
-  margin: 12px 0 0;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .mh5-mine-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 50px;
-  padding: 12px 8px;
-  border-radius: var(--mh5-mine-radius, 12px);
-  background: var(--mh5-mine-card, #fff);
+  gap: 6px;
+  min-height: 48px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  background: #f3f4f6;
   border: none;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--mh5-mine-text, #4f4f4f);
   cursor: pointer;
+}
+
+.mh5-mine-action--deposit {
+  background: linear-gradient(135deg, #ffc14d 0%, #ff8c00 46%, #ff6a1a 100%);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 6px 14px rgb(255 122 43 / 0.32);
 }
 
 .mh5-mine-action__icon {
   display: grid;
   place-items: center;
+  flex-shrink: 0;
   color: var(--mh5-mine-primary, #ff8c00);
 }
 
-.mh5-mine-wallet {
+.mh5-mine-action--deposit .mh5-mine-action__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.mh5-mine-wallet-overview {
   margin: 12px 0 0;
-  padding: 16px;
+  padding: 0 16px;
+}
+
+.mh5-mine-wallet {
+  margin: 8px 0 0;
+  padding: 14px 16px 12px;
   border-radius: var(--mh5-mine-radius, 12px);
   background: var(--mh5-mine-card, #fff);
 }
@@ -1151,8 +1198,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 16px;
+  min-width: 0;
+}
+
+.mh5-mine-wallet__title {
+  flex-shrink: 0;
+  font-size: 14px;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--mh5-mine-text, #4f4f4f);
 }
 
@@ -1165,14 +1218,15 @@
 .mh5-mine-wallet__currency {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px 4px 10px;
+  gap: 4px;
+  padding: 3px 8px 3px 8px;
   border: 1px solid var(--mh5-mine-stroke, #e7e7e7);
   border-radius: 20px;
-  background: transparent;
-  font-size: 14px;
+  background: #fff;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--mh5-mine-text, #4f4f4f);
+  line-height: 1.2;
+  color: var(--mh5-mine-text-secondary, #888);
   cursor: pointer;
 }
 
@@ -1207,16 +1261,21 @@
 }
 
 .mh5-mine-wallet__amount {
+  flex: 1;
+  min-width: 0;
   font-size: 28px;
   font-weight: 800;
-  letter-spacing: 0;
+  letter-spacing: -0.02em;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
   color: var(--mh5-mine-text-body, #2f2f2f);
 }
 
 .mh5-mine-wallet__icon-btn {
   display: grid;
   place-items: center;
+  flex-shrink: 0;
   width: 28px;
   height: 28px;
   padding: 0;
@@ -1291,21 +1350,23 @@
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  padding: 0;
+  padding: 5px 10px;
   border: none;
-  background: transparent;
-  color: var(--mh5-mine-text-secondary, #888);
+  border-radius: 16px;
+  background: rgba(255, 140, 0, 0.1);
+  color: var(--mh5-mine-primary, #ff8c00);
   font-size: 13px;
-  line-height: 1;
+  font-weight: 600;
+  line-height: 1.2;
   cursor: pointer;
 }
 
 .mh5-mine-wallet__shortcuts {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 16px;
-  padding-top: 14px;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--mh5-mine-divider, #f6f6f6);
 }
 
@@ -1313,7 +1374,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  min-height: 64px;
   padding: 4px 0;
   border: none;
   background: transparent;
@@ -1328,15 +1391,15 @@
 .mh5-mine-wallet__shortcut-icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border-radius: 12px;
-  background: var(--mh5-mine-divider, #f6f6f6);
-  color: var(--mh5-mine-primary, #ff8c00);
+  background: #f6f6f6;
 }
 
 .mh5-mine-wallet__shortcut-label {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--mh5-mine-text, #4f4f4f);
 }
 
@@ -1661,6 +1724,7 @@
 .mh5-wallet-sheet {
   display: flex;
   flex-direction: column;
+  height: 72%;
   max-height: 72%;
   min-height: 0;
   overflow: hidden;
@@ -1705,6 +1769,7 @@
 
 .mh5-wallet-sheet__filters {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-shrink: 0;
   margin-bottom: 12px;
@@ -1718,32 +1783,30 @@
 }
 
 .mh5-wallet-sheet__filter {
+  box-sizing: border-box;
   flex-shrink: 0;
+  height: 34px;
   min-width: 64px;
-  min-height: 34px;
   padding: 0 12px;
   border: 1px solid var(--mh5-app-border);
   border-radius: 999px;
   background: var(--mh5-app-card);
   color: var(--mh5-app-text-secondary);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 32px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
-}
-
-.mh5-wallet-sheet__filter:active {
-  transform: scale(0.98);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .mh5-wallet-sheet__filter--active {
   border-color: var(--mh5-app-orange);
   background: var(--mh5-app-orange);
   color: #fff;
-  font-weight: 600;
 }
 
 .mh5-wallet-sheet__list {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -1752,6 +1815,16 @@
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+
+.mh5-wallet-sheet__list--anchors {
+  padding-bottom: 0;
+}
+
+.mh5-wallet-sheet__anchor-spacer {
+  flex-shrink: 0;
+  width: 100%;
+  pointer-events: none;
 }
 
 .mh5-wallet-sheet__list::-webkit-scrollbar {
@@ -1768,7 +1841,32 @@
   border: 1px solid var(--mh5-app-border);
   border-radius: 14px;
   background: var(--mh5-app-card);
+  font-family: inherit;
   text-align: left;
+}
+
+.mh5-wallet-sheet__item--selectable {
+  cursor: pointer;
+}
+
+.mh5-wallet-sheet__group {
+  margin: 8px 0 0;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  scroll-margin-top: 4px;
+}
+
+.mh5-wallet-sheet__group:first-child {
+  margin-top: 0;
+}
+
+.mh5-wallet-sheet__empty {
+  margin: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
 }
 
 .mh5-wallet-sheet__item--credit {
@@ -19028,4 +19126,1361 @@ div.agent-home__profit-tab--ratio {
   margin: 12px 0 0;
   font-size: 14px;
   color: #9ca3af;
+}
+
+/* ---------- 充值 / 提现 / 兑换 ---------- */
+.mh5-wallet-transfer-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--mh5-app-bg);
+}
+
+.mh5-wallet-transfer-page .mh5-sub-header .mh5-wallet-transfer-tabs {
+  width: auto;
+  margin: 0;
+}
+
+.mh5-wallet-transfer-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: #e8eaef;
+}
+
+.mh5-wallet-transfer-tabs__item {
+  min-width: 0;
+  min-height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #8b8f97;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 30px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mh5-wallet-transfer-tabs__item--active {
+  background: #fff;
+  color: var(--mh5-app-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+
+.mh5-wallet-transfer-main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 12px 24px;
+}
+
+.mh5-wallet-transfer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--mh5-app-card);
+}
+
+.mh5-wallet-transfer-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mh5-wallet-transfer-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-wallet-transfer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-chip--active {
+  border-color: var(--mh5-app-orange);
+  background: var(--mh5-app-orange-light);
+}
+
+.mh5-wallet-transfer-chip--more {
+  gap: 4px;
+  padding: 0 8px 0 6px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-chip__stack {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.mh5-wallet-transfer-chip__stack span {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.mh5-wallet-transfer-chip__stack span:first-child {
+  margin-left: 0;
+}
+
+.mh5-wallet-transfer-chip__stack span:nth-child(1) {
+  z-index: 1;
+}
+
+.mh5-wallet-transfer-chip__stack span:nth-child(2) {
+  z-index: 2;
+}
+
+.mh5-wallet-transfer-chip__stack span:nth-child(3) {
+  z-index: 3;
+}
+
+.mh5-wallet-transfer-chip__chevron {
+  margin-left: 2px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.mh5-wallet-transfer-empty {
+  margin: 24px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.mh5-wallet-transfer-group {
+  margin: 8px 0 0;
+  padding: 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.mh5-wallet-transfer-group:first-child {
+  margin-top: 0;
+}
+
+.mh5-wallet-transfer-page button.mh5-wallet-sheet__item {
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-chip__icon,
+.mh5-wallet-transfer-dot {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mh5-wallet-transfer-select,
+.mh5-wallet-transfer-address {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-select__label {
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-select__label--warn {
+  color: #ef4444;
+}
+
+.mh5-wallet-transfer-select__value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #f5f6f8;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-select__chevron {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.mh5-wallet-transfer-select__balance {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mh5-app-text);
+  letter-spacing: -0.02em;
+}
+
+.mh5-wallet-transfer-select__balance + .mh5-wallet-transfer-select__chevron {
+  margin-left: 4px;
+}
+
+.mh5-wallet-transfer-qr {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 4px auto 0;
+  width: 196px;
+  height: 196px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #f5f6f8;
+}
+
+.mh5-wallet-transfer-qr__grid {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  width: 148px;
+  height: 148px;
+  gap: 1px;
+}
+
+.mh5-wallet-transfer-qr__cell {
+  background: transparent;
+}
+
+.mh5-wallet-transfer-qr__cell--on {
+  background: #111;
+}
+
+.mh5-wallet-transfer-qr__logo {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  border: 3px solid #fff;
+}
+
+.mh5-wallet-transfer-address__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-address__text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f5f6f8;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  line-height: 1.45;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-address__mark {
+  color: #12b76a;
+}
+
+.mh5-wallet-transfer-copy {
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--mh5-app-orange-light);
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.mh5-wallet-transfer-tip--warn {
+  background: #fff5f2;
+  border: 1px solid #f3d0c8;
+  color: #9a3412;
+}
+
+.mh5-wallet-transfer-tip__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  margin-top: 1px;
+}
+
+.mh5-wallet-transfer-tip--note {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.mh5-wallet-transfer-methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-paytabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mh5-wallet-transfer-paytabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-wallet-transfer-paytab {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-paytab--active {
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-weight: 600;
+}
+
+.mh5-wallet-transfer-paygrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-paycard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 92px;
+  padding: 10px 4px 0;
+  overflow: hidden;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-paycard--active {
+  border-color: var(--mh5-app-orange);
+  box-shadow: 0 0 0 1px var(--mh5-app-orange);
+}
+
+.mh5-wallet-transfer-paycard--disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.mh5-wallet-transfer-paycard__icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mh5-wallet-transfer-paycard strong {
+  display: -webkit-box;
+  min-height: 28px;
+  margin: 6px 2px 8px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-paycard__promo {
+  width: calc(100% + 8px);
+  margin-top: auto;
+  margin-inline: -4px;
+  padding: 4px 2px;
+  border-radius: 0 0 11px 11px;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mh5-wallet-transfer-paycard--disabled .mh5-wallet-transfer-paycard__promo {
+  background: #9ca3af;
+}
+
+.mh5-wallet-transfer-ccy-btn--static {
+  pointer-events: none;
+  cursor: default;
+}
+
+.mh5-wallet-transfer-method,
+.mh5-wallet-transfer-withdraw-method {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 8px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-method strong,
+.mh5-wallet-transfer-withdraw-method strong {
+  font-size: 13px;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-method span,
+.mh5-wallet-transfer-withdraw-method span {
+  font-size: 11px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-method--active,
+.mh5-wallet-transfer-withdraw-method--active,
+.mh5-wallet-transfer-preset--active {
+  border-color: var(--mh5-app-orange);
+  background: var(--mh5-app-orange-light);
+}
+
+.mh5-wallet-transfer-method--disabled {
+  opacity: 0.45;
+}
+
+.mh5-wallet-transfer-withdraw-methods {
+  display: grid;
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mh5-wallet-transfer-amount__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 12px;
+  background: #f5f6f8;
+  font-size: 16px;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-addr {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-right: 4px;
+  border-radius: 12px;
+  background: #f5f6f8;
+}
+
+.mh5-wallet-transfer-addr .mh5-wallet-transfer-input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  background: transparent;
+}
+
+.mh5-wallet-transfer-addressbook {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-addressbook--icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+
+.mh5-wallet-transfer-input--bare {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.mh5-wallet-transfer-input--range {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mh5-wallet-transfer-input--range::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.mh5-wallet-transfer-input--select {
+  cursor: pointer;
+  caret-color: transparent;
+}
+
+.mh5-wallet-transfer-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-presets--fiat {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.mh5-wallet-transfer-preset {
+  min-height: 36px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-preset--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mh5-wallet-transfer-available {
+  margin: 0;
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-submit {
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mh5-wallet-transfer-swap-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-swap-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: #f5f6f8;
+}
+
+.mh5-wallet-transfer-ccy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-swap {
+  align-self: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--mh5-app-border);
+}
+
+.mh5-wallet-transfer-meta > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.mh5-wallet-transfer-meta dt {
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-meta dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-check {
+  margin-left: auto;
+  color: var(--mh5-app-orange);
+  font-weight: 700;
+}
+
+.mh5-wallet-transfer-wdgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-wdcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 76px;
+  padding: 10px 4px 8px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-wdcard--active {
+  border-color: var(--mh5-app-orange);
+  box-shadow: 0 0 0 1px var(--mh5-app-orange);
+}
+
+.mh5-wallet-transfer-wdcard__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.mh5-wallet-transfer-wdcard strong {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-wdmore {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mh5-app-text-secondary);
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-wdamount {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mh5-wallet-transfer-wdamount__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mh5-wallet-transfer-wdamount .mh5-wallet-transfer-input--bare {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mh5-wallet-transfer-req {
+  margin-right: 2px;
+  font-style: normal;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.mh5-wallet-transfer-wdamount__link,
+.mh5-wallet-transfer-wdamount__max {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-wallet-transfer-wdamount__unit {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--mh5-app-orange-light);
+  font-size: 13px;
+}
+
+.mh5-wallet-transfer-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mh5-wallet-transfer-summary span {
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-summary strong {
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-summary__accent {
+  color: var(--mh5-app-orange) !important;
+}
+
+.mh5-wallet-transfer-wdhints {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-wdhints em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-wallet-transfer-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  z-index: 140;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgb(17 17 17 / 88%);
+  color: #fff;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ---------- 收款方式 ---------- */
+.mh5-payout-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--mh5-app-bg);
+}
+
+.mh5-payout-currency {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--mh5-app-border);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-payout-page .mh5-sub-tabs {
+  flex-shrink: 0;
+}
+
+.mh5-payout-page .mh5-sub-tabs__item {
+  flex: 0 0 auto;
+  min-width: 64px;
+  text-align: center;
+}
+
+.mh5-payout-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.mh5-payout-body--form {
+  background: #fff;
+  padding: 12px 0 16px;
+}
+
+.mh5-payout-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 24px 16px 80px;
+  text-align: center;
+}
+
+.mh5-payout-empty__icon {
+  margin-bottom: 16px;
+}
+
+.mh5-payout-empty__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-empty__desc {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.mh5-payout-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 16px;
+  border: none;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.mh5-payout-card__rows {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-payout-card__side {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.mh5-payout-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  font-size: 14px;
+}
+
+.mh5-payout-row + .mh5-payout-row {
+  border-top: 1px solid #f3f4f6;
+}
+
+.mh5-payout-row span {
+  flex-shrink: 0;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-row strong {
+  min-width: 0;
+  font-weight: 500;
+  text-align: right;
+  word-break: break-all;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-radio {
+  display: block;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 50%;
+  font-style: normal;
+}
+
+.mh5-payout-radio--on {
+  border-color: var(--mh5-app-orange);
+  background: radial-gradient(circle, var(--mh5-app-orange) 45%, transparent 48%);
+}
+
+.mh5-payout-card__del {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #9ca3af;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mh5-payout-footer {
+  flex-shrink: 0;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  background: #fff;
+}
+
+.mh5-payout-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: #fff;
+  text-align: left;
+  font-size: 15px;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-payout-field span {
+  flex-shrink: 0;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-field em,
+.mh5-payout-field input {
+  min-width: 0;
+  flex: 1;
+  border: none;
+  background: none;
+  font-style: normal;
+  font-size: 15px;
+  text-align: right;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-field input {
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-field input::placeholder {
+  color: #c4c4c4;
+}
+
+.mh5-payout-field-hint {
+  margin: 8px 16px 0;
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-option-sheet {
+  height: auto;
+  max-height: 72%;
+}
+
+.mh5-payout-option-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.mh5-payout-option {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: none;
+  text-align: left;
+  font-size: 15px;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-payout-option--on {
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-payout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+}
+
+.mh5-payout-method {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--mh5-app-card);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-payout-method--on {
+  border-color: var(--mh5-app-orange);
+  box-shadow: 0 0 0 1px var(--mh5-app-orange);
+}
+
+.mh5-payout-method__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mh5-payout-method__icon--sm {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.mh5-payout-method__meta {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mh5-payout-method__meta strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-method__meta em {
+  font-size: 13px;
+  font-style: normal;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-method__holder {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-addbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-payout-addbtn i {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-payout-form__hint {
+  margin: 0 16px 8px;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 4px;
+}
+
+.mh5-payout-form__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-req {
+  margin-right: 2px;
+  font-style: normal;
+  font-weight: 700;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-payout-form__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: #f5f6f8;
+  font-size: 15px;
+  color: var(--mh5-app-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-payout-form__control input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: none;
+  background: none;
+  font-size: 15px;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-form__control input::placeholder,
+.mh5-payout-form__placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.mh5-payout-form__chevron {
+  margin-left: auto;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.mh5-payout-form__note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-payout-nets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mh5-payout-net {
+  min-width: 72px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-payout-net--on {
+  border-color: var(--mh5-app-orange);
+  background: var(--mh5-app-orange-light);
+  color: var(--mh5-app-orange);
+  box-shadow: 0 0 0 1px var(--mh5-app-orange);
+}
+
+.mh5-payout-scan {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-right: -4px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-orange);
+  cursor: pointer;
+}
+
+.mh5-payout-upload {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border: 1px dashed #d1d5db;
+  border-radius: 12px;
+  background: #f5f6f8;
+  color: #9ca3af;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-payout-upload--on {
+  border-style: solid;
+  border-color: var(--mh5-app-orange);
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mh5-payout-wtype {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-payout-wtype__text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mh5-payout-wtype__text strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-payout-wtype__text em {
+  font-size: 12px;
+  font-style: normal;
+  color: var(--mh5-app-text-secondary);
 }
