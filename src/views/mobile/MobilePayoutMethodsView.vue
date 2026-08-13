@@ -26,7 +26,6 @@ import {
   withdrawPayoutPickPending,
   type PayoutAddKind,
   type PayoutCryptoAddress,
-  type PayoutFiatKind,
   type PayoutFiatMethod,
   type PayoutListTab,
 } from '../../constants/payoutMethods'

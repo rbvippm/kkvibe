@@ -8,7 +8,7 @@ import {
 
 export type WalletTransferTab = 'deposit' | 'withdraw' | 'exchange'
 export type WalletAssetKind = 'crypto' | 'fiat'
-export type WalletTransferCurrency = Extract<WalletCatalogItem, { kind: 'crypto' | 'fiat' }>
+export type WalletTransferCurrency = WalletCatalogItem & { kind: 'crypto' | 'fiat' }
 
 export type WalletNetwork = {
   id: string
@@ -361,7 +361,7 @@ export function walletTransferRoute(tab: WalletTransferTab) {
   return { name: 'mobile-wallet-transfer' as const, query: { tab } }
 }
 
-export function findTransferCurrency(id: string) {
+export function findTransferCurrency(id: string): WalletTransferCurrency {
   return WALLET_TRANSFER_CURRENCIES.find((item) => item.id === id) ?? WALLET_TRANSFER_CURRENCIES[0]
 }
 
