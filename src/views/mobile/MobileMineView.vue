@@ -50,8 +50,7 @@ const fiatWallets: SimpleWalletItem[] = [
 ]
 
 const cryptoWallets: SimpleWalletItem[] = [
-  { id: 'usdt-tron', name: 'USDT-TRON', color: '#26a17b', symbol: '₮', kind: 'crypto', balance: 8652.3, cnyRate: 7.2 },
-  { id: 'usdt-sol', name: 'USDT-SOL', color: '#26a17b', symbol: '₮', kind: 'crypto', balance: 1205.05, cnyRate: 7.2 },
+  { id: 'usdt', name: 'USDT', color: '#26a17b', symbol: '₮', kind: 'crypto', balance: 9857.35, cnyRate: 7.2 },
   { id: 'eth', name: 'ETH', color: '#627eea', symbol: 'Ξ', kind: 'crypto', balance: 1.256789, cnyRate: 25000 },
   { id: 'btc', name: 'BTC', color: '#f7931a', symbol: '₿', kind: 'crypto', balance: 0.08543218, cnyRate: 650000 },
   { id: 'trx', name: 'TRX', color: '#ef0027', symbol: 'T', kind: 'crypto', balance: 12580.45, cnyRate: 1.2 },
