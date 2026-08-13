@@ -4,9 +4,9 @@ export type CommissionCurrency = 'KKC' | 'KKV' | 'USDT'
 
 export type MonthlyCommissionTier = {
   id: string
-  /** 当月团队游戏输赢门槛（含） */
+  /** 当月总盈利门槛（含）：当月代理团队净输赢 */
   monthlyProfit: number
-  /** 最低活跃会员要求 */
+  /** 最低活跃人数（充值与有效投注均达阈值才计入） */
   minActiveMembers: number
   /** 代理佣金（%） */
   commissionPct: number
@@ -67,6 +67,14 @@ export function formatPct(value: number) {
 export function formatProfit(value: number) {
   return value.toLocaleString('zh-CN')
 }
+
+/** 当月总盈利列感叹号说明（与佣金公式分子一致） */
+export const MONTHLY_TOTAL_PROFIT_TIP =
+  '即当月代理团队净输赢，公式为 = 【输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】'
+
+/** 最低活跃人数列感叹号说明 */
+export const MIN_ACTIVE_MEMBERS_TIP =
+  '会员同时满足「充值金额达到阈值」且「有效投注金额达到阈值」，计为 1 名活跃人数。本列为档位要求的最低活跃人数。'
 
 export function createEmptyMonthlyTier(): MonthlyCommissionTier {
   return {

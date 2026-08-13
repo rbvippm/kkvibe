@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onUnmounted, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfAgentCommissionSettingAnnot from '../../components/wireframe/WfAgentCommissionSettingAnnot.vue'
 import {
   COMMISSION_CURRENCY_OPTIONS,
+  MIN_ACTIVE_MEMBERS_TIP,
+  MONTHLY_TOTAL_PROFIT_TIP,
   createEmptyMonthlyTier,
   formatPct,
   formatProfit,
@@ -18,6 +20,89 @@ const filterCurrency = ref<CommissionCurrency>('KKC')
 const appliedCurrency = ref<CommissionCurrency>('KKC')
 
 const currentConfig = computed(() => configs.value[appliedCurrency.value])
+
+type ColumnTipId = 'profit' | 'active'
+type ColumnTipSource = 'list' | 'modal'
+type ColumnTipKey = `${ColumnTipId}-${ColumnTipSource}`
+
+const COLUMN_TIP_TEXT: Record<ColumnTipId, string> = {
+  profit: MONTHLY_TOTAL_PROFIT_TIP,
+  active: MIN_ACTIVE_MEMBERS_TIP,
+}
+
+const columnTipKey = ref<ColumnTipKey | null>(null)
+const columnTipStyle = ref<Record<string, string>>({})
+const columnTipTriggerRef = ref<HTMLButtonElement | null>(null)
+
+const columnTipText = computed(() => {
+  if (!columnTipKey.value) return ''
+  const id = columnTipKey.value.split('-')[0] as ColumnTipId
+  return COLUMN_TIP_TEXT[id]
+})
+
+function updateColumnTipPosition() {
+  const trigger = columnTipTriggerRef.value
+  if (!trigger) return
+  const rect = trigger.getBoundingClientRect()
+  const panelWidth = 320
+  const gap = 8
+  let left = rect.left + rect.width / 2
+  const minLeft = panelWidth / 2 + 8
+  const maxLeft = window.innerWidth - panelWidth / 2 - 8
+  left = Math.min(Math.max(left, minLeft), maxLeft)
+  columnTipStyle.value = {
+    left: `${left}px`,
+    top: `${rect.bottom + gap}px`,
+  }
+}
+
+function bindColumnTipListeners() {
+  window.addEventListener('scroll', updateColumnTipPosition, true)
+  window.addEventListener('resize', updateColumnTipPosition)
+  document.addEventListener('pointerdown', onColumnTipPointerDown)
+}
+
+function unbindColumnTipListeners() {
+  window.removeEventListener('scroll', updateColumnTipPosition, true)
+  window.removeEventListener('resize', updateColumnTipPosition)
+  document.removeEventListener('pointerdown', onColumnTipPointerDown)
+}
+
+function closeColumnTip() {
+  columnTipKey.value = null
+  columnTipTriggerRef.value = null
+  unbindColumnTipListeners()
+}
+
+function onColumnTipPointerDown(event: PointerEvent) {
+  if (!columnTipKey.value) return
+  const target = event.target as HTMLElement | null
+  if (!target) return
+  if (target.closest('.commission-setting__tip-btn')) return
+  const panel = document.getElementById('commission-column-tip')
+  if (panel?.contains(target)) return
+  closeColumnTip()
+}
+
+async function toggleColumnTip(id: ColumnTipId, source: ColumnTipSource, event: MouseEvent) {
+  event.stopPropagation()
+  const key: ColumnTipKey = `${id}-${source}`
+  const trigger = event.currentTarget as HTMLButtonElement
+  if (columnTipKey.value === key) {
+    closeColumnTip()
+    return
+  }
+  unbindColumnTipListeners()
+  columnTipKey.value = key
+  columnTipTriggerRef.value = trigger
+  await nextTick()
+  updateColumnTipPosition()
+  bindColumnTipListeners()
+}
+
+onUnmounted(() => {
+  unbindColumnTipListeners()
+})
 
 function applyFilter() {
   appliedCurrency.value = filterCurrency.value
@@ -46,6 +131,7 @@ function closeMonthlyEdit() {
   monthlyDraft.value = []
   monthlySelectedIds.value = []
   monthlyHint.value = ''
+  if (columnTipKey.value?.endsWith('-modal')) closeColumnTip()
 }
 
 function toggleMonthlySelect(id: string, checked: boolean) {
@@ -128,8 +214,34 @@ function submitMonthlyEdit() {
           <table class="wf-table">
             <thead>
               <tr>
-                <th class="wf-th">当月团队游戏输赢</th>
-                <th class="wf-th">最低活跃会员要求</th>
+                <th class="wf-th">
+                  <span class="commission-setting__th-label">
+                    当月总盈利
+                    <button
+                      type="button"
+                      class="commission-setting__tip-btn"
+                      aria-label="查看当月总盈利说明"
+                      :aria-expanded="columnTipKey === 'profit-list'"
+                      @click="toggleColumnTip('profit', 'list', $event)"
+                    >
+                      !
+                    </button>
+                  </span>
+                </th>
+                <th class="wf-th">
+                  <span class="commission-setting__th-label">
+                    最低活跃人数
+                    <button
+                      type="button"
+                      class="commission-setting__tip-btn"
+                      aria-label="查看最低活跃人数说明"
+                      :aria-expanded="columnTipKey === 'active-list'"
+                      @click="toggleColumnTip('active', 'list', $event)"
+                    >
+                      !
+                    </button>
+                  </span>
+                </th>
                 <th class="wf-th">代理佣金(%)</th>
               </tr>
             </thead>
@@ -191,8 +303,34 @@ function submitMonthlyEdit() {
                 <thead>
                   <tr>
                     <th class="wf-th wf-th--no">选</th>
-                    <th class="wf-th">当月团队游戏输赢</th>
-                    <th class="wf-th">最低活跃会员要求</th>
+                    <th class="wf-th">
+                      <span class="commission-setting__th-label">
+                        当月总盈利
+                        <button
+                          type="button"
+                          class="commission-setting__tip-btn"
+                          aria-label="查看当月总盈利说明"
+                          :aria-expanded="columnTipKey === 'profit-modal'"
+                          @click="toggleColumnTip('profit', 'modal', $event)"
+                        >
+                          !
+                        </button>
+                      </span>
+                    </th>
+                    <th class="wf-th">
+                      <span class="commission-setting__th-label">
+                        最低活跃人数
+                        <button
+                          type="button"
+                          class="commission-setting__tip-btn"
+                          aria-label="查看最低活跃人数说明"
+                          :aria-expanded="columnTipKey === 'active-modal'"
+                          @click="toggleColumnTip('active', 'modal', $event)"
+                        >
+                          !
+                        </button>
+                      </span>
+                    </th>
                     <th class="wf-th">代理佣金(%)</th>
                   </tr>
                 </thead>
@@ -252,6 +390,18 @@ function submitMonthlyEdit() {
             <button type="button" class="wf-btn wf-btn--primary" @click="submitMonthlyEdit">提交</button>
           </div>
         </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="columnTipKey"
+        id="commission-column-tip"
+        class="commission-setting__tip-bubble"
+        role="tooltip"
+        :style="columnTipStyle"
+      >
+        {{ columnTipText }}
       </div>
     </Teleport>
   </div>
@@ -315,5 +465,54 @@ function submitMonthlyEdit() {
 .commission-setting__modal-btns {
   display: inline-flex;
   gap: 8px;
+}
+
+.commission-setting__th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.commission-setting__tip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #8c8c8c;
+  background: #fff;
+  border: 1px solid #bfbfbf;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.commission-setting__tip-btn:hover,
+.commission-setting__tip-btn:focus-visible,
+.commission-setting__tip-btn[aria-expanded='true'] {
+  color: #1677ff;
+  border-color: #1677ff;
+  outline: none;
+}
+
+.commission-setting__tip-bubble {
+  position: fixed;
+  z-index: 1200;
+  width: min(320px, calc(100vw - 16px));
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: #fff;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+  background: rgb(0 0 0 / 78%);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 16%);
+  transform: translateX(-50%);
+  pointer-events: auto;
 }
 </style>

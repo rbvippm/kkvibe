@@ -14,12 +14,12 @@ export type AgentCommissionSettingFeatureRow = PcPrdFeatureRow
 export const AGENT_COMMISSION_SETTING_META = {
   title: '返佣金设置',
   module: '推广返利',
-  updatedAt: '2026-07-31',
-  prdVersion: 'v1.1',
+  updatedAt: '2026-08-13',
+  prdVersion: 'v1.2',
 } as const
 
 export const AGENT_COMMISSION_SETTING_BACKGROUND = [
-  'BI 后台需按币种配置一级返佣代理的发放佣金门槛（当月团队游戏输赢、最低活跃会员要求）与代理佣金比例。',
+  'BI 后台需按币种配置一级返佣代理的发放佣金门槛（当月总盈利、最低活跃人数）与代理佣金比例。',
   '返佣代理仅一层，不配置额外佣金，也不提供下级代理创建开关。',
 ] as const
 
@@ -51,9 +51,11 @@ export const AGENT_COMMISSION_SETTING_FEATURE_LIST: AgentCommissionSettingFeatur
     pageLocation: '「当月佣金设置」表格',
     prd: {
       functionalLogic:
-        '按当前查询币种展示发放佣金的档位条件：当月团队游戏输赢、最低活跃会员、代理佣金比例；切换币种并查询后列表随之切换。',
-      interactiveBehavior: '只读列表；点右上「编辑」进入编辑弹框，维护的是当前币种配置。',
-      visualPresentation: '标题为「{币种}-当月佣金设置」；三列表格；空态「暂无数据」；旁侧「注2」。',
+        '按当前查询币种展示发放佣金的档位条件：当月总盈利、最低活跃人数、代理佣金比例；切换币种并查询后列表随之切换。当月总盈利即当月代理团队净输赢；活跃人数按会员充值与有效投注均达阈值统计。',
+      interactiveBehavior:
+        '只读列表；点「当月总盈利」「最低活跃人数」旁感叹号展开对应说明，再次点击或点空白处关闭；点右上「编辑」进入编辑弹框，维护的是当前币种配置。',
+      visualPresentation:
+        '标题为「{币种}-当月佣金设置」；三列表格，首两列表头「当月总盈利」「最低活跃人数」旁灰色感叹号；空态「暂无数据」；旁侧「注2」。',
       dataRules: '数据按币种隔离；盈利与活跃为非负整数口径；佣金为百分比，展示两位小数。',
       exceptions: '当前币种无档位时空态，不报错。',
       routing: '编辑打开弹框，关闭后停留本页。',
@@ -65,10 +67,10 @@ export const AGENT_COMMISSION_SETTING_FEATURE_LIST: AgentCommissionSettingFeatur
     feature: '编辑当月佣金设置',
     pageLocation: '「编辑」弹框',
     prd: {
-      functionalLogic: '维护当前币种当月佣金档位：可添加/删除行，填写当月团队游戏输赢、活跃、佣金后提交。',
+      functionalLogic: '维护当前币种当月佣金档位：可添加/删除行，填写当月总盈利、最低活跃人数、佣金后提交。',
       interactiveBehavior:
-        '「添加」新增空行；勾选后「删除」移除；「提交」校验通过后写回列表；「取消」/遮罩关闭不保存。',
-      visualPresentation: '弹框标题「编辑当月佣金设置」；币种纯文本回显当前查询币种；添加描边蓝、删除危险色。',
+        '「添加」新增空行；勾选后「删除」移除；点「当月总盈利」「最低活跃人数」旁感叹号展开对应说明；「提交」校验通过后写回列表；「取消」/遮罩关闭不保存。',
+      visualPresentation: '弹框标题「编辑当月佣金设置」；币种纯文本回显当前查询币种；表头「当月总盈利」「最低活跃人数」旁灰色感叹号；添加描边蓝、删除危险色。',
       dataRules: '提交时盈利/活跃/佣金须为有效非负数；佣金建议 0–100；档位数量不限；至少可保存 0 行（清空）。',
       exceptions: '未勾选删除时报提示；字段非法时底部提示且不关闭。',
       routing: '提交成功关闭弹框并刷新列表。',
@@ -90,12 +92,14 @@ export const AGENT_COMMISSION_SETTING_CURRENCY_SPEC = [
 ] as const
 
 export const AGENT_COMMISSION_SETTING_MONTHLY_LIST_SPEC = [
-  '标题回显当前查询币种，如「KKC-当月佣金设置」；跟着币种展示当月团队游戏输赢、活跃要求与代理佣金(%)。',
+  '标题回显当前查询币种，如「KKC-当月佣金设置」；跟着币种展示当月总盈利、最低活跃人数与代理佣金(%)。',
+  '「当月总盈利」即当月代理团队净输赢；点列表头感叹号展示公式：= 【输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】。',
+  '「最低活跃人数」：会员同时满足充值金额达阈值且有效投注金额达阈值，计为 1 名活跃人数；点感叹号展示该说明。',
   '无档位时展示「暂无数据」；点「编辑」进入弹框维护该币种配置。',
 ] as const
 
 export const AGENT_COMMISSION_SETTING_MONTHLY_EDIT_SPEC = [
-  '弹框内可添加/删除档位行，填写当月团队游戏输赢、活跃与佣金后提交。',
+  '弹框内可添加/删除档位行，填写当月总盈利、最低活跃人数与佣金后提交；两列表头感叹号与列表同一说明。',
   '币种纯文本回显当前查询币种；档位数量不限（无限档）；取消不保存。',
 ] as const
 
