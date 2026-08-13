@@ -11,6 +11,8 @@ export type UserListRow = {
   userId: string
   /** 金刚号（mid_ / link 等账号标识） */
   kingKongId: string
+  /** 第三方 openid，空则列表展示「-」 */
+  openId: string
   source: UserSource
   channel: UserChannel
   nickname: string
@@ -26,8 +28,87 @@ export type UserListRow = {
   realNameVerified: boolean
   locked: boolean
   deleted: boolean
-  /** 三方 ID（查询三方ID 弹框展示） */
+  /** 三方登录 ID（列表 Mock 保留，查询弹框走独立映射） */
   thirdPartyId: string
+}
+
+/** 查询三方 ID · 查询维度（文案「现金网」统一改为「现金」） */
+export type ThirdPartyQueryType =
+  | 'kingkongId'
+  | 'openId'
+  | 'cashId'
+  | 'memberId'
+  | 'agentId'
+  | 'paymentGatewayId'
+  | 'cashAccount'
+
+export type ThirdPartyIdMap = {
+  kingkongId: string
+  openId: string
+  cashId: string
+  memberId: string
+  agentId: string
+  paymentGatewayId: string
+  cashAccount: string
+}
+
+export const THIRD_PARTY_QUERY_OPTIONS: { value: ThirdPartyQueryType; label: string }[] = [
+  { value: 'kingkongId', label: '金刚id' },
+  { value: 'openId', label: 'openid' },
+  { value: 'cashId', label: '现金id' },
+  { value: 'memberId', label: '会员id' },
+  { value: 'agentId', label: '代理id' },
+  { value: 'paymentGatewayId', label: '支付网关id' },
+  { value: 'cashAccount', label: '现金系统账号' },
+]
+
+export const THIRD_PARTY_RESULT_FIELDS: { key: keyof ThirdPartyIdMap; label: string }[] = [
+  { key: 'kingkongId', label: '金刚id' },
+  { key: 'openId', label: 'openid' },
+  { key: 'cashId', label: '现金id' },
+  { key: 'memberId', label: '会员id' },
+  { key: 'agentId', label: '代理id' },
+  { key: 'paymentGatewayId', label: '支付网关id' },
+  { key: 'cashAccount', label: '现金系统账号' },
+]
+
+export const MOCK_THIRD_PARTY_ID_MAPS: ThirdPartyIdMap[] = [
+  {
+    kingkongId: '7620716212081045399',
+    openId: 'oXk8a2pQ1mN7sT4vB9cD',
+    cashId: '148471',
+    memberId: '277320',
+    agentId: '0',
+    paymentGatewayId: '2087767562096922624',
+    cashAccount: 'openapi23y9pa',
+  },
+  {
+    kingkongId: '7831562076704421988',
+    openId: 'oLink12wx8k9p0q1r2st',
+    cashId: '148472',
+    memberId: '277321',
+    agentId: '12008',
+    paymentGatewayId: '2087767562096922625',
+    cashAccount: 'openapi_kk_link12',
+  },
+  {
+    kingkongId: 'link_vip_888',
+    openId: 'oVip888wx3a4b5c6d7e8',
+    cashId: '888001',
+    memberId: '900128',
+    agentId: '33021',
+    paymentGatewayId: '2087767562096922888',
+    cashAccount: 'openapi_vip888',
+  },
+]
+
+export function queryThirdPartyIdMap(
+  type: ThirdPartyQueryType,
+  keyword: string,
+): ThirdPartyIdMap | null {
+  const kw = keyword.trim()
+  if (!kw) return null
+  return MOCK_THIRD_PARTY_ID_MAPS.find((row) => row[type] === kw) ?? null
 }
 
 export const USER_STATUS_OPTIONS = [
@@ -94,6 +175,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u1',
     userId: '7831562076704421988',
     kingKongId: 'mid_p6uw633aqcy',
+    openId: 'oLink12wx8k9p0q1r2st',
     source: 'manual',
     channel: 'platform',
     nickname: 'Link12',
@@ -115,6 +197,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u2',
     userId: '7831562076704421989',
     kingKongId: 'link123456',
+    openId: 'oOwen666wx1a2b3c4d5e',
     source: 'manual',
     channel: 'platform',
     nickname: 'owen666',
@@ -136,6 +219,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u3',
     userId: '7831562076704421990',
     kingKongId: 'mid_k9x2m1n0pqr',
+    openId: '',
     source: 'system',
     channel: 'platform',
     nickname: '-',
@@ -157,6 +241,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u4',
     userId: '7831562076704421991',
     kingKongId: 'mid_ab12cd34ef',
+    openId: 'oFishwx9k8j7h6g5f4e3',
     source: 'manual',
     channel: 'agent',
     nickname: '小鱼干',
@@ -178,6 +263,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u5',
     userId: '7831562076704421992',
     kingKongId: 'mid_zz99yy88xx',
+    openId: 'oAct01wx2s3d4f5g6h7j',
     source: 'system',
     channel: 'activity',
     nickname: '活动用户01',
@@ -199,6 +285,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u6',
     userId: '7831562076704421993',
     kingKongId: 'mid_hello_kk',
+    openId: 'oHelperwx7y8u9i0o1p2',
     source: 'manual',
     channel: 'platform',
     nickname: 'KK小助手',
@@ -220,6 +307,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u7',
     userId: '7831562076704421994',
     kingKongId: 'mid_guest_001',
+    openId: '',
     source: 'system',
     channel: 'platform',
     nickname: '游客001',
@@ -241,6 +329,7 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     id: 'u8',
     userId: '7831562076704421995',
     kingKongId: 'link_vip_888',
+    openId: 'oVip888wx3a4b5c6d7e8',
     source: 'manual',
     channel: 'agent',
     nickname: 'VIP888',

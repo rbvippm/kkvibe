@@ -6,12 +6,17 @@ import {
   channelLabel,
   maskPhone,
   MOCK_USER_LIST_ROWS,
+  queryThirdPartyIdMap,
   sourceLabel,
+  THIRD_PARTY_QUERY_OPTIONS,
+  THIRD_PARTY_RESULT_FIELDS,
   USER_CHANNEL_OPTIONS,
   USER_GENDER_OPTIONS,
   USER_REGISTER_PLATFORM_OPTIONS,
   USER_SOURCE_OPTIONS,
   USER_STATUS_OPTIONS,
+  type ThirdPartyIdMap,
+  type ThirdPartyQueryType,
   type UserAccountStatus,
   type UserChannel,
   type UserGender,
@@ -28,6 +33,7 @@ type ListFilter = {
   inviteCode: string
   phone: string
   kingKongId: string
+  openId: string
   startDate: string
   endDate: string
   source: '' | UserSource
@@ -44,6 +50,7 @@ const defaultFilter = (): ListFilter => ({
   inviteCode: '',
   phone: '',
   kingKongId: '',
+  openId: '',
   startDate: '',
   endDate: '',
   source: '',
@@ -59,7 +66,12 @@ const actionHint = ref('')
 const filterHint = ref('')
 
 const thirdPartyVisible = ref(false)
-const thirdPartyRows = ref<UserListRow[]>([])
+const thirdPartyQueryType = ref<ThirdPartyQueryType>('kingkongId')
+const thirdPartyKeyword = ref('')
+const thirdPartyHint = ref('')
+const thirdPartyCopyHint = ref('')
+const thirdPartyResult = ref<ThirdPartyIdMap | null>(null)
+const thirdPartySearched = ref(false)
 
 const confirmVisible = ref(false)
 const confirmTitle = ref('')
@@ -93,6 +105,9 @@ function matchRow(row: UserListRow) {
   if (f.inviteCode && !row.inviteCode.includes(f.inviteCode.trim())) return false
   if (f.phone && !row.phone.includes(f.phone.trim())) return false
   if (f.kingKongId && !row.kingKongId.toLowerCase().includes(f.kingKongId.trim().toLowerCase())) {
+    return false
+  }
+  if (f.openId && !row.openId.toLowerCase().includes(f.openId.trim().toLowerCase())) {
     return false
   }
   if (f.source && row.source !== f.source) return false
@@ -179,20 +194,61 @@ function exportRows() {
   actionHint.value = `已模拟导出当前 ${count} 条记录`
 }
 
+const thirdPartyResultRows = computed(() => {
+  const result = thirdPartyResult.value
+  if (!result) return []
+  return THIRD_PARTY_RESULT_FIELDS.filter((field) => field.key !== thirdPartyQueryType.value).map(
+    (field) => ({
+      key: field.key,
+      label: field.label,
+      value: result[field.key],
+    }),
+  )
+})
+
 function openThirdParty() {
-  const picked = selectedRows()
-  if (!picked.length) {
-    actionHint.value = '请先勾选用户'
-    return
-  }
   actionHint.value = ''
-  thirdPartyRows.value = picked
+  thirdPartyQueryType.value = 'kingkongId'
+  thirdPartyKeyword.value = ''
+  thirdPartyHint.value = ''
+  thirdPartyCopyHint.value = ''
+  thirdPartyResult.value = null
+  thirdPartySearched.value = false
   thirdPartyVisible.value = true
 }
 
 function closeThirdParty() {
   thirdPartyVisible.value = false
-  thirdPartyRows.value = []
+  thirdPartyResult.value = null
+  thirdPartySearched.value = false
+  thirdPartyHint.value = ''
+  thirdPartyCopyHint.value = ''
+}
+
+function searchThirdParty() {
+  const keyword = thirdPartyKeyword.value.trim()
+  thirdPartyCopyHint.value = ''
+  if (!keyword) {
+    thirdPartyHint.value = '请输入查询内容'
+    thirdPartyResult.value = null
+    thirdPartySearched.value = false
+    return
+  }
+  thirdPartyHint.value = ''
+  thirdPartySearched.value = true
+  thirdPartyResult.value = queryThirdPartyIdMap(thirdPartyQueryType.value, keyword)
+}
+
+function copyThirdPartyValue(value: string) {
+  if (!value) return
+  void navigator.clipboard?.writeText(value).then(
+    () => {
+      thirdPartyCopyHint.value = `已复制：${value}`
+    },
+    () => {
+      thirdPartyCopyHint.value = '复制失败，请手动选择复制'
+    },
+  )
 }
 
 function toggleStatus(row: UserListRow) {
@@ -292,6 +348,9 @@ function deleteUser(row: UserListRow) {
 
         <label class="wf-label">金刚号：</label>
         <input v-model="filter.kingKongId" type="text" class="wf-input" placeholder="请输入金刚号" />
+
+        <label class="wf-label">openid：</label>
+        <input v-model="filter.openId" type="text" class="wf-input" placeholder="请输入openid" />
       </div>
 
       <div class="wf-toolbar wf-toolbar--filters">
@@ -359,6 +418,7 @@ function deleteUser(row: UserListRow) {
               <th class="wf-th wf-th--no">编号</th>
               <th class="wf-th">用户ID</th>
               <th class="wf-th">金刚号</th>
+              <th class="wf-th">openid</th>
               <th class="wf-th">来源</th>
               <th class="wf-th">所属渠道</th>
               <th class="wf-th">昵称</th>
@@ -373,7 +433,7 @@ function deleteUser(row: UserListRow) {
           </thead>
           <tbody>
             <tr v-if="!filteredRows.length">
-              <td colspan="14" class="wf-td wf-td--empty">暂无数据</td>
+              <td colspan="15" class="wf-td wf-td--empty">暂无数据</td>
             </tr>
             <tr v-for="(row, index) in filteredRows" :key="row.id">
               <td class="wf-td wf-td--center">
@@ -386,6 +446,7 @@ function deleteUser(row: UserListRow) {
               <td class="wf-td wf-td--center">{{ index + 1 }}</td>
               <td class="wf-td wf-td--bill">{{ row.userId }}</td>
               <td class="wf-td">{{ row.kingKongId }}</td>
+              <td class="wf-td">{{ row.openId || '-' }}</td>
               <td class="wf-td">{{ sourceLabel(row.source) }}</td>
               <td class="wf-td">{{ channelLabel(row.channel) }}</td>
               <td class="wf-td">{{ row.nickname || '-' }}</td>
@@ -452,37 +513,62 @@ function deleteUser(row: UserListRow) {
     </section>
 
     <!-- 查询三方 ID -->
-    <div v-if="thirdPartyVisible" class="wf-modal-mask" @click.self="closeThirdParty">
-      <div class="wf-modal wf-modal--scroll" role="dialog" aria-modal="true" aria-labelledby="third-party-title">
-        <header class="wf-modal__header">
-          <h3 id="third-party-title" class="wf-modal__title">查询三方ID</h3>
-          <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeThirdParty">×</button>
-        </header>
-        <div class="wf-modal__body">
-          <div class="wf-table-wrap">
-            <table class="wf-table">
-              <thead>
-                <tr>
-                  <th class="wf-th">用户ID</th>
-                  <th class="wf-th">金刚号</th>
-                  <th class="wf-th">三方ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in thirdPartyRows" :key="row.id">
-                  <td class="wf-td wf-td--bill">{{ row.userId }}</td>
-                  <td class="wf-td">{{ row.kingKongId }}</td>
-                  <td class="wf-td">{{ row.thirdPartyId || '-' }}</td>
-                </tr>
-              </tbody>
-            </table>
+    <Teleport to="body">
+      <div
+        v-if="thirdPartyVisible"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="closeThirdParty"
+      >
+        <div
+          class="wf-modal user-list__third-party-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="third-party-title"
+        >
+          <header class="wf-modal__header">
+            <h3 id="third-party-title" class="wf-modal__title">查询</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeThirdParty">
+              ×
+            </button>
+          </header>
+          <div class="wf-modal__body">
+            <div class="wf-modal__query">
+              <select v-model="thirdPartyQueryType" class="wf-input wf-input--select user-list__third-party-type">
+                <option v-for="opt in THIRD_PARTY_QUERY_OPTIONS" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+              <input
+                v-model="thirdPartyKeyword"
+                type="text"
+                class="wf-input user-list__third-party-input"
+                placeholder="请输入查询内容"
+                @keyup.enter="searchThirdParty"
+              />
+              <button type="button" class="wf-btn wf-btn--primary" @click="searchThirdParty">查询</button>
+            </div>
+            <p v-if="thirdPartyHint" class="wf-modal__hint">{{ thirdPartyHint }}</p>
+            <p v-else-if="thirdPartyCopyHint" class="user-list__third-party-copy">{{ thirdPartyCopyHint }}</p>
+
+            <div v-if="thirdPartyResult" class="user-list__third-party-result">
+              <p v-for="row in thirdPartyResultRows" :key="row.key" class="user-list__third-party-row">
+                <span class="user-list__third-party-label">{{ row.label }}:</span>
+                <button
+                  type="button"
+                  class="user-list__third-party-value"
+                  :title="`复制 ${row.label}`"
+                  @click="copyThirdPartyValue(row.value)"
+                >
+                  {{ row.value }}
+                </button>
+              </p>
+            </div>
+            <p v-else-if="thirdPartySearched" class="user-list__third-party-empty">未查询到对应记录</p>
           </div>
         </div>
-        <footer class="wf-modal__footer">
-          <button type="button" class="wf-btn wf-btn--default" @click="closeThirdParty">关闭</button>
-        </footer>
       </div>
-    </div>
+    </Teleport>
 
     <!-- 确认弹框 -->
     <div v-if="confirmVisible" class="wf-modal-mask" @click.self="closeConfirm">
@@ -529,7 +615,7 @@ function deleteUser(row: UserListRow) {
 
 .user-list__table {
   table-layout: auto;
-  min-width: 1680px;
+  min-width: 1840px;
 }
 
 .wf-th--check {
@@ -558,5 +644,74 @@ function deleteUser(row: UserListRow) {
 .user-list__muted {
   color: var(--pc-text-muted);
   font-size: inherit;
+}
+
+.user-list__third-party-modal {
+  max-width: 640px;
+}
+
+.user-list__third-party-type {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.user-list__third-party-input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.user-list__third-party-copy {
+  margin: 0 0 12px;
+  font-size: var(--pc-font-size-sm);
+  color: #67c23a;
+}
+
+.user-list__third-party-result {
+  padding: 16px 18px;
+  background: #f4f7fb;
+  border-radius: 2px;
+}
+
+.user-list__third-party-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.user-list__third-party-row:last-child {
+  margin-bottom: 0;
+}
+
+.user-list__third-party-label {
+  flex-shrink: 0;
+  color: var(--pc-text);
+}
+
+.user-list__third-party-value {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1677ff;
+  font-size: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+  word-break: break-word;
+}
+
+.user-list__third-party-value:hover {
+  text-decoration: underline;
+}
+
+.user-list__third-party-empty {
+  margin: 0;
+  padding: 16px 18px;
+  background: #f4f7fb;
+  color: var(--pc-text-muted);
+  font-size: 14px;
 }
 </style>
