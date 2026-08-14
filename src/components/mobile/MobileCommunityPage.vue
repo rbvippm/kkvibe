@@ -31,7 +31,7 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
 <template>
   <div class="mh5-community-page">
     <header class="mh5-community-header">
-      <div class="mh5-community-tabs" role="tablist" aria-label="社区分类">
+      <div class="mh5-community-tabs" role="tablist" :aria-label="$t('社区分类')">
         <button
           v-for="tab in COMMUNITY_TABS"
           :key="tab.key"
@@ -42,16 +42,16 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
           :aria-selected="activeTab === tab.key"
           @click="activeTab = tab.key"
         >
-          {{ tab.label }}
+          {{ $t(tab.label) }}
         </button>
       </div>
-      <button type="button" class="mh5-community-menu" aria-label="更多菜单">
+      <button type="button" class="mh5-community-menu" :aria-label="$t('更多菜单')">
         <img :src="COMMUNITY_ASSETS.menu" alt="" width="20" height="20" />
       </button>
     </header>
 
     <main class="mh5-community-main">
-      <section v-if="showBanner" class="mh5-community-banner" aria-label="创业推广">
+      <section v-if="showBanner" class="mh5-community-banner" :aria-label="$t('创业推广')">
         <img
           class="mh5-community-banner__img"
           :src="COMMUNITY_BANNER.image"
@@ -66,7 +66,7 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
           <img class="mh5-community-item__icon" :src="group.icon" :alt="group.title" width="48" height="48" />
 
           <div class="mh5-community-item__body">
-            <h3 class="mh5-community-item__title">{{ group.title }}</h3>
+            <h3 class="mh5-community-item__title">{{ $t(group.title) }}</h3>
             <p v-if="group.desc" class="mh5-community-item__desc">{{ group.desc }}</p>
           </div>
 

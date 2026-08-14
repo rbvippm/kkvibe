@@ -75,7 +75,7 @@ function isActive(tab: (typeof tabs)[number]) {
         </RouterView>
       </div>
 
-      <nav v-if="!hideTabBar" class="mh5-app-tabbar" aria-label="底部导航">
+      <nav v-if="!hideTabBar" class="mh5-app-tabbar" :aria-label="$t('底部导航')">
       <RouterLink
         v-for="tab in tabs"
         :key="tab.name"
@@ -86,7 +86,7 @@ function isActive(tab: (typeof tabs)[number]) {
         <span class="mh5-app-tabbar__icon-wrap">
           <!-- 大厅 -->
           <svg
-            v-if="tab.label === '大厅'"
+            v-if="tab.name === 'mobile-home'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -101,7 +101,7 @@ function isActive(tab: (typeof tabs)[number]) {
           </svg>
           <!-- 社区 -->
           <svg
-            v-else-if="tab.label === '社区'"
+            v-else-if="tab.name === 'mobile-community'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -124,7 +124,7 @@ function isActive(tab: (typeof tabs)[number]) {
           </svg>
           <!-- 会话 -->
           <svg
-            v-else-if="tab.label === '会话'"
+            v-else-if="tab.name === 'mobile-chat'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -181,7 +181,7 @@ function isActive(tab: (typeof tabs)[number]) {
           </svg>
           <span v-if="tab.badge" class="mh5-app-tabbar__badge">{{ tab.badge }}</span>
         </span>
-        <span>{{ tab.label }}</span>
+        <span>{{ $t(tab.label) }}</span>
       </RouterLink>
     </nav>
     </div>

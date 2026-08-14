@@ -339,7 +339,7 @@ function send() {
       <!-- WhatsApp 全屏相机 -->
       <div v-if="stage === 'camera'" class="mh5-media-camera" @click.stop>
         <div class="mh5-media-camera__view">
-          <img class="mh5-media-camera__preview" src="/images/discover/cover-4.jpg" alt="取景" />
+          <img class="mh5-media-camera__preview" src="/images/discover/cover-4.jpg" :alt="$t('取景')" />
           <!-- 手电筒：对齐 WhatsApp，叠在取景右上角 -->
           <button
             type="button"
@@ -377,15 +377,15 @@ function send() {
               />
             </svg>
           </button>
-          <button type="button" class="mh5-media-camera__close" aria-label="关闭" @click="close">
+          <button type="button" class="mh5-media-camera__close" :aria-label="$t('关闭')" @click="close">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2.2" stroke-linecap="round" />
             </svg>
           </button>
-          <div class="mh5-media-camera__hint">点击拍照，长按录像</div>
+          <div class="mh5-media-camera__hint">{{ $t('点击拍照，长按录像') }}</div>
         </div>
 
-        <div class="mh5-media-camera__strip" aria-label="最近项目">
+        <div class="mh5-media-camera__strip" :aria-label="$t('最近项目')">
           <button
             v-for="item in recentStrip"
             :key="item.id"
@@ -402,7 +402,7 @@ function send() {
           <button
             type="button"
             class="mh5-media-camera__gallery"
-            aria-label="打开图库"
+            :aria-label="$t('打开图库')"
             @click="openGalleryFromCamera"
           >
             <img :src="recentStrip[0]?.src" alt="" />
@@ -410,13 +410,13 @@ function send() {
           <button
             type="button"
             class="mh5-media-camera__shutter"
-            aria-label="快门"
+            :aria-label="$t('快门')"
             @click="captureShutter"
           />
           <button
             type="button"
             class="mh5-media-camera__icon-btn"
-            aria-label="翻转摄像头"
+            :aria-label="$t('翻转摄像头')"
             @click="showTip('已切换摄像头')"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -437,7 +437,7 @@ function send() {
       <div v-else-if="stage === 'gallery'" class="mh5-media-picker__sheet" @click.stop>
           <div class="mh5-media-picker__handle" aria-hidden="true" />
           <header class="mh5-media-picker__header">
-            <button type="button" class="mh5-media-picker__icon-btn" aria-label="关闭" @click="closeGallerySheet">
+            <button type="button" class="mh5-media-picker__icon-btn" :aria-label="$t('关闭')" @click="closeGallerySheet">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" stroke="#111" stroke-width="2.2" stroke-linecap="round" />
               </svg>
@@ -450,9 +450,7 @@ function send() {
                 :class="{ 'mh5-media-picker__tab--active': tab === 'photos' }"
                 :aria-selected="tab === 'photos'"
                 @click="tab = 'photos'"
-              >
-                照片
-              </button>
+              >{{ $t('照片') }}</button>
               <button
                 type="button"
                 role="tab"
@@ -460,15 +458,13 @@ function send() {
                 :class="{ 'mh5-media-picker__tab--active': tab === 'albums' }"
                 :aria-selected="tab === 'albums'"
                 @click="tab = 'albums'"
-              >
-                相册
-              </button>
+              >{{ $t('相册') }}</button>
             </div>
             <button
               type="button"
               class="mh5-media-picker__hd"
               :class="{ 'mh5-media-picker__hd--on': hd }"
-              aria-label="原图"
+              :aria-label="$t('原图')"
               :aria-pressed="hd"
               @click="hd = !hd"
             >
@@ -506,14 +502,14 @@ function send() {
             >
               <img :src="album.cover" :alt="album.name" />
               <div>
-                <strong>{{ album.name }}</strong>
+                <strong>{{ $t(album.name) }}</strong>
                 <span>{{ album.count }}</span>
               </div>
             </button>
           </main>
 
           <footer v-if="canSend" class="mh5-media-picker__footer">
-            <button type="button" class="mh5-media-picker__thumb" aria-label="编辑所选" @click="openPreview()">
+            <button type="button" class="mh5-media-picker__thumb" :aria-label="$t('编辑所选')" @click="openPreview()">
               <img :src="selectedItems[0]?.src" alt="" />
               <span class="mh5-media-picker__thumb-edit" aria-hidden="true">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
@@ -526,11 +522,11 @@ function send() {
                 v-model="caption"
                 class="mh5-media-picker__caption-input"
                 rows="1"
-                placeholder="添加配文..."
+                :placeholder="$t('添加配文...')"
                 enterkeyhint="enter"
               />
             </div>
-            <button type="button" class="mh5-media-picker__send" aria-label="发送" @click="send">
+            <button type="button" class="mh5-media-picker__send" :aria-label="$t('发送')" @click="send">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M4 12l16-8-6 16-2.5-7.5L4 12z" fill="#fff" />
               </svg>
@@ -542,7 +538,7 @@ function send() {
         <!-- 深色预览编辑 · 全屏 -->
         <div v-else-if="stage === 'preview'" class="mh5-media-preview" @click.stop>
           <header class="mh5-media-preview__header">
-            <button type="button" class="mh5-media-preview__tool" aria-label="返回" @click="backFromPreview">
+            <button type="button" class="mh5-media-preview__tool" :aria-label="$t('返回')" @click="backFromPreview">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
             </button>
             <div class="mh5-media-preview__tools">
@@ -550,7 +546,7 @@ function send() {
                 type="button"
                 class="mh5-media-preview__tool"
                 :class="{ 'mh5-media-preview__tool--on': hd }"
-                aria-label="原图"
+                :aria-label="$t('原图')"
                 :aria-pressed="hd"
                 @click="hd = !hd"
               >
@@ -560,9 +556,9 @@ function send() {
           </header>
 
           <div class="mh5-media-preview__stage" @click="onStageClick">
-            <button v-if="selectedItems.length > 1" type="button" class="mh5-media-preview__nav mh5-media-preview__nav--prev" aria-label="上一张" @click.stop="shiftPreview(-1)">‹</button>
-            <img v-if="previewItem" class="mh5-media-preview__image" :src="previewItem.src" alt="预览" />
-            <button v-if="selectedItems.length > 1" type="button" class="mh5-media-preview__nav mh5-media-preview__nav--next" aria-label="下一张" @click.stop="shiftPreview(1)">›</button>
+            <button v-if="selectedItems.length > 1" type="button" class="mh5-media-preview__nav mh5-media-preview__nav--prev" :aria-label="$t('上一张')" @click.stop="shiftPreview(-1)">‹</button>
+            <img v-if="previewItem" class="mh5-media-preview__image" :src="previewItem.src" :alt="$t('预览')" />
+            <button v-if="selectedItems.length > 1" type="button" class="mh5-media-preview__nav mh5-media-preview__nav--next" :aria-label="$t('下一张')" @click.stop="shiftPreview(1)">›</button>
 
             <template v-if="isPreviewVideo && previewItem">
               <div class="mh5-media-preview__video-meta" @click.stop>
@@ -604,7 +600,7 @@ function send() {
                 v-show="!videoPlaying"
                 type="button"
                 class="mh5-media-preview__play"
-                aria-label="播放"
+                :aria-label="$t('播放')"
                 @click.stop="toggleVideoPlayback"
               >
                 ▶
@@ -612,7 +608,7 @@ function send() {
               <div
                 class="mh5-media-preview__timeline"
                 role="group"
-                aria-label="视频进度条"
+                :aria-label="$t('视频进度条')"
                 @click.stop
               >
                 <div class="mh5-media-preview__film">

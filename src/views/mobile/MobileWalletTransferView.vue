@@ -23,7 +23,7 @@ import {
   WALLET_FIAT_WITHDRAW_TABS,
   WALLET_FIAT_WITHDRAW_WALLET_PREVIEW,
   WALLET_FIAT_WITHDRAW_WALLETS,
-  WALLET_QUICK_CURRENCY_IDS,
+  getWalletQuickCurrencyIds,
   WALLET_TRANSFER_CURRENCIES,
   WALLET_TRANSFER_TABS,
   fiatDepositMethodsByCategory,
@@ -41,13 +41,14 @@ import {
 } from '../../constants/walletTransfer'
 import { payoutMethodsRoute, payoutListTabFromWithdraw, withdrawPayoutPick, withdrawPayoutPickPending, type WithdrawPayoutPick } from '../../constants/payoutMethods'
 import { WALLET_TRANSFER_PAGE_SPEC } from '../../constants/walletTransferSpec'
+import { effectiveWalletTransferCurrency, pickWalletTransferCurrency } from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref<WalletTransferTab>(parseWalletTransferTab(route.query.tab))
-const selectedId = ref('usdt')
+const selectedId = ref(effectiveWalletTransferCurrency.value)
 const networkId = ref('trc20')
 const fiatMethodId = ref('alipay')
 const fiatCategory = ref<WalletFiatCategory>('hot')
@@ -71,11 +72,11 @@ const activeCurrency = computed(() => findTransferCurrency(selectedId.value))
 const isCrypto = computed(() => activeCurrency.value.kind === 'crypto')
 const showCurrencyChips = computed(() => activeTab.value === 'deposit' || activeTab.value === 'withdraw')
 const quickCurrencies = computed(() =>
-  WALLET_QUICK_CURRENCY_IDS.map((id) => findTransferCurrency(id)),
+  getWalletQuickCurrencyIds().map((id) => findTransferCurrency(id)),
 )
 const morePreviewCurrencies = computed(() =>
   WALLET_TRANSFER_CURRENCIES.filter(
-    (item) => item.kind === 'crypto' && !(WALLET_QUICK_CURRENCY_IDS as readonly string[]).includes(item.id),
+    (item) => item.kind === 'crypto' && !(getWalletQuickCurrencyIds() as readonly string[]).includes(item.id),
   ).slice(0, 3),
 )
 const activeNetworks = computed(() => networksOf(selectedId.value))
@@ -83,6 +84,9 @@ const activeNetwork = computed(
   () => activeNetworks.value.find((item) => item.id === networkId.value) ?? activeNetworks.value[0],
 )
 const addressSegments = computed(() => splitAddressHighlights(activeNetwork.value?.address ?? ''))
+const cryptoDepositMinText = computed(
+  () => `最小充值${activeCurrency.value.minDeposit}${activeCurrency.value.name}`,
+)
 const fiatPresets = computed(() => WALLET_FIAT_PRESETS[selectedId.value] ?? WALLET_FIAT_PRESETS.kkc)
 const activeFiatMethod = computed(
   () => WALLET_FIAT_DEPOSIT_METHODS.find((item) => item.id === fiatMethodId.value) ?? WALLET_FIAT_DEPOSIT_METHODS[0],
@@ -224,6 +228,10 @@ watch(selectedId, (id) => {
   }
 })
 
+watch(effectiveWalletTransferCurrency, (id) => {
+  selectedId.value = id
+})
+
 watch(fiatCategory, () => {
   paygridExpanded.value = false
 })
@@ -252,6 +260,7 @@ function selectTab(tab: WalletTransferTab) {
 
 function selectChip(id: string) {
   selectedId.value = id
+  pickWalletTransferCurrency(id)
 }
 
 function openMoreCurrencies() {
@@ -344,7 +353,10 @@ async function copyAddress() {
 function pickCurrency(id: string) {
   if (pickerKind.value === 'from') exchangeFromId.value = id
   else if (pickerKind.value === 'to') exchangeToId.value = id
-  else selectedId.value = id
+  else {
+    selectedId.value = id
+    pickWalletTransferCurrency(id)
+  }
   pickerKind.value = null
 }
 
@@ -437,7 +449,7 @@ function qrCells(seed: string) {
   <div class="mh5-wallet-transfer-page">
     <Mh5SubPageHeader>
       <template #center>
-        <div class="mh5-wallet-transfer-tabs" role="tablist" aria-label="充值提现兑换">
+        <div class="mh5-wallet-transfer-tabs" role="tablist" :aria-label="$t('充值提现兑换')">
           <button
             v-for="tab in WALLET_TRANSFER_TABS"
             :key="tab.key"
@@ -448,7 +460,7 @@ function qrCells(seed: string) {
             :aria-selected="activeTab === tab.key"
             @click="selectTab(tab.key)"
           >
-            {{ tab.label }}
+            {{ $t(tab.label) }}
           </button>
         </div>
       </template>
@@ -548,7 +560,9 @@ function qrCells(seed: string) {
                 />
               </svg>
             </span>
-            发送前请确认钱包地址和网络均正确无误。错误转账将无法找回。
+            <span class="mh5-wallet-transfer-tip__text">
+              {{ cryptoDepositMinText }}。发送前请确认钱包地址和网络均正确无误。错误转账将无法找回。
+            </span>
           </p>
         </template>
 

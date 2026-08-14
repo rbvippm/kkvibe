@@ -28,18 +28,16 @@ const benefits = computed(() => {
 
 <template>
   <div class="mh5-vip-page">
-    <Mh5SubPageHeader title="VIP 详情" />
+    <Mh5SubPageHeader :title="$t('VIP 详情')" />
 
     <main class="mh5-vip-body">
-      <section class="mh5-vip-hero" aria-label="VIP 等级">
+      <section class="mh5-vip-hero" :aria-label="$t('VIP 等级')">
         <div class="mh5-vip-hero__badge" aria-hidden="true">
           <span class="mh5-vip-hero__badgeInner">VIP</span>
         </div>
         <div class="mh5-vip-hero__main">
           <div class="mh5-vip-hero__title">VIP{{ vip.level }}</div>
-          <div class="mh5-vip-hero__sub">
-            需达到流水要求
-            <b class="mh5-vip-hero__num">{{ vip.need流水 }}</b>
+          <div class="mh5-vip-hero__sub">{{ $t('需达到流水要求') }}<b class="mh5-vip-hero__num">{{ vip.need流水 }}</b>
           </div>
         </div>
       </section>
@@ -52,7 +50,7 @@ const benefits = computed(() => {
             <span v-if="b.lock" class="mh5-vip-benefit__lock" aria-hidden="true">🔒</span>
             <span class="mh5-vip-benefit__tag">VIP{{ vip.level }}</span>
             <div class="mh5-vip-benefit__text">
-              <div class="mh5-vip-benefit__title">{{ b.title }}</div>
+              <div class="mh5-vip-benefit__title">{{ $t(b.title) }}</div>
               <div class="mh5-vip-benefit__desc">{{ b.desc }}</div>
             </div>
           </div>

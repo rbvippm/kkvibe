@@ -61,7 +61,7 @@ function goEdit() {
 
 <template>
   <div class="mh5-member-rebate-page">
-    <Mh5SubPageHeader title="会员退水比例">
+    <Mh5SubPageHeader :title="$t('会员退水比例')">
       <template #right>
         <Mh5SpecAnnot :spec="MEMBER_REBATE_RATIO_SPEC" placement="bottom" />
       </template>

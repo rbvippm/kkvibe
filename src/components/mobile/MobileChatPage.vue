@@ -42,19 +42,19 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
   <div class="mh5-chat-page">
     <header class="mh5-chat-header">
       <div class="mh5-chat-header__top">
-        <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" alt="金刚 KING KONG" width="120" height="28" />
+        <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" :alt="$t('金刚 KING KONG')" width="120" height="28" />
         <div class="mh5-chat-header__actions">
-          <button type="button" class="mh5-chat-header__icon-btn" aria-label="发现" @click="goDiscover">
+          <button type="button" class="mh5-chat-header__icon-btn" :aria-label="$t('发现')" @click="goDiscover">
             <img :src="CHAT_ASSETS.explore" alt="" width="22" height="22" />
           </button>
-          <button type="button" class="mh5-chat-header__icon-btn" aria-label="添加联系人">
+          <button type="button" class="mh5-chat-header__icon-btn" :aria-label="$t('添加联系人')">
             <img :src="CHAT_ASSETS.addContact" alt="" width="22" height="22" />
           </button>
         </div>
       </div>
 
       <div class="mh5-chat-filters">
-        <div class="mh5-chat-filters__tabs" role="tablist" aria-label="会话筛选">
+        <div class="mh5-chat-filters__tabs" role="tablist" :aria-label="$t('会话筛选')">
           <button
             v-for="filter in CHAT_FILTERS"
             :key="filter.key"
@@ -65,10 +65,10 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
             :aria-selected="activeFilter === filter.key"
             @click="activeFilter = filter.key"
           >
-            {{ filter.label }}
+            {{ $t(filter.label) }}
           </button>
         </div>
-        <button type="button" class="mh5-chat-filters__search" aria-label="搜索">
+        <button type="button" class="mh5-chat-filters__search" :aria-label="$t('搜索')">
           <img :src="CHAT_ASSETS.search" alt="" width="20" height="20" />
         </button>
       </div>
@@ -89,7 +89,7 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
 
           <div class="mh5-chat-item__body">
             <div class="mh5-chat-item__row">
-              <h3 class="mh5-chat-item__title">{{ item.title }}</h3>
+              <h3 class="mh5-chat-item__title">{{ $t(item.title) }}</h3>
               <time
                 class="mh5-chat-item__time"
                 :class="{ 'mh5-chat-item__time--highlight': item.highlighted }"
@@ -107,7 +107,7 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
                   width="14"
                   height="14"
                 />
-                <span v-if="item.previewLine.fromSelf" class="mh5-chat-item__you">你:</span>
+                <span v-if="item.previewLine.fromSelf" class="mh5-chat-item__you">{{ $t('你:') }}</span>
                 <img
                   v-if="item.previewLine.mediaIcon"
                   class="mh5-chat-item__media-icon"
@@ -122,7 +122,7 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
                 v-if="item.pinned && item.unread <= 0"
                 class="mh5-chat-item__pin"
                 :src="CHAT_ASSETS.pin"
-                alt="置顶"
+                :alt="$t('置顶')"
                 width="14"
                 height="14"
               />
@@ -139,7 +139,7 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
       </ul>
 
       <div v-else class="mh5-chat-empty">
-        <p>暂无会话消息</p>
+        <p>{{ $t('暂无会话消息') }}</p>
       </div>
     </main>
 

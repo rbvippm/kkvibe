@@ -106,32 +106,24 @@ function clearAll() {
     :class="{ 'mh5-embedded-page mh5-embedded-light': embedded }"
   >
     <header v-if="!embedded" class="mh5-header">
-      <p class="mh5-eyebrow mh5-eyebrow--rose">全局组件样板</p>
-      <h1 class="mh5-title">应用内通知 · 顶部浮窗</h1>
-      <p class="mh5-desc">支持开播、语聊房上麦两类推送；浮层全局挂载，本页为演示控制台。</p>
+      <p class="mh5-eyebrow mh5-eyebrow--rose">{{ $t('全局组件样板') }}</p>
+      <h1 class="mh5-title">{{ $t('应用内通知 · 顶部浮窗') }}</h1>
+      <p class="mh5-desc">{{ $t('支持开播、语聊房上麦两类推送；浮层全局挂载，本页为演示控制台。') }}</p>
     </header>
     <header v-else class="mh5-embedded-head">
-      <h1 class="mh5-embedded-head__title">开播通知演示</h1>
-      <p class="mh5-embedded-head__desc">顶部浮窗 · 开播与上麦推送</p>
+      <h1 class="mh5-embedded-head__title">{{ $t('开播通知演示') }}</h1>
+      <p class="mh5-embedded-head__desc">{{ $t('顶部浮窗 · 开播与上麦推送') }}</p>
     </header>
 
     <main class="mh5-main" :class="{ '!px-3 !py-3': embedded }">
       <section class="mh5-card">
-        <h2 class="mh5-section-title">触发演示</h2>
-        <p class="mt-1 text-xs opacity-75">两类通知共用队列；关闭后若仍有下一条会自动顶上。</p>
+        <h2 class="mh5-section-title">{{ $t('触发演示') }}</h2>
+        <p class="mt-1 text-xs opacity-75">{{ $t('两类通知共用队列；关闭后若仍有下一条会自动顶上。') }}</p>
         <div class="mh5-btn-row">
-          <button type="button" class="mh5-btn mh5-btn--primary" @click="triggerLiveStart()">
-            主播开播了
-          </button>
-          <button type="button" class="mh5-btn mh5-btn--sky" @click="triggerVoiceMicOn()">
-            大神语聊房上麦
-          </button>
-          <button type="button" class="mh5-btn mh5-btn--outline" @click="triggerBurst()">
-            混合推送 2 条
-          </button>
-          <button type="button" class="mh5-btn mh5-btn--ghost-danger" @click="clearAll()">
-            全部关闭
-          </button>
+          <button type="button" class="mh5-btn mh5-btn--primary" @click="triggerLiveStart()">{{ $t('主播开播了') }}</button>
+          <button type="button" class="mh5-btn mh5-btn--sky" @click="triggerVoiceMicOn()">{{ $t('大神语聊房上麦') }}</button>
+          <button type="button" class="mh5-btn mh5-btn--outline" @click="triggerBurst()">{{ $t('混合推送 2 条') }}</button>
+          <button type="button" class="mh5-btn mh5-btn--ghost-danger" @click="clearAll()">{{ $t('全部关闭') }}</button>
         </div>
         <div class="mt-4">
           <label class="text-xs font-medium text-[var(--text-h)]">
@@ -150,33 +142,30 @@ function clearAll() {
           class="mt-3 rounded-lg px-3 py-2 text-xs"
           :class="embedded ? 'bg-[#f5f6f8] text-[#666]' : 'bg-black/5 dark:bg-white/5'"
         >
-          <span class="font-medium" :class="embedded ? 'text-[#1a1a1a]' : 'text-[var(--text-h)]'">状态：</span>{{ lastAction }}
+          <span class="font-medium" :class="embedded ? 'text-[#1a1a1a]' : 'text-[var(--text-h)]'">{{ $t('状态：') }}</span>{{ lastAction }}
           <span v-if="queue.length" class="ml-2 text-rose-600">（队列 {{ queue.length }} 条）</span>
         </p>
       </section>
 
       <section class="mh5-card mh5-card--dashed">
-        <h2 class="text-xs font-semibold uppercase tracking-wide opacity-60">模拟 App 首页内容层</h2>
+        <h2 class="text-xs font-semibold uppercase tracking-wide opacity-60">{{ $t('模拟 App 首页内容层') }}</h2>
         <ul class="mt-3 space-y-2">
           <li v-for="item in feedItems" :key="item.id" class="mh5-feed-item">
             <div>
-              <p class="text-sm font-medium text-[var(--text-h)]">{{ item.title }}</p>
+              <p class="text-sm font-medium text-[var(--text-h)]">{{ $t(item.title) }}</p>
               <p class="text-xs opacity-70">{{ item.desc }}</p>
             </div>
             <span v-if="item.tag" class="mh5-tag">{{ item.tag }}</span>
           </li>
         </ul>
-        <p class="mt-3 text-center text-[11px] opacity-50">在真实 App 中，浮窗会覆盖在此类页面之上</p>
+        <p class="mt-3 text-center text-[11px] opacity-50">{{ $t('在真实 App 中，浮窗会覆盖在此类页面之上') }}</p>
       </section>
 
       <section class="mh5-hint-bar">
-        <span class="font-semibold">接入提示：</span>
-        在 <code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">App.vue</code> 挂载
-        <code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">LiveStartTopNotice</code>，业务侧收到开播事件后调用
-        <code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">push({ kind: 'live_start' | 'voice_mic_on', ... })</code>。
+        <span class="font-semibold">{{ $t('接入提示：') }}</span>{{ $t('在') }}<code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">App.vue</code>{{ $t('挂载') }}<code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">LiveStartTopNotice</code>{{ $t('，业务侧收到开播事件后调用') }}<code :class="embedded ? '' : 'rounded bg-black/5 px-1 dark:bg-white/10'">push({ kind: 'live_start' | 'voice_mic_on', ... })</code>。
       </section>
     </main>
 
-    <footer v-if="!embedded" class="mh5-footer">/mobile/live · 通知</footer>
+    <footer v-if="!embedded" class="mh5-footer">{{ $t('/mobile/live · 通知') }}</footer>
   </div>
 </template>

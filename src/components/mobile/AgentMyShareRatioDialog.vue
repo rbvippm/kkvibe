@@ -74,36 +74,28 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
             v-if="isRebate"
             class="mh5-agent-my-share-dialog__table mh5-agent-my-share-dialog__table--tiers"
             role="table"
-            aria-label="当月佣金档位"
+            :aria-label="$t('当月佣金档位')"
           >
             <div class="mh5-agent-my-share-dialog__head" role="row">
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
                 role="columnheader"
-              >
-                团队游戏输赢
-              </div>
+              >{{ $t('团队游戏输赢') }}</div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
                 role="columnheader"
-              >
-                活跃人数
-              </div>
+              >{{ $t('活跃人数') }}</div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
                 role="columnheader"
-              >
-                比例
-              </div>
+              >{{ $t('比例') }}</div>
             </div>
             <div
               v-if="rebateTiers.length === 0"
               class="mh5-agent-my-share-dialog__row mh5-agent-my-share-dialog__row--empty"
               role="row"
             >
-              <div class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--empty" role="cell">
-                暂无返佣比例
-              </div>
+              <div class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--empty" role="cell">{{ $t('暂无返佣比例') }}</div>
             </div>
             <div
               v-for="tier in rebateTiers"
@@ -133,7 +125,7 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
                 <span
                   v-if="tier.id === matchedTierId"
                   class="mh5-agent-my-share-dialog__matched-mark"
-                  aria-label="当前满足档位"
+                  :aria-label="$t('当前满足档位')"
                 >✅</span>
               </div>
             </div>
@@ -150,15 +142,11 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
                 role="columnheader"
-              >
-                占成类型
-              </div>
+              >{{ $t('占成类型') }}</div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
                 role="columnheader"
-              >
-                占成比例
-              </div>
+              >{{ $t('占成比例') }}</div>
             </div>
             <div
               v-for="row in shareRows"
@@ -170,7 +158,7 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
                 role="cell"
               >
-                {{ row.name }}
+                {{ $t(row.name) }}
               </div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
@@ -187,9 +175,7 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
           class="mh5-agent-my-share-dialog__btn"
           data-node-id="1433:25592"
           @click="emit('close')"
-        >
-          确定
-        </button>
+        >{{ $t('确定') }}</button>
       </div>
     </div>
   </Transition>

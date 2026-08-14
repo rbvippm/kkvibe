@@ -11,12 +11,17 @@ import {
   filterAssetDetailItems,
   formatAssetAmount,
   sumAssetAvailable,
-  type AssetDetailFiatId,
   type AssetDetailGroupMode,
   type AssetDetailKindFilter,
   type AssetDetailMainTab,
 } from '../../constants/assetDetail'
 import { walletTransferRoute } from '../../constants/walletTransfer'
+import {
+  effectivePreferredFiat,
+  fiatOrderForLocale,
+  pickPreferredFiat,
+  type PreferredFiatId,
+} from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
 const mainTab = ref<AssetDetailMainTab>('overview')
@@ -24,11 +29,19 @@ const groupMode = ref<AssetDetailGroupMode>('currency')
 const kindFilter = ref<AssetDetailKindFilter>('all')
 const balanceHidden = ref(false)
 const fiatPickerOpen = ref(false)
-const preferredFiatId = ref<AssetDetailFiatId>('cny')
+const preferredFiatId = computed({
+  get: () => effectivePreferredFiat.value,
+  set: (id: PreferredFiatId) => pickPreferredFiat(id),
+})
+const orderedFiatOptions = computed(() =>
+  fiatOrderForLocale().map(
+    (id) => ASSET_DETAIL_FIAT_OPTIONS.find((item) => item.id === id) ?? ASSET_DETAIL_FIAT_OPTIONS[0],
+  ),
+)
 const router = useRouter()
 
 const preferredFiat = computed(
-  () => ASSET_DETAIL_FIAT_OPTIONS.find((item) => item.id === preferredFiatId.value) ?? ASSET_DETAIL_FIAT_OPTIONS[0],
+  () => orderedFiatOptions.value.find((item) => item.id === preferredFiatId.value) ?? orderedFiatOptions.value[0],
 )
 
 const filteredItems = computed(() => filterAssetDetailItems(ASSET_DETAIL_ITEMS, kindFilter.value))
@@ -40,7 +53,7 @@ const totalAmountText = computed(() => {
   return balanceHidden.value ? '****' : amount
 })
 
-function pickFiat(id: AssetDetailFiatId) {
+function pickFiat(id: PreferredFiatId) {
   preferredFiatId.value = id
   fiatPickerOpen.value = false
 }
@@ -56,9 +69,9 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
 
 <template>
   <div class="mh5-asset-detail-page">
-    <Mh5SubPageHeader title="资产明细" />
+    <Mh5SubPageHeader :title="$t('资产明细')" />
 
-    <div class="mh5-asset-detail-tabs" role="tablist" aria-label="资产明细分类">
+    <div class="mh5-asset-detail-tabs" role="tablist" :aria-label="$t('资产明细分类')">
       <button
         v-for="tab in ASSET_DETAIL_MAIN_TABS"
         :key="tab.key"
@@ -69,21 +82,21 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
         :aria-selected="mainTab === tab.key"
         @click="mainTab = tab.key"
       >
-        {{ tab.label }}
+        {{ $t(tab.label) }}
       </button>
     </div>
 
     <main v-if="mainTab === 'overview'" class="mh5-asset-detail-main">
       <section class="mh5-asset-detail-summary">
         <div class="mh5-asset-detail-summary__head">
-          <span class="mh5-asset-detail-summary__label">总资产</span>
+          <span class="mh5-asset-detail-summary__label">{{ $t('总资产') }}</span>
           <button
             type="button"
             class="mh5-asset-detail-summary__fiat"
-            aria-label="选择偏好计价法币"
+            :aria-label="$t('选择偏好计价法币')"
             @click="fiatPickerOpen = true"
           >
-            {{ preferredFiat.name }}
+            {{ $t(preferredFiat.name) }}
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path d="M3 4.5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
             </svg>
@@ -130,7 +143,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
                 />
               </svg>
             </span>
-            <span>兑换</span>
+            <span>{{ $t('兑换') }}</span>
           </button>
           <button type="button" class="mh5-asset-detail-action" @click="goWalletTransfer('deposit')">
             <span class="mh5-asset-detail-action__icon" aria-hidden="true">
@@ -144,7 +157,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
                 />
               </svg>
             </span>
-            <span>充值</span>
+            <span>{{ $t('充值') }}</span>
           </button>
           <button type="button" class="mh5-asset-detail-action" @click="goWalletTransfer('withdraw')">
             <span class="mh5-asset-detail-action__icon" aria-hidden="true">
@@ -158,13 +171,13 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
                 />
               </svg>
             </span>
-            <span>提现</span>
+            <span>{{ $t('提现') }}</span>
           </button>
         </div>
       </section>
 
       <div class="mh5-asset-detail-toolbar">
-        <div class="mh5-asset-detail-segment" role="tablist" aria-label="资产分组方式">
+        <div class="mh5-asset-detail-segment" role="tablist" :aria-label="$t('资产分组方式')">
           <button
             v-for="mode in ASSET_DETAIL_GROUP_MODES"
             :key="mode.key"
@@ -175,11 +188,11 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
             :aria-selected="groupMode === mode.key"
             @click="groupMode = mode.key"
           >
-            {{ mode.label }}
+            {{ $t(mode.label) }}
           </button>
         </div>
 
-        <div class="mh5-asset-detail-kinds" role="tablist" aria-label="资产类型筛选">
+        <div class="mh5-asset-detail-kinds" role="tablist" :aria-label="$t('资产类型筛选')">
           <button
             v-for="tab in ASSET_DETAIL_KIND_FILTERS"
             :key="tab.key"
@@ -190,7 +203,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
             :aria-selected="kindFilter === tab.key"
             @click="kindFilter = tab.key"
           >
-            {{ tab.label }}
+            {{ $t(tab.label) }}
           </button>
         </div>
       </div>
@@ -202,17 +215,17 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
           </span>
           <div class="mh5-asset-detail-row__body">
             <div class="mh5-asset-detail-row__top">
-              <span class="mh5-asset-detail-row__name">{{ item.name }}</span>
+              <span class="mh5-asset-detail-row__name">{{ $t(item.name) }}</span>
               <span class="mh5-asset-detail-row__total">
                 {{ balanceHidden ? '****' : formatAssetAmount(rowTotal(item)) }}
               </span>
             </div>
             <div class="mh5-asset-detail-row__line">
-              <span>可用</span>
+              <span>{{ $t('可用') }}</span>
               <span>{{ balanceHidden ? '****' : formatAssetAmount(item.available) }}</span>
             </div>
             <div class="mh5-asset-detail-row__line">
-              <span>冻结</span>
+              <span>{{ $t('冻结') }}</span>
               <span>{{ balanceHidden ? '****' : formatAssetAmount(item.frozen) }}</span>
             </div>
           </div>
@@ -220,7 +233,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
       </section>
 
       <section v-else class="mh5-asset-detail-empty">
-        <p>按账户视图原型占位，后续可接账户维度明细</p>
+        <p>{{ $t('按账户视图原型占位，后续可接账户维度明细') }}</p>
       </section>
     </main>
 
@@ -244,11 +257,11 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
             aria-labelledby="asset-fiat-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="asset-fiat-title" class="mh5-wallet-sheet__title">选择偏好计价法币</h2>
+              <h2 id="asset-fiat-title" class="mh5-wallet-sheet__title">{{ $t('选择偏好计价法币') }}</h2>
               <button
                 type="button"
                 class="mh5-wallet-sheet__close"
-                aria-label="关闭"
+                :aria-label="$t('关闭')"
                 @click="fiatPickerOpen = false"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -263,7 +276,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
             </div>
             <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
               <button
-                v-for="item in ASSET_DETAIL_FIAT_OPTIONS"
+                v-for="item in orderedFiatOptions"
                 :key="item.id"
                 type="button"
                 class="agent-currency-sheet__item"
@@ -277,7 +290,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
                 >
                   {{ item.symbol }}
                 </span>
-                <span class="agent-currency-sheet__name">{{ item.name }}</span>
+                <span class="agent-currency-sheet__name">{{ $t(item.name) }}</span>
                 <span
                   v-if="preferredFiatId === item.id"
                   class="agent-currency-sheet__check agent-currency-sheet__check--active"

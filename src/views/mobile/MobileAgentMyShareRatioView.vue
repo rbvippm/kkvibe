@@ -15,6 +15,6 @@ onMounted(() => {
 
 <template>
   <div class="mh5-agent-my-share-page mh5-agent-my-share-page--redirect" aria-busy="true">
-    <p class="mh5-agent-my-share-page__loading">正在打开占成比例…</p>
+    <p class="mh5-agent-my-share-page__loading">{{ $t('正在打开占成比例…') }}</p>
   </div>
 </template>

@@ -5,10 +5,10 @@ import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
-import { findAgentDetail } from '../../constants/agentDetail'
 import {
   getBetOrderGameNameOptions,
   BET_ORDER_CATEGORY_OPTIONS,
+  BET_ORDER_MAX_RANGE_DAYS,
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
@@ -24,15 +24,19 @@ import {
   formatBetOrderMemberLabel,
   formatMoney,
   getBetOrderCurrencyOptions,
-  isBetOrderCreditCurrency,
-  summarizeBetOrders,
+  getBetOrderSummaryCashCurrencies,
+  summarizeBetOrdersByCurrency,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
+  hydrateBetOrderFilterDates,
+  resolveBetOrderTimePreset,
   type BetOrderFilter,
   type BetOrderRecord,
+  type BetOrderCurrencyFilter,
   type BetTimePreset,
 } from '../../constants/betOrderQuery'
 import '../../styles/mobile-app-shell.css'
+import { appLocale } from '../../i18n'
 
 const { isRebateAgent } = useAgentIdentity()
 
@@ -41,8 +45,12 @@ const props = withDefaults(
     embedded?: boolean
     /** 团队快捷入口带入的会员关键词（备注/昵称/金刚号） */
     seedKeyword?: string
+    /** 独立页标题；默认「注单查询」 */
+    title?: string
+    /** 会员入口不展示代理端 PRD 标注 */
+    hideSpec?: boolean
   }>(),
-  { embedded: false, seedKeyword: '' },
+  { embedded: false, seedKeyword: '', title: '', hideSpec: false },
 )
 
 const emit = defineEmits<{
@@ -50,7 +58,9 @@ const emit = defineEmits<{
 }>()
 
 const { uiText, fork } = useWorkspaceFork()
-const pageTitle = computed(() => uiText('pageTitle', '注单查询'))
+const pageTitle = computed(() => props.title || uiText('pageTitle', '注单查询'))
+/** 会员投注记录：顶栏游戏小类 + 同行筛选，不展示搜索 */
+const isMemberRecords = computed(() => props.hideSpec)
 const forkBanner = computed(() => {
   const banner = fork.value?.mockPatches?.overviewBanner
   return typeof banner === 'string' ? banner : ''
@@ -65,7 +75,7 @@ function createDefaultFilter(): BetOrderFilter {
     status: '',
     category: '',
     gameName: '',
-    gameCurrency: 'KKC',
+    gameCurrency: '',
     winLose: '',
   }
 }
@@ -94,6 +104,7 @@ watch(
 )
 const filterOpen = ref(false)
 const filterError = ref('')
+const toolbarPicker = ref<'time' | 'category' | 'currency' | null>(null)
 const page = ref(1)
 const loadingMore = ref(false)
 
@@ -113,38 +124,57 @@ const summaryRecords = computed(() =>
   ),
 )
 
-/** 本代理是否具备信用代理身份（决定信用额度币种筛选项） */
-const isCreditAgent = computed(() => Boolean(findAgentDetail('self')?.isCredited))
-const currencyOptions = computed(() => getBetOrderCurrencyOptions(isCreditAgent.value))
+const currencyOptions = computed(() => getBetOrderCurrencyOptions())
 
-/** 汇总卡跟随游戏币种筛选，默认 KKC 仅展示一张 KKC 卡 */
-const currencySummary = computed(() => {
-  const currency = (appliedFilter.value.gameCurrency || 'KKC') as
-    | 'KKC'
-    | 'KKV'
-    | 'USDT'
-    | '信用额度-CNY'
-    | '信用额度-USD'
-  return {
-    currency,
-    label: formatBetOrderCurrency(currency),
-    ...summarizeBetOrders(summaryRecords.value),
-  }
+const toolbarTimeLabel = computed(() => {
+  if (appliedFilter.value.timePreset === 'custom') return '时间区间'
+  return BET_TIME_PRESETS.find((tab) => tab.key === appliedFilter.value.timePreset)?.label ?? '今天'
 })
 
-watch(
-  isCreditAgent,
-  (credited) => {
-    if (credited) return
-    if (isBetOrderCreditCurrency(appliedFilter.value.gameCurrency)) {
-      appliedFilter.value = { ...appliedFilter.value, gameCurrency: 'KKC' }
-    }
-    if (isBetOrderCreditCurrency(filterDraft.value.gameCurrency)) {
-      filterDraft.value = { ...filterDraft.value, gameCurrency: 'KKC' }
-    }
-  },
-  { immediate: true },
+const toolbarCategoryLabel = computed(() =>
+  appliedFilter.value.category ? getBetOrderCategoryLabel(appliedFilter.value.category) : '所有游戏',
 )
+
+const toolbarCurrencyLabel = computed(() =>
+  appliedFilter.value.gameCurrency
+    ? formatBetOrderCurrency(appliedFilter.value.gameCurrency)
+    : '全部',
+)
+
+const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
+const isToolbarCategoryDirty = computed(() => Boolean(appliedFilter.value.category))
+const isToolbarCurrencyDirty = computed(() => Boolean(appliedFilter.value.gameCurrency))
+
+const toolbarPickerTitle = computed(() => {
+  if (toolbarPicker.value === 'time') return '选择日期'
+  if (toolbarPicker.value === 'category') return '选择游戏分类'
+  if (toolbarPicker.value === 'currency') return '选择游戏币种'
+  return ''
+})
+
+const summaryCarouselRef = ref<HTMLElement | null>(null)
+const summarySlideIndex = ref(0)
+
+/** 汇总卡三张现金币种，顺序跟随语言；KKC/KKV 为默认时 USDT 排第二 */
+const currencySummaries = computed(() =>
+  summarizeBetOrdersByCurrency(summaryRecords.value, getBetOrderSummaryCashCurrencies()),
+)
+
+function onSummaryCarouselScroll() {
+  const el = summaryCarouselRef.value
+  if (!el || !el.clientWidth) return
+  summarySlideIndex.value = Math.round(el.scrollLeft / el.clientWidth)
+}
+
+function resetSummaryCarousel() {
+  summarySlideIndex.value = 0
+  nextTick(() => {
+    summaryCarouselRef.value?.scrollTo({ left: 0 })
+  })
+}
+
+watch(summaryRecords, () => resetSummaryCarousel())
+watch(appLocale, () => resetSummaryCarousel())
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
 
@@ -161,7 +191,7 @@ function measureGameNameChipsOverflow() {
   gameNameExpanded.value = false
   nextTick(() => {
     const el = gameNameChipsRef.value
-    if (!el || !filterDraft.value.category) {
+    if (!el) {
       gameNameOverflow.value = false
       gameNameCollapsedHeight.value = 0
       return
@@ -200,6 +230,7 @@ watch(
 
 onUnmounted(() => {
   filterOpen.value = false
+  toolbarPicker.value = null
   detailRow.value = null
 })
 
@@ -207,23 +238,52 @@ function runSearch() {
   appliedFilter.value = { ...appliedFilter.value, keyword: searchInput.value.trim() }
 }
 
+function commitToolbarFilter(patch: Partial<BetOrderFilter>) {
+  const next = { ...appliedFilter.value, ...patch }
+  appliedFilter.value = next
+  filterDraft.value = { ...next }
+  toolbarPicker.value = null
+}
+
 function selectTimePreset(preset: BetTimePreset) {
-  appliedFilter.value = {
+  const ranged = hydrateBetOrderFilterDates({
     ...appliedFilter.value,
     timePreset: preset,
     customStart: '',
     customEnd: '',
-  }
+  })
+  commitToolbarFilter({
+    timePreset: ranged.timePreset,
+    customStart: ranged.customStart,
+    customEnd: ranged.customEnd,
+  })
+}
+
+function selectToolbarCategory(category: string) {
+  commitToolbarFilter({
+    category,
+    gameName: '',
+  })
+}
+
+function selectToolbarCurrency(currency: BetOrderCurrencyFilter) {
+  commitToolbarFilter({
+    gameCurrency: currency,
+  })
 }
 
 function openFilter() {
-  filterDraft.value = { ...appliedFilter.value, keyword: searchInput.value.trim() }
+  toolbarPicker.value = null
+  filterDraft.value = hydrateBetOrderFilterDates({
+    ...appliedFilter.value,
+    keyword: searchInput.value.trim(),
+  })
   filterError.value = ''
   filterOpen.value = true
 }
 
 function resetFilter() {
-  filterDraft.value = createDefaultFilter()
+  filterDraft.value = hydrateBetOrderFilterDates(createDefaultFilter())
   filterError.value = ''
   gameNameExpanded.value = false
   gameNameOverflow.value = false
@@ -233,10 +293,7 @@ function resetFilter() {
 function applyFilter() {
   const next = { ...filterDraft.value, keyword: filterDraft.value.keyword.trim() }
   if (next.customStart && next.customEnd) {
-    next.timePreset = 'custom'
-  }
-  if (!next.category) {
-    next.gameName = ''
+    next.timePreset = resolveBetOrderTimePreset(next.customStart, next.customEnd)
   }
   const err = validateBetOrderDateRange(next)
   if (err) {
@@ -309,22 +366,22 @@ function summaryWinLoseClass(value: number) {
       <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
       <div class="mh5-agent-report-header__actions">
         <Mh5SpecAnnot
-          v-if="!isRebateAgent"
+          v-if="!isRebateAgent && !hideSpec"
           :spec="AGENT_BET_ORDER_QUERY_SPEC"
           placement="bottom"
         />
-        <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">筛选</button>
+        <button type="button" class="mh5-bet-order-embedded-filter" @click="openFilter">{{ $t('筛选') }}</button>
       </div>
     </header>
     <Mh5SubPageHeader v-else :title="pageTitle">
-      <template #right>
+      <template v-if="!isMemberRecords" #right>
         <div class="mh5-sub-header__actions">
           <Mh5SpecAnnot
-            v-if="!isRebateAgent"
+            v-if="!isRebateAgent && !hideSpec"
             :spec="AGENT_BET_ORDER_QUERY_SPEC"
             placement="bottom"
           />
-          <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
+          <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
       </template>
     </Mh5SubPageHeader>
@@ -333,64 +390,127 @@ function summaryWinLoseClass(value: number) {
       {{ forkBanner }}
     </p>
 
-    <div class="mh5-bet-order-toolbar">
-      <form class="mh5-bet-order-search" @submit.prevent="runSearch">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
-          <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-        <input
-          v-model="searchInput"
-          type="search"
-          class="mh5-bet-order-search__input"
-          placeholder="下级会员 / 注单号"
-          enterkeyhint="search"
-        />
-        <button type="submit" class="mh5-bet-order-search__btn">搜索</button>
-      </form>
-
-      <div class="mh5-bet-order-tabs" role="tablist" aria-label="时间快捷切换">
-        <button
-          v-for="tab in BET_TIME_PRESETS"
-          :key="tab.key"
-          type="button"
-          role="tab"
-          class="mh5-bet-order-tabs__item"
-          :class="{ 'mh5-bet-order-tabs__item--active': appliedFilter.timePreset === tab.key }"
-          @click="selectTimePreset(tab.key)"
-        >
-          {{ tab.label }}
+    <div class="mh5-bet-order-toolbar" :class="{ 'mh5-bet-order-toolbar--member': isMemberRecords }">
+      <div v-if="isMemberRecords" class="mh5-bet-order-toolbar__row">
+        <div class="mh5-bet-order-toolbar__picks">
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarTimeDirty }"
+            @click="toolbarPicker = 'time'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarTimeLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCategoryDirty }"
+            @click="toolbarPicker = 'category'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarCategoryLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCurrencyDirty }"
+            @click="toolbarPicker = 'currency'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarCurrencyLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <button type="button" class="mh5-bet-order-toolbar__filter" aria-label="筛选" @click="openFilter">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 5.5h16l-5.8 7.2V19l-4.4 2v-8.3L4 5.5z"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
       </div>
+      <template v-else>
+        <form class="mh5-bet-order-search" @submit.prevent="runSearch">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
+            <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          <input
+            v-model="searchInput"
+            type="search"
+            class="mh5-bet-order-search__input"
+            placeholder="下级会员 / 注单号"
+            enterkeyhint="search"
+          />
+          <button type="submit" class="mh5-bet-order-search__btn">搜索</button>
+        </form>
+        <div class="mh5-bet-order-tabs" role="tablist" aria-label="时间快捷切换">
+          <button
+            v-for="tab in BET_TIME_PRESETS"
+            :key="tab.key"
+            type="button"
+            role="tab"
+            class="mh5-bet-order-tabs__item"
+            :class="{ 'mh5-bet-order-tabs__item--active': appliedFilter.timePreset === tab.key }"
+            @click="selectTimePreset(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        </div>
+      </template>
     </div>
 
     <main class="mh5-bet-order-main">
       <div class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll">
         <div
-          :key="currencySummary.currency"
-          class="mh5-bet-order-summary mh5-bet-order-summary--slide"
+          ref="summaryCarouselRef"
+          class="mh5-bet-order-summary-carousel__track"
+          @scroll.passive="onSummaryCarouselScroll"
         >
-          <span class="mh5-bet-order-summary__currency">{{ currencySummary.label }}</span>
-          <div class="mh5-bet-order-summary__metrics">
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总单数</span>
-              <strong>{{ currencySummary.count }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总下注</span>
-              <strong>{{ formatMoney(currencySummary.betAmount, currencySummary.currency) }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总有效投注</span>
-              <strong>{{ formatMoney(currencySummary.validBet, currencySummary.currency) }}</strong>
-            </div>
-            <div class="mh5-bet-order-summary__item">
-              <span class="mh5-bet-order-summary__label">总输赢</span>
-              <strong :class="summaryWinLoseClass(currencySummary.winLose)">
-                {{ formatSummaryWinLose(currencySummary.winLose, currencySummary.currency) }}
-              </strong>
+          <div
+            v-for="slide in currencySummaries"
+            :key="slide.currency"
+            class="mh5-bet-order-summary mh5-bet-order-summary--slide"
+          >
+            <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
+            <div class="mh5-bet-order-summary__metrics">
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总单数</span>
+                <strong>{{ slide.count }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总下注</span>
+                <strong>{{ formatMoney(slide.betAmount, slide.currency) }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总有效投注</span>
+                <strong>{{ formatMoney(slide.validBet, slide.currency) }}</strong>
+              </div>
+              <div class="mh5-bet-order-summary__item">
+                <span class="mh5-bet-order-summary__label">总输赢</span>
+                <strong :class="summaryWinLoseClass(slide.winLose)">
+                  {{ formatSummaryWinLose(slide.winLose, slide.currency) }}
+                </strong>
+              </div>
             </div>
           </div>
+        </div>
+        <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
+          <span
+            v-for="(slide, idx) in currencySummaries"
+            :key="`dot-${slide.currency}`"
+            class="mh5-bet-order-summary-carousel__dot"
+            :class="{ 'mh5-bet-order-summary-carousel__dot--active': summarySlideIndex === idx }"
+          />
         </div>
       </div>
 
@@ -453,6 +573,57 @@ function summaryWinLoseClass(value: number) {
 
     <p v-if="copyTip" class="mh5-bet-order-copy-tip">{{ copyTip }}</p>
 
+    <!-- 顶栏快捷下拉 -->
+    <Teleport to="body">
+      <Transition name="mh5-sheet">
+        <div
+          v-if="toolbarPicker"
+          class="mh5-agent-overlay-mask"
+          @click.self="toolbarPicker = null"
+        >
+          <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
+            <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
+            <template v-if="toolbarPicker === 'time'">
+              <button
+                v-for="tab in BET_TIME_PRESETS"
+                :key="tab.key"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.timePreset === tab.key }"
+                @click="selectTimePreset(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </template>
+            <template v-else-if="toolbarPicker === 'category'">
+              <button
+                v-for="opt in BET_ORDER_CATEGORY_OPTIONS"
+                :key="`pick-cat-${opt.value || 'all'}`"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.category === opt.value }"
+                @click="selectToolbarCategory(opt.value)"
+              >
+                {{ opt.value ? opt.label : '所有游戏' }}
+              </button>
+            </template>
+            <template v-else>
+              <button
+                v-for="opt in currencyOptions"
+                :key="`pick-ccy-${opt.value || 'all'}`"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.gameCurrency === opt.value }"
+                @click="selectToolbarCurrency(opt.value)"
+              >
+                {{ opt.label }}
+              </button>
+            </template>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- 高级筛选（Teleport 至 body，避免 shell 内定位导致弹层无法挂载） -->
     <Teleport to="body">
       <Transition name="mh5-sheet">
@@ -469,7 +640,7 @@ function summaryWinLoseClass(value: number) {
               <span>至</span>
               <input v-model="filterDraft.customEnd" type="date" class="mh5-xcoin-filter-input" />
             </div>
-            <p class="mh5-xcoin-filter-hint">选择自定义日期后将覆盖顶部快捷 Tab，最长 30 天</p>
+            <p class="mh5-xcoin-filter-hint">选择自定义日期后将覆盖顶部快捷 Tab，区间最长{{ BET_ORDER_MAX_RANGE_DAYS }}天</p>
           </section>
 
           <section class="mh5-xcoin-filter-group">
@@ -497,10 +668,7 @@ function summaryWinLoseClass(value: number) {
                 type="button"
                 class="mh5-xcoin-chip"
                 :class="{ 'mh5-xcoin-chip--active': filterDraft.status === opt.value }"
-                @click="
-                  filterDraft.status = opt.value;
-                  filterDraft.timePreset = filterDraft.customStart ? 'custom' : filterDraft.timePreset
-                "
+                @click="filterDraft.status = opt.value"
               >
                 {{ opt.label }}
               </button>
@@ -523,7 +691,7 @@ function summaryWinLoseClass(value: number) {
             </div>
           </section>
 
-          <section v-if="filterDraft.category" class="mh5-xcoin-filter-group">
+          <section class="mh5-xcoin-filter-group">
             <h3 class="mh5-xcoin-filter-group__label">游戏名称</h3>
             <div
               class="mh5-filter-chips-collapsible"
@@ -566,7 +734,7 @@ function summaryWinLoseClass(value: number) {
                 展开
               </button>
             </div>
-            <p class="mh5-xcoin-filter-hint">根据上方游戏分类联动展示可选游戏名称</p>
+            <p class="mh5-xcoin-filter-hint">分类为全部时展示全部游戏名称，选定分类后仅展示该分类</p>
           </section>
           </div>
 
@@ -602,11 +770,11 @@ function summaryWinLoseClass(value: number) {
 
           <section class="mh5-bet-order-detail-block">
             <h3 class="mh5-bet-order-detail-block__title">投注明细</h3>
-            <div class="mh5-bet-order-detail-row">
+            <div v-if="!isMemberRecords" class="mh5-bet-order-detail-row">
               <span>会员</span>
               <span>{{ formatBetOrderMemberLabel(detailRow) }}</span>
             </div>
-            <div class="mh5-bet-order-detail-row">
+            <div v-if="!isMemberRecords" class="mh5-bet-order-detail-row">
               <span>金刚号</span>
               <span class="mh5-bet-order-detail-row__value">
                 {{ formatBetOrderMemberKingkongId(detailRow) }}
@@ -619,8 +787,8 @@ function summaryWinLoseClass(value: number) {
                 </button>
               </span>
             </div>
-            <div class="mh5-bet-order-detail-row"><span>产品名称</span><span>{{ detailRow.productName }}</span></div>
-            <div class="mh5-bet-order-detail-row"><span>期数/场次</span><span>{{ detailRow.periodNo }}</span></div>
+            <div class="mh5-bet-order-detail-row"><span>游戏名称</span><span>{{ detailRow.productName }}</span></div>
+            <div v-if="!isMemberRecords" class="mh5-bet-order-detail-row"><span>期数/场次</span><span>{{ detailRow.periodNo }}</span></div>
             <div class="mh5-bet-order-detail-row mh5-bet-order-detail-row--stack">
               <span>投注内容</span>
               <span>{{ detailRow.betContent }}</span>

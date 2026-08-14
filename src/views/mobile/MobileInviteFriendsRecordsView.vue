@@ -132,11 +132,11 @@ function pickDraftVip(value: '' | number) {
 
 <template>
   <div class="mh5-invite-records-page mh5-bet-order-page">
-    <Mh5SubPageHeader title="邀请好友记录" :on-back="goBackToInviteFriends">
+    <Mh5SubPageHeader :title="$t('邀请好友记录')" :on-back="goBackToInviteFriends">
       <template #right>
         <div class="mh5-sub-header__actions">
           <Mh5SpecAnnot :spec="INVITE_FRIENDS_RECORDS_SPEC" placement="bottom" />
-          <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
+          <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
       </template>
     </Mh5SubPageHeader>

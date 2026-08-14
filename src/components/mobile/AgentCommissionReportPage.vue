@@ -2,13 +2,14 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
-  AGENT_CASH_CURRENCY_OPTIONS,
+  getAgentCashCurrencyOptions,
   isAgentCreditCurrency,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
 import {
   agentAppCurrency,
-  setAgentAppCurrency,
+  setAgentAppCurrencyByUser,
+  fallbackAgentCashCurrency,
 } from '../../constants/agentAppCurrency'
 import {
   COMMISSION_NEGATIVE_TIP,
@@ -63,10 +64,10 @@ watch(selectedMonth, () => {
   tipKey.value = null
 })
 
-/** 返佣无信用额度币种，若当前为信用口径则回落到 KKC */
+/** 返佣无信用额度币种，若当前为信用口径则回落到语言默认现金币种 */
 function ensureCashCurrency() {
   if (isAgentCreditCurrency(currency.value)) {
-    setAgentAppCurrency('KKC')
+    fallbackAgentCashCurrency()
   }
 }
 
@@ -88,7 +89,7 @@ function pickListMonth(month: string | 'all') {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrency(value)
+  setAgentAppCurrencyByUser(value)
   closeSheet()
 }
 
@@ -132,7 +133,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
     <!-- 列表 -->
     <template v-if="viewMode === 'list'">
       <header class="mh5-agent-report-header">
-        <h1 class="mh5-agent-report-header__title">我的报表</h1>
+        <h1 class="mh5-agent-report-header__title">{{ $t('我的报表') }}</h1>
         <div class="mh5-agent-report-header__actions">
           <Mh5SpecAnnot :spec="AGENT_COMMISSION_REPORT_SPEC" placement="bottom" />
         </div>
@@ -189,7 +190,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
         </section>
 
         <section class="mh5-agent-commission-list-summary">
-          <p class="mh5-agent-commission-list-summary__label">累计发放总佣金</p>
+          <p class="mh5-agent-commission-list-summary__label">{{ $t('累计发放总佣金') }}</p>
           <p class="mh5-agent-commission-list-summary__value">
             {{ formatCommissionAmount(paidTotal) }}
             <em>{{ currency }}</em>
@@ -228,9 +229,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
             </p>
             <div class="mh5-agent-commission-list-card__meta">
               <span>活跃人数 {{ bill.activeUsers }}</span>
-              <span>
-                游戏输赢
-                <em :class="toneClass(bill.totalPnl)">
+              <span>{{ $t('游戏输赢') }}<em :class="toneClass(bill.totalPnl)">
                   {{ formatCommissionAmount(bill.totalPnl) }}
                 </em>
               </span>
@@ -240,8 +239,8 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
 
         <section v-else class="mh5-agent-commission-empty" aria-live="polite">
           <div class="mh5-agent-commission-empty__icon" aria-hidden="true" />
-          <p class="mh5-agent-commission-empty__title">暂无佣金记录</p>
-          <p class="mh5-agent-commission-empty__desc">继续加油哦</p>
+          <p class="mh5-agent-commission-empty__title">{{ $t('暂无佣金记录') }}</p>
+          <p class="mh5-agent-commission-empty__desc">{{ $t('继续加油哦') }}</p>
         </section>
       </main>
     </template>
@@ -481,7 +480,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
             </template>
             <template v-else>
               <button
-                v-for="opt in AGENT_CASH_CURRENCY_OPTIONS"
+                v-for="opt in getAgentCashCurrencyOptions()"
                 :key="opt"
                 type="button"
                 class="mh5-xcoin-sheet__option"

@@ -49,7 +49,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
 <template>
   <div class="mh5-billing-detail-page">
     <header class="mh5-billing-detail-header">
-      <button type="button" class="mh5-billing-detail-header__back" aria-label="返回" @click="goBackOrList">
+      <button type="button" class="mh5-billing-detail-header__back" :aria-label="$t('返回')" @click="goBackOrList">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M15 6l-6 6 6 6"
@@ -60,8 +60,8 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-detail-header__title">账单详情</h1>
-      <button type="button" class="mh5-billing-detail-header__service" aria-label="联系客服">
+      <h1 class="mh5-billing-detail-header__title">{{ $t('账单详情') }}</h1>
+      <button type="button" class="mh5-billing-detail-header__service" :aria-label="$t('联系客服')">
         <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
           <path
             d="M7 11.5c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5v1.1c1 .3 1.7 1.2 1.7 2.3V18c0 1.4-1.1 2.5-2.5 2.5h-9C9.1 20.5 8 19.4 8 18v-3.1c0-1.1.7-2 1.7-2.3V11.5z"
@@ -112,20 +112,20 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
 
       <section v-if="isSystemPayment" class="mh5-billing-detail-card">
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">金额</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('金额') }}</span>
           <span class="mh5-billing-detail-row__value mh5-billing-detail-row__value--accent">
             {{ systemAmountText }}
           </span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">打款原因</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('打款原因') }}</span>
           <span class="mh5-billing-detail-row__value">{{ detail.paymentReason }}</span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">账单号</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('账单号') }}</span>
           <div class="mh5-billing-detail-row__value mh5-billing-detail-row__value--copy">
             <span class="mh5-billing-detail-row__order">{{ billNo }}</span>
-            <button type="button" class="mh5-billing-detail-copy-icon" aria-label="复制账单号" @click="copyText(billNo)">
+            <button type="button" class="mh5-billing-detail-copy-icon" :aria-label="$t('复制账单号')" @click="copyText(billNo)">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                 <rect x="6" y="2" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
                 <rect x="3" y="5" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
@@ -134,7 +134,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
           </div>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">打款时间</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('打款时间') }}</span>
           <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
         </div>
       </section>
@@ -148,18 +148,18 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
           </div>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">上级代理</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('上级代理') }}</span>
           <span class="mh5-billing-detail-row__value">{{ detail.superiorAgent }}</span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">时间</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('时间') }}</span>
           <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">单号</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('单号') }}</span>
           <div class="mh5-billing-detail-row__value mh5-billing-detail-row__value--copy">
             <span class="mh5-billing-detail-row__order">{{ detail.orderNo }}</span>
-            <button type="button" class="mh5-billing-detail-copy-icon" aria-label="复制单号" @click="copyText(detail.orderNo || '')">
+            <button type="button" class="mh5-billing-detail-copy-icon" :aria-label="$t('复制单号')" @click="copyText(detail.orderNo || '')">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                 <rect x="6" y="2" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
                 <rect x="3" y="5" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
@@ -171,7 +171,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
 
       <section v-else class="mh5-billing-detail-card">
         <div v-for="field in detail.fields" :key="field.label" class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">{{ field.label }}</span>
+          <span class="mh5-billing-detail-row__label">{{ $t(field.label) }}</span>
           <span
             class="mh5-billing-detail-row__value"
             :class="{ 'mh5-billing-detail-row__value--accent': field.emphasis }"
@@ -180,14 +180,14 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
           </span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">时间</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('时间') }}</span>
           <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
         </div>
         <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">单号</span>
+          <span class="mh5-billing-detail-row__label">{{ $t('单号') }}</span>
           <div class="mh5-billing-detail-row__value mh5-billing-detail-row__value--copy">
             <span class="mh5-billing-detail-row__order">{{ detail.orderNo }}</span>
-            <button type="button" class="mh5-billing-detail-copy-icon" aria-label="复制单号" @click="copyText(detail.orderNo || '')">
+            <button type="button" class="mh5-billing-detail-copy-icon" :aria-label="$t('复制单号')" @click="copyText(detail.orderNo || '')">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
                 <rect x="6" y="2" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
                 <rect x="3" y="5" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
@@ -199,8 +199,8 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
     </main>
 
     <main v-else class="mh5-billing-detail-main mh5-billing-detail-main--empty">
-      <p class="mh5-billing-detail-empty">未找到该账单</p>
-      <button type="button" class="mh5-billing-detail-empty-btn" @click="goBackOrList">返回账单列表</button>
+      <p class="mh5-billing-detail-empty">{{ $t('未找到该账单') }}</p>
+      <button type="button" class="mh5-billing-detail-empty-btn" @click="goBackOrList">{{ $t('返回账单列表') }}</button>
     </main>
   </div>
 </template>

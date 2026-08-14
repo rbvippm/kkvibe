@@ -34,13 +34,13 @@ const tabs: { key: AgentTab; label: string; icon: string; activeIcon?: string }[
         <span class="agent-bottom-nav__icon-wrap">
           <img
             :src="activeTab === tab.key && tab.activeIcon ? tab.activeIcon : tab.icon"
-            :alt="tab.label"
+            :alt="$t(tab.label)"
             class="agent-bottom-nav__icon"
             width="24"
             height="24"
           />
         </span>
-        <span class="agent-bottom-nav__label">{{ tab.label }}</span>
+        <span class="agent-bottom-nav__label">{{ $t(tab.label) }}</span>
       </button>
     </div>
     <div class="agent-bottom-nav__indicator" data-name="状态栏/指示条" aria-hidden="true">

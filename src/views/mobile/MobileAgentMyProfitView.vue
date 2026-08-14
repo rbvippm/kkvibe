@@ -348,7 +348,7 @@ onBeforeUnmount(() => {
   >
     <div class="mh5-agent-my-profit-hero">
       <header v-if="!embedded" class="mh5-agent-my-profit-nav">
-        <button type="button" class="mh5-agent-my-profit-nav__back" aria-label="返回" @click="goBack">
+        <button type="button" class="mh5-agent-my-profit-nav__back" :aria-label="$t('返回')" @click="goBack">
           <img :src="AGENT_MY_PROFIT_ASSETS.backIcon" alt="" width="24" height="24" />
         </button>
         <h1 class="mh5-agent-my-profit-nav__title">{{ pageTitle }}</h1>
@@ -388,12 +388,10 @@ onBeforeUnmount(() => {
             class="mh5-agent-my-profit-hero-metric mh5-agent-my-profit-hero-metric--neg"
           >
             <p class="mh5-agent-commission-hero__unit">
-              <span class="mh5-agent-commission-tip-wrap">
-                负佣金累计
-                <button
+              <span class="mh5-agent-commission-tip-wrap">{{ $t('负佣金累计') }}<button
                   type="button"
                   class="mh5-agent-commission-q"
-                  aria-label="查看负佣金累计说明"
+                  :aria-label="$t('查看负佣金累计说明')"
                   :aria-expanded="negativeTipOpen"
                   @click.stop="onNegativeTipClick"
                 >
@@ -429,7 +427,7 @@ onBeforeUnmount(() => {
           alt=""
           aria-hidden="true"
         />
-        <p class="mh5-agent-my-profit-total__label">{{ totalBlock.label }}</p>
+        <p class="mh5-agent-my-profit-total__label">{{ $t(totalBlock.label) }}</p>
         <p
           class="mh5-agent-my-profit-total__value"
           :class="agentMyProfitToneClass(totalBlock.tone)"
@@ -445,7 +443,7 @@ onBeforeUnmount(() => {
             v-if="isRebateAgent"
             type="button"
             class="mh5-agent-my-profit-date__picker mh5-agent-my-profit-date__picker--action"
-            aria-label="选择月份"
+            :aria-label="$t('选择月份')"
             :aria-expanded="monthSheetOpen"
             @click="openMonthSheet"
           >
@@ -465,7 +463,7 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </div>
-        <div class="mh5-agent-my-profit-date__presets" role="tablist" aria-label="快捷时间">
+        <div class="mh5-agent-my-profit-date__presets" role="tablist" :aria-label="$t('快捷时间')">
           <button
             v-for="item in datePresets"
             :key="item.key"
@@ -476,7 +474,7 @@ onBeforeUnmount(() => {
             :aria-selected="isPresetActive(item.key)"
             @click="pickPreset(item.key)"
           >
-            {{ item.label }}
+            {{ $t(item.label) }}
           </button>
         </div>
       </div>
@@ -486,7 +484,7 @@ onBeforeUnmount(() => {
       <!-- 占成 / 返佣共用：游戏净输赢 + 其他成本（可展开） -->
       <section
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-        aria-label="游戏净输赢金额"
+        :aria-label="$t('游戏净输赢金额')"
       >
         <div class="mh5-agent-my-profit-table__head">
           <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
@@ -503,10 +501,10 @@ onBeforeUnmount(() => {
             type="button"
             class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
             :aria-expanded="gameDetailsExpanded"
-            aria-label="展开或收起游戏净输赢细项"
+            :aria-label="$t('展开或收起游戏净输赢细项')"
             @click="toggleGameDetails"
           >
-            <span>{{ gameSection.total.name }}</span>
+            <span>{{ $t(gameSection.total.name) }}</span>
             <span
               class="mh5-agent-my-profit-table__chevron"
               :class="{ 'mh5-agent-my-profit-table__chevron--open': gameDetailsExpanded }"
@@ -537,7 +535,7 @@ onBeforeUnmount(() => {
               @click="openDetail(row)"
             >
               <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                {{ row.name }}
+                {{ $t(row.name) }}
               </span>
               <span
                 class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
@@ -555,7 +553,7 @@ onBeforeUnmount(() => {
 
       <section
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-        aria-label="其他成本金额"
+        :aria-label="$t('其他成本金额')"
       >
         <div class="mh5-agent-my-profit-table__head">
           <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
@@ -572,10 +570,10 @@ onBeforeUnmount(() => {
             type="button"
             class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
             :aria-expanded="costDetailsExpanded"
-            aria-label="展开或收起其他成本细项"
+            :aria-label="$t('展开或收起其他成本细项')"
             @click="toggleCostDetails"
           >
-            <span>{{ costSection.total.name }}</span>
+            <span>{{ $t(costSection.total.name) }}</span>
             <span
               class="mh5-agent-my-profit-table__chevron"
               :class="{ 'mh5-agent-my-profit-table__chevron--open': costDetailsExpanded }"
@@ -606,7 +604,7 @@ onBeforeUnmount(() => {
               @click="openDetail(row)"
             >
               <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                {{ row.name }}
+                {{ $t(row.name) }}
               </span>
               <span
                 class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
@@ -626,18 +624,16 @@ onBeforeUnmount(() => {
       <section
         v-if="isRebateAgent"
         class="mh5-agent-my-profit-formula-card"
-        aria-label="净输赢乘以佣金比例等于佣金"
+        :aria-label="$t('净输赢乘以佣金比例等于佣金')"
         @click.stop
       >
         <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula">
           <div class="mh5-agent-commission-cell">
             <p class="mh5-agent-commission-cell__label">
-              <span class="mh5-agent-commission-tip-wrap">
-                净输赢
-                <button
+              <span class="mh5-agent-commission-tip-wrap">{{ $t('净输赢') }}<button
                   type="button"
                   class="mh5-agent-commission-q"
-                  aria-label="查看净输赢说明"
+                  :aria-label="$t('查看净输赢说明')"
                   :aria-expanded="netWinTipOpen"
                   @click.stop="toggleNetWinTip"
                 >
@@ -647,9 +643,7 @@ onBeforeUnmount(() => {
                   v-if="netWinTipOpen"
                   class="mh5-agent-commission-tip-bubble"
                   role="tooltip"
-                >
-                  净输赢 = 游戏净输赢 - 其他成本
-                </span>
+                >{{ $t('净输赢 = 游戏净输赢 - 其他成本') }}</span>
               </span>
             </p>
             <p
@@ -661,7 +655,7 @@ onBeforeUnmount(() => {
           </div>
           <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
           <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">佣金比例</p>
+            <p class="mh5-agent-commission-cell__label">{{ $t('佣金比例') }}</p>
             <p class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__rate">
               {{ rebateLevelFormula.commissionRate }}
             </p>
@@ -688,12 +682,12 @@ onBeforeUnmount(() => {
       <section
         v-else
         class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-        aria-label="游戏净输赢减去其他成本等于总盈亏"
+        :aria-label="$t('游戏净输赢减去其他成本等于总盈亏')"
         @click.stop
       >
         <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra">
           <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">游戏净输赢</p>
+            <p class="mh5-agent-commission-cell__label">{{ $t('游戏净输赢') }}</p>
             <p
               class="mh5-agent-commission-cell__value"
               :class="agentMyProfitToneClass(shareFormula.gameTone)"
@@ -703,7 +697,7 @@ onBeforeUnmount(() => {
           </div>
           <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
           <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">其他成本</p>
+            <p class="mh5-agent-commission-cell__label">{{ $t('其他成本') }}</p>
             <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
               {{ shareFormula.costAmountText }}
             </p>
@@ -715,7 +709,7 @@ onBeforeUnmount(() => {
             :aria-label="`查看${shareFormula.total.name}明细`"
             @click="openDetail(shareFormula.total)"
           >
-            <p class="mh5-agent-commission-cell__label">{{ shareFormula.total.name }}</p>
+            <p class="mh5-agent-commission-cell__label">{{ $t(shareFormula.total.name) }}</p>
             <p
               class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
               :class="agentMyProfitToneClass(shareFormula.total.tone)"
@@ -752,9 +746,7 @@ onBeforeUnmount(() => {
               <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
                 {{ dialogLabelHeader }}
               </span>
-              <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value">
-                金额
-              </span>
+              <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value">{{ $t('金额') }}</span>
             </div>
             <div
               v-for="row in detailRows"
@@ -764,7 +756,7 @@ onBeforeUnmount(() => {
             >
               <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
                 <span class="mh5-agent-my-profit-dialog__label-wrap">
-                  <span>{{ row.label }}</span>
+                  <span>{{ $t(row.label) }}</span>
                   <button
                     v-if="row.formulaTip"
                     type="button"
@@ -802,9 +794,7 @@ onBeforeUnmount(() => {
           >
             {{ detailFormulaText }}
           </div>
-          <button type="button" class="mh5-agent-my-profit-dialog__btn" @click="closeDetail">
-            我知道了
-          </button>
+          <button type="button" class="mh5-agent-my-profit-dialog__btn" @click="closeDetail">{{ $t('我知道了') }}</button>
         </div>
       </div>
     </Transition>
@@ -816,8 +806,8 @@ onBeforeUnmount(() => {
           class="mh5-agent-overlay-mask"
           @click.self="closeMonthSheet"
         >
-          <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet" role="dialog" aria-modal="true" aria-label="选择月份">
-            <h2 class="mh5-xcoin-sheet__title">选择月份</h2>
+          <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet" role="dialog" aria-modal="true" :aria-label="$t('选择月份')">
+            <h2 class="mh5-xcoin-sheet__title">{{ $t('选择月份') }}</h2>
             <button
               v-for="opt in rebateMonthOptions"
               :key="opt.key"
@@ -826,7 +816,7 @@ onBeforeUnmount(() => {
               :class="{ 'mh5-xcoin-sheet__option--active': rebateMonth === opt.key }"
               @click="pickRebateMonth(opt.key)"
             >
-              {{ opt.label }}
+              {{ $t(opt.label) }}
             </button>
           </div>
         </div>

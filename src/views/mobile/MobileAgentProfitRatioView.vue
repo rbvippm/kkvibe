@@ -66,7 +66,7 @@ function goEdit() {
 
 <template>
   <div class="mh5-agent-profit-ratio-page">
-    <Mh5SubPageHeader title="代理收益比例">
+    <Mh5SubPageHeader :title="$t('代理收益比例')">
       <template #right>
         <Mh5SpecAnnot :spec="AGENT_PROFIT_RATIO_SPEC" placement="bottom" />
       </template>

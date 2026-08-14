@@ -90,7 +90,7 @@ function goList() {
 <template>
   <div class="mh5-billing-stats-page">
     <header class="mh5-billing-stats-header">
-      <button type="button" class="mh5-billing-stats-header__back" aria-label="返回" @click="router.back()">
+      <button type="button" class="mh5-billing-stats-header__back" :aria-label="$t('返回')" @click="router.back()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M15 6l-6 6 6 6"
@@ -101,8 +101,8 @@ function goList() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-stats-header__title">账单</h1>
-      <button type="button" class="mh5-billing-stats-header__list" aria-label="账单列表" @click="goList">
+      <h1 class="mh5-billing-stats-header__title">{{ $t('账单') }}</h1>
+      <button type="button" class="mh5-billing-stats-header__list" :aria-label="$t('账单列表')" @click="goList">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <rect x="5" y="4" width="11" height="14" rx="1.5" stroke="currentColor" stroke-width="1.6" />
           <path d="M8 8h5M8 11h5M8 14h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
@@ -118,7 +118,7 @@ function goList() {
     </header>
 
     <main class="mh5-billing-stats-main">
-      <div class="mh5-billing-stats-ranges" role="tablist" aria-label="统计周期">
+      <div class="mh5-billing-stats-ranges" role="tablist" :aria-label="$t('统计周期')">
         <button
           v-for="item in BILLING_STATS_RANGE_OPTIONS"
           :key="item.key"
@@ -129,7 +129,7 @@ function goList() {
           :aria-selected="rangeKey === item.key"
           @click="pickRange(item.key)"
         >
-          {{ item.label }}
+          {{ $t(item.label) }}
         </button>
       </div>
 
@@ -157,14 +157,14 @@ function goList() {
       <section class="mh5-billing-stats-card">
         <div class="mh5-billing-stats-card__grid">
           <div class="mh5-billing-stats-card__col">
-            <p class="mh5-billing-stats-card__label">支出</p>
+            <p class="mh5-billing-stats-card__label">{{ $t('支出') }}</p>
             <p class="mh5-billing-stats-card__amount mh5-billing-stats-card__amount--expense">
               {{ formatBillingStatsAmount(summary.expense, 'expense') }}
             </p>
             <p class="mh5-billing-stats-card__count">{{ formatBillingStatsCount(summary.expenseCount) }}</p>
           </div>
           <div class="mh5-billing-stats-card__col">
-            <p class="mh5-billing-stats-card__label">收入</p>
+            <p class="mh5-billing-stats-card__label">{{ $t('收入') }}</p>
             <p class="mh5-billing-stats-card__amount mh5-billing-stats-card__amount--income">
               {{ formatBillingStatsAmount(summary.income, 'income') }}
             </p>
@@ -172,15 +172,15 @@ function goList() {
           </div>
         </div>
         <div class="mh5-billing-stats-card__total">
-          <span>收支合计</span>
+          <span>{{ $t('收支合计') }}</span>
           <strong>{{ formatBillingStatsAmount(summary.net, 'net') }}</strong>
         </div>
       </section>
 
       <section class="mh5-billing-stats-rank">
         <div class="mh5-billing-stats-rank__head">
-          <h2 class="mh5-billing-stats-rank__title">排行榜</h2>
-          <div class="mh5-billing-stats-rank__toggle" role="tablist" aria-label="排行榜类型">
+          <h2 class="mh5-billing-stats-rank__title">{{ $t('排行榜') }}</h2>
+          <div class="mh5-billing-stats-rank__toggle" role="tablist" :aria-label="$t('排行榜类型')">
             <button
               type="button"
               role="tab"
@@ -188,9 +188,7 @@ function goList() {
               :class="{ 'mh5-billing-stats-rank__tab--active': rankMode === 'expense' }"
               :aria-selected="rankMode === 'expense'"
               @click="rankMode = 'expense'"
-            >
-              支出
-            </button>
+            >{{ $t('支出') }}</button>
             <button
               type="button"
               role="tab"
@@ -198,9 +196,7 @@ function goList() {
               :class="{ 'mh5-billing-stats-rank__tab--active': rankMode === 'income' }"
               :aria-selected="rankMode === 'income'"
               @click="rankMode = 'income'"
-            >
-              收入
-            </button>
+            >{{ $t('收入') }}</button>
           </div>
         </div>
 
@@ -217,7 +213,7 @@ function goList() {
               {{ index + 1 }}
             </span>
             <div class="mh5-billing-stats-rank__meta">
-              <span class="mh5-billing-stats-rank__name">{{ item.name }}</span>
+              <span class="mh5-billing-stats-rank__name">{{ $t(item.name) }}</span>
               <span class="mh5-billing-stats-rank__sub">{{ formatBillingStatsCount(item.count) }}</span>
             </div>
             <span
@@ -259,7 +255,7 @@ function goList() {
               <path d="M22 40c8-10 18-8 22-2" stroke="#ffb070" stroke-width="1.5" stroke-dasharray="2 3" />
             </svg>
           </div>
-          <p class="mh5-billing-stats-empty__text">暂无数据</p>
+          <p class="mh5-billing-stats-empty__text">{{ $t('暂无数据') }}</p>
         </div>
       </section>
     </main>
@@ -274,15 +270,15 @@ function goList() {
             aria-labelledby="billing-stats-currency-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="billing-stats-currency-title" class="mh5-wallet-sheet__title">选择币种</h2>
-              <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="closeSheet">
+              <h2 id="billing-stats-currency-title" class="mh5-wallet-sheet__title">{{ $t('选择币种') }}</h2>
+              <button type="button" class="mh5-wallet-sheet__close" :aria-label="$t('关闭')" @click="closeSheet">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </button>
             </div>
 
-            <div class="mh5-wallet-sheet__filters" role="tablist" aria-label="币种分类">
+            <div class="mh5-wallet-sheet__filters" role="tablist" :aria-label="$t('币种分类')">
               <button
                 v-for="tab in BILLING_STATS_CURRENCY_TABS"
                 :key="tab.key"
@@ -293,7 +289,7 @@ function goList() {
                 :aria-selected="currencyTab === tab.key"
                 @click="currencyTab = tab.key"
               >
-                {{ tab.label }}
+                {{ $t(tab.label) }}
               </button>
             </div>
 
@@ -317,7 +313,7 @@ function goList() {
                   {{ opt.symbol }}
                 </span>
                 <span class="agent-currency-sheet__meta">
-                  <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                  <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
                   <span v-if="opt.tip" class="mh5-lobby-currency-tip-inline">{{ opt.tip }}</span>
                 </span>
                 <span
@@ -352,8 +348,8 @@ function goList() {
             aria-labelledby="billing-stats-game-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="billing-stats-game-title" class="mh5-wallet-sheet__title">选择游戏</h2>
-              <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="closeSheet">
+              <h2 id="billing-stats-game-title" class="mh5-wallet-sheet__title">{{ $t('选择游戏') }}</h2>
+              <button type="button" class="mh5-wallet-sheet__close" :aria-label="$t('关闭')" @click="closeSheet">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
@@ -368,7 +364,7 @@ function goList() {
                 :class="{ 'agent-currency-sheet__item--active': game === opt.value }"
                 @click="selectGame(opt.value)"
               >
-                <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
                 <span
                   v-if="game === opt.value"
                   class="agent-currency-sheet__check agent-currency-sheet__check--active"

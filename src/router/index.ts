@@ -291,6 +291,12 @@ export const router = createRouter({
           meta: { title: '设置', hideTabBar: true },
         },
         {
+          path: 'mine/settings/language',
+          name: 'mobile-mine-language',
+          component: () => import('../views/mobile/MobileLanguageSettingsView.vue'),
+          meta: { title: '语言设置', hideTabBar: true },
+        },
+        {
           path: 'mine/more',
           name: 'mobile-mine-more',
           component: () => import('../views/mobile/MobileMoreFunctionsView.vue'),
@@ -328,13 +334,16 @@ export const router = createRouter({
         },
         {
           path: 'mine/bet-orders',
-          redirect: { name: 'mobile-agent', query: { tab: 'bet-order' } },
+          name: 'mobile-bet-records',
+          component: () => import('../views/mobile/MobileBetOrderQueryView.vue'),
+          props: { title: '投注记录', hideSpec: true },
+          meta: { title: '投注记录', hideTabBar: true },
         },
         {
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),
-          meta: { title: '银行账单', hideTabBar: true },
+          meta: { title: '交易记录', hideTabBar: true },
         },
         {
           path: 'mine/assets',

@@ -181,7 +181,7 @@ function send() {
           class="mh5-tg-h5-flow__mask mh5-tg-h5-flow__mask--soft"
           @click.self="closeAll"
         >
-          <div class="mh5-tg-h5-attach" role="menu" aria-label="附件">
+          <div class="mh5-tg-h5-attach" role="menu" :aria-label="$t('附件')">
             <button
               v-for="action in TG_H5_ATTACH_ACTIONS"
               :key="action.key"
@@ -191,7 +191,7 @@ function send() {
               @click="onAttach(action.key, action.label)"
             >
               <span class="mh5-tg-h5-attach__icon" :data-icon="action.icon" aria-hidden="true" />
-              <span>{{ action.label }}</span>
+              <span>{{ $t(action.label) }}</span>
             </button>
           </div>
         </div>
@@ -204,7 +204,7 @@ function send() {
           class="mh5-tg-h5-flow__mask"
           @click.self="closeAll"
         >
-          <div class="mh5-tg-h5-system" role="dialog" aria-modal="true" aria-label="选择来源">
+          <div class="mh5-tg-h5-system" role="dialog" aria-modal="true" :aria-label="$t('选择来源')">
             <div class="mh5-tg-h5-system__card">
               <button
                 v-for="source in TG_H5_SYSTEM_SOURCES"
@@ -214,10 +214,10 @@ function send() {
                 @click="onSystemSource(source.key)"
               >
                 <span class="mh5-tg-h5-system__glyph" :data-source="source.key" aria-hidden="true" />
-                <span>{{ source.label }}</span>
+                <span>{{ $t(source.label) }}</span>
               </button>
             </div>
-            <button type="button" class="mh5-tg-h5-system__cancel" @click="closeAll">取消</button>
+            <button type="button" class="mh5-tg-h5-system__cancel" @click="closeAll">{{ $t('取消') }}</button>
           </div>
         </div>
       </Transition>
@@ -229,22 +229,22 @@ function send() {
           class="mh5-tg-h5-picker"
           role="dialog"
           aria-modal="true"
-          aria-label="照片图库"
+          :aria-label="$t('照片图库')"
         >
           <header class="mh5-tg-h5-picker__header">
-            <button type="button" class="mh5-tg-h5-picker__round" aria-label="关闭" @click="stage = 'system'">
+            <button type="button" class="mh5-tg-h5-picker__round" :aria-label="$t('关闭')" @click="stage = 'system'">
               ✕
             </button>
             <div class="mh5-tg-h5-picker__seg" role="tablist">
-              <span class="mh5-tg-h5-picker__seg-item mh5-tg-h5-picker__seg-item--on">照片</span>
-              <span class="mh5-tg-h5-picker__seg-item">精选集</span>
+              <span class="mh5-tg-h5-picker__seg-item mh5-tg-h5-picker__seg-item--on">{{ $t('照片') }}</span>
+              <span class="mh5-tg-h5-picker__seg-item">{{ $t('精选集') }}</span>
             </div>
             <button
               type="button"
               class="mh5-tg-h5-picker__confirm"
               :class="{ 'mh5-tg-h5-picker__confirm--on': canConfirmPicker }"
               :disabled="!canConfirmPicker"
-              aria-label="完成"
+              :aria-label="$t('完成')"
               @click="confirmPicker"
             >
               ✓
@@ -252,8 +252,8 @@ function send() {
           </header>
 
           <div class="mh5-tg-h5-picker__privacy">
-            <strong>私密访问照片</strong>
-            <p>你的照片图库会在此处显示，但浏览器仅可访问你选定的项目。</p>
+            <strong>{{ $t('私密访问照片') }}</strong>
+            <p>{{ $t('你的照片图库会在此处显示，但浏览器仅可访问你选定的项目。') }}</p>
           </div>
 
           <div class="mh5-tg-h5-picker__grid">
@@ -277,8 +277,8 @@ function send() {
             <span class="mh5-tg-h5-picker__more">···</span>
             <div class="mh5-tg-h5-picker__summary">
               <strong v-if="selectedIds.length">{{ selectedIds.length }} 张照片</strong>
-              <strong v-else>选择项目</strong>
-              <span>包含位置</span>
+              <strong v-else>{{ $t('选择项目') }}</strong>
+              <span>{{ $t('包含位置') }}</span>
             </div>
             <span class="mh5-tg-h5-picker__search" aria-hidden="true">⌕</span>
           </footer>
@@ -292,13 +292,13 @@ function send() {
           class="mh5-tg-h5-camera"
           role="dialog"
           aria-modal="true"
-          aria-label="相机"
+          :aria-label="$t('相机')"
         >
           <div class="mh5-tg-h5-camera__top">
             <span class="mh5-tg-h5-camera__flash">A⚡</span>
           </div>
           <div class="mh5-tg-h5-camera__view">
-            <img class="mh5-tg-h5-camera__preview" src="/images/discover/cover-4.jpg" alt="取景" />
+            <img class="mh5-tg-h5-camera__preview" src="/images/discover/cover-4.jpg" :alt="$t('取景')" />
             <div class="mh5-tg-h5-camera__zoom">
               <button
                 v-for="z in ['.5', '1x', '2']"
@@ -315,13 +315,13 @@ function send() {
             <button
               type="button"
               class="mh5-tg-h5-camera__close"
-              aria-label="关闭"
+              :aria-label="$t('关闭')"
               @click="startAt === 'camera' ? closeAll() : (stage = 'system')"
             >
               ✕
             </button>
-            <button type="button" class="mh5-tg-h5-camera__shutter" aria-label="快门" @click="capturePhoto" />
-            <button type="button" class="mh5-tg-h5-camera__flip" aria-label="翻转" @click="showTip('已切换摄像头')">
+            <button type="button" class="mh5-tg-h5-camera__shutter" :aria-label="$t('快门')" @click="capturePhoto" />
+            <button type="button" class="mh5-tg-h5-camera__flip" :aria-label="$t('翻转')" @click="showTip('已切换摄像头')">
               ↺
             </button>
           </div>
@@ -330,16 +330,12 @@ function send() {
               type="button"
               :class="{ 'is-on': cameraMode === 'video' }"
               @click="cameraMode = 'video'"
-            >
-              视频
-            </button>
+            >{{ $t('视频') }}</button>
             <button
               type="button"
               :class="{ 'is-on': cameraMode === 'photo' }"
               @click="cameraMode = 'photo'"
-            >
-              照片
-            </button>
+            >{{ $t('照片') }}</button>
           </div>
         </div>
       </Transition>
@@ -353,9 +349,9 @@ function send() {
         >
           <div class="mh5-tg-h5-send" role="dialog" aria-modal="true" :aria-label="sendTitle" @click.stop>
             <header class="mh5-tg-h5-send__header">
-              <button type="button" class="mh5-tg-h5-send__x" aria-label="关闭" @click="closeAll">✕</button>
+              <button type="button" class="mh5-tg-h5-send__x" :aria-label="$t('关闭')" @click="closeAll">✕</button>
               <h2>{{ sendTitle }}</h2>
-              <button type="button" class="mh5-tg-h5-send__more" aria-label="更多" @click="moreOpen = !moreOpen">
+              <button type="button" class="mh5-tg-h5-send__more" :aria-label="$t('更多')" @click="moreOpen = !moreOpen">
                 ⋮
               </button>
             </header>
@@ -378,7 +374,7 @@ function send() {
                 >
                   HD
                 </span>
-                <span>{{ action.label }}</span>
+                <span>{{ $t(action.label) }}</span>
               </button>
             </div>
 
@@ -389,7 +385,7 @@ function send() {
                 <button
                   type="button"
                   class="mh5-tg-h5-send__trash"
-                  aria-label="删除"
+                  :aria-label="$t('删除')"
                   @click="removeSendItem(item.id)"
                 >
                   🗑
@@ -400,9 +396,9 @@ function send() {
             <footer class="mh5-tg-h5-send__footer">
               <div class="mh5-tg-h5-send__caption">
                 <span aria-hidden="true">☺</span>
-                <input v-model="caption" type="text" placeholder="添加说明…" enterkeyhint="send" />
+                <input v-model="caption" type="text" :placeholder="$t('添加说明…')" enterkeyhint="send" />
               </div>
-              <button type="button" class="mh5-tg-h5-send__btn" aria-label="发送" @click="send">
+              <button type="button" class="mh5-tg-h5-send__btn" :aria-label="$t('发送')" @click="send">
                 ➤
               </button>
             </footer>

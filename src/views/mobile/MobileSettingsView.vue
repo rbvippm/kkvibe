@@ -1,20 +1,28 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import { MINE_SETTINGS_GROUPS, type MineSettingsItem } from '../../constants/mineSettings'
+import { appLocaleMeta, t } from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
+const router = useRouter()
+
 function handleItemClick(item: MineSettingsItem) {
+  if (item.key === 'language') {
+    void router.push({ name: 'mobile-mine-language' })
+    return
+  }
   void mh5Alert({
-    title: `「${item.title}」功能开发中`,
-    message: '原型占位',
+    title: t('「{title}」功能开发中', { title: t(item.title) }),
+    message: t('原型占位'),
   })
 }
 </script>
 
 <template>
   <div class="mh5-settings-page">
-    <Mh5SubPageHeader title="设置" />
+    <Mh5SubPageHeader :title="$t('设置')" />
 
     <main class="mh5-settings-main">
       <section v-for="group in MINE_SETTINGS_GROUPS" :key="group.key" class="mh5-settings-group">
@@ -108,10 +116,13 @@ function handleItemClick(item: MineSettingsItem) {
             </svg>
           </span>
 
-          <span class="mh5-settings-item__title">{{ item.title }}</span>
+          <span class="mh5-settings-item__title">{{ $t(item.title) }}</span>
 
           <span class="mh5-settings-item__trail">
-            <template v-if="item.trailing?.type === 'phone'">
+            <template v-if="item.key === 'language'">
+              <span class="mh5-settings-item__locale">{{ appLocaleMeta.nativeName }}</span>
+            </template>
+            <template v-else-if="item.trailing?.type === 'phone'">
               <span class="mh5-settings-item__phone">{{ item.trailing.value }}</span>
             </template>
             <template v-else-if="item.trailing?.type === 'wallet-unset'">

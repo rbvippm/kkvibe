@@ -67,10 +67,10 @@ const claimableRebateCount = computed(() =>
 
 <template>
   <div class="mh5-invite-page">
-    <Mh5SubPageHeader title="邀请" :on-back="goBackToMine" />
+    <Mh5SubPageHeader :title="$t('邀请')" :on-back="goBackToMine" />
 
     <main class="mh5-invite-page__main">
-      <section class="mh5-invite-card" aria-label="邀请海报">
+      <section class="mh5-invite-card" :aria-label="$t('邀请海报')">
         <div class="mh5-invite-card__poster" :style="{ background: posters[posterIndex].tone }">
           <div class="mh5-invite-card__qr-wrap" aria-hidden="true">
             <div class="mh5-invite-card__qr">
@@ -96,13 +96,11 @@ const claimableRebateCount = computed(() =>
                 d="M14 7V4l7 7-7 7v-3.2C8.5 14.8 5.5 16.2 3 19c1-5 4-9.2 11-12z"
                 fill="currentColor"
               />
-            </svg>
-            邀请好友
-          </button>
+            </svg>{{ $t('邀请好友') }}</button>
         </div>
 
         <div class="mh5-invite-card__code">
-          <span>邀请码</span>
+          <span>{{ $t('邀请码') }}</span>
           <button type="button" class="mh5-invite-card__code-btn" @click="copyInviteCode">
             {{ INVITE_PROFILE.inviteCode }}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -126,7 +124,7 @@ const claimableRebateCount = computed(() =>
         </div>
       </section>
 
-      <div class="mh5-invite-dots" role="tablist" aria-label="海报切换">
+      <div class="mh5-invite-dots" role="tablist" :aria-label="$t('海报切换')">
         <button
           v-for="(item, index) in posters"
           :key="item.id"
@@ -141,7 +139,7 @@ const claimableRebateCount = computed(() =>
       <section
         class="mh5-invite-actions"
         :class="{ 'mh5-invite-actions--with-rebate': showInviteRebateEntry }"
-        aria-label="邀请操作"
+        :aria-label="$t('邀请操作')"
       >
         <button type="button" class="mh5-invite-actions__item" @click="saveImage">
           <span class="mh5-invite-actions__icon" aria-hidden="true">
@@ -161,7 +159,7 @@ const claimableRebateCount = computed(() =>
               />
             </svg>
           </span>
-          <span>保存图片</span>
+          <span>{{ $t('保存图片') }}</span>
         </button>
         <button type="button" class="mh5-invite-actions__item" @click="openContacts">
           <span class="mh5-invite-actions__icon" aria-hidden="true">
@@ -182,7 +180,7 @@ const claimableRebateCount = computed(() =>
               />
             </svg>
           </span>
-          <span>通讯录</span>
+          <span>{{ $t('通讯录') }}</span>
         </button>
         <button type="button" class="mh5-invite-actions__item" @click="goRecords">
           <span class="mh5-invite-actions__icon" aria-hidden="true">
@@ -203,7 +201,7 @@ const claimableRebateCount = computed(() =>
               />
             </svg>
           </span>
-          <span>邀请记录</span>
+          <span>{{ $t('邀请记录') }}</span>
         </button>
         <button
           v-if="showInviteRebateEntry"
@@ -231,7 +229,7 @@ const claimableRebateCount = computed(() =>
               {{ claimableRebateCount > 99 ? '99+' : claimableRebateCount }}
             </span>
           </span>
-          <span>邀请返利</span>
+          <span>{{ $t('邀请返利') }}</span>
         </button>
       </section>
     </main>

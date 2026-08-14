@@ -1,3 +1,4 @@
+import { sortByLocaleCashOrder } from '../i18n'
 import { filterTeamList, MOCK_TEAM_SELF, type TeamListItem } from './agentTeam'
 
 export type AgentDetailTab = 'wallet' | 'credit' | 'profit' | 'game' | 'login'
@@ -120,8 +121,14 @@ export function isAgentCreditCurrency(currency: string): currency is AgentCredit
   return currency === '信用额度-CNY' || currency === '信用额度-USD'
 }
 
+export function getAgentCashCurrencyOptions(): AgentWalletCurrency[] {
+  return sortByLocaleCashOrder([...AGENT_CASH_CURRENCY_OPTIONS], (item) => item)
+}
+
 export function getAgentDetailCurrencyOptions(isCredited: boolean): readonly AgentWalletCurrency[] {
-  return isCredited ? AGENT_WALLET_CURRENCY_OPTIONS : AGENT_CASH_CURRENCY_OPTIONS
+  return isCredited
+    ? sortByLocaleCashOrder([...AGENT_WALLET_CURRENCY_OPTIONS], (item) => item)
+    : getAgentCashCurrencyOptions()
 }
 
 export function formatCreditLimitRows(stats: AgentCreditLimitStats) {
@@ -162,10 +169,10 @@ export function formatCashWalletRows(wallet?: AgentCashWalletRow | null) {
   ]
 }
 
-/** 现金钱包：按 KKC / USDT / KKV 分类卡片列表 */
+/** 现金钱包：分类卡片顺序跟随语言 */
 export function formatCashWalletGroups(wallets?: AgentCashWalletRow[] | null) {
   const list = wallets ?? []
-  return AGENT_CASH_CURRENCY_TABS.map((tab) => {
+  return sortByLocaleCashOrder([...AGENT_CASH_CURRENCY_TABS], (tab) => tab.key).map((tab) => {
     const wallet = list.find((item) => item.currency === tab.key) ?? null
     return {
       currency: tab.key,

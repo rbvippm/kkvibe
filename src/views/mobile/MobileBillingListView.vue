@@ -74,7 +74,7 @@ function goSearch() {
 <template>
   <div class="mh5-billing-page">
     <header class="mh5-billing-header">
-      <button type="button" class="mh5-billing-header__back" aria-label="返回" @click="router.back()">
+      <button type="button" class="mh5-billing-header__back" :aria-label="$t('返回')" @click="router.back()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M15 6l-6 6 6 6"
@@ -85,9 +85,9 @@ function goSearch() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-header__title">银行账单</h1>
+      <h1 class="mh5-billing-header__title">{{ $t('交易记录') }}</h1>
       <div class="mh5-billing-header__actions">
-        <button type="button" class="mh5-billing-header__icon" aria-label="搜索账单" @click="goSearch">
+        <button type="button" class="mh5-billing-header__icon" :aria-label="$t('搜索账单')" @click="goSearch">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
             <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -96,7 +96,7 @@ function goSearch() {
         <button
           type="button"
           class="mh5-billing-header__icon mh5-billing-header__icon--accent"
-          aria-label="账单统计"
+          :aria-label="$t('账单统计')"
           @click="router.push({ name: 'mobile-billing-stats' })"
         >
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
@@ -141,7 +141,7 @@ function goSearch() {
     </div>
 
     <main class="mh5-billing-main">
-      <p v-if="!groupedRecords.length" class="mh5-billing-empty">暂无账单记录</p>
+      <p v-if="!groupedRecords.length" class="mh5-billing-empty">{{ $t('暂无账单记录') }}</p>
 
       <section v-for="[month, rows] in groupedRecords" :key="month" class="mh5-billing-group">
         <Mh5BillingGroupHead :month="month" :rows="rows" :selected-currency="filterCurrency" />
@@ -159,8 +159,8 @@ function goSearch() {
             aria-labelledby="billing-type-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="billing-type-title" class="mh5-wallet-sheet__title">选择类型</h2>
-              <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="closeFilter">
+              <h2 id="billing-type-title" class="mh5-wallet-sheet__title">{{ $t('选择类型') }}</h2>
+              <button type="button" class="mh5-wallet-sheet__close" :aria-label="$t('关闭')" @click="closeFilter">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
@@ -175,7 +175,7 @@ function goSearch() {
                 :class="{ 'agent-currency-sheet__item--active': filterType === opt.value }"
                 @click="selectType(opt.value)"
               >
-                <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
                 <span
                   v-if="filterType === opt.value"
                   class="agent-currency-sheet__check agent-currency-sheet__check--active"
@@ -208,15 +208,15 @@ function goSearch() {
             aria-labelledby="billing-currency-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="billing-currency-title" class="mh5-wallet-sheet__title">选择币种</h2>
-              <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="closeFilter">
+              <h2 id="billing-currency-title" class="mh5-wallet-sheet__title">{{ $t('选择币种') }}</h2>
+              <button type="button" class="mh5-wallet-sheet__close" :aria-label="$t('关闭')" @click="closeFilter">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </button>
             </div>
 
-            <div class="mh5-wallet-sheet__filters" role="tablist" aria-label="币种分类">
+            <div class="mh5-wallet-sheet__filters" role="tablist" :aria-label="$t('币种分类')">
               <button
                 v-for="tab in BILLING_CURRENCY_TABS"
                 :key="tab.key"
@@ -227,7 +227,7 @@ function goSearch() {
                 :aria-selected="currencyTab === tab.key"
                 @click="currencyTab = tab.key"
               >
-                {{ tab.label }}
+                {{ $t(tab.label) }}
               </button>
             </div>
 
@@ -251,7 +251,7 @@ function goSearch() {
                   {{ opt.symbol }}
                 </span>
                 <span class="agent-currency-sheet__meta">
-                  <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                  <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
                   <span v-if="opt.tip" class="mh5-lobby-currency-tip-inline">{{ opt.tip }}</span>
                 </span>
                 <span

@@ -73,7 +73,7 @@ function goBack() {
 <template>
   <div class="mh5-billing-page mh5-billing-search-page">
     <header class="mh5-billing-search-bar-header">
-      <button type="button" class="mh5-billing-search-bar-header__back" aria-label="返回" @click="goBack">
+      <button type="button" class="mh5-billing-search-bar-header__back" :aria-label="$t('返回')" @click="goBack">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M15 6l-6 6 6 6"
@@ -103,24 +103,22 @@ function goBack() {
           v-if="hasKeyword"
           type="button"
           class="mh5-billing-search-input__clear"
-          aria-label="清除"
+          :aria-label="$t('清除')"
           @click="clearKeyword"
         >
           ×
         </button>
       </div>
 
-      <button type="button" class="mh5-billing-search-bar-header__action" @click="applyKeyword(keyword)">
-        搜索
-      </button>
+      <button type="button" class="mh5-billing-search-bar-header__action" @click="applyKeyword(keyword)">{{ $t('搜索') }}</button>
     </header>
 
     <main class="mh5-billing-main">
       <template v-if="!hasKeyword">
         <section v-if="recentSearches.length" class="mh5-billing-search-panel">
           <div class="mh5-billing-search-panel__head">
-            <h2 class="mh5-billing-search-panel__title">最近搜索</h2>
-            <button type="button" class="mh5-billing-search-panel__clear" @click="clearHistory">清空</button>
+            <h2 class="mh5-billing-search-panel__title">{{ $t('最近搜索') }}</h2>
+            <button type="button" class="mh5-billing-search-panel__clear" @click="clearHistory">{{ $t('清空') }}</button>
           </div>
           <div class="mh5-billing-search-chips">
             <button
@@ -136,7 +134,7 @@ function goBack() {
         </section>
 
         <section class="mh5-billing-search-panel">
-          <h2 class="mh5-billing-search-panel__title">常用搜索</h2>
+          <h2 class="mh5-billing-search-panel__title">{{ $t('常用搜索') }}</h2>
           <div class="mh5-billing-search-chips">
             <button
               v-for="item in BILLING_HOT_KEYWORDS"

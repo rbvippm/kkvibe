@@ -116,7 +116,7 @@ onUnmounted(() => {
           <div class="mh5-spec-annot__panel-head">
             <span class="mh5-spec-annot__panel-tag">移动端 PRD · #{{ spec.no }}</span>
             <strong class="mh5-spec-annot__panel-title">
-              <span class="mh5-spec-annot__panel-no">【{{ spec.no }}】</span>{{ spec.title }}
+              <span class="mh5-spec-annot__panel-no">【{{ spec.no }}】</span>{{ $t(spec.title) }}
             </strong>
           </div>
 
@@ -125,13 +125,13 @@ onUnmounted(() => {
             :key="section.key"
             class="mh5-spec-annot__section"
           >
-            <h4 class="mh5-spec-annot__section-title">{{ section.label }}</h4>
+            <h4 class="mh5-spec-annot__section-title">{{ $t(section.label) }}</h4>
             <ul class="mh5-spec-annot__section-list">
               <li v-for="(line, index) in section.lines" :key="index">{{ line }}</li>
             </ul>
           </section>
         </div>
-        <button type="button" class="mh5-spec-annot__panel-close" @click="closePanel">知道了</button>
+        <button type="button" class="mh5-spec-annot__panel-close" @click="closePanel">{{ $t('知道了') }}</button>
       </div>
     </Teleport>
   </span>

@@ -1449,7 +1449,7 @@
   flex-shrink: 0;
   width: 28px;
   height: 28px;
-  color: var(--mh5-mine-primary, #ff8c00);
+  color: #454545;
 }
 
 .mh5-mine-menu__title {
@@ -2308,6 +2308,23 @@
 .mh5-settings-item__arrow {
   flex-shrink: 0;
   color: #c4c8cf;
+}
+
+.mh5-settings-item--checked .mh5-settings-item__title {
+  font-weight: 600;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-settings-item__check {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-settings-item__locale {
+  font-size: 14px;
+  color: var(--mh5-app-text-secondary);
 }
 
 /* ---------- 大厅首页 ---------- */
@@ -15813,6 +15830,69 @@ div.agent-home__profit-tab--ratio {
   padding: 10px 12px 0;
   background: var(--mh5-app-card);
   border-bottom: 1px solid var(--mh5-app-border);
+}
+
+.mh5-bet-order-toolbar--member {
+  padding: 0 8px 0 4px;
+}
+
+.mh5-bet-order-toolbar__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.mh5-bet-order-toolbar__picks {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+}
+
+.mh5-bet-order-toolbar__pick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+}
+
+.mh5-bet-order-toolbar__pick-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-bet-order-toolbar__pick--active {
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-bet-order-toolbar__filter {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--mh5-app-orange);
+  cursor: pointer;
+}
+
+.mh5-bet-order-toolbar__filter:active {
+  opacity: 0.7;
 }
 
 .mh5-bet-order-search {

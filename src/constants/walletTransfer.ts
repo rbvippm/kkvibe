@@ -2,7 +2,7 @@
 
 import {
   WALLET_CATALOG,
-  WALLET_FREQUENT_IDS,
+  getWalletFrequentIds,
   type WalletCatalogItem,
 } from './walletCatalog'
 
@@ -37,8 +37,10 @@ export const WALLET_TRANSFER_TABS: { key: WalletTransferTab; label: string }[] =
   { key: 'exchange', label: '兑换' },
 ]
 
-/** 充值快捷币种，与全部钱包「常用」及大厅非信用额度币种同序 */
-export const WALLET_QUICK_CURRENCY_IDS = WALLET_FREQUENT_IDS
+/** 充值快捷币种，与全部钱包「常用」及大厅非信用额度币种同序（跟随语言） */
+export function getWalletQuickCurrencyIds() {
+  return getWalletFrequentIds()
+}
 
 export const WALLET_TRANSFER_CURRENCIES: WalletTransferCurrency[] = WALLET_CATALOG.filter(
   (item): item is WalletTransferCurrency => item.kind !== 'credit',

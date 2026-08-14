@@ -12,7 +12,8 @@ import {
   agentAppCurrency,
   isAgentCreditCurrency,
   setAgentAppCreditCurrency,
-  setAgentAppCurrency,
+  setAgentAppCurrencyByUser,
+  fallbackAgentCashCurrency,
 } from '../../constants/agentAppCurrency'
 import {
   MEMBER_GAME_SUB_TABS,
@@ -146,7 +147,7 @@ const rebateGameDetail = computed(() => {
 watch(isCredited, (credited) => {
   if (!credited) {
     if (activeTab.value === 'credit') activeTab.value = 'manage'
-    if (isAgentCreditCurrency(currency.value)) setAgentAppCurrency('KKC')
+    if (isAgentCreditCurrency(currency.value)) fallbackAgentCashCurrency()
   }
 })
 
@@ -291,7 +292,7 @@ function goCredit() {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrency(value)
+  setAgentAppCurrencyByUser(value)
   currencyPickerOpen.value = false
 }
 
@@ -304,7 +305,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
   <div class="mh5-member-detail-page">
     <header class="mh5-member-detail-hero">
       <div class="mh5-member-detail-nav">
-        <button type="button" class="mh5-member-detail-nav__back" aria-label="返回" @click="router.back()">
+        <button type="button" class="mh5-member-detail-nav__back" :aria-label="$t('返回')" @click="router.back()">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
               d="M15 6l-6 6 6 6"
@@ -315,7 +316,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             />
           </svg>
         </button>
-        <h1 class="mh5-member-detail-nav__title">会员详情</h1>
+        <h1 class="mh5-member-detail-nav__title">{{ $t('会员详情') }}</h1>
         <div class="mh5-member-detail-nav__actions">
           <Mh5SpecAnnot
             v-if="!isRebateAgent"
@@ -325,7 +326,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           <button
             type="button"
             class="mh5-member-detail-nav__currency"
-            aria-label="切换币种"
+            :aria-label="$t('切换币种')"
             @click="currencyPickerOpen = true"
           >
             <span>{{ currency }}</span>
@@ -353,11 +354,11 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
         <div class="mh5-member-detail-card__divider" aria-hidden="true" />
         <div class="mh5-member-detail-card__meta">
           <div class="mh5-member-detail-meta">
-            <p class="mh5-member-detail-meta__label">会员账号</p>
+            <p class="mh5-member-detail-meta__label">{{ $t('会员账号') }}</p>
             <p class="mh5-member-detail-meta__value">{{ member.memberAccount }}</p>
           </div>
           <div class="mh5-member-detail-meta">
-            <p class="mh5-member-detail-meta__label">上级代理</p>
+            <p class="mh5-member-detail-meta__label">{{ $t('上级代理') }}</p>
             <p class="mh5-member-detail-meta__value">{{ member.superiorAgent }}</p>
           </div>
         </div>
@@ -365,7 +366,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
     </header>
 
     <main v-if="member" class="mh5-member-detail-body">
-      <div class="mh5-member-detail-tabs" role="tablist" aria-label="会员详情分类">
+      <div class="mh5-member-detail-tabs" role="tablist" :aria-label="$t('会员详情分类')">
         <button
           v-for="tab in detailTabs"
           :key="tab.key"
@@ -376,7 +377,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           :aria-selected="activeTab === tab.key"
           @click="onDetailTabClick(tab.key)"
         >
-          {{ tab.label }}
+          {{ $t(tab.label) }}
         </button>
       </div>
 
@@ -387,14 +388,14 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           class="mh5-member-detail-panel"
         >
           <div class="mh5-member-detail-panel__head">
-            <h3 class="mh5-member-detail-panel__title">{{ group.title }}</h3>
+            <h3 class="mh5-member-detail-panel__title">{{ $t(group.title) }}</h3>
           </div>
           <div
             v-for="item in group.rows"
             :key="`${group.currency}-${item.label}`"
             class="mh5-member-detail-panel__row"
           >
-            <span class="mh5-member-detail-panel__label">{{ item.label }}</span>
+            <span class="mh5-member-detail-panel__label">{{ $t(item.label) }}</span>
             <span class="mh5-member-detail-panel__value">{{ item.value }}</span>
           </div>
         </section>

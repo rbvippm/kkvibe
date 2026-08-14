@@ -37,7 +37,7 @@ function goRecords() {
 
 <template>
   <div class="mh5-xcoin-page">
-    <Mh5SubPageHeader title="我的报表">
+    <Mh5SubPageHeader :title="$t('我的报表')">
       <template #right>
         <span class="mh5-xcoin-report-currency">X ▾</span>
       </template>

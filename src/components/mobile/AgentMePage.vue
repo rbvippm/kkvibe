@@ -54,9 +54,7 @@ function openMenu(item: AgentMeMenuItem) {
 <template>
   <div class="agent-me-page">
     <header class="agent-me-header">
-      <h1 class="agent-me-header__title">
-        我的
-        <Mh5SpecAnnot
+      <h1 class="agent-me-header__title">{{ $t('我的') }}<Mh5SpecAnnot
           v-if="isRebateAgent"
           :spec="AGENT_ME_REBATE_SPEC"
           placement="bottom"
@@ -70,7 +68,7 @@ function openMenu(item: AgentMeMenuItem) {
         <div class="agent-me-profile__body">
           <p class="agent-me-profile__nickname">昵称:{{ profile.nickname }}</p>
           <div class="agent-me-profile__badge">
-            <span class="agent-me-profile__level" aria-label="等级">
+            <span class="agent-me-profile__level" :aria-label="$t('等级')">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M12 2l2.9 5.88 6.5.95-4.7 4.58 1.1 6.47L12 17.77l-5.8 3.05 1.1-6.47-4.7-4.58 6.5-.95L12 2z"
@@ -94,12 +92,12 @@ function openMenu(item: AgentMeMenuItem) {
             :key="row.key"
             class="agent-me-profit__row"
           >
-            <span class="agent-me-profit__row-label">{{ row.label }}</span>
+            <span class="agent-me-profit__row-label">{{ $t(row.label) }}</span>
             <span class="agent-me-profit__row-value">{{ row.value }}</span>
           </div>
         </div>
         <div class="agent-me-profit__footer">
-          <span>更新时间</span>
+          <span>{{ $t('更新时间') }}</span>
           <span>{{ MOCK_AGENT_ME_UPDATED_AT }}</span>
         </div>
       </section>
@@ -136,7 +134,7 @@ function openMenu(item: AgentMeMenuItem) {
             />
           </svg>
         </span>
-        <span class="agent-me-menu-item__title">{{ item.title }}</span>
+        <span class="agent-me-menu-item__title">{{ $t(item.title) }}</span>
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" class="agent-me-menu-item__arrow" aria-hidden="true">
           <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
         </svg>

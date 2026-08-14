@@ -133,7 +133,7 @@ function pickAgent(value: string) {
             :class="{ 'mh5-settlement-sheet__option--active': selectedAgentId === opt.value }"
             @click="pickAgent(opt.value)"
           >
-            {{ opt.label }}
+            {{ $t(opt.label) }}
           </button>
         </div>
       </div>

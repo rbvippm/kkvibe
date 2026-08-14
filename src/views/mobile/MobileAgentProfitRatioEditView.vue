@@ -146,7 +146,7 @@ async function saveRatios() {
       </p>
 
       <section class="mh5-agent-credit-slider-card">
-        <span class="mh5-agent-credit-slider-card__label">占成</span>
+        <span class="mh5-agent-credit-slider-card__label">{{ $t('占成') }}</span>
         <div class="mh5-agent-credit-slider">
           <div class="mh5-agent-credit-slider__track">
             <div class="mh5-agent-credit-slider__fill" :style="{ width: `${sharePercent}%` }" />
@@ -157,7 +157,7 @@ async function saveRatios() {
               min="0"
               max="100"
               step="1"
-              aria-label="占成比例"
+              :aria-label="$t('占成比例')"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${sharePercent}%` }">
               {{ sharePercent }}%
@@ -167,7 +167,7 @@ async function saveRatios() {
       </section>
 
       <section class="mh5-agent-credit-slider-card">
-        <span class="mh5-agent-credit-slider-card__label">退水</span>
+        <span class="mh5-agent-credit-slider-card__label">{{ $t('退水') }}</span>
         <div class="mh5-agent-credit-slider">
           <div class="mh5-agent-credit-slider__track">
             <div class="mh5-agent-credit-slider__fill" :style="{ width: `${rebatePercent}%` }" />
@@ -178,7 +178,7 @@ async function saveRatios() {
               min="0"
               max="100"
               step="1"
-              aria-label="退水比例"
+              :aria-label="$t('退水比例')"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${rebatePercent}%` }">
               {{ rebatePercent }}%
@@ -189,7 +189,7 @@ async function saveRatios() {
 
       <section class="mh5-agent-credit-cost-card">
         <div class="mh5-agent-credit-cost-card__left">
-          <span class="mh5-agent-credit-cost-card__label">其他成本</span>
+          <span class="mh5-agent-credit-cost-card__label">{{ $t('其他成本') }}</span>
         </div>
         <div class="mh5-agent-credit-table__cell">
           <button
@@ -223,12 +223,12 @@ async function saveRatios() {
           <span class="mh5-agent-profit-ratio-edit-product__icon" aria-hidden="true">
             {{ getAgentProfitRatioProductIcon(product.key) }}
           </span>
-          <h3>{{ product.name }}</h3>
+          <h3>{{ $t(product.name) }}</h3>
         </div>
 
         <div class="mh5-agent-profit-ratio-edit-product__panel">
           <div class="mh5-agent-profit-ratio-edit-product__row">
-            <span>占成</span>
+            <span>{{ $t('占成') }}</span>
             <label class="mh5-agent-profit-ratio-edit-product__input-wrap">
               <input
                 :value="product.share"
@@ -243,7 +243,7 @@ async function saveRatios() {
             </label>
           </div>
           <div class="mh5-agent-profit-ratio-edit-product__row">
-            <span>退水</span>
+            <span>{{ $t('退水') }}</span>
             <label class="mh5-agent-profit-ratio-edit-product__input-wrap">
               <input
                 :value="product.rebate"
@@ -262,13 +262,13 @@ async function saveRatios() {
     </main>
 
     <footer class="mh5-agent-profit-ratio-edit-footer safe-pb">
-      <button type="button" class="mh5-agent-profit-ratio-edit-footer__btn" @click="saveRatios">保存</button>
+      <button type="button" class="mh5-agent-profit-ratio-edit-footer__btn" @click="saveRatios">{{ $t('保存') }}</button>
     </footer>
 
     <Teleport to="body">
       <div v-if="costEditVisible" class="mh5-agent-credit-edit-mask" @click.self="closeCostEdit">
-        <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" aria-label="编辑其他成本">
-          <h3 class="mh5-agent-credit-edit-panel__title">编辑其他成本</h3>
+        <div class="mh5-agent-credit-edit-panel" role="dialog" aria-modal="true" :aria-label="$t('编辑其他成本')">
+          <h3 class="mh5-agent-credit-edit-panel__title">{{ $t('编辑其他成本') }}</h3>
           <p class="mh5-agent-credit-edit-panel__hint">
             最高 {{ formatCreditPercent(maxCost, 'share') }}
           </p>
@@ -281,7 +281,7 @@ async function saveRatios() {
               type="text"
               class="mh5-agent-credit-edit-panel__input"
               inputmode="numeric"
-              placeholder="请输入整数"
+              :placeholder="$t('请输入整数')"
               :aria-invalid="!!costError"
               @input="onCostDraftInput"
             />
@@ -289,16 +289,12 @@ async function saveRatios() {
           </div>
           <p v-if="costError" class="mh5-agent-credit-edit-panel__error">{{ costError }}</p>
           <div class="mh5-agent-credit-edit-panel__actions">
-            <button type="button" class="mh5-agent-credit-edit-panel__btn" @click="closeCostEdit">
-              取消
-            </button>
+            <button type="button" class="mh5-agent-credit-edit-panel__btn" @click="closeCostEdit">{{ $t('取消') }}</button>
             <button
               type="button"
               class="mh5-agent-credit-edit-panel__btn mh5-agent-credit-edit-panel__btn--primary"
               @click="saveCostEdit"
-            >
-              保存
-            </button>
+            >{{ $t('保存') }}</button>
           </div>
         </div>
       </div>

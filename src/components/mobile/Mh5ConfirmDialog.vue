@@ -31,7 +31,7 @@ function onCancel() {
           </div>
 
           <h2 id="mh5-confirm-title" class="mh5-confirm-dialog__title">
-            {{ mh5ConfirmState.title }}
+            {{ $t(mh5ConfirmState.title) }}
           </h2>
           <p
             v-if="mh5ConfirmState.message"

@@ -44,7 +44,7 @@ async function acceptInvite(invite: MemberAgentInvite) {
 
 <template>
   <div class="agent-invite-page">
-    <Mh5SubPageHeader title="代理邀请">
+    <Mh5SubPageHeader :title="$t('代理邀请')">
       <template #right>
         <Mh5SpecAnnot :spec="MEMBER_AGENT_INVITES_SPEC" placement="bottom" />
       </template>

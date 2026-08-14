@@ -27,9 +27,9 @@ function onGameClick(name: string) {
 
 <template>
   <div class="mh5-games-page">
-    <Mh5SubPageHeader title="游戏中心" />
+    <Mh5SubPageHeader :title="$t('游戏中心')" />
 
-    <p class="mh5-games-subtitle">热门游戏，即刻开玩</p>
+    <p class="mh5-games-subtitle">{{ $t('热门游戏，即刻开玩') }}</p>
 
     <div class="mh5-games-grid">
       <button
@@ -40,7 +40,7 @@ function onGameClick(name: string) {
         @click="onGameClick(game.name)"
       >
         <span class="mh5-game-card__icon">{{ game.icon }}</span>
-        <span class="mh5-game-card__name">{{ game.name }}</span>
+        <span class="mh5-game-card__name">{{ $t(game.name) }}</span>
       </button>
     </div>
 

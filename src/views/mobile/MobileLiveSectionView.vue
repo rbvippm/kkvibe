@@ -43,8 +43,8 @@ function enterRoom(room: LobbyRoom) {
 
 <template>
   <div class="flex h-full min-h-0 flex-col">
-    <Mh5SubPageHeader title="语聊直播" />
-    <div class="mh5-sub-tabs" role="tablist" aria-label="直播二级导航">
+    <Mh5SubPageHeader :title="$t('语聊直播')" />
+    <div class="mh5-sub-tabs" role="tablist" :aria-label="$t('直播二级导航')">
       <button
         v-for="tab in subTabs"
         :key="tab.key"
@@ -55,9 +55,9 @@ function enterRoom(room: LobbyRoom) {
         :aria-selected="activeSubTab === tab.key"
         @click="activeSubTab = tab.key"
       >
-        {{ tab.label }}
+        {{ $t(tab.label) }}
       </button>
-      <button type="button" class="mh5-sub-tabs__menu" aria-label="更多">
+      <button type="button" class="mh5-sub-tabs__menu" :aria-label="$t('更多')">
         <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true">
           <rect x="2" y="4" width="14" height="1.5" rx="0.5" />
           <rect x="2" y="8.25" width="14" height="1.5" rx="0.5" />
@@ -72,7 +72,7 @@ function enterRoom(room: LobbyRoom) {
         <div class="mh5-lobby-grid">
           <article v-for="room in lobbyRooms" :key="room.id" class="mh5-lobby-card">
             <div class="mh5-lobby-card__bg" aria-hidden="true" />
-            <h3 class="mh5-lobby-card__title">{{ room.title }}</h3>
+            <h3 class="mh5-lobby-card__title">{{ $t(room.title) }}</h3>
             <p v-if="room.subtitle" class="mh5-lobby-card__subtitle">{{ room.subtitle }}</p>
             <div class="mh5-lobby-card__footer">
               <div class="mh5-lobby-card__avatars">
@@ -85,13 +85,11 @@ function enterRoom(room: LobbyRoom) {
                 </span>
                 <span class="mh5-lobby-card__count">{{ room.memberCount }}</span>
               </div>
-              <button type="button" class="mh5-lobby-card__join" @click="enterRoom(room)">
-                加入
-              </button>
+              <button type="button" class="mh5-lobby-card__join" @click="enterRoom(room)">{{ $t('加入') }}</button>
             </div>
           </article>
         </div>
-        <p class="mh5-lobby-end">没有更多数据了</p>
+        <p class="mh5-lobby-end">{{ $t('没有更多数据了') }}</p>
       </template>
 
       <!-- 麦控演示 -->

@@ -186,7 +186,7 @@ function openChannelSettings() {
 
     <header class="mh5-discover-header">
       <div class="mh5-discover-nav">
-        <button type="button" class="mh5-discover-nav__back" aria-label="返回" @click="goBack">
+        <button type="button" class="mh5-discover-nav__back" :aria-label="$t('返回')" @click="goBack">
           <img
             v-if="isShortTab"
             :src="DISCOVER_SHORT_ASSETS.back"
@@ -199,7 +199,7 @@ function openChannelSettings() {
           </svg>
         </button>
 
-        <div class="mh5-discover-tabs" role="tablist" aria-label="发现分类">
+        <div class="mh5-discover-tabs" role="tablist" :aria-label="$t('发现分类')">
           <button
             v-for="tab in visibleTabs"
             :key="tab.key"
@@ -210,7 +210,7 @@ function openChannelSettings() {
             :aria-selected="mainTab === tab.key"
             @click="mainTab = tab.key"
           >
-            {{ tab.label }}
+            {{ $t(tab.label) }}
           </button>
         </div>
 
@@ -218,7 +218,7 @@ function openChannelSettings() {
           <button
             type="button"
             class="mh5-discover-nav__icon"
-            aria-label="频道设置"
+            :aria-label="$t('频道设置')"
             @click="openChannelSettings"
           >
             <img
@@ -228,20 +228,20 @@ function openChannelSettings() {
               height="24"
             />
           </button>
-          <button v-if="!isShortTab" type="button" class="mh5-discover-nav__icon" aria-label="搜索">
+          <button v-if="!isShortTab" type="button" class="mh5-discover-nav__icon" :aria-label="$t('搜索')">
             <img :src="DISCOVER_ASSETS.search" alt="" width="24" height="24" />
           </button>
         </div>
       </div>
 
       <div v-if="isShortTab" class="mh5-discover-short-search">
-        <button type="button" class="mh5-discover-nav__icon" aria-label="搜索">
+        <button type="button" class="mh5-discover-nav__icon" :aria-label="$t('搜索')">
           <img :src="DISCOVER_SHORT_ASSETS.search" alt="" width="24" height="24" />
         </button>
       </div>
 
       <div v-if="mainTab === 'live'" class="mh5-discover-filters">
-        <div class="mh5-discover-filters__scroll" role="tablist" aria-label="直播筛选">
+        <div class="mh5-discover-filters__scroll" role="tablist" :aria-label="$t('直播筛选')">
           <button
             v-for="item in DISCOVER_LIVE_FILTERS"
             :key="item.key"
@@ -252,10 +252,10 @@ function openChannelSettings() {
             :aria-selected="liveFilter === item.key"
             @click="liveFilter = item.key"
           >
-            {{ item.label }}
+            {{ $t(item.label) }}
           </button>
         </div>
-        <button type="button" class="mh5-discover-filters__layer" aria-label="分层筛选">
+        <button type="button" class="mh5-discover-filters__layer" :aria-label="$t('分层筛选')">
           <img :src="DISCOVER_ASSETS.layer" alt="" width="24" height="24" />
         </button>
       </div>
@@ -270,17 +270,15 @@ function openChannelSettings() {
       }"
     >
       <template v-if="mainTab === 'live'">
-        <section class="mh5-discover-banner" aria-label="直播推广">
+        <section class="mh5-discover-banner" :aria-label="$t('直播推广')">
           <img class="mh5-discover-banner__bg" :src="DISCOVER_ASSETS.bannerBg" alt="" />
           <div class="mh5-discover-banner__shade" aria-hidden="true" />
           <img class="mh5-discover-banner__person" :src="DISCOVER_ASSETS.bannerPerson" alt="" />
           <img class="mh5-discover-banner__mic" :src="DISCOVER_ASSETS.micDeco" alt="" />
           <div class="mh5-discover-banner__copy">
-            <p class="mh5-discover-banner__sub">交朋友 看直播 秀美女</p>
-            <h2 class="mh5-discover-banner__title">真人现场直播</h2>
-            <button type="button" class="mh5-discover-banner__cta" @click="enterLivePromo">
-              立即进入直播间
-            </button>
+            <p class="mh5-discover-banner__sub">{{ $t('交朋友 看直播 秀美女') }}</p>
+            <h2 class="mh5-discover-banner__title">{{ $t('真人现场直播') }}</h2>
+            <button type="button" class="mh5-discover-banner__cta" @click="enterLivePromo">{{ $t('立即进入直播间') }}</button>
           </div>
         </section>
 
@@ -302,7 +300,7 @@ function openChannelSettings() {
               </div>
               <div v-if="card.voiceRoom" class="mh5-discover-card__voice">
                 <img :src="DISCOVER_ASSETS.mic" alt="" width="12" height="12" />
-                <span>语聊房</span>
+                <span>{{ $t('语聊房') }}</span>
               </div>
               <div class="mh5-discover-card__meta">
                 <span class="mh5-discover-card__host">{{ card.hostName }}</span>
@@ -319,7 +317,7 @@ function openChannelSettings() {
           </article>
         </div>
 
-        <p class="mh5-discover-end">没有更多的数据了</p>
+        <p class="mh5-discover-end">{{ $t('没有更多的数据了') }}</p>
       </template>
 
       <template v-else-if="mainTab === 'feed'">

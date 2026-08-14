@@ -61,7 +61,7 @@ async function saveRatios() {
       </p>
 
       <section class="mh5-agent-credit-slider-card">
-        <span class="mh5-agent-credit-slider-card__label">退水</span>
+        <span class="mh5-agent-credit-slider-card__label">{{ $t('退水') }}</span>
         <div class="mh5-agent-credit-slider">
           <div class="mh5-agent-credit-slider__track">
             <div class="mh5-agent-credit-slider__fill" :style="{ width: `${rebatePercent}%` }" />
@@ -72,7 +72,7 @@ async function saveRatios() {
               min="0"
               max="100"
               step="1"
-              aria-label="退水比例"
+              :aria-label="$t('退水比例')"
               @change="applyGlobalRebate"
             />
             <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${rebatePercent}%` }">
@@ -91,11 +91,11 @@ async function saveRatios() {
           <span class="mh5-member-rebate-edit-product__icon" aria-hidden="true">
             {{ getMemberRebateProductIcon(product.key) }}
           </span>
-          <h3>{{ product.name }}</h3>
+          <h3>{{ $t(product.name) }}</h3>
         </div>
         <div class="mh5-member-rebate-edit-product__panel">
           <div class="mh5-member-rebate-edit-product__row">
-            <span>退水</span>
+            <span>{{ $t('退水') }}</span>
             <label class="mh5-member-rebate-edit-product__input-wrap">
               <input
                 :value="product.rebate"
@@ -114,7 +114,7 @@ async function saveRatios() {
     </main>
 
     <footer class="mh5-member-rebate-edit-footer safe-pb">
-      <button type="button" class="mh5-member-rebate-edit-footer__btn" @click="saveRatios">保存</button>
+      <button type="button" class="mh5-member-rebate-edit-footer__btn" @click="saveRatios">{{ $t('保存') }}</button>
     </footer>
   </div>
 </template>

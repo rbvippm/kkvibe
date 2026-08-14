@@ -193,13 +193,13 @@ function onMediaSend(payload: ChatMediaSendPayload) {
 <template>
   <div class="mh5-chat-room mh5-route-view" :class="{ 'mh5-chat-room--tg-h5': isTgH5Room }">
     <header class="mh5-chat-room-header">
-      <button type="button" class="mh5-chat-room-header__back" aria-label="返回" @click="goBack">
+      <button type="button" class="mh5-chat-room-header__back" :aria-label="$t('返回')" @click="goBack">
         <img :src="CHAT_ROOM_ASSETS.back" alt="" width="24" height="24" />
       </button>
       <div class="mh5-chat-room-header__title">
         <img class="mh5-chat-room-header__avatar" :src="room.avatar" :alt="room.title" width="32" height="32" />
         <h1>
-          {{ room.title }}
+          {{ $t(room.title) }}
           <Mh5SpecAnnot
             v-if="isTgH5Room"
             :spec="CHAT_TG_H5_MEDIA_SPEC"
@@ -209,10 +209,10 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       </div>
       <div class="mh5-chat-room-header__actions">
         <template v-if="room.kind === 'direct'">
-          <button type="button" class="mh5-chat-room-header__icon" aria-label="视频通话" @click="showToast('视频通话（原型演示）')">
+          <button type="button" class="mh5-chat-room-header__icon" :aria-label="$t('视频通话')" @click="showToast('视频通话（原型演示）')">
             <img :src="CHAT_ROOM_ASSETS.videoCall" alt="" width="26" height="26" />
           </button>
-          <button type="button" class="mh5-chat-room-header__icon" aria-label="语音通话" @click="showToast('语音通话（原型演示）')">
+          <button type="button" class="mh5-chat-room-header__icon" :aria-label="$t('语音通话')" @click="showToast('语音通话（原型演示）')">
             <img :src="CHAT_ROOM_ASSETS.phone" alt="" width="26" height="26" />
           </button>
         </template>

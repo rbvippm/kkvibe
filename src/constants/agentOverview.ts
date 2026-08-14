@@ -1,5 +1,7 @@
 /** 代理中心 · 概况页 Mock（对齐 Figma 1433:25041） */
 
+import { sortByLocaleCashOrder } from '../i18n'
+
 export type AgentOverviewStat = {
   key: string
   label: string
@@ -45,10 +47,11 @@ export const AGENT_OVERVIEW_CURRENCY_OPTIONS: AgentOverviewCurrencyOption[] = [
 export function getAgentOverviewCurrencyOptions(
   identity: 'share' | 'rebate' = 'share',
 ): AgentOverviewCurrencyOption[] {
-  if (identity === 'rebate') {
-    return AGENT_OVERVIEW_CURRENCY_OPTIONS.filter((opt) => !opt.value.startsWith('信用额度'))
-  }
-  return AGENT_OVERVIEW_CURRENCY_OPTIONS
+  const list =
+    identity === 'rebate'
+      ? AGENT_OVERVIEW_CURRENCY_OPTIONS.filter((opt) => !opt.value.startsWith('信用额度'))
+      : [...AGENT_OVERVIEW_CURRENCY_OPTIONS]
+  return sortByLocaleCashOrder(list, (opt) => opt.value)
 }
 
 export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, string> = {

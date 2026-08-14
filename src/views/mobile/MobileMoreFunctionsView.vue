@@ -16,11 +16,11 @@ function openItem(item: MineMoreMenuItem) {
 
 <template>
   <div class="mh5-mine-more-page">
-    <Mh5SubPageHeader title="更多功能" />
+    <Mh5SubPageHeader :title="$t('更多功能')" />
 
     <main class="mh5-mine-more-main">
       <section v-for="group in MINE_MORE_MENU_GROUPS" :key="group.key" class="mh5-mine-more-group">
-        <h2 class="mh5-mine-more-group__title">{{ group.title }}</h2>
+        <h2 class="mh5-mine-more-group__title">{{ $t(group.title) }}</h2>
         <div class="mh5-mine-more-list">
           <button
             v-for="item in group.items"
@@ -31,7 +31,7 @@ function openItem(item: MineMoreMenuItem) {
           >
             <span class="mh5-mine-more-item__icon" aria-hidden="true">{{ item.icon }}</span>
             <span class="mh5-mine-more-item__body">
-              <span class="mh5-mine-more-item__title">{{ item.title }}</span>
+              <span class="mh5-mine-more-item__title">{{ $t(item.title) }}</span>
               <span v-if="item.desc" class="mh5-mine-more-item__desc">{{ item.desc }}</span>
             </span>
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" class="mh5-mine-more-item__arrow" aria-hidden="true">

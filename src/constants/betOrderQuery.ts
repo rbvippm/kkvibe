@@ -1,5 +1,7 @@
 /** 代理端 · 注单查询 */
 
+import { sortByLocaleCashOrder } from '../i18n'
+
 export type BetOrderStatus =
   | 'unsettled'
   | 'settled'
@@ -53,7 +55,7 @@ export type BetOrderRecord = {
 
 export const BET_ORDER_PAGE_SIZE = 20
 
-export const BET_ORDER_MAX_RANGE_DAYS = 30
+export const BET_ORDER_MAX_RANGE_DAYS = 90
 
 export const BET_TIME_PRESETS: { key: BetTimePreset; label: string }[] = [
   { key: 'today', label: '今天' },
@@ -104,9 +106,12 @@ export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, stri
   '信用额度-USD': '信用额度-USD',
 }
 
-/** 游戏币种筛选项：仅本代理拥有信用代理身份时含信用额度币种 */
-export function getBetOrderCurrencyOptions(isCreditAgent: boolean) {
-  return isCreditAgent ? BET_ORDER_CURRENCY_OPTIONS : BET_ORDER_CASH_CURRENCY_OPTIONS
+/** 游戏币种筛选项：全部 / KKC / KKV / USDT，不含信用额度 */
+export function getBetOrderCurrencyOptions() {
+  return [
+    { value: '' as const, label: '全部' },
+    ...sortByLocaleCashOrder([...BET_ORDER_CASH_CURRENCY_OPTIONS], (item) => item.value),
+  ]
 }
 
 export function formatBetOrderCurrency(currency: string) {
@@ -161,7 +166,7 @@ export function getBetOrderMemberSearchHaystack(
 }
 
 export const BET_ORDER_CATEGORY_OPTIONS = [
-  { value: '', label: '全部产品' },
+  { value: '', label: '全部' },
   { value: 'lottery', label: '彩票' },
   { value: 'sports', label: '体育' },
   { value: 'live', label: '真人' },
@@ -177,31 +182,26 @@ export const BET_ORDER_GAME_NAME_OPTIONS: Record<
   readonly { value: string; label: string }[]
 > = {
   lottery: [
-    { value: '', label: '全部名称' },
     { value: 'hz-lottery', label: '皇者-彩票' },
     { value: 'pc28', label: '联盟PC28' },
     { value: 'cqssc', label: '重庆时时彩' },
   ],
   sports: [
-    { value: '', label: '全部名称' },
     { value: 'hz-sports', label: '皇者-体育' },
     { value: 'saba', label: 'SABA - 体育' },
     { value: 'bti', label: 'BTI - 体育' },
   ],
   live: [
-    { value: '', label: '全部名称' },
     { value: 'hz-live', label: '皇者-真人' },
     { value: 'ag', label: 'AG - 真人' },
     { value: 'evolution', label: 'EVOLUTION' },
   ],
   slots: [
-    { value: '', label: '全部名称' },
     { value: 'hz-slots', label: '皇者-电子' },
     { value: 'pg', label: 'PG - 电子' },
     { value: 'cq9-slots', label: 'CQ9 - 电子' },
   ],
   chess: [
-    { value: '', label: '全部名称' },
     { value: 'bole', label: 'BOLE - 棋牌' },
     { value: 'boya', label: 'BOYA - 棋牌' },
     { value: 'cq9', label: 'CQ9 - 棋牌' },
@@ -214,12 +214,17 @@ export const BET_ORDER_GAME_NAME_OPTIONS: Record<
 }
 
 export function getBetOrderGameNameOptions(category: string) {
-  if (!category || category === '') return []
-  return BET_ORDER_GAME_NAME_OPTIONS[category as Exclude<BetGameCategory, ''>] ?? []
+  const allChip = { value: '', label: '全部' }
+  if (!category) {
+    const names = Object.values(BET_ORDER_GAME_NAME_OPTIONS).flat()
+    return [allChip, ...names]
+  }
+  const options = BET_ORDER_GAME_NAME_OPTIONS[category as Exclude<BetGameCategory, ''>] ?? []
+  return [allChip, ...options]
 }
 
 export function getBetOrderGameNameLabel(category: string, gameName: string) {
-  if (!category || !gameName) return ''
+  if (!gameName) return ''
   return getBetOrderGameNameOptions(category).find((item) => item.value === gameName)?.label ?? ''
 }
 
@@ -690,7 +695,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
 
 export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOrderMemberFields)
 
-export type BetOrderCurrencyFilter = Exclude<BetGameCurrency, ''>
+export type BetOrderCurrencyFilter = BetGameCurrency
 
 export type BetOrderFilter = {
   keyword: string
@@ -720,6 +725,13 @@ function endOfDay(date: Date) {
   return d
 }
 
+export function formatBetOrderDateInput(date: Date) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 export function getBetOrderDateRange(filter: Pick<BetOrderFilter, 'timePreset' | 'customStart' | 'customEnd'>) {
   const now = new Date()
   const today = startOfDay(now)
@@ -746,6 +758,34 @@ export function getBetOrderDateRange(filter: Pick<BetOrderFilter, 'timePreset' |
   const start = filter.customStart ? startOfDay(new Date(filter.customStart)) : today
   const end = filter.customEnd ? endOfDay(new Date(filter.customEnd)) : endOfDay(now)
   return { start, end }
+}
+
+/** 把当前快捷区间写进自定义起止，供高级筛选回显 */
+export function hydrateBetOrderFilterDates<T extends Pick<BetOrderFilter, 'timePreset' | 'customStart' | 'customEnd'>>(
+  filter: T,
+): T {
+  const { start, end } = getBetOrderDateRange(filter)
+  return {
+    ...filter,
+    customStart: formatBetOrderDateInput(start),
+    customEnd: formatBetOrderDateInput(end),
+  }
+}
+
+/** 自定义起止若刚好等于今天/昨天/本周/本月，回落到对应快捷项 */
+export function resolveBetOrderTimePreset(customStart: string, customEnd: string): BetTimePreset {
+  if (!customStart || !customEnd) return 'custom'
+  const presets: Exclude<BetTimePreset, 'custom'>[] = ['today', 'yesterday', 'week', 'month']
+  for (const key of presets) {
+    const range = getBetOrderDateRange({ timePreset: key, customStart: '', customEnd: '' })
+    if (
+      formatBetOrderDateInput(range.start) === customStart &&
+      formatBetOrderDateInput(range.end) === customEnd
+    ) {
+      return key
+    }
+  }
+  return 'custom'
 }
 
 export function validateBetOrderDateRange(filter: Pick<BetOrderFilter, 'timePreset' | 'customStart' | 'customEnd'>) {
@@ -789,9 +829,9 @@ export function filterBetOrders(
   })
 }
 
-/** 汇总区统计：与列表同口径，跟随游戏币种等筛选条件 */
+/** 汇总区按币种分卡：忽略游戏币种筛选，KKC / KKV / USDT 各一张 */
 export function filterBetOrdersForSummary(rows: BetOrderRecord[], filter: BetOrderFilter) {
-  return filterBetOrders(rows, filter)
+  return filterBetOrders(rows, { ...filter, gameCurrency: '' })
 }
 
 export type BetOrderSummary = {
@@ -814,12 +854,16 @@ export function summarizeBetOrders(rows: BetOrderRecord[]): BetOrderSummary {
   )
 }
 
-/** 汇总可选现金币种顺序（与游戏币种筛选一致） */
+/** 汇总可选现金币种顺序（跟随语言） */
 export const BET_ORDER_SUMMARY_CASH_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
   'KKC',
   'KKV',
   'USDT',
 ]
+
+export function getBetOrderSummaryCashCurrencies(): Exclude<BetGameCurrency, ''>[] {
+  return sortByLocaleCashOrder([...BET_ORDER_SUMMARY_CASH_CURRENCIES], (item) => item)
+}
 
 /** 汇总可选币种完整顺序（含信用额度，仅信用代理筛选可见） */
 export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
@@ -830,7 +874,8 @@ export const BET_ORDER_SUMMARY_CURRENCIES: Exclude<BetGameCurrency, ''>[] = [
 
 /** 游戏币种筛选项对应的汇总可选币种：仅信用代理追加信用额度 */
 export function getBetOrderSummaryCurrencies(isCreditAgent: boolean) {
-  return isCreditAgent ? BET_ORDER_SUMMARY_CURRENCIES : BET_ORDER_SUMMARY_CASH_CURRENCIES
+  const cash = getBetOrderSummaryCashCurrencies()
+  return isCreditAgent ? [...cash, '信用额度-CNY' as const, '信用额度-USD' as const] : cash
 }
 
 export function isBetOrderCreditCurrency(

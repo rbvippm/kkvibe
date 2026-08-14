@@ -10,7 +10,8 @@ import {
   agentAppCurrency,
   isAgentCreditCurrency,
   overviewCurrencyToWallet,
-  setAgentAppCurrency,
+  setAgentAppCurrencyByUser,
+  fallbackAgentCashCurrency,
   walletCurrencyToOverview,
 } from '../constants/agentAppCurrency'
 import AgentOverviewPage from '../components/mobile/AgentOverviewPage.vue'
@@ -39,9 +40,9 @@ watch(
     /** 返佣无「上周」快捷；若当前仍落在上周则切到本月 */
     if (rebate && preset.value === 'lastWeek') preset.value = 'thisMonth'
     if (!rebate && preset.value === 'thisMonth') preset.value = 'lastWeek'
-    /** 返佣无信用额度：若当前为信用币种则回退 KKC */
+    /** 返佣无信用额度：若当前为信用币种则回退语言默认现金币种 */
     if (rebate && isAgentCreditCurrency(agentAppCurrency.value)) {
-      setAgentAppCurrency('KKC')
+      fallbackAgentCashCurrency()
     }
   },
   { immediate: true },
@@ -137,7 +138,7 @@ function pickProfitRankTab(tab: ProfitRankTab) {
 }
 
 function pickCurrency(value: AgentOverviewCurrency) {
-  setAgentAppCurrency(overviewCurrencyToWallet(value))
+  setAgentAppCurrencyByUser(overviewCurrencyToWallet(value))
 }
 
 const showTeamSection = computed(() => activeTab.value === 'team')

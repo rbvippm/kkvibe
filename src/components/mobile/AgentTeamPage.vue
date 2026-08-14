@@ -465,9 +465,7 @@ onUnmounted(() => {
 <template>
   <div class="agent-team-page">
     <header class="agent-team-header">
-      <h1 class="agent-team-header__title">
-        团队管理
-        <span class="agent-team-header__identity">{{ agentTypeLabel }}</span>
+      <h1 class="agent-team-header__title">{{ $t('团队管理') }}<span class="agent-team-header__identity">{{ agentTypeLabel }}</span>
         <Mh5SpecAnnot
           v-if="isRebateAgent"
           :spec="AGENT_TEAM_REBATE_SPEC"
@@ -479,7 +477,7 @@ onUnmounted(() => {
           v-if="!isRebateAgent"
           type="button"
           class="agent-team-header__icon-btn agent-team-header__icon-btn--invite"
-          aria-label="我的邀请记录"
+          :aria-label="$t('我的邀请记录')"
           @click="goInviteRecords"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -499,13 +497,13 @@ onUnmounted(() => {
           </svg>
           <span v-if="pendingInviteCount" class="agent-team-header__badge">{{ pendingInviteCount }}</span>
         </button>
-        <button type="button" class="agent-team-header__icon-btn" aria-label="添加成员" @click="openCreateAccountSheet">
+        <button type="button" class="agent-team-header__icon-btn" :aria-label="$t('添加成员')" @click="openCreateAccountSheet">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
           </svg>
         </button>
         <span class="agent-team-header__search-wrap">
-          <button type="button" class="agent-team-header__icon-btn" aria-label="搜索" @click="openTeamSearch">
+          <button type="button" class="agent-team-header__icon-btn" :aria-label="$t('搜索')" @click="openTeamSearch">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
               <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -517,7 +515,7 @@ onUnmounted(() => {
     </header>
 
     <div v-if="!isRebateAgent" class="agent-team-toolbar">
-      <div class="agent-team-toolbar__tabs" role="tablist" aria-label="团队筛选">
+      <div class="agent-team-toolbar__tabs" role="tablist" :aria-label="$t('团队筛选')">
         <button
           v-for="tab in teamFilterTabs"
           :key="tab.key"
@@ -528,15 +526,13 @@ onUnmounted(() => {
           :aria-selected="teamFilterTab === tab.key"
           @click="teamFilterTab = tab.key"
         >
-          {{ tab.label }}
+          {{ $t(tab.label) }}
         </button>
       </div>
-      <button type="button" class="agent-team-toolbar__sort" aria-label="排序">
+      <button type="button" class="agent-team-toolbar__sort" :aria-label="$t('排序')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M4 7h12M4 12h8M4 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>
-        排序
-      </button>
+        </svg>{{ $t('排序') }}</button>
     </div>
 
     <main class="agent-team-list">
@@ -551,9 +547,7 @@ onUnmounted(() => {
             @click="showMoreChildren(row.parentId)"
           >
             <span class="agent-team-more__line" aria-hidden="true" />
-            <span class="agent-team-more__label">
-              查看更多
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <span class="agent-team-more__label">{{ $t('查看更多') }}<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </span>
@@ -575,7 +569,7 @@ onUnmounted(() => {
                 type="button"
                 class="agent-team-row__caret"
                 :class="{ 'agent-team-row__caret--open': isExpanded(row.item.id) }"
-                aria-label="展开下级"
+                :aria-label="$t('展开下级')"
                 :aria-expanded="isExpanded(row.item.id)"
                 @click.stop="toggleExpand(row.item.id)"
               >
@@ -598,13 +592,11 @@ onUnmounted(() => {
                   {{ row.item.nickname }}
                 </button>
                 <div class="agent-team-row__tags">
-                  <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
+                  <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">{{ $t('我') }}</span>
                   <span
                     v-if="effectiveTeamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
                     class="agent-team-tag agent-team-tag--credit"
-                  >
-                    信用
-                  </span>
+                  >{{ $t('信用') }}</span>
                   <!-- Figma 1433:19549：VIP 钻石切面 + 组织人数图标 + 代/会文案 -->
                   <span
                     v-if="showAgentSubordinateTag(row.item)"
@@ -650,7 +642,7 @@ onUnmounted(() => {
               type="button"
               class="agent-team-row__menu"
               :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.item.id }"
-              aria-label="更多操作"
+              :aria-label="$t('更多操作')"
               :aria-expanded="teamQuickMenuRow?.id === row.item.id"
               @click.stop="openTeamQuickMenu(row.item, $event)"
             >

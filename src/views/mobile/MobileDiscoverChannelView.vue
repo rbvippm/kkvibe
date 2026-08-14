@@ -51,14 +51,12 @@ function onDragEnd() {
 
 <template>
   <div class="mh5-channel-page mh5-route-view">
-    <Mh5SubPageHeader title="频道设置" :on-back="goBack" />
+    <Mh5SubPageHeader :title="$t('频道设置')" :on-back="goBack" />
 
     <main class="mh5-channel-main">
-      <p class="mh5-channel-hint">
-        开启后社区页将显示相关功能，下方频道可通过拖动图标调整显示顺序。
-      </p>
+      <p class="mh5-channel-hint">{{ $t('开启后社区页将显示相关功能，下方频道可通过拖动图标调整显示顺序。') }}</p>
 
-      <section class="mh5-channel-card" aria-label="频道列表">
+      <section class="mh5-channel-card" :aria-label="$t('频道列表')">
         <div
           v-for="(item, index) in channels"
           :key="item.id"
@@ -75,7 +73,7 @@ function onDragEnd() {
         >
           <div class="mh5-channel-row__left">
             <img class="mh5-channel-row__icon" :src="item.icon" :alt="item.label" width="32" height="32" />
-            <span class="mh5-channel-row__label">{{ item.label }}</span>
+            <span class="mh5-channel-row__label">{{ $t(item.label) }}</span>
           </div>
 
           <button
@@ -90,7 +88,7 @@ function onDragEnd() {
             <span class="mh5-channel-switch__knob" />
           </button>
 
-          <span class="mh5-channel-row__handle" aria-hidden="true" title="拖动排序">
+          <span class="mh5-channel-row__handle" aria-hidden="true" :title="$t('拖动排序')">
             <img :src="DISCOVER_CHANNEL_ASSETS.rearrange" alt="" width="24" height="24" />
           </span>
         </div>

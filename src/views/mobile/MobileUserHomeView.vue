@@ -43,28 +43,28 @@ function goVip() {
 
 <template>
   <div class="mh5-userhome-page">
-    <Mh5SubPageHeader title="个人主页" />
+    <Mh5SubPageHeader :title="$t('个人主页')" />
     <div class="mh5-userhome-head">
       <div class="mh5-userhome-profile">
         <div class="mh5-userhome-avatar">{{ user.avatar }}</div>
         <div class="min-w-0 flex-1">
           <div class="flex min-w-0 items-center gap-2">
-            <h1 class="mh5-userhome-name">{{ user.name }}</h1>
-            <button type="button" class="mh5-vip-badge" @click="goVip" aria-label="进入 VIP 详情">
+            <h1 class="mh5-userhome-name">{{ $t(user.name) }}</h1>
+            <button type="button" class="mh5-vip-badge" @click="goVip" :aria-label="$t('进入 VIP 详情')">
               <span class="mh5-vip-badge__crown" aria-hidden="true">♛</span>
               VIP{{ user.vipLevel }}
             </button>
           </div>
           <div class="mh5-userhome-metrics">
-            <span><b>{{ user.following }}</b> 关注</span>
-            <span><b>{{ user.followers }}</b> 粉丝</span>
+            <span><b>{{ user.following }}</b>{{ $t('关注') }}</span>
+            <span><b>{{ user.followers }}</b>{{ $t('粉丝') }}</span>
           </div>
         </div>
-        <button type="button" class="mh5-userhome-edit">编辑资料</button>
+        <button type="button" class="mh5-userhome-edit">{{ $t('编辑资料') }}</button>
       </div>
     </div>
 
-    <div class="mh5-userhome-tabs" role="tablist" aria-label="个人主页导航">
+    <div class="mh5-userhome-tabs" role="tablist" :aria-label="$t('个人主页导航')">
       <button
         v-for="t in tabs"
         :key="t.key"
@@ -75,13 +75,13 @@ function goVip() {
         role="tab"
         @click="activeTab = t.key"
       >
-        {{ t.label }}
+        {{ $t(t.label) }}
       </button>
     </div>
 
     <main class="mh5-userhome-body">
       <template v-if="activeTab === '动态'">
-        <div class="mh5-userhome-filters" role="tablist" aria-label="动态筛选">
+        <div class="mh5-userhome-filters" role="tablist" :aria-label="$t('动态筛选')">
           <button
             v-for="f in ['已发布', '待发布', '审核中', '已拒绝']"
             :key="f"
@@ -105,7 +105,7 @@ function goVip() {
                 </div>
                 <div class="mt-1 text-sm text-[var(--mh5-app-text)]">{{ p.content }}</div>
               </div>
-              <button type="button" class="mh5-userhome-post__more" aria-label="更多">···</button>
+              <button type="button" class="mh5-userhome-post__more" :aria-label="$t('更多')">···</button>
             </div>
             <div class="mh5-userhome-post__actions">
               <span>👍 {{ p.like }}</span>
@@ -115,7 +115,7 @@ function goVip() {
           </article>
         </section>
 
-        <p v-else class="mh5-userhome-empty">点击加载更多</p>
+        <p v-else class="mh5-userhome-empty">{{ $t('点击加载更多') }}</p>
       </template>
 
       <template v-else>

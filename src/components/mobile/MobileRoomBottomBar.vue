@@ -42,13 +42,13 @@ const emit = defineEmits<{
 
     <slot name="before" />
 
-    <button type="button" class="mh5-room-bar__btn" aria-label="游戏" @click="emit('game')">
+    <button type="button" class="mh5-room-bar__btn" :aria-label="$t('游戏')" @click="emit('game')">
       <img :src="VOICE_ROOM_ASSETS.gameBar" alt="" width="20" height="20" />
     </button>
-    <button type="button" class="mh5-room-bar__btn" aria-label="礼物" @click="emit('gift')">
+    <button type="button" class="mh5-room-bar__btn" :aria-label="$t('礼物')" @click="emit('gift')">
       <img :src="LIVE_STREAM_ASSETS.giftIcon" alt="" width="20" height="20" />
     </button>
-    <button type="button" class="mh5-room-bar__btn" aria-label="分享" @click="emit('share')">
+    <button type="button" class="mh5-room-bar__btn" :aria-label="$t('分享')" @click="emit('share')">
       <img
         class="mh5-room-bar__share-icon"
         :src="LIVE_STREAM_ASSETS.share"

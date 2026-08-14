@@ -6,10 +6,16 @@ import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
 import { WALLET_CATALOG, sumWalletsCny } from '../../constants/walletCatalog'
 import { walletTransferRoute } from '../../constants/walletTransfer'
+import {
+  effectivePreferredFiat,
+  fiatOrderForLocale,
+  pickPreferredFiat,
+  type PreferredFiatId,
+} from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
 interface PreferredFiatOption {
-  id: string
+  id: PreferredFiatId
   name: string
   symbol: string
   color: string
@@ -17,19 +23,29 @@ interface PreferredFiatOption {
   fromCny: number
 }
 
-const balanceHidden = ref(false)
-const refreshing = ref(false)
-const walletSheetOpen = ref(false)
-const fiatPreferenceOpen = ref(false)
-const preferredFiatId = ref('cny')
-const router = useRouter()
-
-/** 总资产计价法币：按实时汇率汇总展示 */
-const preferredFiatOptions: PreferredFiatOption[] = [
+const PREFERRED_FIAT_ALL: PreferredFiatOption[] = [
   { id: 'cny', name: 'CNY', symbol: '¥', color: '#ff8c00', fromCny: 1 },
   { id: 'vnd', name: 'VND', symbol: '₫', color: '#ef4444', fromCny: 3500 },
   { id: 'usd', name: 'USD', symbol: '$', color: '#26a17b', fromCny: 1 / 7.2 },
 ]
+
+const preferredFiatOptions = computed(() =>
+  fiatOrderForLocale().map(
+    (id) => PREFERRED_FIAT_ALL.find((item) => item.id === id) ?? PREFERRED_FIAT_ALL[0],
+  ),
+)
+
+const balanceHidden = ref(false)
+const refreshing = ref(false)
+const walletSheetOpen = ref(false)
+const fiatPreferenceOpen = ref(false)
+const preferredFiatId = computed({
+  get: () => effectivePreferredFiat.value,
+  set: (id: PreferredFiatId) => pickPreferredFiat(id),
+})
+const router = useRouter()
+
+/** 总资产计价法币：按实时汇率汇总展示，默认跟随语言 */
 
 function formatPreferredAmount(amount: number) {
   return amount.toLocaleString('zh-CN', {
@@ -39,7 +55,7 @@ function formatPreferredAmount(amount: number) {
 }
 
 const preferredFiat = computed(
-  () => preferredFiatOptions.find((item) => item.id === preferredFiatId.value) ?? preferredFiatOptions[0],
+  () => preferredFiatOptions.value.find((item) => item.id === preferredFiatId.value) ?? preferredFiatOptions.value[0],
 )
 
 /** 全部钱包按 Mock 汇率折合 CNY，再换算为所选计价法币 */
@@ -83,6 +99,7 @@ const user = {
 interface MineShortcutItem {
   key: string
   label: string
+  icon: string
   route?: string
 }
 
@@ -95,10 +112,10 @@ interface MineMenuItem {
 }
 
 const walletShortcuts: MineShortcutItem[] = [
-  { key: 'assets', label: '资产明细', route: 'mobile-asset-detail' },
-  { key: 'bill', label: '账单', route: 'mobile-billing-list' },
-  { key: 'bank', label: '银行' },
-  { key: 'payment', label: '收款方式', route: 'mobile-payout-methods' },
+  { key: 'bill', label: '交易记录', icon: '/images/mine/icon-bill.svg', route: 'mobile-billing-list' },
+  { key: 'bet', label: '投注记录', icon: '/images/mine/icon-bet-records.svg', route: 'mobile-bet-records' },
+  { key: 'assets', label: '资产明细', icon: '/images/mine/icon-assets.svg', route: 'mobile-asset-detail' },
+  { key: 'bank', label: '金刚银行', icon: '/images/mine/icon-bank.svg' },
 ]
 
 const pendingInviteCount = computed(
@@ -118,6 +135,7 @@ const menuItems = computed<MineMenuItem[]>(() => {
     badge: claimableRebateCount.value > 0 ? claimableRebateCount.value : undefined,
   }
   const base: MineMenuItem[] = [
+    { key: 'payment', title: '收款方式', route: 'mobile-payout-methods' },
     { key: 'live', title: '直播中心', route: 'mobile-live' },
     inviteItem,
   ]
@@ -165,7 +183,7 @@ function closeFiatPreference() {
   fiatPreferenceOpen.value = false
 }
 
-function pickPreferredFiat(id: string) {
+function applyPreferredFiat(id: PreferredFiatId) {
   preferredFiatId.value = id
   fiatPreferenceOpen.value = false
 }
@@ -216,10 +234,10 @@ watch(preferredFiatAmountText, () => {
   <div class="mh5-mine-root">
     <div class="mh5-mine-page">
     <div class="mh5-mine-topbar">
-      <button type="button" class="mh5-mine-topbar__btn" aria-label="客服">
+      <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('客服')">
         <img src="/images/mine/icon-cs.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
-      <button type="button" class="mh5-mine-topbar__btn" aria-label="设置" @click="goSettings">
+      <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('设置')" @click="goSettings">
         <img src="/images/mine/icon-settings.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
     </div>
@@ -235,7 +253,7 @@ watch(preferredFiatAmountText, () => {
       <div class="mh5-mine-profile__main">
         <img :src="user.avatar" alt="" class="mh5-mine-profile__avatar" />
         <div class="mh5-mine-profile__info">
-          <h2 class="mh5-mine-profile__name">{{ user.name }}</h2>
+          <h2 class="mh5-mine-profile__name">{{ $t(user.name) }}</h2>
           <p class="mh5-mine-profile__id">
             <span>金刚号：{{ user.id }}</span>
           </p>
@@ -259,7 +277,7 @@ watch(preferredFiatAmountText, () => {
       <div class="mh5-mine-profile__stats">
         <div v-for="stat in user.stats" :key="stat.label" class="mh5-mine-profile__stat">
           <span class="mh5-mine-profile__stat-value">{{ stat.value }}</span>
-          <span class="mh5-mine-profile__stat-label">{{ stat.label }}</span>
+          <span class="mh5-mine-profile__stat-label">{{ $t(stat.label) }}</span>
         </div>
       </div>
     </section>
@@ -267,14 +285,14 @@ watch(preferredFiatAmountText, () => {
     <div class="mh5-mine-wallet-overview">
       <div class="mh5-mine-wallet__head">
         <div class="mh5-mine-wallet__label">
-          <span class="mh5-mine-wallet__title">总资产</span>
+          <span class="mh5-mine-wallet__title">{{ $t('总资产') }}</span>
           <button
             type="button"
             class="mh5-mine-wallet__currency"
-            aria-label="选择偏好计价法币"
+            :aria-label="$t('选择偏好计价法币')"
             @click="openFiatPreference"
           >
-            {{ preferredFiat.name }}
+            {{ $t(preferredFiat.name) }}
             <img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
           </button>
           <button
@@ -299,9 +317,7 @@ watch(preferredFiatAmountText, () => {
             </svg>
           </button>
         </div>
-        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">
-          全部钱包
-          <img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
+        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">{{ $t('全部钱包') }}<img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -314,7 +330,7 @@ watch(preferredFiatAmountText, () => {
             type="button"
             class="mh5-mine-wallet__icon-btn"
             :class="{ 'mh5-mine-wallet__icon-btn--spin': refreshing }"
-            aria-label="刷新资产"
+            :aria-label="$t('刷新资产')"
             @click="handleRefresh"
           >
             <img src="/images/mine/icon-refresh.svg" alt="" class="mh5-mine-icon mh5-mine-icon--20" />
@@ -326,21 +342,15 @@ watch(preferredFiatAmountText, () => {
         <button type="button" class="mh5-mine-action mh5-mine-action--deposit" @click="goWalletTransfer('deposit')">
           <span class="mh5-mine-action__icon" aria-hidden="true">
             <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
-          </span>
-          充值
-        </button>
+          </span>{{ $t('充值') }}</button>
         <button type="button" class="mh5-mine-action" @click="goWalletTransfer('withdraw')">
           <span class="mh5-mine-action__icon" aria-hidden="true">
             <img src="/images/mine/icon-withdraw.svg" alt="" class="mh5-mine-icon mh5-mine-icon--28" />
-          </span>
-          提现
-        </button>
+          </span>{{ $t('提现') }}</button>
         <button type="button" class="mh5-mine-action" @click="goWalletTransfer('exchange')">
           <span class="mh5-mine-action__icon" aria-hidden="true">
             <img src="/images/mine/icon-convert.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
-          </span>
-          交易
-        </button>
+          </span>{{ $t('兑换') }}</button>
       </div>
 
       <div class="mh5-mine-wallet__shortcuts">
@@ -352,38 +362,15 @@ watch(preferredFiatAmountText, () => {
           @click="goRoute(item.route)"
         >
           <span class="mh5-mine-wallet__shortcut-icon" aria-hidden="true">
-            <img
-              v-if="item.key === 'assets'"
-              src="/images/mine/icon-assets.svg"
-              alt=""
-              class="mh5-mine-icon mh5-mine-icon--24"
-            />
-            <img
-              v-else-if="item.key === 'bill'"
-              src="/images/mine/icon-bill.svg"
-              alt=""
-              class="mh5-mine-icon mh5-mine-icon--24"
-            />
-            <img
-              v-else-if="item.key === 'bank'"
-              src="/images/mine/icon-bank.svg"
-              alt=""
-              class="mh5-mine-icon mh5-mine-icon--24"
-            />
-            <img
-              v-else
-              src="/images/mine/icon-payment.svg"
-              alt=""
-              class="mh5-mine-icon mh5-mine-icon--24"
-            />
+            <img :src="item.icon" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
           </span>
-          <span class="mh5-mine-wallet__shortcut-label">{{ item.label }}</span>
+          <span class="mh5-mine-wallet__shortcut-label">{{ $t(item.label) }}</span>
         </button>
       </div>
     </section>
 
     <section class="mh5-mine-more">
-      <h2 class="mh5-mine-more__title">更多功能</h2>
+      <h2 class="mh5-mine-more__title">{{ $t('更多功能') }}</h2>
       <div class="mh5-mine-menu">
       <button
         v-for="item in menuItems"
@@ -393,8 +380,21 @@ watch(preferredFiatAmountText, () => {
         @click="goMenuItem(item)"
       >
         <span class="mh5-mine-menu__icon" aria-hidden="true">
+          <svg
+            v-if="item.key === 'payment'"
+            class="mh5-mine-icon mh5-mine-icon--24"
+            viewBox="0 0 20 20"
+            fill="none"
+          >
+            <path
+              fill-rule="evenodd"
+              clip-rule="evenodd"
+              d="M13.6377 2.19015C14.0125 2.12058 14.3982 2.13338 14.7676 2.22823C15.1407 2.3241 15.4882 2.50128 15.7852 2.74679C16.0822 2.99251 16.3221 3.3013 16.4863 3.65011C16.6505 3.99885 16.7352 4.3799 16.7354 4.76534V5.3171C17.9069 5.54361 18.792 6.57448 18.792 7.81222V15.3122C18.792 16.7159 17.6537 17.8542 16.25 17.8542H3.75C2.34628 17.8542 1.20898 16.7159 1.20898 15.3122V6.52315C1.20872 5.91336 1.42098 5.32222 1.80957 4.85226C2.19823 4.38236 2.73888 4.06217 3.33789 3.94796C3.34196 3.94724 3.34653 3.9467 3.35059 3.94601L13.6377 2.19015ZM3.75 6.60421C3.08266 6.60421 2.54199 7.14487 2.54199 7.81222V15.3122C2.54199 15.9796 3.08266 16.5212 3.75 16.5212H16.25C16.9173 16.5212 17.459 15.9796 17.459 15.3122V7.81222C17.459 7.14487 16.9173 6.60421 16.25 6.60421H3.75ZM10 8.3962C10.3682 8.3962 10.667 8.69403 10.667 9.06222V12.4538L12.0293 11.0915C12.2896 10.8312 12.7113 10.8312 12.9717 11.0915C13.2315 11.3519 13.2319 11.7737 12.9717 12.0339L10.4717 14.5339C10.2115 14.7941 9.78968 14.7938 9.5293 14.5339L7.0293 12.0339C6.76895 11.7735 6.76895 11.3519 7.0293 11.0915C7.27343 10.8474 7.65905 10.8319 7.9209 11.0456L7.97168 11.0915L9.33398 12.4538V9.06222C9.33398 8.69403 9.63181 8.3962 10 8.3962ZM14.4355 3.52022C14.2525 3.47326 14.0607 3.46637 13.875 3.50167C13.8709 3.50244 13.8664 3.5039 13.8623 3.5046L3.58105 5.25948C3.54122 5.26729 3.50153 5.27636 3.46289 5.2878C3.55717 5.2772 3.65289 5.2712 3.75 5.2712H15.4023V4.76534C15.4022 4.57627 15.3598 4.38955 15.2793 4.21847C15.1987 4.04726 15.0813 3.89574 14.9355 3.77511C14.7898 3.65452 14.6188 3.56734 14.4355 3.52022Z"
+              fill="#454545"
+            />
+          </svg>
           <img
-            v-if="item.key === 'live'"
+            v-else-if="item.key === 'live'"
             src="/images/mine/icon-live.svg"
             alt=""
             class="mh5-mine-icon mh5-mine-icon--24"
@@ -406,13 +406,7 @@ watch(preferredFiatAmountText, () => {
             class="mh5-mine-icon mh5-mine-icon--24"
           />
           <img
-            v-else-if="item.key === 'agent'"
-            src="/images/mine/icon-agent.svg"
-            alt=""
-            class="mh5-mine-icon mh5-mine-icon--24"
-          />
-          <img
-            v-else-if="item.key === 'agent-invite'"
+            v-else-if="item.key === 'agent' || item.key === 'agent-invite'"
             src="/images/mine/icon-agent.svg"
             alt=""
             class="mh5-mine-icon mh5-mine-icon--24"
@@ -424,7 +418,7 @@ watch(preferredFiatAmountText, () => {
             class="mh5-mine-icon mh5-mine-icon--24"
           />
         </span>
-        <span class="mh5-mine-menu__title">{{ item.title }}</span>
+        <span class="mh5-mine-menu__title">{{ $t(item.title) }}</span>
         <span class="mh5-mine-menu__tail">
           <span
             v-if="item.badge"
@@ -433,7 +427,7 @@ watch(preferredFiatAmountText, () => {
           >
             {{ item.badge }}
           </span>
-          <span v-if="item.hot" class="mh5-mine-menu__hot" aria-label="热门">🔥</span>
+          <span v-if="item.hot" class="mh5-mine-menu__hot" :aria-label="$t('热门')">🔥</span>
           <img src="/images/mine/icon-arrow-right.svg" alt="" class="mh5-mine-icon mh5-mine-icon--16" aria-hidden="true" />
         </span>
       </button>
@@ -456,11 +450,11 @@ watch(preferredFiatAmountText, () => {
           aria-labelledby="fiat-preference-title"
         >
           <div class="mh5-wallet-sheet__head">
-            <h2 id="fiat-preference-title" class="mh5-wallet-sheet__title">选择偏好计价法币</h2>
+            <h2 id="fiat-preference-title" class="mh5-wallet-sheet__title">{{ $t('选择偏好计价法币') }}</h2>
             <button
               type="button"
               class="mh5-wallet-sheet__close"
-              aria-label="关闭"
+              :aria-label="$t('关闭')"
               @click="closeFiatPreference"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -480,7 +474,7 @@ watch(preferredFiatAmountText, () => {
               type="button"
               class="agent-currency-sheet__item"
               :class="{ 'agent-currency-sheet__item--active': preferredFiatId === item.id }"
-              @click="pickPreferredFiat(item.id)"
+              @click="applyPreferredFiat(item.id)"
             >
               <span
                 class="agent-currency-sheet__icon"
@@ -489,7 +483,7 @@ watch(preferredFiatAmountText, () => {
               >
                 {{ item.symbol }}
               </span>
-              <span class="agent-currency-sheet__name">{{ item.name }}</span>
+              <span class="agent-currency-sheet__name">{{ $t(item.name) }}</span>
               <span
                 v-if="preferredFiatId === item.id"
                 class="agent-currency-sheet__check agent-currency-sheet__check--active"

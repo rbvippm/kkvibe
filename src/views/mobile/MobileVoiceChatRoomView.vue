@@ -103,7 +103,7 @@ async function handleForwarded(names: string[]) {
         <img class="mh5-voice-room__host-avatar" :src="VOICE_ROOM_ASSETS.avatars[1]" alt="" />
         <div class="mh5-voice-room__host-meta">
           <p class="mh5-voice-room__host-name">{{ hostName }}</p>
-          <p class="mh5-voice-room__host-likes">2.4万本场点赞</p>
+          <p class="mh5-voice-room__host-likes">{{ $t('2.4万本场点赞') }}</p>
         </div>
         <button
           type="button"
@@ -122,13 +122,13 @@ async function handleForwarded(names: string[]) {
           <img :src="VOICE_ROOM_ASSETS.avatars[4]" alt="" />
           <span>{{ viewerCount }}</span>
         </div>
-        <button type="button" class="mh5-voice-room__close" aria-label="关闭" @click="goBack">
+        <button type="button" class="mh5-voice-room__close" :aria-label="$t('关闭')" @click="goBack">
           <img :src="VOICE_ROOM_ASSETS.close" alt="" width="24" height="24" />
         </button>
       </div>
     </header>
 
-    <section class="mh5-voice-room__mics" aria-label="麦位">
+    <section class="mh5-voice-room__mics" :aria-label="$t('麦位')">
       <div
         v-for="seat in MOCK_VOICE_MIC_SEATS"
         :key="seat.id"
@@ -163,7 +163,7 @@ async function handleForwarded(names: string[]) {
             >
               {{ seat.badge === 'host' ? '主' : seat.badge === 'admin' ? '管' : '神' }}
             </span>
-            <p class="mh5-voice-seat__name">{{ seat.name }}</p>
+            <p class="mh5-voice-seat__name">{{ $t(seat.name) }}</p>
           </div>
         </template>
 

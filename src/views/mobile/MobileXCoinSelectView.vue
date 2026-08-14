@@ -90,12 +90,12 @@ function confirmSelect() {
         v-model="keyword"
         type="search"
         class="mh5-xcoin-search__input"
-        placeholder="请输入备注，昵称、账号或账号ID"
+        :placeholder="$t('请输入备注，昵称、账号或账号ID')"
       />
     </div>
 
     <main class="mh5-xcoin-select-list">
-      <p v-if="!filteredList.length" class="mh5-xcoin-empty">未找到匹配对象</p>
+      <p v-if="!filteredList.length" class="mh5-xcoin-empty">{{ $t('未找到匹配对象') }}</p>
 
       <label
         v-for="row in filteredList"
@@ -111,13 +111,13 @@ function confirmSelect() {
           </div>
           <div class="mh5-xcoin-select-card__stats">
             <div>
-              <p class="mh5-xcoin-select-card__stat-label">可用额度</p>
+              <p class="mh5-xcoin-select-card__stat-label">{{ $t('可用额度') }}</p>
               <p class="mh5-xcoin-select-card__stat-value">
                 {{ creditStats(row).availableCredit.toFixed(2) }}
               </p>
             </div>
             <div>
-              <p class="mh5-xcoin-select-card__stat-label">授信总额</p>
+              <p class="mh5-xcoin-select-card__stat-label">{{ $t('授信总额') }}</p>
               <p class="mh5-xcoin-select-card__stat-value">
                 {{ getSelectableCreditTotal(creditStats(row)).toFixed(2) }}
               </p>

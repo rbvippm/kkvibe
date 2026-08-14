@@ -173,7 +173,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
               type="button"
               class="agent-home__nav-back"
               data-name="icon_backpage"
-              aria-label="返回"
+              :aria-label="$t('返回')"
               @click="emit('back')"
             >
               <svg width="10" height="18" viewBox="0 0 10 18" fill="none" aria-hidden="true">
@@ -188,7 +188,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
             </button>
           </div>
           <div class="agent-home__nav-title" data-name="title">
-            <p>代理中心</p>
+            <p>{{ $t('代理中心') }}</p>
           </div>
           <div class="agent-home__nav-right" data-name="right">
             <span
@@ -224,14 +224,14 @@ function pickCurrency(value: AgentOverviewCurrency) {
                   </span>
                 </div>
                 <button type="button" class="agent-home__withdraw-btn">
-                  <p>取款</p>
+                  <p>{{ $t('取款') }}</p>
                 </button>
               </div>
               <div class="agent-home__profile-balance">
                 <button
                   type="button"
                   class="agent-home__currency-pill"
-                  aria-label="选择币种"
+                  :aria-label="$t('选择币种')"
                   @click="currencyPickerOpen = true"
                 >
                   <p>{{ currency }}</p>
@@ -240,7 +240,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
                   </svg>
                 </button>
                 <p class="agent-home__balance-value">{{ balance }}</p>
-                <button type="button" class="agent-home__refresh-btn" data-name="ic:twotone-refresh" aria-label="刷新">
+                <button type="button" class="agent-home__refresh-btn" data-name="ic:twotone-refresh" :aria-label="$t('刷新')">
                   <img :src="AGENT_OVERVIEW_ASSETS.refreshIcon" alt="" width="20" height="20" />
                 </button>
               </div>
@@ -274,7 +274,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
               <button
                 type="button"
                 class="agent-home__profit-tab-info"
-                aria-label="查看返佣比例详情"
+                :aria-label="$t('查看返佣比例详情')"
                 @click="openShareRatioDialog"
               >
                 <img :src="AGENT_OVERVIEW_ASSETS.ratioInfoIcon" alt="" width="16" height="16" />
@@ -299,12 +299,12 @@ function pickCurrency(value: AgentOverviewCurrency) {
 
       <div class="agent-home__date-block">
         <div class="agent-home__date-row">
-          <p class="agent-home__date-label">数据时间段</p>
+          <p class="agent-home__date-label">{{ $t('数据时间段') }}</p>
           <div class="agent-home__date-picker">
             <div class="agent-home__date-range">
               <p>{{ dateRangeText }}</p>
             </div>
-            <button type="button" class="agent-home__date-icon" aria-label="选择日期">
+            <button type="button" class="agent-home__date-icon" :aria-label="$t('选择日期')">
               <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
                 <rect x="6" y="8" width="22" height="20" rx="3" stroke="#fecda6" stroke-width="1.4" />
                 <path d="M11 5v5M23 5v5" stroke="#fecda6" stroke-width="1.4" stroke-linecap="round" />
@@ -333,7 +333,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
     <div class="agent-home__main">
       <div class="agent-home__section">
         <div class="agent-home__panel">
-          <p class="agent-home__panel-title">我的直属</p>
+          <p class="agent-home__panel-title">{{ $t('我的直属') }}</p>
           <div class="agent-home__stat-rows">
             <div
               v-for="(row, rowIndex) in directStatRows"
@@ -353,7 +353,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
 
       <div v-if="!isRebate" class="agent-home__section agent-home__section--sub">
         <div class="agent-home__panel">
-          <p class="agent-home__panel-title">下级代理</p>
+          <p class="agent-home__panel-title">{{ $t('下级代理') }}</p>
           <div class="agent-home__stat-rows">
             <div
               v-for="(row, rowIndex) in subAgentStatRows"
@@ -374,9 +374,9 @@ function pickCurrency(value: AgentOverviewCurrency) {
 
       <div class="agent-home__section agent-home__section--rank">
         <div class="agent-home__rank-panel">
-          <p class="agent-home__panel-title">用户盈亏排行</p>
+          <p class="agent-home__panel-title">{{ $t('用户盈亏排行') }}</p>
 
-          <div class="agent-home__rank-tabs" data-name="tab" role="tablist" aria-label="盈亏排行类型">
+          <div class="agent-home__rank-tabs" data-name="tab" role="tablist" :aria-label="$t('盈亏排行类型')">
             <button
               v-for="tab in profitRankTabs"
               :key="tab.key"
@@ -387,17 +387,17 @@ function pickCurrency(value: AgentOverviewCurrency) {
               :aria-selected="profitRankTab === tab.key"
               @click="emit('pickProfitRankTab', tab.key)"
             >
-              <p>{{ tab.label }}</p>
+              <p>{{ $t(tab.label) }}</p>
             </button>
           </div>
 
           <div class="agent-home__rank-table-scroll">
             <div class="agent-home__rank-table">
               <div class="agent-home__rank-table-head">
-                <div class="agent-home__rank-cell agent-home__rank-cell--rank"><p>排名</p></div>
-                <div class="agent-home__rank-cell agent-home__rank-cell--id"><p>金刚号</p></div>
-                <div class="agent-home__rank-cell agent-home__rank-cell--name"><p>昵称</p></div>
-                <div class="agent-home__rank-cell agent-home__rank-cell--profit"><p>盈利</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--rank"><p>{{ $t('排名') }}</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--id"><p>{{ $t('金刚号') }}</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--name"><p>{{ $t('昵称') }}</p></div>
+                <div class="agent-home__rank-cell agent-home__rank-cell--profit"><p>{{ $t('盈利') }}</p></div>
               </div>
               <div
                 v-for="row in profitRankRows"
@@ -442,13 +442,13 @@ function pickCurrency(value: AgentOverviewCurrency) {
           >
             <div class="mh5-wallet-sheet__head">
               <div class="mh5-wallet-sheet__title-row">
-                <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">选择币种</h2>
+                <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">{{ $t('选择币种') }}</h2>
                 <Mh5SpecAnnot :spec="AGENT_OVERVIEW_CURRENCY_SHEET_SPEC" placement="bottom" />
               </div>
               <button
                 type="button"
                 class="mh5-wallet-sheet__close"
-                aria-label="关闭"
+                :aria-label="$t('关闭')"
                 @click="currencyPickerOpen = false"
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -478,7 +478,7 @@ function pickCurrency(value: AgentOverviewCurrency) {
                 >
                   {{ opt.symbol }}
                 </span>
-                <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
                 <span
                   v-if="currency === opt.value"
                   class="agent-currency-sheet__check agent-currency-sheet__check--active"

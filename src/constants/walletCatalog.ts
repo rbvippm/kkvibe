@@ -1,6 +1,7 @@
 /** 会员钱包目录：个人中心全部钱包 / 充提兑选币共用 */
 
 import { LOBBY_CURRENCY_OPTIONS } from './mobileLobby'
+import { orderedLobbyCashIds } from '../i18n'
 
 export type WalletKind = 'crypto' | 'fiat' | 'credit'
 export type WalletFilter = 'frequent' | 'crypto' | 'fiat' | 'credit'
@@ -24,10 +25,14 @@ export const WALLET_KIND_LABEL: Record<WalletKind, string> = {
   credit: '信用额度',
 }
 
-/** 常用币种顺序对齐大厅非信用额度币种：KKC → KKV → USDT */
+/** 常用币种顺序跟随语言：简繁 KKC→USDT→KKV，越南语 KKV→USDT→KKC，泰语/英语 USDT→KKC→KKV */
 export const WALLET_FREQUENT_IDS = LOBBY_CURRENCY_OPTIONS.filter((item) => !item.isCredit).map(
   (item) => item.id,
 )
+
+export function getWalletFrequentIds() {
+  return orderedLobbyCashIds.value
+}
 
 export const WALLET_FILTER_TABS: { key: WalletFilter; label: string }[] = [
   { key: 'frequent', label: '常用' },
@@ -47,7 +52,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     kind: 'crypto',
     balance: 9857.35,
     cnyRate: 7.2,
-    minDeposit: 1,
+    minDeposit: 10,
     minWithdraw: 20,
   },
   {
@@ -161,7 +166,7 @@ export function walletsForSheet(showCredit: boolean) {
 
 export function frequentWallets(items: WalletCatalogItem[]) {
   const byId = new Map(items.map((item) => [item.id, item]))
-  return WALLET_FREQUENT_IDS.flatMap((id) => {
+  return getWalletFrequentIds().flatMap((id) => {
     const hit = byId.get(id)
     return hit ? [hit] : []
   })

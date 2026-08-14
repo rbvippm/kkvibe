@@ -4,13 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
-  AGENT_WALLET_CURRENCY_OPTIONS,
+  getAgentDetailCurrencyOptions,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
 import {
   agentAppCurrency,
   isAgentCreditCurrency,
-  setAgentAppCurrency,
+  setAgentAppCurrencyByUser,
 } from '../../constants/agentAppCurrency'
 import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
 import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
@@ -106,7 +106,7 @@ function pickCategory(key: ReportCategoryKey) {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrency(value)
+  setAgentAppCurrencyByUser(value)
   currencyPickerOpen.value = false
 }
 
@@ -122,7 +122,7 @@ function closeGameProfitFormulaTip() {
 <template>
   <div class="mh5-agent-report-page">
     <header class="mh5-agent-report-header mh5-agent-report-header--with-tabs">
-      <div class="mh5-agent-report-page-tabs" role="tablist" aria-label="报表类型">
+      <div class="mh5-agent-report-page-tabs" role="tablist" :aria-label="$t('报表类型')">
         <button
           v-for="tab in pageTabs"
           :key="tab.key"
@@ -133,7 +133,7 @@ function closeGameProfitFormulaTip() {
           :aria-selected="pageTab === tab.key"
           @click="pickPageTab(tab.key)"
         >
-          {{ tab.label }}
+          {{ $t(tab.label) }}
         </button>
       </div>
       <div class="mh5-agent-report-header__actions">
@@ -150,7 +150,7 @@ function closeGameProfitFormulaTip() {
         <button
           type="button"
           class="mh5-agent-detail-currency"
-          aria-label="切换币种"
+          :aria-label="$t('切换币种')"
           @click="currencyPickerOpen = true"
         >
           <span>{{ currency }}</span>
@@ -171,10 +171,10 @@ function closeGameProfitFormulaTip() {
       @click="closeGameProfitFormulaTip"
     >
       <section class="mh5-agent-report-period">
-        <p class="mh5-agent-report-period__label">时间段</p>
+        <p class="mh5-agent-report-period__label">{{ $t('时间段') }}</p>
         <div class="mh5-agent-report-period__row">
           <div class="mh5-agent-report-period__input">{{ dateRangeText }}</div>
-          <button type="button" class="mh5-agent-report-period__calendar" aria-label="选择日期">
+          <button type="button" class="mh5-agent-report-period__calendar" :aria-label="$t('选择日期')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6" />
               <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.6" />
@@ -190,7 +190,7 @@ function closeGameProfitFormulaTip() {
             :class="{ 'mh5-agent-report-preset--active': preset === item.key }"
             @click="pickPreset(item.key)"
           >
-            {{ item.label }}
+            {{ $t(item.label) }}
           </button>
         </div>
       </section>
@@ -201,7 +201,7 @@ function closeGameProfitFormulaTip() {
           :key="card.key"
           class="mh5-agent-report-summary-card"
         >
-          <p class="mh5-agent-report-summary-card__label">{{ card.label }}</p>
+          <p class="mh5-agent-report-summary-card__label">{{ $t(card.label) }}</p>
           <p class="mh5-agent-report-summary-card__value">{{ card.value }}</p>
         </div>
       </section>
@@ -216,7 +216,7 @@ function closeGameProfitFormulaTip() {
             :class="{ 'mh5-agent-report-cat-tab--active': category === tab.key }"
             @click="pickCategory(tab.key)"
           >
-            {{ tab.label }}
+            {{ $t(tab.label) }}
           </button>
         </div>
         <div v-if="category !== 'all'" class="mh5-agent-report-vendors">
@@ -228,7 +228,7 @@ function closeGameProfitFormulaTip() {
             :class="{ 'mh5-agent-report-vendor--active': vendor === pill.key }"
             @click="vendor = pill.key"
           >
-            {{ pill.label }}
+            {{ $t(pill.label) }}
           </button>
         </div>
       </div>
@@ -241,7 +241,7 @@ function closeGameProfitFormulaTip() {
               <button
                 type="button"
                 class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
-                aria-label="查看游戏净输赢计算公式"
+                :aria-label="$t('查看游戏净输赢计算公式')"
                 :aria-expanded="gameProfitFormulaTipOpen"
                 @click.stop="toggleGameProfitFormulaTip"
               >
@@ -255,7 +255,7 @@ function closeGameProfitFormulaTip() {
                   />
                 </svg>
               </button>
-              <span>游戏净输赢</span>
+              <span>{{ $t('游戏净输赢') }}</span>
               <span
                 v-if="gameProfitFormulaTipOpen"
                 class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
@@ -274,7 +274,7 @@ function closeGameProfitFormulaTip() {
           :key="row.key"
           class="mh5-agent-report-detail__row"
         >
-          <span class="mh5-agent-report-detail__row-label">{{ row.label }}</span>
+          <span class="mh5-agent-report-detail__row-label">{{ $t(row.label) }}</span>
           <span
             class="mh5-agent-report-detail__row-value"
             :class="reportDetailValueClass(row.tone)"
@@ -293,9 +293,9 @@ function closeGameProfitFormulaTip() {
           @click.self="currencyPickerOpen = false"
         >
           <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet">
-            <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
+            <h2 class="mh5-xcoin-sheet__title">{{ $t('选择币种') }}</h2>
             <button
-              v-for="opt in AGENT_WALLET_CURRENCY_OPTIONS"
+              v-for="opt in getAgentDetailCurrencyOptions(!isRebateAgent)"
               :key="opt"
               type="button"
               class="mh5-xcoin-sheet__option"

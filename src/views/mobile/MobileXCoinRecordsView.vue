@@ -174,11 +174,11 @@ function summaryNetClass(value: number) {
 
 <template>
   <div class="mh5-xcoin-page mh5-xcoin-records-page">
-    <Mh5SubPageHeader title="信用额度记录">
+    <Mh5SubPageHeader :title="$t('信用额度记录')">
       <template #right>
         <div class="mh5-xcoin-header-actions">
           <Mh5SpecAnnot :spec="XCOIN_CREDIT_CURRENCY_SPEC" placement="bottom" />
-          <button type="button" class="mh5-sub-header__action" @click="openFilter">筛选</button>
+          <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
       </template>
     </Mh5SubPageHeader>

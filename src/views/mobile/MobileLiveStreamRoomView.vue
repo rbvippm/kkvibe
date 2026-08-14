@@ -188,7 +188,7 @@ async function handleForwarded(names: string[]) {
         <span class="mh5-livestream-page__rotate-hint-icon" aria-hidden="true" />
       </button>
     </div>
-    <div v-if="muted" class="mh5-livestream-mute-tip" aria-live="polite">已禁音</div>
+    <div v-if="muted" class="mh5-livestream-mute-tip" aria-live="polite">{{ $t('已禁音') }}</div>
 
     <MobileRoomGameCenter v-model:open="showGameCenter" />
 
@@ -223,7 +223,7 @@ async function handleForwarded(names: string[]) {
             </div>
             <span class="mh5-livestream-viewers__count">{{ room.viewerCount }}</span>
           </div>
-          <button type="button" class="mh5-livestream-close" aria-label="关闭" @click="goBack">
+          <button type="button" class="mh5-livestream-close" :aria-label="$t('关闭')" @click="goBack">
             <img :src="LIVE_STREAM_ASSETS.close" alt="" width="24" height="24" />
           </button>
         </div>
@@ -260,12 +260,12 @@ async function handleForwarded(names: string[]) {
             </div>
             <div v-else-if="msg.type === 'enter'" class="mh5-livestream-bubble">
               <span class="mh5-livestream-bubble__user">{{ msg.user }}</span>
-              <span class="mh5-livestream-bubble__text">进入直播间</span>
+              <span class="mh5-livestream-bubble__text">{{ $t('进入直播间') }}</span>
               <span v-if="msg.text" class="mh5-livestream-bubble__text">{{ msg.text }}</span>
             </div>
             <div v-else-if="msg.type === 'gift'" class="mh5-livestream-bubble">
               <span class="mh5-livestream-bubble__user">{{ msg.user }}:</span>
-              <span class="mh5-livestream-bubble__gift">送</span>
+              <span class="mh5-livestream-bubble__gift">{{ $t('送') }}</span>
               <img class="mh5-livestream-bubble__gift-icon" :src="LIVE_STREAM_ASSETS.giftThumb" alt="" />
               <span class="mh5-livestream-bubble__gift">{{ msg.gift }}</span>
             </div>

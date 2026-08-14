@@ -251,11 +251,11 @@ function resetFilterDraft() {
 
 <template>
   <div class="mh5-invite-rebate-list">
-    <Mh5SubPageHeader title="邀请返利" :on-back="goBack">
+    <Mh5SubPageHeader :title="$t('邀请返利')" :on-back="goBack">
       <template #right>
         <div class="mh5-sub-header__actions">
           <Mh5SpecAnnot :spec="INVITE_FRIENDS_REBATE_LIST_SPEC" placement="bottom" />
-          <button type="button" class="mh5-sub-header__action" @click="openFilterSheet">筛选</button>
+          <button type="button" class="mh5-sub-header__action" @click="openFilterSheet">{{ $t('筛选') }}</button>
         </div>
       </template>
     </Mh5SubPageHeader>

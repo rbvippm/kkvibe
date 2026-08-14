@@ -18,7 +18,7 @@ const pendingCount = computed(
 
 <template>
   <div class="agent-invite-records-page">
-    <Mh5SubPageHeader title="我的邀请记录">
+    <Mh5SubPageHeader :title="$t('我的邀请记录')">
       <template #right>
         <Mh5SpecAnnot :spec="AGENT_TEAM_INVITE_RECORDS_SPEC" placement="bottom" />
       </template>

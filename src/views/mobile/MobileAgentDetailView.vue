@@ -18,7 +18,8 @@ import {
   agentAppCurrency,
   isAgentCreditCurrency,
   setAgentAppCreditCurrency,
-  setAgentAppCurrency,
+  setAgentAppCurrencyByUser,
+  fallbackAgentCashCurrency,
 } from '../../constants/agentAppCurrency'
 import {
   AGENT_COMMISSION_FORMULA,
@@ -111,7 +112,7 @@ const useProfitSections = computed(
 watch(isCredited, (credited) => {
   if (!credited) {
     if (activeTab.value === 'credit') activeTab.value = 'wallet'
-    if (isAgentCreditCurrency(currency.value)) setAgentAppCurrency('KKC')
+    if (isAgentCreditCurrency(currency.value)) fallbackAgentCashCurrency()
   }
 })
 
@@ -267,7 +268,7 @@ function goCredit() {
 }
 
 function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrency(value)
+  setAgentAppCurrencyByUser(value)
   currencyPickerOpen.value = false
 }
 
@@ -293,7 +294,7 @@ function closeProfitFormulaTips() {
 
 <template>
   <div class="mh5-agent-detail-page">
-    <Mh5SubPageHeader title="代理详情">
+    <Mh5SubPageHeader :title="$t('代理详情')">
       <template #right>
         <div class="mh5-agent-detail-header-actions">
           <Mh5SpecAnnot
@@ -304,7 +305,7 @@ function closeProfitFormulaTips() {
           <button
             type="button"
             class="mh5-agent-detail-currency"
-            aria-label="切换币种"
+            :aria-label="$t('切换币种')"
             @click="currencyPickerOpen = true"
           >
             <span>{{ currency }}</span>
