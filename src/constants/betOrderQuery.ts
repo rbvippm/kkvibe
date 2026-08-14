@@ -142,6 +142,31 @@ export function formatBetOrderMemberKingkongId(
   return row.memberAccount
 }
 
+function splitBetOrderContentLines(content: string) {
+  return content
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+}
+
+/** 列表预览：串关最多两行（前两场 + 串关类型）；单关原样 */
+export function formatBetOrderContentPreview(content: string) {
+  const lines = splitBetOrderContentLines(content)
+  if (lines.length <= 2) return lines.join('\n')
+
+  const parlayIdx = lines.findIndex((line) => /^\d+串\d+/.test(line))
+  const parlayTag = (parlayIdx >= 0 ? lines[parlayIdx] : '').replace(/\s*@[\d.]+$/, '')
+  const matches = parlayIdx >= 0 ? lines.filter((_, index) => index !== parlayIdx) : lines
+
+  if (matches.length <= 2) {
+    if (!parlayTag) return matches.join('\n')
+    if (matches.length <= 1) return `${matches[0] ?? parlayTag}\n${parlayTag}`.trim()
+    return `${matches[0]}\n${matches[1]} · ${parlayTag}`
+  }
+
+  return `${matches[0]}\n${matches[1]} · ${parlayTag || `${matches.length}串1`}`
+}
+
 /** 下级会员搜索：备注 / 昵称 / 账号 / 账号 ID / 金刚号 */
 export function getBetOrderMemberSearchHaystack(
   row: Pick<
@@ -402,8 +427,13 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     productName: '皇者-体育',
     gameName: 'hz-sports',
     gameCategory: 'sports',
-    periodNo: '英超240601',
-    betContent: '曼联 vs 切尔西 主胜@1.92',
+    periodNo: '足球串关',
+    betContent: [
+      '3串1 @7.66',
+      '曼联 vs 切尔西 主胜@1.92',
+      '皇马 vs 巴萨 客胜@2.10',
+      '利物浦 vs 阿森纳 让球 -0.5@1.90',
+    ].join('\n'),
     betAmount: 200,
     actualDeduct: 200,
     validBet: 200,
@@ -588,7 +618,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     gameName: 'hz-sports',
     gameCategory: 'sports',
     periodNo: '英超串关',
-    betContent: '2串1 曼联胜+利物浦胜@3.25',
+    betContent: ['2串1 @3.26', '曼联 vs 切尔西 主胜@1.92', '利物浦 vs 阿森纳 主胜@1.70'].join('\n'),
     betAmount: 200,
     actualDeduct: 200,
     validBet: 100,

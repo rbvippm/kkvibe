@@ -19,6 +19,7 @@ import {
   filterBetOrders,
   filterBetOrdersForSummary,
   formatBetWinLose,
+  formatBetOrderContentPreview,
   formatBetOrderCurrency,
   formatBetOrderMemberKingkongId,
   formatBetOrderMemberLabel,
@@ -132,13 +133,13 @@ const toolbarTimeLabel = computed(() => {
 })
 
 const toolbarCategoryLabel = computed(() =>
-  appliedFilter.value.category ? getBetOrderCategoryLabel(appliedFilter.value.category) : '所有游戏',
+  appliedFilter.value.category ? getBetOrderCategoryLabel(appliedFilter.value.category) : '游戏',
 )
 
 const toolbarCurrencyLabel = computed(() =>
   appliedFilter.value.gameCurrency
     ? formatBetOrderCurrency(appliedFilter.value.gameCurrency)
-    : '全部',
+    : '币种',
 )
 
 const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
@@ -410,7 +411,7 @@ function summaryWinLoseClass(value: number) {
             :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCategoryDirty }"
             @click="toolbarPicker = 'category'"
           >
-            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarCategoryLabel }}</span>
+            <span class="mh5-bet-order-toolbar__pick-text">{{ $t(toolbarCategoryLabel) }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
               <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
             </svg>
@@ -421,7 +422,7 @@ function summaryWinLoseClass(value: number) {
             :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCurrencyDirty }"
             @click="toolbarPicker = 'currency'"
           >
-            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarCurrencyLabel }}</span>
+            <span class="mh5-bet-order-toolbar__pick-text">{{ $t(toolbarCurrencyLabel) }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
               <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
             </svg>
@@ -542,7 +543,7 @@ function summaryWinLoseClass(value: number) {
             <span class="mh5-bet-order-card__category">{{ getBetOrderCategoryLabel(row.gameCategory) }}</span>
             <span class="mh5-bet-order-card__game-name">{{ row.productName }}</span>
           </div>
-          <p class="mh5-bet-order-card__bet-content">{{ row.betContent }}</p>
+          <p class="mh5-bet-order-card__bet-content">{{ formatBetOrderContentPreview(row.betContent) }}</p>
         </div>
         <time class="mh5-bet-order-card__time">{{ row.betAt }}</time>
 
@@ -604,7 +605,7 @@ function summaryWinLoseClass(value: number) {
                 :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.category === opt.value }"
                 @click="selectToolbarCategory(opt.value)"
               >
-                {{ opt.value ? opt.label : '所有游戏' }}
+                {{ $t(opt.value ? opt.label : '全部游戏') }}
               </button>
             </template>
             <template v-else>
@@ -616,7 +617,7 @@ function summaryWinLoseClass(value: number) {
                 :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.gameCurrency === opt.value }"
                 @click="selectToolbarCurrency(opt.value)"
               >
-                {{ opt.label }}
+                {{ $t(opt.value ? opt.label : '全部币种') }}
               </button>
             </template>
           </div>
@@ -734,7 +735,6 @@ function summaryWinLoseClass(value: number) {
                 展开
               </button>
             </div>
-            <p class="mh5-xcoin-filter-hint">分类为全部时展示全部游戏名称，选定分类后仅展示该分类</p>
           </section>
           </div>
 
@@ -791,7 +791,7 @@ function summaryWinLoseClass(value: number) {
             <div v-if="!isMemberRecords" class="mh5-bet-order-detail-row"><span>期数/场次</span><span>{{ detailRow.periodNo }}</span></div>
             <div class="mh5-bet-order-detail-row mh5-bet-order-detail-row--stack">
               <span>投注内容</span>
-              <span>{{ detailRow.betContent }}</span>
+              <span class="mh5-bet-order-detail-bet">{{ detailRow.betContent }}</span>
             </div>
           </section>
 
