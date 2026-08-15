@@ -19457,6 +19457,30 @@ div.agent-home__profit-tab--ratio {
   margin-left: 4px;
 }
 
+.mh5-wallet-transfer-qr-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.mh5-wallet-transfer-share-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-height: 36px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .mh5-wallet-transfer-qr {
   position: relative;
   display: grid;
@@ -19524,16 +19548,19 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-wallet-transfer-copy {
-  flex-shrink: 0;
-  min-height: 36px;
-  padding: 0 12px;
+  display: inline;
+  margin-left: 6px;
+  padding: 0;
   border: none;
-  border-radius: 10px;
-  background: var(--mh5-app-orange-light);
+  background: transparent;
   color: var(--mh5-app-orange);
   font-size: 13px;
   font-weight: 600;
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: inherit;
+  letter-spacing: 0;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .mh5-wallet-transfer-tip {
@@ -19672,6 +19699,88 @@ div.agent-home__profit-tab--ratio {
   background: #9ca3af;
 }
 
+.mh5-wallet-transfer-cs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 16px;
+  padding: 20px 16px 18px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+}
+
+.mh5-wallet-transfer-cs h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-transfer-cs p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-wallet-transfer-cs__qr {
+  display: grid;
+  place-items: center;
+  width: 196px;
+  height: 196px;
+  margin: 16px 0 12px;
+}
+
+.mh5-wallet-transfer-cs > span {
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-transfer-channels {
+  padding: 10px;
+  border-radius: 12px;
+  background: #f3f4f6;
+}
+
+.mh5-wallet-transfer-channels__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mh5-wallet-transfer-channel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--mh5-app-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.mh5-wallet-transfer-channel--active {
+  border-color: var(--mh5-app-orange);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--mh5-app-orange);
+}
+
+.mh5-wallet-transfer-channel__icon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .mh5-wallet-transfer-ccy-btn--static {
   pointer-events: none;
   cursor: default;
@@ -19807,10 +19916,6 @@ div.agent-home__profit-tab--ratio {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
-}
-
-.mh5-wallet-transfer-presets--fiat {
-  grid-template-columns: repeat(3, 1fr);
 }
 
 .mh5-wallet-transfer-preset {
@@ -20080,6 +20185,165 @@ div.agent-home__profit-tab--ratio {
   color: #fff;
   font-size: 13px;
   white-space: nowrap;
+}
+
+.mh5-toast-enter-active,
+.mh5-toast-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-toast-enter-from,
+.mh5-toast-leave-to {
+  opacity: 0;
+}
+
+.mh5-wallet-share-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #f3f4f6;
+}
+
+.mh5-wallet-share-main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 16px;
+}
+
+.mh5-wallet-share-card {
+  padding: 20px 16px 16px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+}
+
+.mh5-wallet-share-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-share-card__warn {
+  margin: 12px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-share-card__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-share-qr {
+  display: grid;
+  place-items: center;
+  width: 196px;
+  height: 196px;
+  margin: 18px auto 0;
+}
+
+.mh5-wallet-share-card .mh5-wallet-transfer-address {
+  margin-top: 16px;
+}
+
+.mh5-wallet-share-card .mh5-wallet-transfer-tip {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.mh5-wallet-share-promo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 14px;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mh5-wallet-share-promo__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--mh5-app-orange);
+}
+
+.mh5-wallet-share-promo__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-wallet-share-promo__text strong {
+  font-size: 15px;
+  color: var(--mh5-app-text);
+}
+
+.mh5-wallet-share-promo__text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-wallet-share-promo__qr {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  width: 44px;
+  height: 44px;
+  gap: 0.5px;
+}
+
+.mh5-wallet-share-promo__cell {
+  background: transparent;
+}
+
+.mh5-wallet-share-promo__cell--on {
+  background: #111;
+}
+
+.mh5-wallet-share-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.mh5-wallet-share-actions__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 88px;
+  border: none;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--mh5-app-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mh5-wallet-share-actions__icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--mh5-app-orange);
+}
+
+.mh5-wallet-share-page .mh5-wallet-transfer-toast {
+  bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
 /* ---------- 收款方式 ---------- */

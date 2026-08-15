@@ -18,17 +18,83 @@ export type WalletNetwork = {
 
 export type WalletFiatCategory = 'hot' | 'ewallet' | 'online' | 'bank'
 
+/** 后台「标签类型」：支付渠道 / 链上充值 / 链上提币 / 在线客服 / 钱包 */
+export type WalletPayTagType =
+  | 'pay_channel'
+  | 'onchain_deposit'
+  | 'onchain_withdraw'
+  | 'customer_service'
+  | 'wallet'
+
+export const WALLET_PAY_TAG_TYPE_LABEL: Record<WalletPayTagType, string> = {
+  pay_channel: '支付渠道',
+  onchain_deposit: '链上充值',
+  onchain_withdraw: '链上提币',
+  customer_service: '在线客服',
+  wallet: '钱包',
+}
+
 export type WalletFiatMethod = {
   id: string
+  /** 后台「交易标签名称」，如网银转账、支付宝 */
   name: string
   eta: string
+  /** 后台「标签 icon」，自定义图标 */
   icon?: string
   color?: string
   min?: number
   max?: number
+  /** 后台「标签备注」，如赠送2%、大额优先 */
   promo?: string
+  /** 后台「交易入口名称」：热门 / 电子钱包 / 在线充值 / 银行卡 */
   categories?: WalletFiatCategory[]
+  tagType?: WalletPayTagType
   disabled?: boolean
+}
+
+/** 仅支付渠道展示充值渠道宫格；钱包直接填金额；链上充值/提币走地址；在线客服打开客服 */
+export function walletTagShowsDepositChannel(type: WalletPayTagType) {
+  return type === 'pay_channel'
+}
+
+export function getWalletFiatTagType(method: WalletFiatMethod): WalletPayTagType {
+  if (method.tagType) return method.tagType
+  if (method.categories?.includes('ewallet') && !method.categories?.includes('bank')) return 'wallet'
+  return 'pay_channel'
+}
+
+export type WalletDepositChannel = {
+  id: string
+  min: number
+  max: number
+}
+
+/** 充值渠道限额档，两列展示 */
+const DEPOSIT_CHANNEL_RANGES: [number, number][] = [
+  [50, 5000],
+  [100, 500],
+  [100, 5000],
+  [100, 1000],
+  [200, 10000],
+  [200, 2000],
+  [300, 2000],
+  [300, 2000],
+  [500, 20000],
+  [500, 5000],
+  [500, 20000],
+  [1000, 20000],
+]
+
+export function formatDepositChannelRange(min: number, max: number) {
+  return `${min}-${max}`
+}
+
+export function depositChannelsOf(methodId: string): WalletDepositChannel[] {
+  return DEPOSIT_CHANNEL_RANGES.map(([min, max], index) => ({
+    id: `${methodId}-ch-${index}`,
+    min,
+    max,
+  }))
 }
 
 export const WALLET_TRANSFER_TABS: { key: WalletTransferTab; label: string }[] = [
@@ -59,6 +125,7 @@ export const WALLET_NETWORKS_BY_CURRENCY: Record<string, WalletNetwork[]> = {
   bnb: [{ id: 'bep20', label: 'BNB Smart Chain (BEP20)', address: '0x4d1B90c2E3F8a7C6b5E9D0A1F2C3B4A5D6E7F809' }],
 }
 
+/** 后台「交易入口名称」→ 页面「支付方式」分类 */
 export const WALLET_FIAT_DEPOSIT_TABS: { key: WalletFiatCategory; label: string }[] = [
   { key: 'hot', label: '热门' },
   { key: 'ewallet', label: '电子钱包' },
@@ -73,21 +140,29 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '1 分钟',
     icon: '支',
     color: '#1677ff',
-    min: 100,
-    max: 50000,
     promo: '赠送2%',
-    categories: ['hot', 'ewallet', 'online'],
+    categories: ['hot', 'online'],
+    tagType: 'pay_channel',
   },
   {
     id: 'wechat',
-    name: '微信支付',
+    name: '微信',
     eta: '1 分钟',
     icon: '微',
     color: '#07c160',
-    min: 100,
-    max: 20000,
     promo: '赠送2%',
-    categories: ['hot', 'ewallet', 'online'],
+    categories: ['hot', 'online'],
+    tagType: 'pay_channel',
+  },
+  {
+    id: 'douyin',
+    name: '抖音',
+    eta: '1 分钟',
+    icon: '抖',
+    color: '#fe2c55',
+    promo: '赠送2%',
+    categories: ['online'],
+    tagType: 'pay_channel',
   },
   {
     id: 'wallet-808',
@@ -95,32 +170,29 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: '8',
     color: '#0ea5e9',
-    min: 100,
-    max: 30000,
     promo: '赠送2%',
     categories: ['hot', 'ewallet'],
+    tagType: 'wallet',
   },
   {
-    id: 'wallet-go',
-    name: 'GO钱包',
+    id: 'wallet',
+    name: 'EP代收',
     eta: '2 分钟',
-    icon: 'G',
-    color: '#22c55e',
-    min: 100,
-    max: 30000,
+    icon: '₮',
+    color: '#26a17b',
     promo: '赠送2%',
-    categories: ['hot', 'ewallet'],
+    categories: ['hot'],
+    tagType: 'wallet',
   },
   {
-    id: 'wallet-234pay',
-    name: '234钱包代付',
+    id: 'bank-go',
+    name: 'GO银行',
     eta: '3 分钟',
-    icon: '2',
-    color: '#f97316',
-    min: 100,
-    max: 50000,
+    icon: 'G',
+    color: '#15803d',
     promo: '赠送2%',
-    categories: ['hot', 'ewallet'],
+    categories: ['hot'],
+    tagType: 'pay_channel',
   },
   {
     id: 'bank',
@@ -128,10 +200,39 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '3 分钟',
     icon: '银',
     color: '#2563eb',
-    min: 100,
-    max: 50000,
     promo: '赠送1%',
-    categories: ['hot', 'bank'],
+    categories: ['hot'],
+    tagType: 'pay_channel',
+  },
+  {
+    id: 'customer-service',
+    name: '在线客服',
+    eta: '即时',
+    icon: '客',
+    color: '#f97316',
+    promo: '立即咨询',
+    categories: ['hot'],
+    tagType: 'customer_service',
+  },
+  {
+    id: 'wallet-go',
+    name: 'GO钱包',
+    eta: '2 分钟',
+    icon: 'G',
+    color: '#22c55e',
+    promo: '赠送2%',
+    categories: ['ewallet'],
+    tagType: 'wallet',
+  },
+  {
+    id: 'wallet-234pay',
+    name: '234钱包代付',
+    eta: '3 分钟',
+    icon: '2',
+    color: '#f97316',
+    promo: '赠送2%',
+    categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-ok',
@@ -139,10 +240,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: 'O',
     color: '#111827',
-    min: 100,
-    max: 30000,
     promo: '赠送2%',
-    categories: ['hot', 'ewallet'],
+    categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-jd',
@@ -150,10 +250,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: '京',
     color: '#e11d48',
-    min: 100,
-    max: 20000,
     promo: '赠送2%',
-    categories: ['hot', 'ewallet'],
+    categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-bo',
@@ -161,10 +260,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: '波',
     color: '#7c3aed',
-    min: 100,
-    max: 30000,
     promo: '赠送2%',
     categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-kbean',
@@ -172,10 +270,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '3 分钟',
     icon: 'K',
     color: '#eab308',
-    min: 100,
-    max: 20000,
     promo: '赠送1%',
     categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-to',
@@ -183,21 +280,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: 'T',
     color: '#14b8a6',
-    min: 100,
-    max: 30000,
     promo: '赠送2%',
     categories: ['ewallet'],
-  },
-  {
-    id: 'wallet-234',
-    name: '234钱包',
-    eta: '2 分钟',
-    icon: '2',
-    color: '#fb7185',
-    min: 100,
-    max: 30000,
-    promo: '赠送2%',
-    categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-988',
@@ -205,10 +290,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '2 分钟',
     icon: '9',
     color: '#6366f1',
-    min: 100,
-    max: 30000,
     promo: '赠送2%',
     categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'wallet-jiayun',
@@ -216,32 +300,19 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '3 分钟',
     icon: '佳',
     color: '#0f766e',
-    min: 100,
-    max: 20000,
     promo: '赠送1%',
     categories: ['ewallet'],
-  },
-  {
-    id: 'vietqr',
-    name: 'Viet QR',
-    eta: '1 分钟',
-    icon: 'V',
-    color: '#e11d48',
-    min: 100,
-    max: 30000,
-    promo: '赠送2%',
-    categories: ['ewallet'],
+    tagType: 'wallet',
   },
   {
     id: 'momo',
-    name: 'Momo',
+    name: 'Momo钱包',
     eta: '2 分钟',
     icon: 'M',
     color: '#d82d8b',
-    min: 100,
-    max: 20000,
     promo: '维护中',
     categories: ['ewallet'],
+    tagType: 'wallet',
     disabled: true,
   },
   {
@@ -250,10 +321,19 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '3 分钟',
     icon: '联',
     color: '#1d4ed8',
-    min: 200,
-    max: 50000,
     promo: '赠送1%',
     categories: ['bank'],
+    tagType: 'pay_channel',
+  },
+  {
+    id: 'bank-crypto',
+    name: '数字货币',
+    eta: '5 分钟',
+    icon: '币',
+    color: '#26a17b',
+    promo: '赠送2%',
+    categories: ['bank'],
+    tagType: 'pay_channel',
   },
   {
     id: 'bank-wire',
@@ -261,10 +341,9 @@ export const WALLET_FIAT_DEPOSIT_METHODS: WalletFiatMethod[] = [
     eta: '10 分钟',
     icon: '转',
     color: '#334155',
-    min: 500,
-    max: 100000,
     promo: '大额优先',
     categories: ['bank'],
+    tagType: 'pay_channel',
   },
 ]
 
@@ -326,7 +405,10 @@ export const WALLET_FIAT_WITHDRAW_REF = '1231421'
 
 export const WALLET_FIAT_DEPOSIT_MIN = 50
 export const WALLET_FIAT_DEPOSIT_MAX = 5000
-/** 法币充值页底运营提示，空字符串则不展示 */
+/** 在线客服人工充值账号 */
+export const WALLET_DEPOSIT_CS_ACCOUNT = 'kingkong_caiwu'
+
+/** 后台「自定义文案」；空字符串则不展示 */
 export const WALLET_FIAT_DEPOSIT_NOTICE =
   '请使用与实名认证一致的本人账户充值，到账时间以通道实际处理为准。如长时间未到账，请联系在线客服并提供支付凭证。'
 
@@ -339,11 +421,6 @@ export const WALLET_FIAT_DEPOSIT_QUOTE: Record<string, { quote: string; rate: st
 export function fiatDepositQuoteText(currencyId: string, currencyName: string) {
   const mapped = WALLET_FIAT_DEPOSIT_QUOTE[currencyId] ?? { quote: 'CNY', rate: '1' }
   return `1${currencyName.toUpperCase()} = ${mapped.rate}${mapped.quote}`
-}
-
-export const WALLET_FIAT_PRESETS: Record<string, number[]> = {
-  kkc: [200, 500, 2000],
-  kkv: [200, 500, 2000],
 }
 
 export const WALLET_EXCHANGE_FEE = 0
@@ -361,6 +438,31 @@ export function parseWalletTransferTab(raw: unknown): WalletTransferTab {
 
 export function walletTransferRoute(tab: WalletTransferTab) {
   return { name: 'mobile-wallet-transfer' as const, query: { tab } }
+}
+
+/** 分享页币种-网络，如 USDT-Tron(TRC20) */
+export function walletDepositSharePairLabel(currencyName: string, networkLabel: string) {
+  const compact = networkLabel.replace(/\s+\(/g, '(').trim()
+  return compact ? `${currencyName}-${compact}` : currencyName
+}
+
+export function walletDepositShareRoute(currencyId: string, networkId: string) {
+  return {
+    name: 'mobile-wallet-deposit-share' as const,
+    query: { currency: currencyId, network: networkId },
+  }
+}
+
+/** 原型二维码点阵，按地址种子生成 */
+export function walletQrCells(seed: string) {
+  const cells: boolean[] = []
+  let hash = 0
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
+  for (let i = 0; i < 121; i += 1) {
+    hash = (hash * 1664525 + 1013904223) >>> 0
+    cells.push(hash % 3 !== 0)
+  }
+  return cells
 }
 
 export function findTransferCurrency(id: string): WalletTransferCurrency {

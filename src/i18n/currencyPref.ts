@@ -100,7 +100,7 @@ export const effectiveAgentCurrency = computed(
 )
 
 export const effectiveWalletTransferCurrency = computed(
-  () => userWalletTransferCurrency.value || defaultLobbyCashId(),
+  () => effectiveLobbyCurrency.value,
 )
 
 export function pickLobbyCurrency(id: string) {

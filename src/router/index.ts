@@ -358,6 +358,12 @@ export const router = createRouter({
           meta: { title: '充值', hideTabBar: true },
         },
         {
+          path: 'mine/wallet-transfer/share',
+          name: 'mobile-wallet-deposit-share',
+          component: () => import('../views/mobile/MobileWalletDepositShareView.vue'),
+          meta: { title: '分享', hideTabBar: true },
+        },
+        {
           path: 'mine/payout-methods',
           name: 'mobile-payout-methods',
           component: () => import('../views/mobile/MobilePayoutMethodsView.vue'),

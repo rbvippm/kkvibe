@@ -8,13 +8,13 @@ import { mh5Confirm } from '../../composables/useMh5Confirm'
 import {
   WALLET_EXCHANGE_ETA,
   WALLET_EXCHANGE_FEE,
+  WALLET_DEPOSIT_CS_ACCOUNT,
   WALLET_FIAT_DEPOSIT_MAX,
   WALLET_FIAT_DEPOSIT_METHODS,
   WALLET_FIAT_DEPOSIT_MIN,
   WALLET_FIAT_DEPOSIT_NOTICE,
   WALLET_FIAT_DEPOSIT_PREVIEW,
   WALLET_FIAT_DEPOSIT_TABS,
-  WALLET_FIAT_PRESETS,
   WALLET_FIAT_WITHDRAW_DAILY_LIMIT,
   WALLET_FIAT_WITHDRAW_EWALLET_MAX,
   WALLET_FIAT_WITHDRAW_EWALLET_MIN,
@@ -26,8 +26,12 @@ import {
   getWalletQuickCurrencyIds,
   WALLET_TRANSFER_CURRENCIES,
   WALLET_TRANSFER_TABS,
+  depositChannelsOf,
   fiatDepositMethodsByCategory,
   fiatDepositQuoteText,
+  formatDepositChannelRange,
+  getWalletFiatTagType,
+  walletTagShowsDepositChannel,
   exchangeQuote,
   exchangeRateText,
   findTransferCurrency,
@@ -35,6 +39,8 @@ import {
   networksOf,
   parseWalletTransferTab,
   splitAddressHighlights,
+  walletDepositShareRoute,
+  walletQrCells,
   type WalletFiatCategory,
   type WalletFiatWithdrawKind,
   type WalletTransferTab,
@@ -51,6 +57,7 @@ const activeTab = ref<WalletTransferTab>(parseWalletTransferTab(route.query.tab)
 const selectedId = ref(effectiveWalletTransferCurrency.value)
 const networkId = ref('trc20')
 const fiatMethodId = ref('alipay')
+const depositChannelId = ref('')
 const fiatCategory = ref<WalletFiatCategory>('hot')
 const fiatWithdrawKind = ref<WalletFiatWithdrawKind>('ewallet')
 const fiatWithdrawWalletId = ref(WALLET_FIAT_WITHDRAW_WALLETS[0]?.id ?? '')
@@ -87,9 +94,24 @@ const addressSegments = computed(() => splitAddressHighlights(activeNetwork.valu
 const cryptoDepositMinText = computed(
   () => `最小充值${activeCurrency.value.minDeposit}${activeCurrency.value.name}`,
 )
-const fiatPresets = computed(() => WALLET_FIAT_PRESETS[selectedId.value] ?? WALLET_FIAT_PRESETS.kkc)
-const activeFiatMethod = computed(
-  () => WALLET_FIAT_DEPOSIT_METHODS.find((item) => item.id === fiatMethodId.value) ?? WALLET_FIAT_DEPOSIT_METHODS[0],
+const activeFiatMethod = computed(() =>
+  WALLET_FIAT_DEPOSIT_METHODS.find((item) => item.id === fiatMethodId.value),
+)
+const isCustomerService = computed(
+  () => Boolean(activeFiatMethod.value && getWalletFiatTagType(activeFiatMethod.value) === 'customer_service'),
+)
+const showDepositChannels = computed(() => {
+  const method = activeFiatMethod.value
+  if (!method || method.disabled || isCustomerService.value) return false
+  return walletTagShowsDepositChannel(getWalletFiatTagType(method))
+})
+const depositChannels = computed(() =>
+  showDepositChannels.value ? depositChannelsOf(fiatMethodId.value) : [],
+)
+const activeDepositChannel = computed(
+  () =>
+    depositChannels.value.find((item) => item.id === depositChannelId.value) ??
+    depositChannels.value[0],
 )
 const fiatMethodsInCategory = computed(() => fiatDepositMethodsByCategory(fiatCategory.value))
 const hasMoreFiatMethods = computed(
@@ -100,8 +122,8 @@ const visibleFiatMethods = computed(() =>
     ? fiatMethodsInCategory.value
     : fiatMethodsInCategory.value.slice(0, WALLET_FIAT_DEPOSIT_PREVIEW),
 )
-const fiatMin = computed(() => WALLET_FIAT_DEPOSIT_MIN)
-const fiatMax = computed(() => WALLET_FIAT_DEPOSIT_MAX)
+const fiatMin = computed(() => activeDepositChannel.value?.min ?? WALLET_FIAT_DEPOSIT_MIN)
+const fiatMax = computed(() => activeDepositChannel.value?.max ?? WALLET_FIAT_DEPOSIT_MAX)
 const withdrawAmountMinText = computed(() =>
   formatTransferAmount(activeCurrency.value.minWithdraw, 2),
 )
@@ -142,7 +164,8 @@ const exchangeCnyApprox = computed(() => {
 
 const canSubmitDeposit = computed(() => {
   if (isCrypto.value) return Boolean(activeNetwork.value?.address)
-  if (activeFiatMethod.value?.disabled) return false
+  if (!activeFiatMethod.value || activeFiatMethod.value.disabled) return false
+  if (showDepositChannels.value && !activeDepositChannel.value) return false
   if (depositAmountNum.value < fiatMin.value) return false
   if (depositAmountNum.value > fiatMax.value) return false
   return true
@@ -234,7 +257,23 @@ watch(effectiveWalletTransferCurrency, (id) => {
 
 watch(fiatCategory, () => {
   paygridExpanded.value = false
+  const list = fiatDepositMethodsByCategory(fiatCategory.value)
+  if (list.some((item) => item.id === fiatMethodId.value)) return
+  const next = list.find(
+    (item) => !item.disabled && getWalletFiatTagType(item) !== 'customer_service',
+  )
+  fiatMethodId.value = next?.id ?? ''
 })
+
+watch(
+  depositChannels,
+  (channels) => {
+    if (!channels.some((item) => item.id === depositChannelId.value)) {
+      depositChannelId.value = channels[0]?.id ?? ''
+    }
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   consumePendingPayoutPick()
@@ -265,6 +304,14 @@ function selectChip(id: string) {
 
 function openMoreCurrencies() {
   pickerKind.value = 'more'
+}
+
+function applyDepositPercent(percent: number) {
+  const min = fiatMin.value
+  const max = fiatMax.value
+  let next = percent === 0 ? min : percent === 100 ? max : (max * percent) / 100
+  next = Math.min(Math.max(next, min), max)
+  depositAmount.value = String(Number(next.toFixed(2)))
 }
 
 function applyWithdrawMax() {
@@ -382,14 +429,6 @@ function onFiatMethodClick(id: string, disabled?: boolean) {
   fiatMethodId.value = id
 }
 
-function isFiatPresetDisabled(preset: number) {
-  return preset < fiatMin.value || preset > fiatMax.value
-}
-
-function formatFiatLimit(value: number) {
-  return Math.round(value).toLocaleString('zh-CN')
-}
-
 async function submitDeposit() {
   if (!canSubmitDeposit.value) return
   const ok = await mh5Confirm({
@@ -433,15 +472,8 @@ async function submitExchange() {
   if (ok) showToast('兑换成功（原型）')
 }
 
-function qrCells(seed: string) {
-  const cells: boolean[] = []
-  let hash = 0
-  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0
-  for (let i = 0; i < 121; i += 1) {
-    hash = (hash * 1664525 + 1013904223) >>> 0
-    cells.push(hash % 3 !== 0)
-  }
-  return cells
+function goDepositShare() {
+  router.push(walletDepositShareRoute(selectedId.value, networkId.value))
 }
 </script>
 
@@ -519,30 +551,50 @@ function qrCells(seed: string) {
               <span class="mh5-wallet-transfer-select__chevron" aria-hidden="true">›</span>
             </span>
           </button>
-          <div class="mh5-wallet-transfer-qr" aria-hidden="true">
-            <div class="mh5-wallet-transfer-qr__grid">
-              <span
-                v-for="(on, idx) in qrCells(activeNetwork?.address ?? selectedId)"
-                :key="idx"
-                class="mh5-wallet-transfer-qr__cell"
-                :class="{ 'mh5-wallet-transfer-qr__cell--on': on }"
-              />
+          <div class="mh5-wallet-transfer-qr-block">
+            <div class="mh5-wallet-transfer-qr" aria-hidden="true">
+              <div class="mh5-wallet-transfer-qr__grid">
+                <span
+                  v-for="(on, idx) in walletQrCells(activeNetwork?.address ?? selectedId)"
+                  :key="idx"
+                  class="mh5-wallet-transfer-qr__cell"
+                  :class="{ 'mh5-wallet-transfer-qr__cell--on': on }"
+                />
+              </div>
+              <span class="mh5-wallet-transfer-qr__logo" :style="{ background: activeCurrency.color }">
+                {{ activeCurrency.symbol }}
+              </span>
             </div>
-            <span class="mh5-wallet-transfer-qr__logo" :style="{ background: activeCurrency.color }">
-              {{ activeCurrency.symbol }}
-            </span>
           </div>
           <div class="mh5-wallet-transfer-address">
             <span class="mh5-wallet-transfer-select__label">充值地址</span>
             <div class="mh5-wallet-transfer-address__row">
-              <p class="mh5-wallet-transfer-address__text">
+              <div class="mh5-wallet-transfer-address__text">
                 <span
                   v-for="(seg, idx) in addressSegments"
                   :key="idx"
                   :class="{ 'mh5-wallet-transfer-address__mark': seg.accent }"
                 >{{ seg.text }}</span>
-              </p>
-              <button type="button" class="mh5-wallet-transfer-copy" @click="copyAddress">复制</button>
+                <button type="button" class="mh5-wallet-transfer-copy" @click="copyAddress">复制</button>
+              </div>
+              <button type="button" class="mh5-wallet-transfer-share-link" @click="goDepositShare">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 4v10M8.5 7.5 12 4l3.5 3.5"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M6 13v5.2A1.8 1.8 0 0 0 7.8 20h8.4A1.8 1.8 0 0 0 18 18.2V13"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                {{ $t('分享') }}
+              </button>
             </div>
           </div>
           <p class="mh5-wallet-transfer-tip mh5-wallet-transfer-tip--warn">
@@ -617,6 +669,43 @@ function qrCells(seed: string) {
               <span aria-hidden="true">{{ paygridExpanded ? '∧' : '∨' }}</span>
             </button>
           </template>
+          <section v-if="isCustomerService" class="mh5-wallet-transfer-cs">
+            <h3>请加客服人工充值</h3>
+            <p>客服号: {{ WALLET_DEPOSIT_CS_ACCOUNT }}</p>
+            <div class="mh5-wallet-transfer-cs__qr" aria-hidden="true">
+              <div class="mh5-wallet-transfer-qr__grid">
+                <span
+                  v-for="(on, idx) in walletQrCells(WALLET_DEPOSIT_CS_ACCOUNT)"
+                  :key="idx"
+                  class="mh5-wallet-transfer-qr__cell"
+                  :class="{ 'mh5-wallet-transfer-qr__cell--on': on }"
+                />
+              </div>
+            </div>
+            <span>扫一扫，添加好友</span>
+          </section>
+          <template v-if="showDepositChannels">
+            <p class="mh5-wallet-transfer-select__label">充值渠道</p>
+            <section class="mh5-wallet-transfer-channels">
+              <div class="mh5-wallet-transfer-channels__grid" role="listbox" aria-label="充值渠道">
+                <button
+                  v-for="channel in depositChannels"
+                  :key="channel.id"
+                  type="button"
+                  class="mh5-wallet-transfer-channel"
+                  :class="{ 'mh5-wallet-transfer-channel--active': activeDepositChannel?.id === channel.id }"
+                  @click="depositChannelId = channel.id"
+                >
+                  <span
+                    class="mh5-wallet-transfer-channel__icon"
+                    :style="{ background: activeFiatMethod?.color ?? '#1677ff' }"
+                  >{{ activeFiatMethod?.icon ?? '支' }}</span>
+                  {{ formatDepositChannelRange(channel.min, channel.max) }}
+                </button>
+              </div>
+            </section>
+          </template>
+          <template v-if="!isCustomerService">
           <label class="mh5-wallet-transfer-amount">
             <span class="mh5-wallet-transfer-select__label">{{ fiatAmountRangeLabel }}</span>
             <div class="mh5-wallet-transfer-swap-row">
@@ -639,21 +728,11 @@ function qrCells(seed: string) {
               {{ fiatAmountHint }}
             </span>
           </label>
-          <div class="mh5-wallet-transfer-presets mh5-wallet-transfer-presets--fiat">
-            <button
-              v-for="preset in fiatPresets"
-              :key="preset"
-              type="button"
-              class="mh5-wallet-transfer-preset"
-              :class="{
-                'mh5-wallet-transfer-preset--active': depositAmountNum === preset,
-                'mh5-wallet-transfer-preset--disabled': isFiatPresetDisabled(preset),
-              }"
-              :disabled="isFiatPresetDisabled(preset)"
-              @click="depositAmount = String(preset)"
-            >
-              {{ formatFiatLimit(preset) }}
-            </button>
+          <div class="mh5-wallet-transfer-presets">
+            <button type="button" class="mh5-wallet-transfer-preset" @click="applyDepositPercent(0)">最小值</button>
+            <button type="button" class="mh5-wallet-transfer-preset" @click="applyDepositPercent(25)">25%</button>
+            <button type="button" class="mh5-wallet-transfer-preset" @click="applyDepositPercent(50)">50%</button>
+            <button type="button" class="mh5-wallet-transfer-preset" @click="applyDepositPercent(100)">最大值</button>
           </div>
           <button
             type="button"
@@ -680,6 +759,7 @@ function qrCells(seed: string) {
             </span>
             {{ WALLET_FIAT_DEPOSIT_NOTICE }}
           </p>
+          </template>
         </template>
 
         <template v-else-if="isCrypto">
