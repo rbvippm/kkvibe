@@ -14,8 +14,8 @@ export type AgentCommissionSettingFeatureRow = PcPrdFeatureRow
 export const AGENT_COMMISSION_SETTING_META = {
   title: '返佣金设置',
   module: '推广返利',
-  updatedAt: '2026-08-13',
-  prdVersion: 'v1.2',
+  updatedAt: '2026-08-15',
+  prdVersion: 'v1.3',
 } as const
 
 export const AGENT_COMMISSION_SETTING_BACKGROUND = [
@@ -25,7 +25,7 @@ export const AGENT_COMMISSION_SETTING_BACKGROUND = [
 
 export const AGENT_COMMISSION_SETTING_GOALS = [
   '按币种查询并维护当月佣金发放条件。',
-  '支持编辑弹框内增删档位并提交保存。',
+  '支持编辑弹框内增删档位并提交保存；每个币种至少保留 1 条档位作为兜底。',
 ] as const
 
 export const AGENT_COMMISSION_SETTING_FEATURE_LIST: AgentCommissionSettingFeatureRow[] = [
@@ -67,12 +67,12 @@ export const AGENT_COMMISSION_SETTING_FEATURE_LIST: AgentCommissionSettingFeatur
     feature: '编辑当月佣金设置',
     pageLocation: '「编辑」弹框',
     prd: {
-      functionalLogic: '维护当前币种当月佣金档位：可添加/删除行，填写当月总盈利、最低活跃人数、佣金后提交。',
+      functionalLogic: '维护当前币种当月佣金档位：可添加/删除行，填写当月总盈利、最低活跃人数、佣金后提交；每个币种至少保留 1 条作为兜底。',
       interactiveBehavior:
-        '「添加」新增空行；勾选后「删除」移除；点「当月总盈利」「最低活跃人数」旁感叹号展开对应说明；「提交」校验通过后写回列表；「取消」/遮罩关闭不保存。',
+        '「添加」新增空行；勾选后「删除」移除；若勾选后将清空该币种全部档位则拦截并提示；点「当月总盈利」「最低活跃人数」旁感叹号展开对应说明；「提交」校验通过后写回列表；「取消」/遮罩关闭不保存。',
       visualPresentation: '弹框标题「编辑当月佣金设置」；币种纯文本回显当前查询币种；表头「当月总盈利」「最低活跃人数」旁灰色感叹号；添加描边蓝、删除危险色。',
-      dataRules: '提交时盈利/活跃/佣金须为有效非负数；佣金建议 0–100；档位数量不限；至少可保存 0 行（清空）。',
-      exceptions: '未勾选删除时报提示；字段非法时底部提示且不关闭。',
+      dataRules: '提交时盈利/活跃/佣金须为有效非负数；佣金建议 0–100；档位数量不限，但每个币种最终至少 1 条。',
+      exceptions: '未勾选删除时报提示；勾选全部档位删除时报「每个币种至少保留 1 条档位作为兜底」；字段非法时底部提示且不关闭。',
       routing: '提交成功关闭弹框并刷新列表。',
     },
   },
@@ -100,7 +100,7 @@ export const AGENT_COMMISSION_SETTING_MONTHLY_LIST_SPEC = [
 
 export const AGENT_COMMISSION_SETTING_MONTHLY_EDIT_SPEC = [
   '弹框内可添加/删除档位行，填写当月总盈利、最低活跃人数与佣金后提交；两列表头感叹号与列表同一说明。',
-  '币种纯文本回显当前查询币种；档位数量不限（无限档）；取消不保存。',
+  '每个币种至少保留 1 条档位作为兜底，勾选全部删除会被拦截；取消不保存。',
 ] as const
 
 export const AGENT_COMMISSION_SETTING_ANNOT_MAP: Record<

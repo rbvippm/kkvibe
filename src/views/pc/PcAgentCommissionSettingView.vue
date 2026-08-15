@@ -154,6 +154,11 @@ function removeMonthlyRows() {
     monthlyHint.value = '请先勾选要删除的档位'
     return
   }
+  const remainCount = monthlyDraft.value.length - monthlySelectedIds.value.length
+  if (remainCount < 1) {
+    monthlyHint.value = '每个币种至少保留 1 条档位作为兜底，无法全部删除'
+    return
+  }
   const idSet = new Set(monthlySelectedIds.value)
   monthlyDraft.value = monthlyDraft.value.filter((row) => !idSet.has(row.id))
   monthlySelectedIds.value = []
@@ -161,6 +166,10 @@ function removeMonthlyRows() {
 }
 
 function submitMonthlyEdit() {
+  if (monthlyDraft.value.length < 1) {
+    monthlyHint.value = '每个币种至少保留 1 条档位作为兜底'
+    return
+  }
   for (const row of monthlyDraft.value) {
     if (
       !Number.isFinite(row.monthlyProfit) ||
