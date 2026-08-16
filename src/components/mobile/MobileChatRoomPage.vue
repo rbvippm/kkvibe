@@ -42,7 +42,8 @@ const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const uploadTimers = new Map<string, number>()
 const mainEl = ref<HTMLElement | null>(null)
 const canSend = computed(() => draft.value.trim().length > 0)
-const UPLOAD_RING = 2 * Math.PI * 20
+const UPLOAD_RING_R = 28
+const UPLOAD_RING = 2 * Math.PI * UPLOAD_RING_R
 
 async function scrollToBottom() {
   await nextTick()
@@ -143,6 +144,10 @@ function confirmResend() {
 
 function uploadDashoffset(progress = 0) {
   return UPLOAD_RING * (1 - Math.min(100, Math.max(0, progress)) / 100)
+}
+
+function uploadPercent(progress = 0) {
+  return `${Math.round(Math.min(100, Math.max(0, progress)))}%`
 }
 
 function isSending(msg: ChatRoomMessage) {
@@ -382,20 +387,18 @@ onBeforeUnmount(() => {
                   aria-label="取消上传"
                   @click.stop="cancelUpload(msg)"
                 >
-                  <span class="mh5-chat-room-media__upload-inner">
-                    <svg class="mh5-chat-room-media__upload-ring" viewBox="0 0 48 48" aria-hidden="true">
-                      <circle cx="24" cy="24" r="20" class="mh5-chat-room-media__upload-track" />
-                      <circle
-                        cx="24"
-                        cy="24"
-                        r="20"
-                        class="mh5-chat-room-media__upload-bar"
-                        :stroke-dasharray="UPLOAD_RING"
-                        :stroke-dashoffset="uploadDashoffset(msg.uploadProgress)"
-                      />
-                    </svg>
-                    <span class="mh5-chat-room-media__upload-stop" />
-                  </span>
+                  <svg class="mh5-chat-room-media__upload-ring" viewBox="0 0 72 72" aria-hidden="true">
+                    <circle cx="36" cy="36" r="34" class="mh5-chat-room-media__upload-disk" />
+                    <circle
+                      cx="36"
+                      cy="36"
+                      :r="UPLOAD_RING_R"
+                      class="mh5-chat-room-media__upload-bar"
+                      :stroke-dasharray="UPLOAD_RING"
+                      :stroke-dashoffset="uploadDashoffset(msg.uploadProgress)"
+                    />
+                  </svg>
+                  <span class="mh5-chat-room-media__upload-pct">{{ uploadPercent(msg.uploadProgress) }}</span>
                 </button>
               </div>
               <div class="mh5-chat-room-media__meta">

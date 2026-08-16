@@ -3726,56 +3726,48 @@
 
 .mh5-chat-room-media__upload-btn {
   pointer-events: auto;
-  display: grid;
-  place-items: center;
-  width: 76px;
-  height: 76px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 32%);
-  cursor: pointer;
-}
-
-.mh5-chat-room-media__upload-inner {
   position: relative;
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: #fff;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .mh5-chat-room-media__upload-ring {
-  width: 48px;
-  height: 48px;
+  width: 72px;
+  height: 72px;
 }
 
-.mh5-chat-room-media__upload-track,
+.mh5-chat-room-media__upload-disk {
+  fill: rgb(58 58 60 / 46%);
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
 .mh5-chat-room-media__upload-bar {
   fill: none;
-  stroke-width: 3.4;
-}
-
-.mh5-chat-room-media__upload-track {
-  stroke: rgb(0 0 0 / 10%);
-}
-
-.mh5-chat-room-media__upload-bar {
-  stroke: #3a3a3a;
+  stroke: #fff;
+  stroke-width: 3.2;
   stroke-linecap: round;
   transform: rotate(-90deg);
-  transform-origin: 24px 24px;
+  transform-origin: 36px 36px;
   transition: stroke-dashoffset 0.16s linear;
 }
 
-.mh5-chat-room-media__upload-stop {
+.mh5-chat-room-media__upload-pct {
   position: absolute;
-  width: 10px;
-  height: 10px;
-  border-radius: 1.5px;
-  background: #3a3a3a;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 
 .mh5-chat-room-resend {

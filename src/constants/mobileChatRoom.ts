@@ -229,7 +229,7 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       extraCount: 3,
       text: 'ok',
       sendStatus: 'sending',
-      uploadProgress: 42,
+      uploadProgress: 25,
       caption: '多图 · 上传中',
     },
     {
