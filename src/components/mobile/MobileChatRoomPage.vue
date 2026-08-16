@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
   CHAT_ROOM_REACTIONS,
+  chatMediaItemCount,
   getChatRoomDemo,
   layoutForMediaCount,
   type ChatMediaItem,
@@ -36,9 +37,12 @@ const mediaPickerStartAt = ref<'gallery' | 'camera'>('gallery')
 const tgH5Open = ref(false)
 const tgH5StartAt = ref<'attach' | 'system' | 'camera'>('attach')
 const activeMsgId = ref<string | null>(null)
+const resendMsgId = ref<string | null>(null)
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const uploadTimers = new Map<string, number>()
 const mainEl = ref<HTMLElement | null>(null)
 const canSend = computed(() => draft.value.trim().length > 0)
+const UPLOAD_RING = 2 * Math.PI * 20
 
 async function scrollToBottom() {
   await nextTick()
@@ -54,6 +58,8 @@ watch(
       media: msg.media.map((item) => ({ ...item })),
     }))
     activeMsgId.value = null
+    resendMsgId.value = null
+    clearAllUploads()
     plusOpen.value = false
     mediaPickerOpen.value = false
     mediaPickerStartAt.value = 'gallery'
@@ -63,6 +69,8 @@ watch(
 )
 
 const activeMsg = computed(() => messages.value.find((m) => m.id === activeMsgId.value) ?? null)
+const resendMsg = computed(() => messages.value.find((m) => m.id === resendMsgId.value) ?? null)
+const resendCount = computed(() => (resendMsg.value ? chatMediaItemCount(resendMsg.value) : 0))
 
 function goBack() {
   if (window.history.length > 1) router.back()
@@ -77,7 +85,76 @@ function showToast(text: string) {
   }, 1600)
 }
 
+function patchMessage(id: string, patch: Partial<ChatRoomMessage>) {
+  messages.value = messages.value.map((msg) => (msg.id === id ? { ...msg, ...patch } : msg))
+}
+
+function stopUpload(id: string) {
+  const timer = uploadTimers.get(id)
+  if (timer) window.clearTimeout(timer)
+  uploadTimers.delete(id)
+}
+
+function clearAllUploads() {
+  uploadTimers.forEach((timer) => window.clearTimeout(timer))
+  uploadTimers.clear()
+}
+
+function startUpload(id: string) {
+  stopUpload(id)
+  const tick = () => {
+    const msg = messages.value.find((item) => item.id === id)
+    if (!msg || msg.sendStatus !== 'sending') return
+    const next = Math.min(100, (msg.uploadProgress ?? 0) + 7)
+    if (next >= 100) {
+      patchMessage(id, { sendStatus: 'sent', uploadProgress: 100, read: true })
+      stopUpload(id)
+      return
+    }
+    patchMessage(id, { uploadProgress: next })
+    uploadTimers.set(id, window.setTimeout(tick, 160))
+  }
+  uploadTimers.set(id, window.setTimeout(tick, 160))
+}
+
+function cancelUpload(msg: ChatRoomMessage) {
+  stopUpload(msg.id)
+  patchMessage(msg.id, { sendStatus: 'failed', read: false })
+}
+
+function openResend(msg: ChatRoomMessage) {
+  closeMenu()
+  plusOpen.value = false
+  resendMsgId.value = msg.id
+}
+
+function closeResend() {
+  resendMsgId.value = null
+}
+
+function confirmResend() {
+  const msg = resendMsg.value
+  closeResend()
+  if (!msg) return
+  patchMessage(msg.id, { sendStatus: 'sending', uploadProgress: 8, read: false, time: nowTimeLabel() })
+  startUpload(msg.id)
+  showToast('正在重新发送（原型）')
+}
+
+function uploadDashoffset(progress = 0) {
+  return UPLOAD_RING * (1 - Math.min(100, Math.max(0, progress)) / 100)
+}
+
+function isSending(msg: ChatRoomMessage) {
+  return msg.direction === 'sent' && msg.sendStatus === 'sending'
+}
+
+function isFailed(msg: ChatRoomMessage) {
+  return msg.direction === 'sent' && msg.sendStatus === 'failed'
+}
+
 function openMenu(msg: ChatRoomMessage) {
+  if (isSending(msg)) return
   plusOpen.value = false
   activeMsgId.value = msg.id
 }
@@ -165,7 +242,7 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       id: `local-media-${Date.now()}`,
       direction: 'sent',
       time: nowTimeLabel(),
-      read: true,
+      read: false,
       layout: layoutForMediaCount(count),
       media: visible.map((item) => ({
         src: item.src,
@@ -174,8 +251,11 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       })),
       extraCount,
       text: payload.caption || undefined,
+      sendStatus: 'sending',
+      uploadProgress: 8,
     },
   ]
+  startUpload(messages.value[messages.value.length - 1]!.id)
 
   mediaPickerOpen.value = false
   tgH5Open.value = false
@@ -188,6 +268,11 @@ function onMediaSend(payload: ChatMediaSendPayload) {
   )
   void scrollToBottom()
 }
+
+onBeforeUnmount(() => {
+  if (toastTimer.value) clearTimeout(toastTimer.value)
+  clearAllUploads()
+})
 </script>
 
 <template>
@@ -249,6 +334,15 @@ function onMediaSend(payload: ChatMediaSendPayload) {
             height="28"
           />
           <button
+            v-if="isFailed(msg)"
+            type="button"
+            class="mh5-chat-room-msg__fail"
+            aria-label="发送失败，点击重发"
+            @click.stop="openResend(msg)"
+          >
+            !
+          </button>
+          <button
             type="button"
             class="mh5-chat-room-bubble"
             :class="`mh5-chat-room-bubble--${msg.direction}`"
@@ -260,7 +354,13 @@ function onMediaSend(payload: ChatMediaSendPayload) {
             >
               {{ msg.senderName }}
             </p>
-            <div class="mh5-chat-room-media" :class="`mh5-chat-room-media--${msg.layout}`">
+            <div
+              class="mh5-chat-room-media"
+              :class="[
+                `mh5-chat-room-media--${msg.layout}`,
+                { 'mh5-chat-room-media--uploading': isSending(msg), 'mh5-chat-room-media--failed': isFailed(msg) },
+              ]"
+            >
               <div
                 v-for="(item, index) in msg.media"
                 :key="`${msg.id}-${index}`"
@@ -275,10 +375,42 @@ function onMediaSend(payload: ChatMediaSendPayload) {
                   +{{ msg.extraCount }}
                 </div>
               </div>
+              <div v-if="isSending(msg)" class="mh5-chat-room-media__upload">
+                <button
+                  type="button"
+                  class="mh5-chat-room-media__upload-btn"
+                  aria-label="取消上传"
+                  @click.stop="cancelUpload(msg)"
+                >
+                  <span class="mh5-chat-room-media__upload-inner">
+                    <svg class="mh5-chat-room-media__upload-ring" viewBox="0 0 48 48" aria-hidden="true">
+                      <circle cx="24" cy="24" r="20" class="mh5-chat-room-media__upload-track" />
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="20"
+                        class="mh5-chat-room-media__upload-bar"
+                        :stroke-dasharray="UPLOAD_RING"
+                        :stroke-dashoffset="uploadDashoffset(msg.uploadProgress)"
+                      />
+                    </svg>
+                    <span class="mh5-chat-room-media__upload-stop" />
+                  </span>
+                </button>
+              </div>
               <div class="mh5-chat-room-media__meta">
                 <span>{{ msg.time }}</span>
+                <svg
+                  v-if="isSending(msg) || isFailed(msg)"
+                  class="mh5-chat-room-media__clock"
+                  viewBox="0 0 14 14"
+                  aria-label="发送中"
+                >
+                  <circle cx="7" cy="7" r="5.4" fill="none" stroke="currentColor" stroke-width="1.3" />
+                  <path d="M7 4.2v3.1l2 1.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                </svg>
                 <img
-                  v-if="msg.direction === 'sent' && msg.read"
+                  v-else-if="msg.direction === 'sent' && msg.read"
                   :src="CHAT_ROOM_ASSETS.read"
                   alt="已读"
                   width="14"
@@ -435,6 +567,18 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       @close="tgH5Open = false"
       @send="onMediaSend"
     />
+
+    <Transition name="mh5-chat-room-overlay">
+      <div v-if="resendMsg" class="mh5-chat-room-resend" @click="closeResend">
+        <div class="mh5-chat-room-resend__sheet" role="dialog" aria-label="重新发送" @click.stop>
+          <p class="mh5-chat-room-resend__hint">某些消息尚未送出。</p>
+          <button type="button" class="mh5-chat-room-resend__action" @click="confirmResend">
+            重新发送相册中的 {{ resendCount }} 项
+          </button>
+          <button type="button" class="mh5-chat-room-resend__cancel" @click="closeResend">取消</button>
+        </div>
+      </div>
+    </Transition>
 
     <Transition name="mh5-chat-room-toast">
       <div v-if="toast" class="mh5-chat-room-toast">{{ toast }}</div>

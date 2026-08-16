@@ -854,6 +854,7 @@ function send() {
   margin: auto;
   border-radius: 18px;
   background: #fff;
+  color: #111;
   box-shadow: 0 16px 48px rgb(0 0 0 / 28%);
   overflow: hidden;
 }
@@ -870,6 +871,7 @@ function send() {
   text-align: center;
   font-size: 17px;
   font-weight: 700;
+  color: #111;
 }
 
 .mh5-tg-h5-send__x,

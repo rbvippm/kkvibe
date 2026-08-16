@@ -33,6 +33,9 @@ export type ChatMediaItem = {
   duration?: string
 }
 
+/** 本人媒体气泡发送态：上传中 / 失败 / 已送达 */
+export type ChatMediaSendStatus = 'sending' | 'failed' | 'sent'
+
 export type ChatRoomMessage = {
   id: string
   direction: 'received' | 'sent'
@@ -48,6 +51,14 @@ export type ChatRoomMessage = {
   caption?: string
   /** 用户配文 */
   text?: string
+  sendStatus?: ChatMediaSendStatus
+  /** 上传进度 0–100，仅 sending */
+  uploadProgress?: number
+}
+
+/** 气泡内媒体总张数（含宫格溢出的 +N） */
+export function chatMediaItemCount(msg: ChatRoomMessage) {
+  return msg.media.length + (msg.extraCount ?? 0)
 }
 
 /** 按选中张数推断气泡布局 */
@@ -207,6 +218,30 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       layout: '5-plus',
       media: pick(4, 2),
       extraCount: 6,
+    },
+    {
+      id: 'm-upload',
+      direction: 'sent',
+      time: '22:01',
+      read: false,
+      layout: '5-plus',
+      media: pick(4, 0),
+      extraCount: 3,
+      text: 'ok',
+      sendStatus: 'sending',
+      uploadProgress: 42,
+      caption: '多图 · 上传中',
+    },
+    {
+      id: 'm-fail',
+      direction: 'sent',
+      time: '22:03',
+      read: false,
+      layout: '5-plus',
+      media: pick(4, 1),
+      extraCount: 2,
+      sendStatus: 'failed',
+      caption: '多图 · 发送失败',
     },
   ],
 }
