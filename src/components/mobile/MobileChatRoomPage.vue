@@ -5,7 +5,6 @@ import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
   CHAT_ROOM_REACTIONS,
-  chatMediaItemCount,
   getChatRoomDemo,
   layoutForMediaCount,
   type ChatMediaItem,
@@ -41,19 +40,96 @@ const resendMsgId = ref<string | null>(null)
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const uploadTimers = new Map<string, number>()
 const mainEl = ref<HTMLElement | null>(null)
+const showJumpBottom = ref(false)
+const newMsgCount = ref(0)
+const incomingDemoArmed = ref(false)
+const incomingTimers: number[] = []
 const canSend = computed(() => draft.value.trim().length > 0)
 const UPLOAD_RING_R = 28
 const UPLOAD_RING = 2 * Math.PI * UPLOAD_RING_R
+const JUMP_BOTTOM_GAP = 80
+const JUMP_BADGE_MAX = 999
+const INCOMING_DEMO_TEXTS = ['刚看到了', '这几张不错', '晚上再聊'] as const
+const jumpBadgeText = computed(() => {
+  const count = newMsgCount.value
+  if (count <= 0) return ''
+  return count > JUMP_BADGE_MAX ? `${JUMP_BADGE_MAX}+` : String(count)
+})
+
+function clearIncomingDemo() {
+  incomingTimers.forEach((id) => window.clearTimeout(id))
+  incomingTimers.length = 0
+}
+
+function resetJumpState() {
+  showJumpBottom.value = false
+  newMsgCount.value = 0
+  incomingDemoArmed.value = false
+  clearIncomingDemo()
+}
+
+function pushIncomingDemo(index: number) {
+  if (!showJumpBottom.value) return
+  const text = INCOMING_DEMO_TEXTS[index]
+  if (!text) return
+  const isGroup = room.value.kind === 'group'
+  const src = CHAT_ROOM_ASSETS.media[index % CHAT_ROOM_ASSETS.media.length]
+  messages.value = [
+    ...messages.value,
+    {
+      id: `incoming-${Date.now()}-${index}`,
+      direction: 'received',
+      senderName: isGroup ? '刘世豪5122' : undefined,
+      avatar: isGroup ? CHAT_ROOM_ASSETS.avatar : undefined,
+      time: nowTimeLabel(),
+      layout: '1-square',
+      media: [{ src }],
+      text,
+    },
+  ]
+  newMsgCount.value += 1
+}
+
+function armIncomingDemo() {
+  if (incomingDemoArmed.value) return
+  incomingDemoArmed.value = true
+  ;[700, 1800, 3000].forEach((ms, index) => {
+    incomingTimers.push(window.setTimeout(() => pushIncomingDemo(index), ms))
+  })
+}
+
+function updateJumpBottom() {
+  const el = mainEl.value
+  if (!el) {
+    resetJumpState()
+    return
+  }
+  const gap = el.scrollHeight - el.scrollTop - el.clientHeight
+  if (gap > JUMP_BOTTOM_GAP) {
+    showJumpBottom.value = true
+    armIncomingDemo()
+    return
+  }
+  resetJumpState()
+}
 
 async function scrollToBottom() {
   await nextTick()
   const el = mainEl.value
   if (el) el.scrollTop = el.scrollHeight
+  resetJumpState()
+}
+
+function jumpToBottom() {
+  const el = mainEl.value
+  if (!el) return
+  el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  resetJumpState()
 }
 
 watch(
   () => room.value.id,
-  () => {
+  async () => {
     messages.value = room.value.messages.map((msg) => ({
       ...msg,
       media: msg.media.map((item) => ({ ...item })),
@@ -65,13 +141,14 @@ watch(
     mediaPickerOpen.value = false
     mediaPickerStartAt.value = 'gallery'
     tgH5Open.value = false
+    resetJumpState()
+    await scrollToBottom()
   },
   { immediate: true },
 )
 
 const activeMsg = computed(() => messages.value.find((m) => m.id === activeMsgId.value) ?? null)
 const resendMsg = computed(() => messages.value.find((m) => m.id === resendMsgId.value) ?? null)
-const resendCount = computed(() => (resendMsg.value ? chatMediaItemCount(resendMsg.value) : 0))
 
 function goBack() {
   if (window.history.length > 1) router.back()
@@ -277,6 +354,7 @@ function onMediaSend(payload: ChatMediaSendPayload) {
 onBeforeUnmount(() => {
   if (toastTimer.value) clearTimeout(toastTimer.value)
   clearAllUploads()
+  clearIncomingDemo()
 })
 </script>
 
@@ -312,7 +390,7 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <main ref="mainEl" class="mh5-chat-room-main">
+    <main ref="mainEl" class="mh5-chat-room-main" @scroll.passive="updateJumpBottom">
       <div class="mh5-chat-room-hint mh5-chat-room-hint--lock">
         <img :src="CHAT_ROOM_ASSETS.lock" alt="" width="16" height="16" />
         <span>此会话所发送信息都已经进行端到端加密</span>
@@ -517,6 +595,31 @@ onBeforeUnmount(() => {
       </Transition>
     </footer>
 
+    <Transition name="mh5-chat-room-jump">
+      <button
+        v-if="showJumpBottom && !plusOpen && !mediaPickerOpen && !tgH5Open && !activeMsg && !resendMsg"
+        type="button"
+        class="mh5-chat-room-jump"
+        :class="{ 'mh5-chat-room-jump--new': Boolean(jumpBadgeText) }"
+        :aria-label="jumpBadgeText || '回到底部'"
+        @click="jumpToBottom"
+      >
+        <span v-if="jumpBadgeText" class="mh5-chat-room-jump__badge">
+          {{ jumpBadgeText }}
+        </span>
+        <svg class="mh5-chat-room-jump__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path
+            d="M7 9.2 12 14.2 17 9.2"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </Transition>
+
     <Transition name="mh5-chat-room-overlay">
       <div v-if="activeMsg" class="mh5-chat-room-overlay" @click="closeMenu">
         <div class="mh5-chat-room-react" @click.stop>
@@ -571,14 +674,18 @@ onBeforeUnmount(() => {
       @send="onMediaSend"
     />
 
-    <Transition name="mh5-chat-room-overlay">
+    <Transition name="mh5-chat-room-resend">
       <div v-if="resendMsg" class="mh5-chat-room-resend" @click="closeResend">
         <div class="mh5-chat-room-resend__sheet" role="dialog" aria-label="重新发送" @click.stop>
-          <p class="mh5-chat-room-resend__hint">某些消息尚未送出。</p>
-          <button type="button" class="mh5-chat-room-resend__action" @click="confirmResend">
-            重新发送相册中的 {{ resendCount }} 项
-          </button>
-          <button type="button" class="mh5-chat-room-resend__cancel" @click="closeResend">取消</button>
+          <span class="mh5-chat-room-resend__handle" aria-hidden="true" />
+          <p class="mh5-chat-room-resend__hint">消息尚未送出</p>
+          <p class="mh5-chat-room-resend__desc">发送失败，是否重新发送？</p>
+          <div class="mh5-chat-room-resend__actions">
+            <button type="button" class="mh5-chat-room-resend__action" @click="confirmResend">
+              重新发送
+            </button>
+            <button type="button" class="mh5-chat-room-resend__cancel" @click="closeResend">取消</button>
+          </div>
         </div>
       </div>
     </Transition>

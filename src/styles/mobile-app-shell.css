@@ -3418,6 +3418,65 @@
   gap: 12px;
 }
 
+.mh5-chat-room-jump {
+  position: absolute;
+  right: 16px;
+  bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+  z-index: 12;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 22%);
+  transition: transform 0.1s, background 0.15s;
+}
+
+.mh5-chat-room-jump:active {
+  transform: scale(0.96);
+  background: #111;
+}
+
+.mh5-chat-room-jump__icon {
+  display: block;
+}
+
+.mh5-chat-room-jump__badge {
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 6px rgb(255 122 43 / 0.28);
+}
+
+.mh5-chat-room-jump-enter-active,
+.mh5-chat-room-jump-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.mh5-chat-room-jump-enter-from,
+.mh5-chat-room-jump-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.92);
+}
+
 .mh5-chat-room-hint {
   align-self: center;
   display: inline-flex;
@@ -3775,44 +3834,98 @@
   inset: 0;
   z-index: 24;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding: 0 8px calc(8px + env(safe-area-inset-bottom));
-  background: rgb(0 0 0 / 38%);
+  flex-direction: column;
+  justify-content: flex-end;
+  background: rgb(0 0 0 / 48%);
 }
 
 .mh5-chat-room-resend__sheet {
   width: 100%;
-  overflow: hidden;
-  border-radius: 14px;
-  background: #3a3a3c;
+  padding: 8px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-radius: 18px 18px 0 0;
+  background: var(--mh5-app-card);
+  text-align: center;
+  box-shadow: 0 -10px 36px rgb(0 0 0 / 18%);
+}
+
+.mh5-chat-room-resend__handle {
+  display: block;
+  width: 36px;
+  height: 4px;
+  margin: 0 auto 14px;
+  border-radius: 999px;
+  background: #d8d8d8;
 }
 
 .mh5-chat-room-resend__hint {
   margin: 0;
-  padding: 14px 16px 10px;
-  font-size: 13px;
+  font-size: 17px;
+  font-weight: 700;
   line-height: 1.4;
-  color: #b0b0b2;
-  text-align: center;
+  color: var(--mh5-app-text);
+}
+
+.mh5-chat-room-resend__desc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-chat-room-resend__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
 }
 
 .mh5-chat-room-resend__action,
 .mh5-chat-room-resend__cancel {
   width: 100%;
-  min-height: 52px;
+  min-height: 46px;
   padding: 0 16px;
-  border: none;
-  border-top: 1px solid rgb(255 255 255 / 12%);
-  background: transparent;
-  color: #fff;
-  font-size: 18px;
-  font-weight: 600;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
   cursor: pointer;
 }
 
+.mh5-chat-room-resend__action {
+  border: none;
+  background: linear-gradient(90deg, var(--mh5-app-orange) 0%, #ff9a4d 100%);
+  color: #fff;
+  box-shadow: 0 8px 18px rgb(255 122 43 / 28%);
+}
+
+.mh5-chat-room-resend__action:active,
+.mh5-chat-room-resend__cancel:active {
+  transform: scale(0.98);
+}
+
 .mh5-chat-room-resend__cancel {
-  font-weight: 500;
+  border: 1px solid var(--mh5-app-border);
+  background: var(--mh5-app-card);
+  color: var(--mh5-app-text);
+}
+
+.mh5-chat-room-resend-enter-active,
+.mh5-chat-room-resend-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-chat-room-resend-enter-active .mh5-chat-room-resend__sheet,
+.mh5-chat-room-resend-leave-active .mh5-chat-room-resend__sheet {
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.mh5-chat-room-resend-enter-from,
+.mh5-chat-room-resend-leave-to {
+  opacity: 0;
+}
+
+.mh5-chat-room-resend-enter-from .mh5-chat-room-resend__sheet,
+.mh5-chat-room-resend-leave-to .mh5-chat-room-resend__sheet {
+  transform: translateY(100%);
 }
 
 .mh5-chat-room-empty {
