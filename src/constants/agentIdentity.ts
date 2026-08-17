@@ -61,7 +61,7 @@ export function getRebateCommissionTiers(overviewCurrency: string): MonthlyCommi
 
 /** 原型：代理当月团队表现（用于判断命中哪一档） */
 export type RebateTierProgress = {
-  /** 当月团队游戏输赢 */
+  /** 当月团队净输赢 */
   teamGameProfit: number
   /** 当月活跃人数 */
   activeMembers: number
@@ -83,7 +83,7 @@ export function isRebateTierMet(tier: MonthlyCommissionTier, progress: RebateTie
 }
 
 /**
- * 当前命中档：同时满足门槛的最高档（按团队游戏输赢门槛排序）。
+ * 当前命中档：同时满足门槛的最高档（按团队净输赢门槛排序）。
  * 无命中返回 null。
  */
 export function getMatchedRebateTierId(overviewCurrency: string): string | null {

@@ -80,7 +80,7 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
                 role="columnheader"
-              >{{ $t('团队游戏输赢') }}</div>
+              >{{ $t('团队净输赢') }}</div>
               <div
                 class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
                 role="columnheader"

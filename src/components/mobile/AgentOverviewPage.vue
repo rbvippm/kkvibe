@@ -5,12 +5,10 @@ import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
 import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
   getAgentOverviewCurrencyOptions,
-  chunkOverviewStats,
-  getDirectStatRows,
+  getDirectStats,
   MOCK_PROFIT_RANKINGS,
   MOCK_SUB_AGENT_STATS,
   getProfitRankTabs,
-  SUB_AGENT_STAT_ROW_SIZES,
   type AgentOverviewCurrency,
   type ProfitRankTab,
 } from '../../constants/agentOverview'
@@ -120,8 +118,7 @@ const presetOptions = computed(() =>
       ] as const),
 )
 
-const directStatRows = computed(() => getDirectStatRows(props.agentType))
-const subAgentStatRows = computed(() => chunkOverviewStats(MOCK_SUB_AGENT_STATS, SUB_AGENT_STAT_ROW_SIZES))
+const directStats = computed(() => getDirectStats(props.agentType))
 const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
 const profitRankRows = computed(() => {
   const tabs = profitRankTabs.value
@@ -335,18 +332,12 @@ function pickCurrency(value: AgentOverviewCurrency) {
         <div class="agent-home__panel">
           <p class="agent-home__panel-title">{{ $t('我的直属') }}</p>
           <div class="agent-home__stat-rows">
-            <div
-              v-for="(row, rowIndex) in directStatRows"
-              :key="`direct-row-${rowIndex}`"
-              class="agent-home__stat-row"
-            >
-              <AgentOverviewStatMask
-                v-for="item in row"
-                :key="item.key"
-                :label="item.label"
-                :value="item.value"
-              />
-            </div>
+            <AgentOverviewStatMask
+              v-for="item in directStats"
+              :key="item.key"
+              :label="item.label"
+              :value="item.value"
+            />
           </div>
         </div>
       </div>
@@ -355,19 +346,13 @@ function pickCurrency(value: AgentOverviewCurrency) {
         <div class="agent-home__panel">
           <p class="agent-home__panel-title">{{ $t('下级代理') }}</p>
           <div class="agent-home__stat-rows">
-            <div
-              v-for="(row, rowIndex) in subAgentStatRows"
-              :key="`sub-row-${rowIndex}`"
-              class="agent-home__stat-row"
-            >
-              <AgentOverviewStatMask
-                v-for="item in row"
-                :key="item.key"
-                :label="item.label"
-                :value="item.value"
-                deep
-              />
-            </div>
+            <AgentOverviewStatMask
+              v-for="item in MOCK_SUB_AGENT_STATS"
+              :key="item.key"
+              :label="item.label"
+              :value="item.value"
+              deep
+            />
           </div>
         </div>
       </div>

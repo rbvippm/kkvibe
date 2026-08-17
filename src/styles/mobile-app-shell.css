@@ -12239,23 +12239,15 @@
 }
 
 .agent-home__stat-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.agent-home__stat-row {
-  display: flex;
-  gap: 8px;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 8px;
   width: 100%;
 }
 
 .agent-home__mask-group {
-  flex: 1 1 0;
   min-width: 0;
-  max-width: calc((100% - 16px) / 3);
+  width: 100%;
 }
 
 .agent-home__stat-card {

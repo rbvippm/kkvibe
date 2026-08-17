@@ -62,8 +62,8 @@ export const AGENT_OVERVIEW_CURRENCY_BALANCES: Record<AgentOverviewCurrency, str
   '信用额度-USD': '86.50',
 }
 
-/** 行分组：3 + 3 + 2 + 3 + 3（占成：VIP晋级礼金 / VIP额外奖金同排） */
-export const DIRECT_STAT_ROW_SIZES = [3, 3, 2, 3, 3] as const
+/** 三列从左到右、从上到下顺序铺满，不留空格 */
+export const DIRECT_STAT_ROW_SIZES = [3, 3, 3, 3, 2] as const
 
 /** 行分组：3 + 3 + 3 + 3 + 3 + 3（VIP晋级礼金右侧为 VIP额外奖金） */
 export const SUB_AGENT_STAT_ROW_SIZES = [3, 3, 3, 3, 3, 3] as const
@@ -120,11 +120,9 @@ export function getDirectStats(identity: 'share' | 'rebate' = 'share'): AgentOve
   return MOCK_DIRECT_STATS
 }
 
-/** 占成按业务分组；返佣按三列顺序铺满 */
+/** 占成 / 返佣均按三列顺序铺满，避免中间空一格 */
 export function getDirectStatRows(identity: 'share' | 'rebate' = 'share') {
-  const stats = getDirectStats(identity)
-  if (identity === 'rebate') return chunkOverviewStatsByColumns(stats, 3)
-  return chunkOverviewStats(stats, DIRECT_STAT_ROW_SIZES)
+  return chunkOverviewStatsByColumns(getDirectStats(identity), 3)
 }
 
 /** 下级代理 · 18 项（占成 / 返佣共用；VIP晋级礼金右侧为 VIP额外奖金） */
