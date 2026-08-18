@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_CREDIT_CURRENCY_TABS,
+  formatCreditCurrencyUnit,
   getAgentDetailCurrencyOptions,
   type AgentCreditCurrency,
   type AgentWalletCurrency,
@@ -19,7 +20,7 @@ import {
   MEMBER_GAME_SUB_TABS,
   findMemberDetail,
   formatMemberCashWalletGroups,
-  formatMemberCreditLimitRows,
+  formatMemberCreditLimitView,
   getMemberDetailTabs,
   type MemberDetailTab,
   type MemberGameSubTab,
@@ -46,6 +47,7 @@ import {
 } from '../../constants/memberDetailProfit'
 import { agentMyProfitToneClass } from '../../constants/agentMyProfit'
 import {
+  AGENT_REPORT_FILTER_ASSETS,
   REPORT_CATEGORY_TABS,
   REPORT_VENDOR_PILLS,
   getMemberDetailReportDetail,
@@ -55,8 +57,14 @@ import {
   type ReportCategoryKey,
   type ReportVendorKey,
 } from '../../constants/agentReport'
+import {
+  MH5_DATE_RANGE_TODAY,
+  creditSettleRangeScale,
+  formatDateRangeText,
+} from '../../constants/mh5DateRange'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
+import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5CurrencySwitchRow from '../../components/mobile/Mh5CurrencySwitchRow.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
@@ -73,6 +81,7 @@ const { isRebateAgent } = useAgentIdentity()
 const activeTab = ref<MemberDetailTab>('manage')
 const gameSubTab = ref<MemberGameSubTab>('records')
 const currencyPickerOpen = ref(false)
+const creditCurrencyMenuOpen = ref(false)
 const currency = agentAppCurrency
 const creditCurrency = agentAppCreditCurrency
 const profitCategory = ref<MemberProfitCategoryKey>('overall')
@@ -201,11 +210,23 @@ const summaryItems = computed(() => {
   ]
 })
 
-const creditLimitTitle = '信用额度'
+const settleStart = ref(MH5_DATE_RANGE_TODAY)
+const settleEnd = ref(MH5_DATE_RANGE_TODAY)
+const settleDateOpen = ref(false)
+const settleDateText = computed(() => formatDateRangeText(settleStart.value, settleEnd.value))
+const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCurrency.value))
 
-const creditLimitItems = computed(() => {
-  if (!member.value) return []
-  return formatMemberCreditLimitRows(member.value.creditLimits[creditCurrency.value])
+const creditLimitView = computed(() => {
+  if (!member.value) return null
+  return formatMemberCreditLimitView(
+    member.value.creditLimits[creditCurrency.value],
+    creditCurrency.value,
+    creditSettleRangeScale(settleStart.value, settleEnd.value),
+  )
+})
+
+watch(activeTab, () => {
+  creditCurrencyMenuOpen.value = false
 })
 
 function selectProfitCategory(key: MemberProfitCategoryKey) {
@@ -294,6 +315,25 @@ function goCredit() {
   })
 }
 
+function goCreditStatement() {
+  if (!member.value) return
+  router.push({
+    name: 'mobile-xcoin-records',
+    query: {
+      currency: creditCurrency.value,
+      from: 'member-detail',
+      keyword: member.value.nickname,
+      lane: 'downstream',
+    },
+  })
+}
+
+function confirmSettleDate(start: string, end: string) {
+  settleStart.value = start
+  settleEnd.value = end
+  settleDateOpen.value = false
+}
+
 function pickCurrency(value: string) {
   setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   currencyPickerOpen.value = false
@@ -301,11 +341,16 @@ function pickCurrency(value: string) {
 
 function pickCreditCurrency(value: AgentCreditCurrency) {
   setAgentAppCreditCurrency(value)
+  creditCurrencyMenuOpen.value = false
+}
+
+function toggleCreditCurrencyMenu() {
+  creditCurrencyMenuOpen.value = !creditCurrencyMenuOpen.value
 }
 </script>
 
 <template>
-  <div class="mh5-member-detail-page">
+  <div class="mh5-member-detail-page" @click="creditCurrencyMenuOpen = false">
     <header class="mh5-member-detail-hero">
       <div class="mh5-member-detail-nav">
         <button type="button" class="mh5-member-detail-nav__back" :aria-label="$t('返回')" @click="router.back()">
@@ -399,29 +444,63 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
       </template>
 
       <template v-else-if="activeTab === 'credit'">
-        <nav
-          class="mh5-agent-profit-ratio-seg mh5-member-detail-credit-seg"
-          role="tablist"
-          aria-label="信用额度币种"
+        <section
+          v-if="creditLimitView"
+          class="mh5-agent-detail-wallet mh5-agent-detail-xcoin mh5-agent-detail-credit-manage"
         >
-          <button
-            v-for="tab in AGENT_CREDIT_CURRENCY_TABS"
-            :key="tab.key"
-            type="button"
-            role="tab"
-            class="mh5-agent-profit-ratio-seg__item"
-            :class="{ 'mh5-agent-profit-ratio-seg__item--active': creditCurrency === tab.key }"
-            :aria-selected="creditCurrency === tab.key"
-            @click="pickCreditCurrency(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        </nav>
-
-        <section class="mh5-member-detail-panel">
-          <div class="mh5-member-detail-panel__head">
-            <h3 class="mh5-member-detail-panel__title">{{ creditLimitTitle }}</h3>
-            <button type="button" class="mh5-member-detail-panel__action" @click="goCredit">
+          <div class="mh5-agent-detail-credit-manage__head">
+            <div class="mh5-agent-detail-credit-manage__title-wrap">
+              <h3 class="mh5-agent-detail-wallet__title">额度管理</h3>
+              <div class="mh5-agent-detail-credit-manage__ccy-wrap">
+                <button
+                  type="button"
+                  class="mh5-currency-switch__btn mh5-agent-detail-credit-manage__ccy"
+                  aria-label="选择信用额度币种"
+                  :aria-expanded="creditCurrencyMenuOpen"
+                  @click.stop="toggleCreditCurrencyMenu"
+                >
+                  <span class="mh5-currency-switch__main">
+                    <Mh5CurrencyIcon :code="creditCurrency" :size="18" />
+                    <span>{{ creditCurrencyUnitLabel }}</span>
+                  </span>
+                  <span
+                    class="mh5-currency-switch__chevron"
+                    :class="{ 'mh5-agent-detail-credit-manage__ccy-chevron--open': creditCurrencyMenuOpen }"
+                    aria-hidden="true"
+                  >
+                    <img :src="AGENT_REPORT_FILTER_ASSETS.dropdown" alt="" width="8" height="5" />
+                  </span>
+                </button>
+                <div
+                  v-if="creditCurrencyMenuOpen"
+                  class="mh5-agent-detail-credit-manage__ccy-menu"
+                  role="listbox"
+                  aria-label="信用额度币种"
+                  @click.stop
+                >
+                  <button
+                    v-for="tab in AGENT_CREDIT_CURRENCY_TABS"
+                    :key="tab.key"
+                    type="button"
+                    role="option"
+                    class="mh5-agent-detail-credit-manage__ccy-option"
+                    :class="{
+                      'mh5-agent-detail-credit-manage__ccy-option--active': creditCurrency === tab.key,
+                    }"
+                    :aria-selected="creditCurrency === tab.key"
+                    @click="pickCreditCurrency(tab.key)"
+                  >
+                    <Mh5CurrencyIcon :code="tab.key" :size="18" />
+                    <span>{{ tab.label }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="mh5-agent-detail-credit-manage__action mh5-agent-detail-credit-manage__action--primary"
+              @click="goCredit"
+            >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
@@ -434,19 +513,101 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               给他上下分
             </button>
           </div>
-          <div
-            v-for="item in creditLimitItems"
-            :key="item.label"
-            class="mh5-member-detail-panel__row"
-          >
-            <span class="mh5-member-detail-panel__label">{{ item.label }}</span>
-            <span
-              class="mh5-member-detail-panel__value"
-              :class="{ 'mh5-member-detail-panel__value--positive': item.positive }"
-            >
-              {{ item.value }}
-            </span>
+          <div class="mh5-agent-detail-credit-manage__available">
+            <p class="mh5-agent-detail-credit-manage__available-label">可用额度</p>
+            <p class="mh5-agent-detail-credit-manage__available-value">
+              {{ creditLimitView.availableValue }}
+            </p>
           </div>
+          <div class="mh5-agent-detail-credit-manage__quota">
+            <div class="mh5-agent-detail-credit-manage__quota-row">
+              <span>总授信额度</span>
+              <span>{{ creditLimitView.quotaValue }}</span>
+            </div>
+            <div class="mh5-agent-detail-credit-manage__progress">
+              <div
+                class="mh5-agent-detail-credit-manage__track"
+                role="progressbar"
+                :aria-valuenow="creditLimitView.usedPercent"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-label="`可用额度占比 ${creditLimitView.usedPercentText}`"
+              >
+                <span
+                  class="mh5-agent-detail-credit-manage__fill"
+                  :style="{ width: `${creditLimitView.usedPercent}%` }"
+                />
+              </div>
+              <span class="mh5-agent-detail-credit-manage__percent">
+                {{ creditLimitView.usedPercentText }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section
+          v-if="creditLimitView"
+          class="mh5-agent-detail-wallet mh5-agent-detail-xcoin mh5-agent-detail-credit-settle"
+        >
+          <div class="mh5-agent-detail-credit-settle__head">
+            <h3 class="mh5-agent-detail-wallet__title">对账结算</h3>
+            <button
+              type="button"
+              class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action mh5-agent-detail-credit-settle__date"
+              aria-label="选择日期"
+              :aria-expanded="settleDateOpen"
+              @click="settleDateOpen = true"
+            >
+              <span>{{ settleDateText }}</span>
+              <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
+                <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
+              </span>
+            </button>
+          </div>
+          <div
+            class="mh5-agent-detail-credit-settle__receivable"
+            :class="{
+              'mh5-agent-detail-credit-settle__receivable--negative': !creditLimitView.receivablePositive,
+            }"
+          >
+            <p class="mh5-agent-detail-credit-settle__receivable-label">我方应收会员</p>
+            <p class="mh5-agent-detail-credit-settle__receivable-value">
+              {{ creditLimitView.receivableValue }}
+            </p>
+          </div>
+          <div class="mh5-agent-detail-credit-settle__timeline">
+            <div
+              v-for="item in creditLimitView.settleFlowRows"
+              :key="item.label"
+              class="mh5-agent-detail-credit-settle__row"
+            >
+              <span>{{ item.label }}</span>
+              <span>{{ item.value }}</span>
+            </div>
+            <div class="mh5-agent-detail-credit-settle__divider" />
+            <div
+              v-for="item in creditLimitView.settleResultRows"
+              :key="item.label"
+              class="mh5-agent-detail-credit-settle__row"
+            >
+              <span>{{ item.label }}</span>
+              <span
+                :class="{
+                  'mh5-agent-detail-wallet__value--positive': item.positive,
+                  'mh5-agent-detail-wallet__value--negative': item.positive === false,
+                }"
+              >
+                {{ item.value }}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="mh5-agent-detail-credit-settle__statement"
+            @click="goCreditStatement"
+          >
+            查看流水对账单
+          </button>
         </section>
       </template>
 
@@ -1018,6 +1179,14 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
       :options="currencyOptions"
       @close="currencyPickerOpen = false"
       @pick="pickCurrency"
+    />
+
+    <Mh5DateRangeSheet
+      :open="settleDateOpen"
+      :start="settleStart"
+      :end="settleEnd"
+      @close="settleDateOpen = false"
+      @confirm="confirmSettleDate"
     />
   </div>
 </template>

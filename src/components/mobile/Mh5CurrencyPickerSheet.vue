@@ -5,10 +5,11 @@ import {
 } from '../../constants/agentCurrencyIcons'
 import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   currency: string
   options: readonly string[]
+  formatLabel?: (code: string) => string
 }>()
 
 const emit = defineEmits<{
@@ -44,7 +45,7 @@ const emit = defineEmits<{
             @click="emit('pick', opt)"
           >
             <Mh5CurrencyIcon :code="opt" />
-            <span>{{ $t(formatAgentCurrencyLabel(opt)) }}</span>
+            <span>{{ $t(props.formatLabel ? props.formatLabel(opt) : formatAgentCurrencyLabel(opt)) }}</span>
           </button>
         </div>
       </div>

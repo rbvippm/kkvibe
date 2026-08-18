@@ -3,40 +3,48 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   MOCK_TRANSFER_RECORDS,
-  TRANSFER_INITIATOR_FILTER_OPTIONS,
+  TRANSFER_DOWNSTREAM_ROLE_PILLS,
+  TRANSFER_LANE_TABS,
   TRANSFER_RECORD_PAGE_SIZE,
-  TRANSFER_RECORD_TYPE_OPTIONS,
-  TRANSFER_ROLE_FILTER_OPTIONS,
+  TRANSFER_SUMMARY_METRICS,
   TRANSFER_TIME_PRESETS,
   XCOIN_CREDIT_CURRENCY_TABS,
   filterTransferRecords,
+  getTransferSceneOptionsByLane,
+  transferSceneLane,
   formatTransferAmount,
+  formatTransferBalance,
+  parseTransferLane,
   parseXCoinCreditCurrency,
-  recordFlowDisplay,
-  recordTypeBadgeLabel,
-  summarizeTransferRecordsByCurrency,
+  summarizeTransferLaneByCurrency,
   transferAmountClass,
+  transferCardFlow,
   transferRecordOrderNo,
   transferRelatedOrderNo,
-  transferRecordTitle,
-  transferTypeStatusClass,
+  transferSceneLabel,
+  transferSceneStatusClass,
   validateTransferRecordDateRange,
+  type TransferLane,
   type TransferRecordFilter,
+  type TransferRoleFilter,
   type TransferTimePreset,
   type XCoinTransferRecord,
 } from '../../constants/xCoinTransfer'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
-import { XCOIN_CREDIT_CURRENCY_SPEC } from '../../constants/xCoinCreditSpec'
+import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import { XCOIN_CREDIT_CURRENCY_SPEC, XCOIN_RECORDS_LANE_SPEC } from '../../constants/xCoinCreditSpec'
 import '../../styles/mobile-app-shell.css'
 
-function createDefaultFilter(currency?: string): TransferRecordFilter {
+function createDefaultFilter(currency?: string, lane: TransferLane = 'all'): TransferRecordFilter {
   return {
     keyword: '',
     timePreset: 'today',
     customStart: '',
     customEnd: '',
     recordType: '',
+    scene: '',
+    lane,
     initiator: '',
     role: '',
     currency: currency ? parseXCoinCreditCurrency(currency) : '',
@@ -44,11 +52,36 @@ function createDefaultFilter(currency?: string): TransferRecordFilter {
 }
 
 const route = useRoute()
-const searchInput = ref('')
-const appliedFilter = ref<TransferRecordFilter>(createDefaultFilter(String(route.query.currency || '')))
+
+function filterFromRoute(): TransferRecordFilter {
+  const keyword = String(route.query.keyword || '').trim()
+  const fromDetail = route.query.from === 'agent-detail' || route.query.from === 'member-detail'
+  const lane = keyword || fromDetail
+    ? 'downstream'
+    : parseTransferLane(route.query.lane)
+  return {
+    ...createDefaultFilter(String(route.query.currency || ''), lane),
+    keyword,
+  }
+}
+
+const searchInput = ref(String(route.query.keyword || '').trim())
+const appliedFilter = ref<TransferRecordFilter>(filterFromRoute())
 const filterDraft = ref<TransferRecordFilter>({ ...appliedFilter.value })
+
+watch(
+  () => [route.query.keyword, route.query.currency, route.query.lane, route.query.from] as const,
+  () => {
+    const next = filterFromRoute()
+    searchInput.value = next.keyword
+    appliedFilter.value = next
+    filterDraft.value = { ...next }
+  },
+)
 const filterOpen = ref(false)
 const filterError = ref('')
+const toolbarPicker = ref<'time' | 'lane' | 'currency' | null>(null)
+const summaryHintOpen = ref(false)
 const page = ref(1)
 const loadingMore = ref(false)
 const detailRow = ref<XCoinTransferRecord | null>(null)
@@ -63,23 +96,30 @@ const filteredRecords = computed(() =>
 )
 
 const summaryRecords = computed(() =>
-  filterTransferRecords(MOCK_TRANSFER_RECORDS, appliedFilter.value, { ignoreCurrency: true }).sort(
-    (a, b) => b.createdAt.localeCompare(a.createdAt),
-  ),
+  filterTransferRecords(
+    MOCK_TRANSFER_RECORDS,
+    { ...appliedFilter.value, currency: '' },
+    { ignoreCurrency: true },
+  ).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
 )
 
-const currencySummaries = computed(() => summarizeTransferRecordsByCurrency(summaryRecords.value))
+const currencySummaries = computed(() => summarizeTransferLaneByCurrency(summaryRecords.value))
 
 const visibleRecords = computed(() =>
   filteredRecords.value.slice(0, page.value * TRANSFER_RECORD_PAGE_SIZE),
 )
 
+const visibleCards = computed(() =>
+  visibleRecords.value.map((row) => ({ row, flow: transferCardFlow(row) })),
+)
+
 const hasMore = computed(() => visibleRecords.value.length < filteredRecords.value.length)
 
-const detailFlow = computed(() => (detailRow.value ? recordFlowDisplay(detailRow.value) : null))
 const detailRelatedOrderNo = computed(() =>
   detailRow.value ? transferRelatedOrderNo(detailRow.value) : null,
 )
+
+const detailFlow = computed(() => (detailRow.value ? transferCardFlow(detailRow.value) : null))
 
 function onSummaryCarouselScroll() {
   const el = summaryCarouselRef.value
@@ -104,8 +144,41 @@ watch(
   { deep: true },
 )
 
+const toolbarTimeLabel = computed(() => {
+  if (appliedFilter.value.timePreset === 'custom') return '时间区间'
+  return TRANSFER_TIME_PRESETS.find((tab) => tab.key === appliedFilter.value.timePreset)?.label ?? '今天'
+})
+
+const toolbarLaneLabel = computed(() => {
+  if (appliedFilter.value.lane === 'all') return '类型'
+  return TRANSFER_LANE_TABS.find((tab) => tab.key === appliedFilter.value.lane)?.label ?? '类型'
+})
+
+const toolbarCurrencyLabel = computed(() => {
+  if (appliedFilter.value.currency === '信用额度-CNY') return 'CNY'
+  if (appliedFilter.value.currency === '信用额度-USD') return 'USD'
+  return '币种'
+})
+
+const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
+const isToolbarLaneDirty = computed(() => appliedFilter.value.lane !== 'all')
+const isToolbarCurrencyDirty = computed(() => Boolean(appliedFilter.value.currency))
+
+const toolbarPickerTitle = computed(() => {
+  if (toolbarPicker.value === 'time') return '选择日期'
+  if (toolbarPicker.value === 'lane') return '选择类型'
+  if (toolbarPicker.value === 'currency') return '选择币种'
+  return ''
+})
+
+const copyTip = ref('')
+let copyTipTimer = 0
+
 onUnmounted(() => {
+  window.clearTimeout(copyTipTimer)
   filterOpen.value = false
+  toolbarPicker.value = null
+  summaryHintOpen.value = false
   detailRow.value = null
 })
 
@@ -120,6 +193,31 @@ function selectTimePreset(preset: Exclude<TransferTimePreset, 'custom'>) {
     customStart: '',
     customEnd: '',
   }
+  toolbarPicker.value = null
+}
+
+function sceneFitsLane(scene: TransferRecordFilter['scene'], lane: TransferLane) {
+  if (!scene || lane === 'all') return true
+  return transferSceneLane(scene) === lane
+}
+
+function pickLane(lane: TransferLane) {
+  appliedFilter.value = {
+    ...appliedFilter.value,
+    lane,
+    scene: sceneFitsLane(appliedFilter.value.scene, lane) ? appliedFilter.value.scene : '',
+    role: lane === 'downstream' ? appliedFilter.value.role : '',
+  }
+  toolbarPicker.value = null
+}
+
+function pickCurrency(currency: TransferRecordFilter['currency']) {
+  appliedFilter.value = { ...appliedFilter.value, currency }
+  toolbarPicker.value = null
+}
+
+function pickDownstreamRole(role: TransferRoleFilter) {
+  appliedFilter.value = { ...appliedFilter.value, role }
 }
 
 function openFilter() {
@@ -128,8 +226,22 @@ function openFilter() {
   filterOpen.value = true
 }
 
+const draftSceneOptions = computed(() => getTransferSceneOptionsByLane(filterDraft.value.lane))
+
+function pickDraftLane(lane: TransferLane) {
+  filterDraft.value = {
+    ...filterDraft.value,
+    lane,
+    scene: sceneFitsLane(filterDraft.value.scene, lane) ? filterDraft.value.scene : '',
+    role: lane === 'downstream' ? filterDraft.value.role : '',
+  }
+}
+
 function resetFilter() {
-  filterDraft.value = createDefaultFilter(String(route.query.currency || ''))
+  filterDraft.value = {
+    ...createDefaultFilter(String(route.query.currency || '')),
+    keyword: searchInput.value.trim(),
+  }
   filterError.value = ''
 }
 
@@ -160,11 +272,24 @@ function openDetail(row: XCoinTransferRecord) {
   detailRow.value = row
 }
 
-function formatSummaryNet(value: number) {
-  return value > 0 ? `+${value.toFixed(2)}` : value.toFixed(2)
+async function copyOrderNo(row: XCoinTransferRecord) {
+  try {
+    await navigator.clipboard.writeText(transferRecordOrderNo(row))
+    copyTip.value = '已复制单号'
+  } catch {
+    copyTip.value = '复制失败，请手动长按复制'
+  }
+  window.clearTimeout(copyTipTimer)
+  copyTipTimer = window.setTimeout(() => {
+    copyTip.value = ''
+  }, 1600)
 }
 
-function summaryNetClass(value: number) {
+function formatSummaryNumber(value: number) {
+  return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function summaryToneClass(value: number) {
   return {
     'mh5-xcoin-transfer__amount--up': value > 0,
     'mh5-xcoin-transfer__amount--down': value < 0,
@@ -177,8 +302,8 @@ function summaryNetClass(value: number) {
     <Mh5SubPageHeader :title="$t('信用额度记录')">
       <template #right>
         <div class="mh5-xcoin-header-actions">
+          <Mh5SpecAnnot :spec="XCOIN_RECORDS_LANE_SPEC" placement="bottom" />
           <Mh5SpecAnnot :spec="XCOIN_CREDIT_CURRENCY_SPEC" placement="bottom" />
-          <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
       </template>
     </Mh5SubPageHeader>
@@ -199,23 +324,93 @@ function summaryNetClass(value: number) {
         <button type="submit" class="mh5-bet-order-search__btn">搜索</button>
       </form>
 
-      <div class="mh5-bet-order-tabs" role="tablist" aria-label="时间快捷切换">
+      <div class="mh5-bet-order-toolbar__row">
+        <div class="mh5-bet-order-toolbar__picks">
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarTimeDirty }"
+            @click="toolbarPicker = 'time'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarTimeLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarLaneDirty }"
+            @click="toolbarPicker = 'lane'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarLaneLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCurrencyDirty }"
+            @click="toolbarPicker = 'currency'"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarCurrencyLabel }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+        <button type="button" class="mh5-bet-order-toolbar__filter" aria-label="筛选" @click="openFilter">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M4 5.5h16l-5.8 7.2V19l-4.4 2v-8.3L4 5.5z"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        v-if="appliedFilter.lane === 'downstream'"
+        class="mh5-xcoin-records-roles"
+        role="tablist"
+        aria-label="下级对象"
+      >
         <button
-          v-for="tab in TRANSFER_TIME_PRESETS"
-          :key="tab.key"
+          v-for="pill in TRANSFER_DOWNSTREAM_ROLE_PILLS"
+          :key="`role-${pill.key || 'all'}`"
           type="button"
           role="tab"
-          class="mh5-bet-order-tabs__item"
-          :class="{ 'mh5-bet-order-tabs__item--active': appliedFilter.timePreset === tab.key }"
-          @click="selectTimePreset(tab.key)"
+          class="mh5-agent-report-vendor"
+          :class="{ 'mh5-agent-report-vendor--active': appliedFilter.role === pill.key }"
+          :aria-selected="appliedFilter.role === pill.key"
+          @click="pickDownstreamRole(pill.key)"
         >
-          {{ tab.label }}
+          {{ pill.label }}
         </button>
       </div>
     </div>
 
     <main class="mh5-bet-order-main">
       <div class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll">
+        <button
+          type="button"
+          class="mh5-xcoin-records-summary__help"
+          aria-label="汇总说明"
+          @click.stop="summaryHintOpen = true"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+            <path
+              d="M8 4.6v5.2M8 11.6h.01"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
+        </button>
         <div
           ref="summaryCarouselRef"
           class="mh5-bet-order-summary-carousel__track"
@@ -228,22 +423,14 @@ function summaryNetClass(value: number) {
           >
             <span class="mh5-bet-order-summary__currency">{{ slide.label }}</span>
             <div class="mh5-bet-order-summary__metrics">
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总笔数</span>
-                <strong>{{ slide.count }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">上分合计</span>
-                <strong>{{ slide.upTotal.toFixed(2) }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">下分合计</span>
-                <strong>{{ slide.downTotal.toFixed(2) }}</strong>
-              </div>
-              <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">净额</span>
-                <strong :class="summaryNetClass(slide.net)">
-                  {{ formatSummaryNet(slide.net) }}
+              <div
+                v-for="metric in TRANSFER_SUMMARY_METRICS"
+                :key="metric.key"
+                class="mh5-bet-order-summary__item"
+              >
+                <span class="mh5-bet-order-summary__label">{{ metric.label }}</span>
+                <strong :class="summaryToneClass(slide[metric.key])">
+                  {{ formatSummaryNumber(slide[metric.key]) }}
                 </strong>
               </div>
             </div>
@@ -262,37 +449,57 @@ function summaryNetClass(value: number) {
       <div v-if="!filteredRecords.length" class="mh5-bet-order-empty">
         <span class="mh5-bet-order-empty__icon" aria-hidden="true">📭</span>
         <p class="mh5-bet-order-empty__title">暂无信用额度记录</p>
-        <p class="mh5-bet-order-empty__desc">尝试放宽时间范围或更改筛选条件</p>
+        <p class="mh5-bet-order-empty__desc">尝试切换类型或放宽筛选条件</p>
       </div>
 
       <button
-        v-for="row in visibleRecords"
+        v-for="{ row, flow } in visibleCards"
         :key="row.id"
         type="button"
         class="mh5-bet-order-card"
         @click="openDetail(row)"
       >
         <div class="mh5-bet-order-card__head">
-          <div class="mh5-bet-order-card__member">
-            <strong>{{ transferRecordTitle(row) }}</strong>
-            <span class="mh5-bet-order-card__currency">{{ row.creditCurrency }}</span>
-          </div>
-          <span class="mh5-bet-order-card__status" :class="transferTypeStatusClass(row.recordType)">
-            {{ recordTypeBadgeLabel(row.recordType) }}
+          <span class="mh5-bet-order-card__status mh5-xcoin-records-scene">
+            [{{ transferSceneLabel(row) }}]
+          </span>
+          <span class="mh5-xcoin-records-amount">
+            <Mh5CurrencyIcon :code="row.creditCurrency" :size="18" />
+            <span class="mh5-bet-order-card__result" :class="transferAmountClass(row)">
+              {{ formatTransferAmount(row) }}
+            </span>
           </span>
         </div>
 
-        <div class="mh5-bet-order-card__body">
-          <p class="mh5-bet-order-card__bet-content">
-            {{ recordFlowDisplay(row).initiator }} → {{ recordFlowDisplay(row).target }}
+        <div class="mh5-xcoin-records-flow">
+          <p class="mh5-xcoin-records-flow__row">
+            <span class="mh5-xcoin-records-flow__label">发起人</span>
+            <span class="mh5-xcoin-records-flow__value">{{ flow.fromName }}</span>
+          </p>
+          <p class="mh5-xcoin-records-flow__row">
+            <span class="mh5-xcoin-records-flow__label">对象</span>
+            <span class="mh5-xcoin-records-flow__value">{{ flow.toName }}</span>
+            <span v-if="flow.toRole" class="mh5-xcoin-records-role">[{{ flow.toRole }}]</span>
           </p>
         </div>
-        <time class="mh5-bet-order-card__time">{{ row.createdAt }}</time>
-
-        <div class="mh5-bet-order-card__foot">
-          <span class="mh5-bet-order-card__bet">单号 {{ transferRecordOrderNo(row) }}</span>
-          <span class="mh5-bet-order-card__result" :class="transferAmountClass(row)">
-            {{ formatTransferAmount(row) }}
+        <div class="mh5-xcoin-records-meta">
+          <time class="mh5-bet-order-card__time">{{ row.createdAt }}</time>
+          <span class="mh5-xcoin-records-orderno">
+            <span class="mh5-xcoin-records-orderno__no" :title="transferRecordOrderNo(row)">
+              <span class="mh5-xcoin-records-orderno__head">{{ transferRecordOrderNo(row).slice(0, -6) }}</span>
+              <span class="mh5-xcoin-records-orderno__tail">{{ transferRecordOrderNo(row).slice(-6) }}</span>
+            </span>
+            <span
+              class="mh5-xcoin-records-copy"
+              role="button"
+              aria-label="复制单号"
+              @click.stop="copyOrderNo(row)"
+            >
+              <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <rect x="6" y="2" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
+                <rect x="3" y="5" width="9" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3" />
+              </svg>
+            </span>
           </span>
         </div>
       </button>
@@ -313,6 +520,100 @@ function summaryNetClass(value: number) {
         <p v-else class="mh5-bet-order-load__done">没有更多了</p>
       </div>
     </main>
+
+    <p v-if="copyTip" class="mh5-bet-order-copy-tip">{{ copyTip }}</p>
+
+    <Teleport to="body">
+      <Transition name="mh5-sheet">
+        <div
+          v-if="toolbarPicker"
+          class="mh5-agent-overlay-mask"
+          @click.self="toolbarPicker = null"
+        >
+          <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
+            <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
+            <template v-if="toolbarPicker === 'time'">
+              <button
+                v-for="tab in TRANSFER_TIME_PRESETS"
+                :key="tab.key"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.timePreset === tab.key }"
+                @click="selectTimePreset(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </template>
+            <template v-else-if="toolbarPicker === 'lane'">
+              <button
+                v-for="tab in TRANSFER_LANE_TABS"
+                :key="tab.key"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.lane === tab.key }"
+                @click="pickLane(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </template>
+            <template v-else>
+              <button
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.currency === '' }"
+                @click="pickCurrency('')"
+              >
+                全部币种
+              </button>
+              <button
+                v-for="tab in XCOIN_CREDIT_CURRENCY_TABS"
+                :key="tab.key"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.currency === tab.key }"
+                @click="pickCurrency(tab.key)"
+              >
+                {{ tab.label }}
+              </button>
+            </template>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <Transition name="mh5-agent-my-profit-dialog">
+      <div
+        v-if="summaryHintOpen"
+        class="mh5-agent-my-profit-dialog-mask"
+        @click.self="summaryHintOpen = false"
+      >
+        <div
+          class="mh5-agent-my-profit-dialog mh5-xcoin-records-hint-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-label="汇总说明"
+        >
+          <h2 class="mh5-agent-my-profit-dialog__title">汇总说明</h2>
+          <ul class="mh5-xcoin-records-hint-dialog__list">
+            <li
+              v-for="metric in TRANSFER_SUMMARY_METRICS"
+              :key="metric.key"
+              class="mh5-xcoin-records-hint-dialog__item"
+            >
+              <p class="mh5-xcoin-records-hint-dialog__name">{{ metric.label }}</p>
+              <p class="mh5-xcoin-records-hint-dialog__formula">{{ metric.hint }}</p>
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="mh5-agent-my-profit-dialog__btn"
+            @click="summaryHintOpen = false"
+          >
+            知道了
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <Teleport to="body">
       <Transition name="mh5-sheet">
@@ -360,44 +661,28 @@ function summaryNetClass(value: number) {
                 <h3 class="mh5-xcoin-filter-group__label">类型</h3>
                 <div class="mh5-xcoin-filter-chips">
                   <button
-                    v-for="opt in TRANSFER_RECORD_TYPE_OPTIONS"
-                    :key="`type-${opt.value || 'all'}`"
+                    v-for="tab in TRANSFER_LANE_TABS"
+                    :key="`lane-${tab.key}`"
                     type="button"
                     class="mh5-xcoin-chip"
-                    :class="{ 'mh5-xcoin-chip--active': filterDraft.recordType === opt.value }"
-                    @click="filterDraft.recordType = opt.value"
+                    :class="{ 'mh5-xcoin-chip--active': filterDraft.lane === tab.key }"
+                    @click="pickDraftLane(tab.key)"
                   >
-                    {{ opt.label }}
+                    {{ tab.label }}
                   </button>
                 </div>
               </section>
 
               <section class="mh5-xcoin-filter-group">
-                <h3 class="mh5-xcoin-filter-group__label">发起人</h3>
+                <h3 class="mh5-xcoin-filter-group__label">场景</h3>
                 <div class="mh5-xcoin-filter-chips">
                   <button
-                    v-for="opt in TRANSFER_INITIATOR_FILTER_OPTIONS"
-                    :key="`initiator-${opt.value || 'all'}`"
+                    v-for="opt in draftSceneOptions"
+                    :key="`scene-${opt.value || 'all'}`"
                     type="button"
                     class="mh5-xcoin-chip"
-                    :class="{ 'mh5-xcoin-chip--active': filterDraft.initiator === opt.value }"
-                    @click="filterDraft.initiator = opt.value"
-                  >
-                    {{ opt.label }}
-                  </button>
-                </div>
-              </section>
-
-              <section class="mh5-xcoin-filter-group">
-                <h3 class="mh5-xcoin-filter-group__label">对象</h3>
-                <div class="mh5-xcoin-filter-chips">
-                  <button
-                    v-for="opt in TRANSFER_ROLE_FILTER_OPTIONS"
-                    :key="`role-${opt.value || 'all'}`"
-                    type="button"
-                    class="mh5-xcoin-chip"
-                    :class="{ 'mh5-xcoin-chip--active': filterDraft.role === opt.value }"
-                    @click="filterDraft.role = opt.value"
+                    :class="{ 'mh5-xcoin-chip--active': filterDraft.scene === opt.value }"
+                    @click="filterDraft.scene = opt.value"
                   >
                     {{ opt.label }}
                   </button>
@@ -429,9 +714,9 @@ function summaryNetClass(value: number) {
               </p>
               <span
                 class="mh5-bet-order-card__status"
-                :class="transferTypeStatusClass(detailRow.recordType)"
+                :class="transferSceneStatusClass(detailRow)"
               >
-                {{ recordTypeBadgeLabel(detailRow.recordType) }}
+                {{ transferSceneLabel(detailRow) }}
               </span>
             </div>
 
@@ -443,11 +728,14 @@ function summaryNetClass(value: number) {
               </div>
               <div class="mh5-bet-order-detail-row">
                 <span>发起人</span>
-                <strong>{{ detailFlow?.initiator }}</strong>
+                <strong>{{ detailFlow?.fromName }}</strong>
               </div>
               <div class="mh5-bet-order-detail-row">
                 <span>对象</span>
-                <strong>{{ detailFlow?.target }}</strong>
+                <strong>
+                  {{ detailFlow?.toName }}
+                  <template v-if="detailFlow?.toRole">（{{ detailFlow.toRole }}）</template>
+                </strong>
               </div>
               <div class="mh5-bet-order-detail-row">
                 <span>时间</span>
@@ -460,6 +748,10 @@ function summaryNetClass(value: number) {
               <div v-if="detailRelatedOrderNo" class="mh5-bet-order-detail-row">
                 <span>关联单号</span>
                 <strong class="mh5-bet-order-detail-row__mono">{{ detailRelatedOrderNo }}</strong>
+              </div>
+              <div class="mh5-bet-order-detail-row">
+                <span>变动后结余</span>
+                <strong>{{ formatTransferBalance(detailRow) }}</strong>
               </div>
             </section>
 

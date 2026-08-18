@@ -28,7 +28,11 @@ import {
   type TeamListItem,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
-import { AGENT_TEAM_REBATE_SPEC, AGENT_TEAM_SEARCH_SPEC } from '../../constants/agentTeamSpec'
+import {
+  AGENT_TEAM_QUICK_ACTIONS_SPEC,
+  AGENT_TEAM_REBATE_SPEC,
+  AGENT_TEAM_SEARCH_SPEC,
+} from '../../constants/agentTeamSpec'
 import { setBetOrderSearchSeed } from '../../composables/useBetOrderSearchSeed'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
@@ -98,6 +102,25 @@ type TeamQuickAction =
 const teamQuickMenuRow = ref<TeamListItem | null>(null)
 const teamQuickMenuPos = ref({ top: 0, right: 0 })
 let skipTeamMenuClose = false
+/** 占成用底部抽屉；返佣操作少，仍用行内浮层 */
+const useQuickActionSheet = computed(() => !isRebateAgent.value)
+
+const teamQuickActions = computed(() => {
+  const row = teamQuickMenuRow.value
+  if (!row) return []
+  const actions: { key: TeamQuickAction; label: string }[] = []
+  if (!isRebateAgent.value) {
+    if (showMemberBadge(row.kind)) actions.push({ key: 'rebate_ratio', label: '退水比例' })
+    else actions.push({ key: 'profit_ratio', label: '收益比例' })
+  }
+  actions.push({ key: 'remark', label: '备注' }, { key: 'bet_order', label: '注单查询' })
+  if (!isRebateAgent.value && canShowMemberCreditAction(row.kind)) {
+    actions.push({ key: 'member_credit', label: '会员授信' })
+  } else if (!isRebateAgent.value && canShowAgentCreditAction(row.kind)) {
+    actions.push({ key: 'agent_credit', label: '代理授信' })
+  }
+  return actions
+})
 
 const createAccountSheetOpen = ref(false)
 const createAccountSelection = ref<CreateAccountOption>(DEFAULT_CREATE_ACCOUNT_OPTION)
@@ -257,11 +280,13 @@ function openTeamQuickMenu(row: TeamListItem, event: MouseEvent) {
     return
   }
 
-  const btn = event.currentTarget as HTMLElement
-  const rect = btn.getBoundingClientRect()
-  teamQuickMenuPos.value = {
-    top: rect.bottom + 8,
-    right: window.innerWidth - rect.right,
+  if (!useQuickActionSheet.value) {
+    const btn = event.currentTarget as HTMLElement
+    const rect = btn.getBoundingClientRect()
+    teamQuickMenuPos.value = {
+      top: rect.bottom + 8,
+      right: window.innerWidth - rect.right,
+    }
   }
   teamQuickMenuRow.value = row
 
@@ -275,8 +300,14 @@ function closeTeamQuickMenu() {
 }
 
 function onTeamDocumentClick() {
+  if (useQuickActionSheet.value) return
   if (skipTeamMenuClose) return
   if (teamQuickMenuRow.value) closeTeamQuickMenu()
+}
+
+function onTeamDocumentScroll() {
+  if (useQuickActionSheet.value) return
+  closeTeamQuickMenu()
 }
 
 async function onTeamQuickAction(action: TeamQuickAction) {
@@ -449,7 +480,7 @@ async function confirmCreateAccount() {
 
 onMounted(() => {
   document.addEventListener('click', onTeamDocumentClick)
-  document.addEventListener('scroll', closeTeamQuickMenu, true)
+  document.addEventListener('scroll', onTeamDocumentScroll, true)
 })
 
 onBeforeUnmount(() => {
@@ -458,7 +489,7 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   document.removeEventListener('click', onTeamDocumentClick)
-  document.removeEventListener('scroll', closeTeamQuickMenu, true)
+  document.removeEventListener('scroll', onTeamDocumentScroll, true)
 })
 </script>
 
@@ -469,6 +500,11 @@ onUnmounted(() => {
         <Mh5SpecAnnot
           v-if="isRebateAgent"
           :spec="AGENT_TEAM_REBATE_SPEC"
+          placement="bottom"
+        />
+        <Mh5SpecAnnot
+          v-else
+          :spec="AGENT_TEAM_QUICK_ACTIONS_SPEC"
           placement="bottom"
         />
       </h1>
@@ -666,7 +702,7 @@ onUnmounted(() => {
 
     <Teleport to="body">
       <div
-        v-if="teamQuickMenuRow"
+        v-if="isRebateAgent && teamQuickMenuRow"
         class="agent-team-quick-menu"
         :style="{ top: `${teamQuickMenuPos.top}px`, right: `${teamQuickMenuPos.right}px` }"
         role="menu"
@@ -680,54 +716,73 @@ onUnmounted(() => {
         </p>
         <div class="agent-team-quick-menu__actions">
           <button
-            v-if="!isRebateAgent && teamQuickMenuRow && showMemberBadge(teamQuickMenuRow.kind)"
+            v-for="action in teamQuickActions"
+            :key="action.key"
             type="button"
             class="agent-team-quick-menu__btn"
             role="menuitem"
-            @click="onTeamQuickAction('rebate_ratio')"
+            @click.stop="onTeamQuickAction(action.key)"
           >
-            退水比例
-          </button>
-          <button
-            v-else-if="!isRebateAgent"
-            type="button"
-            class="agent-team-quick-menu__btn"
-            role="menuitem"
-            @click="onTeamQuickAction('profit_ratio')"
-          >
-            收益比例
-          </button>
-          <button type="button" class="agent-team-quick-menu__btn" role="menuitem" @click="onTeamQuickAction('remark')">
-            备注
-          </button>
-          <button
-            type="button"
-            class="agent-team-quick-menu__btn"
-            role="menuitem"
-            @click.stop="onTeamQuickAction('bet_order')"
-          >
-            注单查询
-          </button>
-          <button
-            v-if="!isRebateAgent && teamQuickMenuRow && canShowMemberCreditAction(teamQuickMenuRow.kind)"
-            type="button"
-            class="agent-team-quick-menu__btn"
-            role="menuitem"
-            @click="onTeamQuickAction('member_credit')"
-          >
-            会员授信
-          </button>
-          <button
-            v-else-if="!isRebateAgent && teamQuickMenuRow && canShowAgentCreditAction(teamQuickMenuRow.kind)"
-            type="button"
-            class="agent-team-quick-menu__btn"
-            role="menuitem"
-            @click="onTeamQuickAction('agent_credit')"
-          >
-            代理授信
+            {{ action.label }}
           </button>
         </div>
       </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="agent-team-create-sheet">
+        <div
+          v-if="useQuickActionSheet && teamQuickMenuRow"
+          class="mh5-agent-overlay-mask agent-team-quick-sheet-mask"
+          @click.self="closeTeamQuickMenu"
+        >
+          <div
+            class="mh5-agent-overlay-sheet agent-team-create-sheet agent-team-quick-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="team-quick-sheet-title"
+          >
+            <div class="agent-team-create-sheet__head">
+              <h2 id="team-quick-sheet-title" class="agent-team-create-sheet__title">更多快捷操作</h2>
+              <button
+                type="button"
+                class="agent-team-create-sheet__close"
+                aria-label="关闭"
+                @click="closeTeamQuickMenu"
+              >
+                ×
+              </button>
+            </div>
+            <p class="agent-team-quick-sheet__target">
+              对
+              <strong>{{ teamQuickMenuRow.nickname }}</strong>
+              操作
+            </p>
+            <div v-if="teamQuickActions.length" class="agent-team-create-sheet__options">
+              <button
+                v-for="action in teamQuickActions"
+                :key="action.key"
+                type="button"
+                class="agent-team-create-sheet__option agent-team-quick-sheet__option"
+                @click="onTeamQuickAction(action.key)"
+              >
+                <span class="agent-team-create-sheet__label">{{ action.label }}</span>
+                <svg class="agent-team-quick-sheet__chevron" width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
+                  <path d="M1 1.5 6.5 7 1 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+            <p v-else class="agent-team-quick-sheet__empty">暂无可用操作</p>
+            <button
+              type="button"
+              class="agent-team-quick-sheet__cancel"
+              @click="closeTeamQuickMenu"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
 
     <Teleport to="body">
@@ -928,7 +983,9 @@ onUnmounted(() => {
                       v-if="row.item.kind !== 'me'"
                       type="button"
                       class="agent-team-row__menu"
-                      aria-label="更多操作"
+                      :class="{ 'agent-team-row__menu--active': teamQuickMenuRow?.id === row.item.id }"
+                      :aria-label="$t('更多操作')"
+                      :aria-expanded="teamQuickMenuRow?.id === row.item.id"
                       @click.stop="openTeamQuickMenu(row.item, $event)"
                     >
                       <svg class="agent-team-row__menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">

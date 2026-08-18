@@ -48,6 +48,25 @@ export type AgentCreditLimitStats = {
   creditDownTotal: number
   /** 占成比例 0-100 */
   shareRatio: number
+  /** 总授信额度 */
+  creditQuotaTotal: number
+}
+
+export type AgentCreditSettleRow = {
+  label: string
+  value: string
+  positive?: boolean
+}
+
+export type AgentCreditLimitView = {
+  availableValue: string
+  quotaValue: string
+  usedPercent: number
+  usedPercentText: string
+  receivableValue: string
+  receivablePositive: boolean
+  settleFlowRows: AgentCreditSettleRow[]
+  settleResultRows: AgentCreditSettleRow[]
 }
 
 export type AgentDetailProfile = {
@@ -117,6 +136,12 @@ export const AGENT_CREDIT_CURRENCY_TABS: { key: AgentCreditCurrency; label: stri
   { key: '信用额度-USD', label: 'USD' },
 ]
 
+/** 额度管理内展示用：只回 CNY / USD，不含「信用额度」前缀 */
+export function formatCreditCurrencyUnit(code: string) {
+  return AGENT_CREDIT_CURRENCY_TABS.find((tab) => tab.key === code)?.label
+    ?? (code.includes('USD') ? 'USD' : 'CNY')
+}
+
 export function isAgentCreditCurrency(currency: string): currency is AgentCreditCurrency {
   return currency === '信用额度-CNY' || currency === '信用额度-USD'
 }
@@ -131,23 +156,115 @@ export function getAgentDetailCurrencyOptions(isCredited: boolean): readonly Age
     : getAgentCashCurrencyOptions()
 }
 
+function formatCreditAmount(n: number) {
+  return n.toLocaleString('zh-CN')
+}
+
+function formatSignedCreditAmount(n: number, digits = 0) {
+  const abs = Math.abs(n).toLocaleString('zh-CN', {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  })
+  if (n > 0) return `+${abs}`
+  if (n < 0) return `-${abs}`
+  return digits ? '0.00' : '0'
+}
+
+function creditNet(stats: AgentCreditLimitStats) {
+  return stats.creditUpTotal - stats.creditDownTotal
+}
+
+function creditActualNet(stats: AgentCreditLimitStats) {
+  return Math.round((creditNet(stats) * stats.shareRatio) / 100)
+}
+
+/** 非「今天 / 本周」区间用略低的上下分规模，额度卡仍展示当前可用 / 总额 */
+export function scaleCreditSettleStats(
+  stats: AgentCreditLimitStats,
+  scale = 1,
+): AgentCreditLimitStats {
+  if (scale === 1) return stats
+  return {
+    ...stats,
+    creditUpTotal: Math.round(stats.creditUpTotal * scale),
+    creditDownTotal: Math.round(stats.creditDownTotal * Math.min(1, scale + 0.04)),
+  }
+}
+
+export function formatCreditReceivable(amount: number, currency: AgentCreditCurrency) {
+  const symbol = currency === '信用额度-USD' ? '$' : '¥'
+  const formatted = Math.abs(amount).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `${amount < 0 ? '-' : ''}${symbol}${formatted}`
+}
+
+export function formatCreditLimitView(
+  stats: AgentCreditLimitStats,
+  currency: AgentCreditCurrency,
+  rangeScale = 1,
+  actualProfit?: number,
+): AgentCreditLimitView {
+  const settle = scaleCreditSettleStats(stats, rangeScale)
+  const quota = Math.max(0, stats.creditQuotaTotal)
+  const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
+  const net = creditNet(settle)
+  const scaledProfit =
+    actualProfit == null ? null : Number((actualProfit * rangeScale).toFixed(2))
+  return {
+    availableValue: formatCreditAmount(stats.creditBalance),
+    quotaValue: formatCreditAmount(quota),
+    usedPercent,
+    usedPercentText: `~${usedPercent}%`,
+    receivableValue: formatCreditReceivable(net, currency),
+    receivablePositive: net >= 0,
+    settleFlowRows: [
+      {
+        label: '上分总额:',
+        value: formatSignedCreditAmount(settle.creditUpTotal),
+        positive: true,
+      },
+      {
+        label: '下分总额:',
+        value: formatSignedCreditAmount(-settle.creditDownTotal),
+        positive: false,
+      },
+    ],
+    settleResultRows: [
+      {
+        label: '上下分净额:',
+        value: formatSignedCreditAmount(net),
+        positive: net >= 0,
+      },
+      ...(scaledProfit == null
+        ? []
+        : [
+            {
+              label: '实占盈亏:',
+              value: formatSignedCreditAmount(scaledProfit, 2),
+            },
+          ]),
+    ],
+  }
+}
+
 export function formatCreditLimitRows(stats: AgentCreditLimitStats) {
-  const format = (n: number) => n.toLocaleString('zh-CN')
-  const net = stats.creditUpTotal - stats.creditDownTotal
-  const actualNet = Math.round((net * stats.shareRatio) / 100)
+  const net = creditNet(stats)
+  const actualNet = creditActualNet(stats)
   return [
-    { label: '信用余额', value: format(stats.creditBalance), positive: false },
-    { label: '上分总额', value: format(stats.creditUpTotal), positive: false },
-    { label: '下分总额', value: format(stats.creditDownTotal), positive: false },
+    { label: '信用余额', value: formatCreditAmount(stats.creditBalance), positive: false },
+    { label: '上分总额', value: formatCreditAmount(stats.creditUpTotal), positive: false },
+    { label: '下分总额', value: formatCreditAmount(stats.creditDownTotal), positive: false },
     {
       label: '上下分净额',
-      value: `${net >= 0 ? '+' : ''}${format(net)}`,
+      value: `${net >= 0 ? '+' : ''}${formatCreditAmount(net)}`,
       positive: net >= 0,
     },
     { label: '占成比例', value: `${stats.shareRatio}%`, positive: false },
     {
       label: '实占上下分净额',
-      value: `${actualNet >= 0 ? '+' : ''}${format(actualNet)}`,
+      value: `${actualNet >= 0 ? '+' : ''}${formatCreditAmount(actualNet)}`,
       positive: actualNet >= 0,
     },
   ]
@@ -190,12 +307,14 @@ function buildCreditLimits(scale: number, shareRatio: number): Record<AgentCredi
       creditUpTotal: s * 1550,
       creditDownTotal: s * 1030,
       shareRatio,
+      creditQuotaTotal: Math.round((5000 * s) / 3),
     },
     '信用额度-USD': {
       creditBalance: s * 80,
       creditUpTotal: s * 620,
       creditDownTotal: s * 410,
       shareRatio,
+      creditQuotaTotal: Math.round((2000 * s) / 3),
     },
   }
 }
@@ -226,12 +345,14 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
       creditUpTotal: 58000,
       creditDownTotal: 42000,
       shareRatio: 65,
+      creditQuotaTotal: 7200,
     },
     '信用额度-USD': {
       creditBalance: 320,
       creditUpTotal: 12800,
       creditDownTotal: 9600,
       shareRatio: 65,
+      creditQuotaTotal: 2700,
     },
   },
 }

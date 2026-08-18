@@ -186,8 +186,12 @@ export function getAgentTotalProfit(currency: string) {
 }
 
 /** 分区新结构 · 总盈亏 = 游戏净输赢 − 其他成本（含充提手续费） */
+export function getAgentActualProfitAmount(currency: string) {
+  return getAgentGameNetTotal(currency) - getAgentOtherCostAbs(currency)
+}
+
 export function getAgentSectionTotalProfit(currency: string) {
-  const total = getAgentGameNetTotal(currency) - getAgentOtherCostAbs(currency)
+  const total = getAgentActualProfitAmount(currency)
   return {
     value: formatProfitAmount(total),
     tone: profitTone(total),

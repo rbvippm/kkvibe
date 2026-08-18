@@ -1,8 +1,10 @@
 import { filterTeamList, type TeamListItem } from './agentTeam'
 import {
   formatCashWalletGroups,
+  formatCreditReceivable,
   type AgentCashWalletRow,
   type AgentCreditCurrency,
+  type AgentCreditLimitView,
 } from './agentDetail'
 
 export type MemberDetailTab = 'manage' | 'credit' | 'profit' | 'game' | 'login'
@@ -53,6 +55,8 @@ export type MemberCreditLimitStats = {
   creditBalance: number
   creditUpTotal: number
   creditDownTotal: number
+  /** 总授信额度 */
+  creditQuotaTotal: number
 }
 
 export type MemberDetailProfile = {
@@ -97,25 +101,69 @@ function buildMemberCreditLimits(scale: number): Record<AgentCreditCurrency, Mem
       creditBalance: s * 120,
       creditUpTotal: s * 820,
       creditDownTotal: s * 640,
+      creditQuotaTotal: s * 1000,
     },
     '信用额度-USD': {
       creditBalance: s * 45,
       creditUpTotal: s * 310,
       creditDownTotal: s * 240,
+      creditQuotaTotal: s * 375,
     },
   }
 }
 
+function formatCreditAmount(n: number) {
+  return n.toLocaleString('zh-CN')
+}
+
+function scaleMemberSettle(stats: MemberCreditLimitStats, scale: number): MemberCreditLimitStats {
+  if (scale === 1) return stats
+  return {
+    ...stats,
+    creditUpTotal: Math.round(stats.creditUpTotal * scale),
+    creditDownTotal: Math.round(stats.creditDownTotal * Math.min(1, scale + 0.04)),
+  }
+}
+
+export function formatMemberCreditLimitView(
+  stats: MemberCreditLimitStats,
+  currency: AgentCreditCurrency,
+  rangeScale = 1,
+): AgentCreditLimitView {
+  const settle = scaleMemberSettle(stats, rangeScale)
+  const quota = Math.max(0, stats.creditQuotaTotal)
+  const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
+  const net = settle.creditUpTotal - settle.creditDownTotal
+  return {
+    availableValue: formatCreditAmount(stats.creditBalance),
+    quotaValue: formatCreditAmount(quota),
+    usedPercent,
+    usedPercentText: `~${usedPercent}%`,
+    receivableValue: formatCreditReceivable(net, currency),
+    receivablePositive: net >= 0,
+    settleFlowRows: [
+      { label: '上分总额:', value: formatCreditAmount(settle.creditUpTotal) },
+      { label: '下分总额:', value: formatCreditAmount(settle.creditDownTotal) },
+    ],
+    settleResultRows: [
+      {
+        label: '上下分净额:',
+        value: `${net >= 0 ? '+' : ''}${formatCreditAmount(net)}`,
+        positive: net >= 0,
+      },
+    ],
+  }
+}
+
 export function formatMemberCreditLimitRows(stats: MemberCreditLimitStats) {
-  const format = (n: number) => n.toLocaleString('zh-CN')
   const net = stats.creditUpTotal - stats.creditDownTotal
   return [
-    { label: '信用余额', value: format(stats.creditBalance), positive: false },
-    { label: '上分总额', value: format(stats.creditUpTotal), positive: false },
-    { label: '下分总额', value: format(stats.creditDownTotal), positive: false },
+    { label: '信用余额', value: formatCreditAmount(stats.creditBalance), positive: false },
+    { label: '上分总额', value: formatCreditAmount(stats.creditUpTotal), positive: false },
+    { label: '下分总额', value: formatCreditAmount(stats.creditDownTotal), positive: false },
     {
       label: '上下分净额',
-      value: `${net >= 0 ? '+' : ''}${format(net)}`,
+      value: `${net >= 0 ? '+' : ''}${formatCreditAmount(net)}`,
       positive: net >= 0,
     },
   ]

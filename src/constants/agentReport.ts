@@ -23,6 +23,7 @@ export type ReportDetail = {
 export const AGENT_REPORT_FILTER_ASSETS = {
   calendar: '/images/agent-report/icon-calendar.svg',
   dropdown: '/images/agent-report/icon-dropdown.svg',
+  close: '/images/agent-report/icon-close.svg',
 } as const
 
 export const REPORT_RANGE_PRESETS: { key: ReportRangePreset; label: string }[] = [

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
+import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
-import Mh5CurrencySwitchRow from './Mh5CurrencySwitchRow.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
@@ -176,14 +177,30 @@ function closeGameProfitFormulaTip() {
               <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
             </span>
           </div>
+          <button
+            type="button"
+            class="mh5-agent-report-filter__currency"
+            :aria-label="$t('切换币种')"
+            @click="currencyPickerOpen = true"
+          >
+            <span class="mh5-agent-report-filter__currency-main">
+              <Mh5CurrencyIcon :code="currency" :size="20" />
+              <span>{{ $t(formatAgentCurrencyLabel(currency)) }}</span>
+            </span>
+            <span class="mh5-agent-report-filter__chevron" aria-hidden="true">
+              <img :src="AGENT_REPORT_FILTER_ASSETS.dropdown" alt="" width="8" height="5" />
+            </span>
+          </button>
         </div>
-        <div class="mh5-agent-report-filter__presets">
+        <div class="mh5-agent-report-filter__presets" role="tablist" :aria-label="$t('快捷时间')">
           <button
             v-for="item in REPORT_RANGE_PRESETS"
             :key="item.key"
             type="button"
+            role="tab"
             class="mh5-agent-report-filter__preset"
             :class="{ 'mh5-agent-report-filter__preset--active': preset === item.key }"
+            :aria-selected="preset === item.key"
             @click="pickPreset(item.key)"
           >
             {{ $t(item.label) }}
@@ -227,10 +244,6 @@ function closeGameProfitFormulaTip() {
             {{ $t(pill.label) }}
           </button>
         </div>
-      </div>
-
-      <div class="mh5-agent-report-currency-switch">
-        <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
       </div>
 
       <section class="mh5-agent-report-detail">

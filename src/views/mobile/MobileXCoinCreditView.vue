@@ -2,15 +2,19 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
-import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5XCoinMemberPicker from '../../components/mobile/Mh5XCoinMemberPicker.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
+  AGENT_CREDIT_CURRENCY_TABS,
+  formatCreditCurrencyUnit,
+  type AgentCreditCurrency,
+} from '../../constants/agentDetail'
+import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
+import {
   MOCK_SELECTABLE_AGENTS,
   MOCK_SELECTABLE_MEMBERS,
   MOCK_XCOIN_BALANCES,
-  XCOIN_CREDIT_CURRENCY_TABS,
   emptySelectableCredits,
   parseXCoinCreditCurrency,
   type TransferDirection,
@@ -30,7 +34,8 @@ const direction = ref<TransferDirection>('credit_up')
 const amount = ref('')
 const selectedTarget = ref<XCoinSelectableTarget | null>(null)
 const creditCurrency = ref<XCoinCreditCurrency>(parseXCoinCreditCurrency(route.query.currency))
-const currencyPickerOpen = ref(false)
+const creditCurrencyMenuOpen = ref(false)
+const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCurrency.value))
 
 watch(
   () => route.query.currency,
@@ -91,11 +96,13 @@ function switchDirection(next: TransferDirection) {
   direction.value = next
 }
 
-const creditCurrencyOptions = XCOIN_CREDIT_CURRENCY_TABS.map((tab) => tab.key)
+function pickCreditCurrency(value: AgentCreditCurrency) {
+  creditCurrency.value = value
+  creditCurrencyMenuOpen.value = false
+}
 
-function pickCurrency(value: string) {
-  creditCurrency.value = value as XCoinCreditCurrency
-  currencyPickerOpen.value = false
+function toggleCreditCurrencyMenu() {
+  creditCurrencyMenuOpen.value = !creditCurrencyMenuOpen.value
 }
 
 if (route.query.targetId && route.query.targetName) {
@@ -117,7 +124,7 @@ if (route.query.targetId && route.query.targetName) {
 </script>
 
 <template>
-  <div class="mh5-xcoin-page">
+  <div class="mh5-xcoin-page" @click="creditCurrencyMenuOpen = false">
     <Mh5SubPageHeader :title="pageTitle">
       <template #right>
         <div class="mh5-xcoin-header-actions">
@@ -152,19 +159,53 @@ if (route.query.targetId && route.query.targetName) {
     </div>
 
     <main class="mh5-xcoin-credit">
-      <button
-        type="button"
-        class="mh5-xcoin-currency-row"
-        aria-label="选择信用额度币种"
-        @click="currencyPickerOpen = true"
-      >
+      <div class="mh5-xcoin-currency-row">
         <span class="mh5-xcoin-currency-row__label">币种</span>
-        <span class="mh5-xcoin-currency-row__value">
-          <Mh5CurrencyIcon :code="creditCurrency" :size="20" />
-          {{ $t(creditCurrency) }}
-          <span class="mh5-xcoin-currency-row__arrow">›</span>
-        </span>
-      </button>
+        <div class="mh5-agent-detail-credit-manage__ccy-wrap">
+          <button
+            type="button"
+            class="mh5-currency-switch__btn mh5-agent-detail-credit-manage__ccy"
+            aria-label="选择信用额度币种"
+            :aria-expanded="creditCurrencyMenuOpen"
+            @click.stop="toggleCreditCurrencyMenu"
+          >
+            <span class="mh5-currency-switch__main">
+              <Mh5CurrencyIcon :code="creditCurrency" :size="18" />
+              <span>{{ creditCurrencyUnitLabel }}</span>
+            </span>
+            <span
+              class="mh5-currency-switch__chevron"
+              :class="{ 'mh5-agent-detail-credit-manage__ccy-chevron--open': creditCurrencyMenuOpen }"
+              aria-hidden="true"
+            >
+              <img :src="AGENT_REPORT_FILTER_ASSETS.dropdown" alt="" width="8" height="5" />
+            </span>
+          </button>
+          <div
+            v-if="creditCurrencyMenuOpen"
+            class="mh5-agent-detail-credit-manage__ccy-menu mh5-xcoin-currency-row__menu"
+            role="listbox"
+            aria-label="信用额度币种"
+            @click.stop
+          >
+            <button
+              v-for="tab in AGENT_CREDIT_CURRENCY_TABS"
+              :key="tab.key"
+              type="button"
+              role="option"
+              class="mh5-agent-detail-credit-manage__ccy-option"
+              :class="{
+                'mh5-agent-detail-credit-manage__ccy-option--active': creditCurrency === tab.key,
+              }"
+              :aria-selected="creditCurrency === tab.key"
+              @click="pickCreditCurrency(tab.key)"
+            >
+              <Mh5CurrencyIcon :code="tab.key" :size="18" />
+              <span>{{ tab.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <section class="mh5-xcoin-wallet-card">
         <p class="mh5-xcoin-wallet-card__label">{{ fromWalletLabel }}</p>
@@ -209,13 +250,5 @@ if (route.query.targetId && route.query.targetName) {
         {{ confirmText }}
       </button>
     </main>
-
-    <Mh5CurrencyPickerSheet
-      :open="currencyPickerOpen"
-      :currency="creditCurrency"
-      :options="creditCurrencyOptions"
-      @close="currencyPickerOpen = false"
-      @pick="pickCurrency"
-    />
   </div>
 </template>
