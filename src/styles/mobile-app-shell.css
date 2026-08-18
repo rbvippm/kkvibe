@@ -14468,9 +14468,17 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-agent-report-filter__date {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: space-between;
   gap: 4px;
   padding: 4px 8px;
+}
+
+.mh5-agent-report-filter__date > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mh5-agent-report-filter__date--action {
