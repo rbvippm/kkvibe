@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5XCoinMemberPicker from '../../components/mobile/Mh5XCoinMemberPicker.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
@@ -89,8 +91,10 @@ function switchDirection(next: TransferDirection) {
   direction.value = next
 }
 
-function pickCurrency(value: XCoinCreditCurrency) {
-  creditCurrency.value = value
+const creditCurrencyOptions = XCOIN_CREDIT_CURRENCY_TABS.map((tab) => tab.key)
+
+function pickCurrency(value: string) {
+  creditCurrency.value = value as XCoinCreditCurrency
   currencyPickerOpen.value = false
 }
 
@@ -156,7 +160,8 @@ if (route.query.targetId && route.query.targetName) {
       >
         <span class="mh5-xcoin-currency-row__label">币种</span>
         <span class="mh5-xcoin-currency-row__value">
-          {{ creditCurrency }}
+          <Mh5CurrencyIcon :code="creditCurrency" :size="20" />
+          {{ $t(creditCurrency) }}
           <span class="mh5-xcoin-currency-row__arrow">›</span>
         </span>
       </button>
@@ -205,48 +210,12 @@ if (route.query.targetId && route.query.targetName) {
       </button>
     </main>
 
-    <Transition name="mh5-sheet">
-      <div
-        v-if="currencyPickerOpen"
-        class="mh5-xcoin-sheet-mask"
-        @click.self="currencyPickerOpen = false"
-      >
-        <div class="mh5-xcoin-sheet">
-          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
-          <button
-            v-for="tab in XCOIN_CREDIT_CURRENCY_TABS"
-            :key="tab.key"
-            type="button"
-            class="mh5-xcoin-sheet__option"
-            :class="{ 'mh5-xcoin-sheet__option--active': creditCurrency === tab.key }"
-            @click="pickCurrency(tab.key)"
-          >
-            {{ tab.label }}
-          </button>
-        </div>
-      </div>
-    </Transition>
+    <Mh5CurrencyPickerSheet
+      :open="currencyPickerOpen"
+      :currency="creditCurrency"
+      :options="creditCurrencyOptions"
+      @close="currencyPickerOpen = false"
+      @pick="pickCurrency"
+    />
   </div>
 </template>
-
-<style scoped>
-.mh5-sheet-enter-active,
-.mh5-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.mh5-sheet-enter-active .mh5-xcoin-sheet,
-.mh5-sheet-leave-active .mh5-xcoin-sheet {
-  transition: transform 0.25s ease;
-}
-
-.mh5-sheet-enter-from,
-.mh5-sheet-leave-to {
-  opacity: 0;
-}
-
-.mh5-sheet-enter-from .mh5-xcoin-sheet,
-.mh5-sheet-leave-to .mh5-xcoin-sheet {
-  transform: translateY(100%);
-}
-</style>

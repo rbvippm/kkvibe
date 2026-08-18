@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
 import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
-  getAgentOverviewCurrencyOptions,
   getDirectStats,
   MOCK_PROFIT_RANKINGS,
   MOCK_SUB_AGENT_STATS,
@@ -12,12 +11,20 @@ import {
   type AgentOverviewCurrency,
   type ProfitRankTab,
 } from '../../constants/agentOverview'
+import { getAgentDetailCurrencyOptions, type AgentWalletCurrency } from '../../constants/agentDetail'
+import {
+  overviewCurrencyToWallet,
+  walletCurrencyToOverview,
+} from '../../constants/agentAppCurrency'
+import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
 import { AGENT_OVERVIEW_ASSETS } from '../../constants/agentOverviewAssets'
 import { AGENT_OVERVIEW_CURRENCY_SHEET_SPEC } from '../../constants/agentOverviewSpec'
 import {
   getRebateRatioDisplayText,
   type AgentIdentityType,
 } from '../../constants/agentIdentity'
+import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
+import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   findCommissionBill,
@@ -55,7 +62,9 @@ const props = withDefaults(
 const isRebate = computed(() => props.agentType === 'rebate')
 const ratioTabLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
 const profitTabLabel = computed(() => (isRebate.value ? '预计佣金' : '我的盈亏'))
-const currencyOptions = computed(() => getAgentOverviewCurrencyOptions(props.agentType))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(!isRebate.value))
+const walletCurrency = computed(() => overviewCurrencyToWallet(props.currency))
+const currencyLabel = computed(() => formatAgentCurrencyLabel(walletCurrency.value))
 
 const currentCommissionBill = computed(
   () =>
@@ -155,6 +164,10 @@ function pickCurrency(value: AgentOverviewCurrency) {
   emit('pickCurrency', value)
   currencyPickerOpen.value = false
 }
+
+function pickWalletCurrency(value: string) {
+  pickCurrency(walletCurrencyToOverview(value as AgentWalletCurrency))
+}
 </script>
 
 <template>
@@ -231,7 +244,8 @@ function pickCurrency(value: AgentOverviewCurrency) {
                   :aria-label="$t('选择币种')"
                   @click="currencyPickerOpen = true"
                 >
-                  <p>{{ currency }}</p>
+                  <Mh5CurrencyIcon :code="walletCurrency" :size="16" />
+                  <p>{{ $t(currencyLabel) }}</p>
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                     <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
                   </svg>
@@ -412,78 +426,16 @@ function pickCurrency(value: AgentOverviewCurrency) {
       @close="closeShareRatioDialog"
     />
 
-    <Teleport to="body">
-      <Transition name="mh5-wallet-sheet">
-        <div
-          v-if="currencyPickerOpen"
-          class="mh5-agent-overlay-mask"
-          @click.self="currencyPickerOpen = false"
-        >
-          <div
-            class="mh5-wallet-sheet agent-currency-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="agent-currency-sheet-title"
-          >
-            <div class="mh5-wallet-sheet__head">
-              <div class="mh5-wallet-sheet__title-row">
-                <h2 id="agent-currency-sheet-title" class="mh5-wallet-sheet__title">{{ $t('选择币种') }}</h2>
-                <Mh5SpecAnnot :spec="AGENT_OVERVIEW_CURRENCY_SHEET_SPEC" placement="bottom" />
-              </div>
-              <button
-                type="button"
-                class="mh5-wallet-sheet__close"
-                :aria-label="$t('关闭')"
-                @click="currencyPickerOpen = false"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M6 6l12 12M18 6L6 18"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
-              <button
-                v-for="opt in currencyOptions"
-                :key="opt.value"
-                type="button"
-                class="agent-currency-sheet__item"
-                :class="{ 'agent-currency-sheet__item--active': currency === opt.value }"
-                @click="pickCurrency(opt.value)"
-              >
-                <span
-                  v-if="opt.symbol"
-                  class="agent-currency-sheet__icon"
-                  :style="{ background: opt.color }"
-                  aria-hidden="true"
-                >
-                  {{ opt.symbol }}
-                </span>
-                <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
-                <span
-                  v-if="currency === opt.value"
-                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
-                  aria-hidden="true"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M2.5 6.2l2.4 2.4 4.6-5"
-                      stroke="#fff"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <Mh5CurrencyPickerSheet
+      :open="currencyPickerOpen"
+      :currency="walletCurrency"
+      :options="currencyOptions"
+      @close="currencyPickerOpen = false"
+      @pick="pickWalletCurrency"
+    >
+      <template #title-extra>
+        <Mh5SpecAnnot :spec="AGENT_OVERVIEW_CURRENCY_SHEET_SPEC" placement="bottom" />
+      </template>
+    </Mh5CurrencyPickerSheet>
   </div>
 </template>

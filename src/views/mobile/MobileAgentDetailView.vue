@@ -60,6 +60,9 @@ import {
 } from '../../constants/agentReport'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
+import Mh5CurrencySwitchRow from '../../components/mobile/Mh5CurrencySwitchRow.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   AGENT_DETAIL_CREDIT_CURRENCY_SPEC,
@@ -267,8 +270,8 @@ function goCredit() {
   })
 }
 
-function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrencyByUser(value)
+function pickCurrency(value: string) {
+  setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   currencyPickerOpen.value = false
 }
 
@@ -302,15 +305,6 @@ function closeProfitFormulaTips() {
             :spec="AGENT_DETAIL_CREDIT_CURRENCY_SPEC"
             placement="bottom"
           />
-          <button
-            type="button"
-            class="mh5-agent-detail-currency"
-            :aria-label="$t('切换币种')"
-            @click="currencyPickerOpen = true"
-          >
-            <span>{{ currency }}</span>
-            <span class="mh5-agent-detail-currency__chevron">▾</span>
-          </button>
         </div>
       </template>
     </Mh5SubPageHeader>
@@ -365,7 +359,10 @@ function closeProfitFormulaTips() {
           class="mh5-agent-detail-wallet mh5-agent-detail-xcoin"
         >
           <div class="mh5-agent-detail-wallet__head">
-            <h3 class="mh5-agent-detail-wallet__title">{{ group.title }}</h3>
+            <h3 class="mh5-agent-detail-wallet__title">
+              <Mh5CurrencyIcon :code="group.currency" :size="20" />
+              <span>{{ group.title }}</span>
+            </h3>
           </div>
           <div
             v-for="item in group.rows"
@@ -431,6 +428,7 @@ function closeProfitFormulaTips() {
       </template>
 
       <template v-else-if="activeTab === 'profit'">
+        <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
         <section
           v-if="!useProfitSections"
           class="mh5-agent-detail-profit"
@@ -725,6 +723,8 @@ function closeProfitFormulaTips() {
             </div>
           </div>
 
+          <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
+
           <section class="mh5-agent-report-detail">
             <div class="mh5-agent-report-detail__head">
               <span class="mh5-agent-report-detail__title">{{ rebateGameSectionTitle }}</span>
@@ -807,6 +807,8 @@ function closeProfitFormulaTips() {
               </button>
             </div>
           </div>
+
+          <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
 
           <section class="mh5-agent-report-detail">
             <div class="mh5-agent-report-detail__head">
@@ -946,48 +948,12 @@ function closeProfitFormulaTips() {
       </div>
     </Transition>
 
-    <Transition name="mh5-agent-detail-sheet">
-      <div
-        v-if="currencyPickerOpen"
-        class="mh5-xcoin-sheet-mask"
-        @click.self="currencyPickerOpen = false"
-      >
-        <div class="mh5-xcoin-sheet">
-          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
-          <button
-            v-for="opt in currencyOptions"
-            :key="opt"
-            type="button"
-            class="mh5-xcoin-sheet__option"
-            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
-            @click="pickCurrency(opt)"
-          >
-            {{ opt }}
-          </button>
-        </div>
-      </div>
-    </Transition>
+    <Mh5CurrencyPickerSheet
+      :open="currencyPickerOpen"
+      :currency="currency"
+      :options="currencyOptions"
+      @close="currencyPickerOpen = false"
+      @pick="pickCurrency"
+    />
   </div>
 </template>
-
-<style scoped>
-.mh5-agent-detail-sheet-enter-active,
-.mh5-agent-detail-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.mh5-agent-detail-sheet-enter-active .mh5-xcoin-sheet,
-.mh5-agent-detail-sheet-leave-active .mh5-xcoin-sheet {
-  transition: transform 0.25s ease;
-}
-
-.mh5-agent-detail-sheet-enter-from,
-.mh5-agent-detail-sheet-leave-to {
-  opacity: 0;
-}
-
-.mh5-agent-detail-sheet-enter-from .mh5-xcoin-sheet,
-.mh5-agent-detail-sheet-leave-to .mh5-xcoin-sheet {
-  transform: translateY(100%);
-}
-</style>

@@ -20,6 +20,11 @@ export type ReportDetail = {
   rows: ReportDetailRow[]
 }
 
+export const AGENT_REPORT_FILTER_ASSETS = {
+  calendar: '/images/agent-report/icon-calendar.svg',
+  dropdown: '/images/agent-report/icon-dropdown.svg',
+} as const
+
 export const REPORT_RANGE_PRESETS: { key: ReportRangePreset; label: string }[] = [
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },

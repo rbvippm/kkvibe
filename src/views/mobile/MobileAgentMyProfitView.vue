@@ -41,8 +41,11 @@ import {
   shouldShowCommissionNegativeAccum,
 } from '../../constants/agentCommissionReport'
 import { agentAppCurrency } from '../../constants/agentAppCurrency'
+import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
+import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
 import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
+import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import '../../styles/mobile-app-shell.css'
 
@@ -53,6 +56,10 @@ const props = withDefaults(
   }>(),
   { embedded: false },
 )
+
+const emit = defineEmits<{
+  'open-currency': []
+}>()
 
 const route = useRoute()
 const router = useRouter()
@@ -346,6 +353,58 @@ onBeforeUnmount(() => {
     :data-agent-type="agentType"
     @click="closeHeroTips"
   >
+    <section v-if="embedded" class="mh5-agent-report-filter" :aria-label="$t('筛选')">
+      <div class="mh5-agent-report-filter__row">
+        <button
+          v-if="isRebateAgent"
+          type="button"
+          class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action"
+          :aria-label="$t('选择月份')"
+          :aria-expanded="monthSheetOpen"
+          @click="openMonthSheet"
+        >
+          <span>{{ dateRangeText }}</span>
+          <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
+            <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
+          </span>
+        </button>
+        <div v-else class="mh5-agent-report-filter__date">
+          <span>{{ dateRangeText }}</span>
+          <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
+            <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
+          </span>
+        </div>
+        <button
+          type="button"
+          class="mh5-agent-report-filter__currency"
+          :aria-label="$t('切换币种')"
+          @click="emit('open-currency')"
+        >
+          <span class="mh5-agent-report-filter__currency-main">
+            <Mh5CurrencyIcon :code="currency" :size="20" />
+            <span>{{ $t(formatAgentCurrencyLabel(currency)) }}</span>
+          </span>
+          <span class="mh5-agent-report-filter__chevron" aria-hidden="true">
+            <img :src="AGENT_REPORT_FILTER_ASSETS.dropdown" alt="" width="8" height="5" />
+          </span>
+        </button>
+      </div>
+      <div class="mh5-agent-report-filter__presets" role="tablist" :aria-label="$t('快捷时间')">
+        <button
+          v-for="item in datePresets"
+          :key="item.key"
+          type="button"
+          role="tab"
+          class="mh5-agent-report-filter__preset"
+          :class="{ 'mh5-agent-report-filter__preset--active': isPresetActive(item.key) }"
+          :aria-selected="isPresetActive(item.key)"
+          @click="pickPreset(item.key)"
+        >
+          {{ $t(item.label) }}
+        </button>
+      </div>
+    </section>
+
     <div class="mh5-agent-my-profit-hero">
       <header v-if="!embedded" class="mh5-agent-my-profit-nav">
         <button type="button" class="mh5-agent-my-profit-nav__back" :aria-label="$t('返回')" @click="goBack">
@@ -436,7 +495,7 @@ onBeforeUnmount(() => {
         </p>
       </section>
 
-      <div class="mh5-agent-my-profit-date">
+      <div v-if="!embedded" class="mh5-agent-my-profit-date">
         <div class="mh5-agent-my-profit-date__row">
           <p class="mh5-agent-my-profit-date__label">{{ dateFilterLabel }}</p>
           <button

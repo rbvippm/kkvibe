@@ -1,6 +1,7 @@
 /** 代理中心 · 我的盈亏（Figma 1433:17568；返佣身份另套公式） */
 
 import {
+  formatCommissionMonthLabel,
   getDefaultCommissionMonth,
   shiftCommissionMonth,
 } from './agentCommissionReport'
@@ -62,10 +63,34 @@ export type AgentMyProfitDetailRow = {
 
 export type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
 
-/** 返佣「我的佣金」· 月份筛选快捷项（佣金按月发放，不可按日） */
-export type RebateMonthPreset = 'thisMonth' | 'lastMonth' | 'may' | 'april'
+/** 返佣「我的佣金」· 月份筛选快捷项（本月 + 前 3 个自然月） */
+export type RebateMonthPreset = 'thisMonth' | 'prev1' | 'prev2' | 'prev3'
 
 export type ProfitDatePreset = RangePreset | RebateMonthPreset
+
+const REBATE_MONTH_PRESET_KEYS: RebateMonthPreset[] = ['thisMonth', 'prev1', 'prev2', 'prev3']
+
+const REBATE_MONTH_PRESET_OFFSET: Record<RebateMonthPreset, number> = {
+  thisMonth: 0,
+  prev1: -1,
+  prev2: -2,
+  prev3: -3,
+}
+
+function rebatePresetOffset(preset: ProfitDatePreset): number | null {
+  if (preset === 'thisMonth') return 0
+  if (preset === 'prev1') return -1
+  if (preset === 'prev2') return -2
+  if (preset === 'prev3') return -3
+  return null
+}
+
+function formatRebateMonthChipLabel(month: string, offset: number) {
+  if (offset === 0) return '本月'
+  const [y, m] = month.split('-')
+  if (!y || !m) return month
+  return `${y}/${m}`
+}
 
 export const AGENT_MY_PROFIT_ASSETS = {
   backIcon: '/images/agent-my-profit/icon-back.svg',
@@ -74,19 +99,21 @@ export const AGENT_MY_PROFIT_ASSETS = {
 } as const
 
 export const AGENT_MY_PROFIT_PRESETS: { key: RangePreset; label: string }[] = [
-  { key: 'today', label: '今日' },
-  { key: 'yesterday', label: '昨日' },
+  { key: 'today', label: '今天' },
+  { key: 'yesterday', label: '昨天' },
   { key: 'thisWeek', label: '本周' },
   { key: 'lastWeek', label: '上周' },
 ]
 
-/** 返佣默认：本月 / 上月 / 五月 / 四月 */
-export const AGENT_MY_PROFIT_REBATE_MONTH_PRESETS: { key: RebateMonthPreset; label: string }[] = [
-  { key: 'thisMonth', label: '本月' },
-  { key: 'lastMonth', label: '上月' },
-  { key: 'may', label: '五月' },
-  { key: 'april', label: '四月' },
-]
+/** 返佣快捷：本月 + 前 3 个自然月（文案为 YYYY/MM） */
+export function getRebateMonthPresets(date = new Date()) {
+  const current = getDefaultCommissionMonth(date)
+  return REBATE_MONTH_PRESET_KEYS.map((key) => {
+    const offset = REBATE_MONTH_PRESET_OFFSET[key]
+    const month = shiftCommissionMonth(current, offset)
+    return { key, label: formatRebateMonthChipLabel(month, offset), month }
+  })
+}
 
 /**
  * 占成 · 游戏净输赢细项
@@ -803,11 +830,10 @@ export function agentMyProfitAmountHeader(identity: AgentIdentityType) {
 }
 
 export function agentMyProfitDateRangeText(preset: ProfitDatePreset): string {
-  /** 返佣按月发放：展示结算月，不展示日区间 */
-  if (preset === 'thisMonth') return '2026年7月'
-  if (preset === 'lastMonth') return '2026年6月'
-  if (preset === 'may') return '2026年5月'
-  if (preset === 'april') return '2026年4月'
+  const rebateOffset = rebatePresetOffset(preset)
+  if (rebateOffset !== null) {
+    return formatCommissionMonthLabel(agentMyProfitRebateMonthKey(preset))
+  }
 
   const base = '2025-08-06'
   if (preset === 'today') return `${base}至${base}`
@@ -825,29 +851,23 @@ export function agentMyProfitDefaultPreset(identity: AgentIdentityType): ProfitD
 }
 
 export function agentMyProfitPresets(identity: AgentIdentityType) {
-  return identity === 'rebate' ? AGENT_MY_PROFIT_REBATE_MONTH_PRESETS : AGENT_MY_PROFIT_PRESETS
+  return identity === 'rebate' ? getRebateMonthPresets() : AGENT_MY_PROFIT_PRESETS
 }
 
-/** 返佣月份快捷项 → 结算月 YYYY-MM（相对当前月，对齐佣金报表 Mock） */
+/** 返佣月份快捷项 → 结算月 YYYY-MM（相对当前月） */
 export function agentMyProfitRebateMonthKey(preset: ProfitDatePreset): string {
   const current = getDefaultCommissionMonth()
-  if (preset === 'thisMonth') return current
-  if (preset === 'lastMonth') return shiftCommissionMonth(current, -1)
-  if (preset === 'may') return shiftCommissionMonth(current, -2)
-  if (preset === 'april') return shiftCommissionMonth(current, -3)
-  return current
+  const offset = rebatePresetOffset(preset)
+  if (offset === null) return current
+  return shiftCommissionMonth(current, offset)
 }
 
 /** 结算月 YYYY-MM → 快捷项（无匹配则 null，仍可选中该月） */
 export function agentMyProfitRebatePresetFromMonthKey(
   month: string,
 ): ProfitDatePreset | null {
-  const current = getDefaultCommissionMonth()
-  if (month === current) return 'thisMonth'
-  if (month === shiftCommissionMonth(current, -1)) return 'lastMonth'
-  if (month === shiftCommissionMonth(current, -2)) return 'may'
-  if (month === shiftCommissionMonth(current, -3)) return 'april'
-  return null
+  const hit = getRebateMonthPresets().find((item) => item.month === month)
+  return hit?.key ?? null
 }
 
 export function agentMyProfitToneClass(tone: AgentMyProfitTone) {

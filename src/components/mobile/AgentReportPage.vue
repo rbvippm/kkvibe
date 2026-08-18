@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
+import Mh5CurrencySwitchRow from './Mh5CurrencySwitchRow.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
@@ -15,6 +17,7 @@ import {
 import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
 import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
 import {
+  AGENT_REPORT_FILTER_ASSETS,
   REPORT_CATEGORY_TABS,
   REPORT_RANGE_PRESETS,
   REPORT_VENDOR_PILLS,
@@ -31,25 +34,26 @@ import {
 } from '../../constants/agentReport'
 import { AGENT_REPORT_GAME_STATS_SPEC } from '../../constants/agentReportSpec'
 import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
+import {
+  resolveAgentReportPageTab,
+  setAgentReportPageTab,
+  type AgentReportPageTab,
+} from '../../constants/agentReportTab'
 import MobileAgentMyProfitView from '../../views/mobile/MobileAgentMyProfitView.vue'
 import '../../styles/mobile-app-shell.css'
 
-export type AgentReportPageTab = 'finance' | 'game'
+export type { AgentReportPageTab }
 
 const route = useRoute()
 const router = useRouter()
 const { isRebateAgent, withAgentQuery } = useAgentIdentity()
 
-function parseReportTab(raw: unknown): AgentReportPageTab {
-  return raw === 'game' ? 'game' : 'finance'
-}
-
-const pageTab = ref<AgentReportPageTab>(parseReportTab(route.query.reportTab))
+const pageTab = ref<AgentReportPageTab>(resolveAgentReportPageTab(route.query.reportTab))
 
 watch(
   () => route.query.reportTab,
   (tab) => {
-    pageTab.value = parseReportTab(tab)
+    pageTab.value = resolveAgentReportPageTab(tab)
   },
 )
 
@@ -67,6 +71,7 @@ const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(!isRebateAgent.value))
 
 const dateRangeText = computed(() => reportDateRangeText(preset.value))
 /** 占成对齐代理详情：标题带「（实占）」；返佣不加 */
@@ -87,6 +92,7 @@ const reportDetail = computed(() =>
 )
 
 function pickPageTab(tab: AgentReportPageTab) {
+  setAgentReportPageTab(tab)
   pageTab.value = tab
   closeGameProfitFormulaTip()
   const query: Record<string, string> = { tab: 'report', reportTab: tab }
@@ -105,8 +111,8 @@ function pickCategory(key: ReportCategoryKey) {
   vendor.value = 'all'
 }
 
-function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrencyByUser(value)
+function pickCurrency(value: string) {
+  setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   currencyPickerOpen.value = false
 }
 
@@ -147,15 +153,6 @@ function closeGameProfitFormulaTip() {
           :spec="gameAnnotSpec"
           placement="bottom"
         />
-        <button
-          type="button"
-          class="mh5-agent-detail-currency"
-          :aria-label="$t('切换币种')"
-          @click="currencyPickerOpen = true"
-        >
-          <span>{{ currency }}</span>
-          <span class="mh5-agent-detail-currency__chevron">▾</span>
-        </button>
       </div>
     </header>
 
@@ -163,6 +160,7 @@ function closeGameProfitFormulaTip() {
       v-if="pageTab === 'finance'"
       embedded
       class="mh5-agent-report-finance"
+      @open-currency="currencyPickerOpen = true"
     />
 
     <main
@@ -170,24 +168,22 @@ function closeGameProfitFormulaTip() {
       class="mh5-agent-report-main"
       @click="closeGameProfitFormulaTip"
     >
-      <section class="mh5-agent-report-period">
-        <p class="mh5-agent-report-period__label">{{ $t('时间段') }}</p>
-        <div class="mh5-agent-report-period__row">
-          <div class="mh5-agent-report-period__input">{{ dateRangeText }}</div>
-          <button type="button" class="mh5-agent-report-period__calendar" :aria-label="$t('选择日期')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.6" />
-              <path d="M8 3v4M16 3v4M4 10h16" stroke="currentColor" stroke-width="1.6" />
-            </svg>
-          </button>
+      <section class="mh5-agent-report-filter" :aria-label="$t('筛选')">
+        <div class="mh5-agent-report-filter__row">
+          <div class="mh5-agent-report-filter__date">
+            <span>{{ dateRangeText }}</span>
+            <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
+              <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
+            </span>
+          </div>
         </div>
-        <div class="mh5-agent-report-presets">
+        <div class="mh5-agent-report-filter__presets">
           <button
             v-for="item in REPORT_RANGE_PRESETS"
             :key="item.key"
             type="button"
-            class="mh5-agent-report-preset"
-            :class="{ 'mh5-agent-report-preset--active': preset === item.key }"
+            class="mh5-agent-report-filter__preset"
+            :class="{ 'mh5-agent-report-filter__preset--active': preset === item.key }"
             @click="pickPreset(item.key)"
           >
             {{ $t(item.label) }}
@@ -231,6 +227,10 @@ function closeGameProfitFormulaTip() {
             {{ $t(pill.label) }}
           </button>
         </div>
+      </div>
+
+      <div class="mh5-agent-report-currency-switch">
+        <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
       </div>
 
       <section class="mh5-agent-report-detail">
@@ -285,54 +285,12 @@ function closeGameProfitFormulaTip() {
       </section>
     </main>
 
-    <Teleport to="body">
-      <Transition name="mh5-agent-report-sheet">
-        <div
-          v-if="currencyPickerOpen"
-          class="mh5-agent-overlay-mask"
-          @click.self="currencyPickerOpen = false"
-        >
-          <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet">
-            <h2 class="mh5-xcoin-sheet__title">{{ $t('选择币种') }}</h2>
-            <button
-              v-for="opt in getAgentDetailCurrencyOptions(!isRebateAgent)"
-              :key="opt"
-              type="button"
-              class="mh5-xcoin-sheet__option"
-              :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
-              @click="pickCurrency(opt)"
-            >
-              {{ opt }}
-            </button>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <Mh5CurrencyPickerSheet
+      :open="currencyPickerOpen"
+      :currency="currency"
+      :options="currencyOptions"
+      @close="currencyPickerOpen = false"
+      @pick="pickCurrency"
+    />
   </div>
 </template>
-
-<style scoped>
-.mh5-agent-report-sheet-enter-active,
-.mh5-agent-report-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.mh5-agent-report-sheet-enter-active .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-enter-active .mh5-agent-overlay-sheet,
-.mh5-agent-report-sheet-leave-active .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-leave-active .mh5-agent-overlay-sheet {
-  transition: transform 0.25s ease;
-}
-
-.mh5-agent-report-sheet-enter-from,
-.mh5-agent-report-sheet-leave-to {
-  opacity: 0;
-}
-
-.mh5-agent-report-sheet-enter-from .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-enter-from .mh5-agent-overlay-sheet,
-.mh5-agent-report-sheet-leave-to .mh5-xcoin-sheet,
-.mh5-agent-report-sheet-leave-to .mh5-agent-overlay-sheet {
-  transform: translateY(100%);
-}
-</style>

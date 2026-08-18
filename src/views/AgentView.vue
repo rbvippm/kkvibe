@@ -22,6 +22,7 @@ import MobileBetOrderQueryView from './mobile/MobileBetOrderQueryView.vue'
 import AgentBottomNav from '../components/mobile/AgentBottomNav.vue'
 import { useAgentIdentity } from '../composables/useAgentIdentity'
 import { useBetOrderSearchSeed } from '../composables/useBetOrderSearchSeed'
+import { agentReportPageTab } from '../constants/agentReportTab'
 import '../styles/mobile-app-shell.css'
 
 type BottomTab = 'overview' | 'team' | 'bet-order' | 'report' | 'me'
@@ -164,6 +165,7 @@ function agentQueryForTab(tab: BottomTab): Record<string, string> {
   const from = route.query.from
   if (typeof from === 'string' && from) query.from = from
   if (tab !== 'overview') query.tab = tab
+  if (tab === 'report') query.reportTab = agentReportPageTab.value
   return withAgentQuery(query)
 }
 

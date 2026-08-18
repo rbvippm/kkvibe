@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
+import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
+import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   getAgentCashCurrencyOptions,
@@ -88,8 +91,8 @@ function pickListMonth(month: string | 'all') {
   closeSheet()
 }
 
-function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrencyByUser(value)
+function pickCurrency(value: string) {
+  setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   closeSheet()
 }
 
@@ -169,7 +172,10 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
             class="mh5-agent-commission-list-select"
             @click="openSheet('currency')"
           >
-            <span>{{ currency }}</span>
+            <span class="mh5-agent-commission-list-select__main">
+              <Mh5CurrencyIcon :code="currency" :size="20" />
+              <span>{{ $t(formatAgentCurrencyLabel(currency)) }}</span>
+            </span>
             <svg
               class="mh5-agent-commission-list-select__icon"
               width="16"
@@ -455,41 +461,33 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
       </main>
     </template>
 
+    <Mh5CurrencyPickerSheet
+      :open="sheetKind === 'currency'"
+      :currency="currency"
+      :options="getAgentCashCurrencyOptions()"
+      @close="closeSheet"
+      @pick="pickCurrency"
+    />
+
     <Teleport to="body">
       <Transition name="mh5-agent-commission-sheet">
         <div
-          v-if="sheetKind"
+          v-if="sheetKind === 'month'"
           class="mh5-agent-overlay-mask"
           @click.self="closeSheet"
         >
           <div class="mh5-xcoin-sheet mh5-agent-overlay-sheet">
-            <h2 class="mh5-xcoin-sheet__title">
-              {{ sheetKind === 'month' ? '选择月份' : '选择币种' }}
-            </h2>
-            <template v-if="sheetKind === 'month'">
-              <button
-                v-for="opt in listMonthOptions"
-                :key="opt.key"
-                type="button"
-                class="mh5-xcoin-sheet__option"
-                :class="{ 'mh5-xcoin-sheet__option--active': listMonthFilter === opt.key }"
-                @click="pickListMonth(opt.key)"
-              >
-                {{ opt.label }}
-              </button>
-            </template>
-            <template v-else>
-              <button
-                v-for="opt in getAgentCashCurrencyOptions()"
-                :key="opt"
-                type="button"
-                class="mh5-xcoin-sheet__option"
-                :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
-                @click="pickCurrency(opt)"
-              >
-                {{ opt }}
-              </button>
-            </template>
+            <h2 class="mh5-xcoin-sheet__title">选择月份</h2>
+            <button
+              v-for="opt in listMonthOptions"
+              :key="opt.key"
+              type="button"
+              class="mh5-xcoin-sheet__option"
+              :class="{ 'mh5-xcoin-sheet__option--active': listMonthFilter === opt.key }"
+              @click="pickListMonth(opt.key)"
+            >
+              {{ opt.label }}
+            </button>
           </div>
         </div>
       </Transition>

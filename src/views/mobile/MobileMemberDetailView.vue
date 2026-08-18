@@ -55,6 +55,9 @@ import {
   type ReportCategoryKey,
   type ReportVendorKey,
 } from '../../constants/agentReport'
+import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
+import Mh5CurrencySwitchRow from '../../components/mobile/Mh5CurrencySwitchRow.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   MEMBER_DETAIL_CREDIT_CURRENCY_SPEC,
@@ -291,8 +294,8 @@ function goCredit() {
   })
 }
 
-function pickCurrency(value: AgentWalletCurrency) {
-  setAgentAppCurrencyByUser(value)
+function pickCurrency(value: string) {
+  setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   currencyPickerOpen.value = false
 }
 
@@ -323,15 +326,6 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
             :spec="MEMBER_DETAIL_CREDIT_CURRENCY_SPEC"
             placement="bottom"
           />
-          <button
-            type="button"
-            class="mh5-member-detail-nav__currency"
-            :aria-label="$t('切换币种')"
-            @click="currencyPickerOpen = true"
-          >
-            <span>{{ currency }}</span>
-            <span class="mh5-member-detail-nav__chevron">▾</span>
-          </button>
         </div>
       </div>
 
@@ -388,7 +382,10 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
           class="mh5-member-detail-panel"
         >
           <div class="mh5-member-detail-panel__head">
-            <h3 class="mh5-member-detail-panel__title">{{ $t(group.title) }}</h3>
+            <h3 class="mh5-member-detail-panel__title">
+              <Mh5CurrencyIcon :code="group.currency" :size="20" />
+              <span>{{ $t(group.title) }}</span>
+            </h3>
           </div>
           <div
             v-for="item in group.rows"
@@ -455,6 +452,7 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
 
       <!-- 占成会员盈亏：默认分区新样式；连点 Tab 切经典汇总 -->
       <template v-else-if="activeTab === 'profit'">
+        <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
         <section
           v-if="!useProfitSections"
           class="mh5-member-detail-profit"
@@ -753,6 +751,8 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
               </div>
             </div>
 
+            <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
+
             <section class="mh5-agent-report-detail">
               <div class="mh5-agent-report-detail__head">
                 <span class="mh5-agent-report-detail__title">{{ rebateGameSectionTitle }}</span>
@@ -842,6 +842,8 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
                 </button>
               </div>
             </div>
+
+            <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
 
             <section class="mh5-agent-report-detail">
               <div class="mh5-agent-report-detail__head">
@@ -1010,48 +1012,12 @@ function pickCreditCurrency(value: AgentCreditCurrency) {
       </div>
     </Transition>
 
-    <Transition name="mh5-member-detail-sheet">
-      <div
-        v-if="currencyPickerOpen"
-        class="mh5-xcoin-sheet-mask"
-        @click.self="currencyPickerOpen = false"
-      >
-        <div class="mh5-xcoin-sheet">
-          <h2 class="mh5-xcoin-sheet__title">选择币种</h2>
-          <button
-            v-for="opt in currencyOptions"
-            :key="opt"
-            type="button"
-            class="mh5-xcoin-sheet__option"
-            :class="{ 'mh5-xcoin-sheet__option--active': currency === opt }"
-            @click="pickCurrency(opt)"
-          >
-            {{ opt }}
-          </button>
-        </div>
-      </div>
-    </Transition>
+    <Mh5CurrencyPickerSheet
+      :open="currencyPickerOpen"
+      :currency="currency"
+      :options="currencyOptions"
+      @close="currencyPickerOpen = false"
+      @pick="pickCurrency"
+    />
   </div>
 </template>
-
-<style scoped>
-.mh5-member-detail-sheet-enter-active,
-.mh5-member-detail-sheet-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.mh5-member-detail-sheet-enter-active .mh5-xcoin-sheet,
-.mh5-member-detail-sheet-leave-active .mh5-xcoin-sheet {
-  transition: transform 0.25s ease;
-}
-
-.mh5-member-detail-sheet-enter-from,
-.mh5-member-detail-sheet-leave-to {
-  opacity: 0;
-}
-
-.mh5-member-detail-sheet-enter-from .mh5-xcoin-sheet,
-.mh5-member-detail-sheet-leave-to .mh5-xcoin-sheet {
-  transform: translateY(100%);
-}
-</style>

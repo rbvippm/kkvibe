@@ -8312,7 +8312,7 @@
 .mh5-xcoin-currency-row__value {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   color: var(--mh5-app-text, #1a1a1a);
   font-weight: 600;
 }
@@ -8614,6 +8614,55 @@
 .mh5-xcoin-sheet__option--active {
   color: var(--mh5-app-orange);
   font-weight: 600;
+}
+
+.mh5-xcoin-sheet__option--currency {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 0 12px;
+}
+
+.mh5-currency-icon {
+  position: relative;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+}
+
+.mh5-currency-icon--unit {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mh5-currency-picker-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mh5-currency-picker-sheet__head .mh5-xcoin-sheet__title {
+  margin: 0;
+}
+
+.mh5-currency-icon__layer {
+  position: absolute;
+  overflow: hidden;
+}
+
+.mh5-currency-icon__layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .mh5-xcoin-sheet__option:active {
@@ -14121,15 +14170,17 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-agent-report-header--with-tabs {
-  justify-content: flex-start;
+  justify-content: center;
   min-height: 48px;
-  padding-right: 108px;
+  padding-right: 12px;
   border-bottom: 1px solid #eceef2;
 }
 
 .mh5-agent-report-page-tabs {
   display: flex;
   align-items: stretch;
+  justify-content: center;
+  flex: 1;
   gap: 4px;
   min-width: 0;
 }
@@ -14196,18 +14247,27 @@ div.agent-home__profit-tab--ratio {
 /** 嵌入「我的报表」时顶部区改为浅色，与报表页一致 */
 .mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-hero {
   flex-shrink: 0;
-  padding-top: 8px;
-  padding-bottom: 16px;
-  background: #f5f5f5;
+  padding: 12px 12px 16px;
+  background: #f7f7f7;
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
 
-.mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-total,
+.mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-total {
+  background: linear-gradient(180deg, #fff4ed 0%, #fff 100%);
+  border: none;
+  box-shadow: none;
+  padding: 8px;
+}
+
 .mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-total--commission {
-  border: 1px solid #eceef2;
   background: #fff;
+  border: 1px solid #eceef2;
   box-shadow: 0 1px 3px rgb(15 23 42 / 4%);
+}
+
+.mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-total {
+  border-radius: 16px;
 }
 
 .mh5-agent-my-profit-page--embedded .mh5-agent-my-profit-total--commission .mh5-agent-commission-hero__title {
@@ -14313,7 +14373,129 @@ div.agent-home__profit-tab--ratio {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 12px 12px var(--agent-bottom-nav-offset);
+  padding: 0 0 var(--agent-bottom-nav-offset);
+}
+
+.mh5-agent-report-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.mh5-agent-report-filter__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 32px;
+}
+
+.mh5-agent-report-filter__date,
+.mh5-agent-report-filter__currency {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid #e7e7e7;
+  border-radius: 6px;
+  background: #fff;
+  color: #2f2f2f;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.mh5-agent-report-filter__date {
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 4px 8px;
+}
+
+.mh5-agent-report-filter__date--action {
+  cursor: pointer;
+}
+
+.mh5-agent-report-filter__calendar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.mh5-agent-report-filter__calendar img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.mh5-agent-report-filter__currency {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 0 4px 8px;
+  cursor: pointer;
+}
+
+.mh5-agent-report-filter__currency-main {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.mh5-agent-report-filter__chevron {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-agent-report-filter__chevron img {
+  display: block;
+  width: 8px;
+  height: 5px;
+}
+
+.mh5-agent-report-filter__presets {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  height: 30px;
+}
+
+.mh5-agent-report-filter__preset {
+  height: 30px;
+  min-height: 30px;
+  padding: 5px 12px;
+  border: 1px solid #d1d1d1;
+  border-radius: 6px;
+  background: #fff;
+  color: #2f2f2f;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-agent-report-filter__preset--active {
+  border-color: #ff8c00;
+  background: #fff4ec;
+  color: #ff8c00;
 }
 
 .mh5-agent-report-period__label {
@@ -14385,7 +14567,7 @@ div.agent-home__profit-tab--ratio {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  margin-top: 14px;
+  margin: 12px 12px 0;
   padding: 12px 10px;
   border-radius: 12px;
   background: linear-gradient(180deg, #fff8f2 0%, #fff5eb 100%);
@@ -14429,6 +14611,13 @@ div.agent-home__profit-tab--ratio {
 
 .mh5-agent-report-categories {
   margin-top: 14px;
+}
+
+.mh5-agent-report-main .mh5-agent-report-categories,
+.mh5-agent-report-main .mh5-agent-report-detail,
+.mh5-agent-report-main .mh5-agent-report-currency-switch {
+  margin-left: 12px;
+  margin-right: 12px;
 }
 
 .mh5-agent-report-cat-tabs {
@@ -14656,6 +14845,13 @@ div.agent-home__profit-tab--ratio {
   font-weight: 600;
   color: #333;
   cursor: pointer;
+}
+
+.mh5-agent-commission-list-select__main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
 .mh5-agent-commission-list-select__icon {
@@ -15116,29 +15312,65 @@ div.agent-home__profit-tab--ratio {
   color: #1a1a1a;
 }
 
-.mh5-agent-detail-currency {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 10px;
-  border: 1px solid #e8e8e8;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  cursor: pointer;
-}
-
 .mh5-agent-detail-header-actions {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.mh5-agent-detail-currency__chevron {
-  font-size: 10px;
-  color: #999;
+.mh5-currency-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 0;
+  box-sizing: border-box;
+}
+
+.mh5-currency-switch__label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  color: #4f4f4f;
+}
+
+.mh5-currency-switch__btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 4px 0 4px 8px;
+  border: 1px solid #d1d1d1;
+  border-radius: 6px;
+  background: #fff;
+  color: #2f2f2f;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.28px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.mh5-currency-switch__main {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mh5-currency-switch__chevron {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+}
+
+.mh5-currency-switch__chevron img {
+  display: block;
+  width: 8px;
+  height: 5px;
 }
 
 .mh5-agent-detail-main {
@@ -15314,6 +15546,9 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-agent-detail-wallet__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 15px;
   font-weight: 700;
@@ -15731,6 +15966,9 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-member-detail-panel__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: 15px;
   font-weight: 700;
