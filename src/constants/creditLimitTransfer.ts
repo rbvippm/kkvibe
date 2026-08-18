@@ -90,6 +90,11 @@ export const CREDIT_CURRENCY_OPTIONS = [
   { value: 'USD', label: 'USD' },
 ] as const
 
+export const CREDIT_SUMMARY_CURRENCY_OPTIONS = [
+  { value: 'CNY', label: 'CNY' },
+  { value: 'USD', label: 'USD' },
+] as const
+
 export const CREDIT_TRANSFER_MODE_FORM_OPTIONS = [
   { value: '', label: '请选择' },
   { value: 'up', label: '上分' },
@@ -322,4 +327,35 @@ export function formatCreditBalance(value: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+export type CreditTransferSummary = {
+  up: number
+  down: number
+  diff: number
+  rebate: number
+  mixedCurrency: boolean
+}
+
+/** 按当前筛选结果汇总：上分 / 下分 / 上下分差 / 退水（仅成功单，金额取绝对值） */
+export function summarizeCreditTransfers(rows: CreditLimitTransferRow[]): CreditTransferSummary {
+  let up = 0
+  let down = 0
+  let rebate = 0
+  const currencies = new Set<CreditCurrency>()
+  for (const row of rows) {
+    if (row.status !== 'success') continue
+    currencies.add(row.currency)
+    const abs = Math.abs(row.amount)
+    if (row.transferMode === 'up') up += abs
+    else if (row.transferMode === 'down') down += abs
+    else if (row.transferMode === 'agent_rebate') rebate += abs
+  }
+  return {
+    up,
+    down,
+    diff: up - down,
+    rebate,
+    mixedCurrency: currencies.size > 1,
+  }
 }

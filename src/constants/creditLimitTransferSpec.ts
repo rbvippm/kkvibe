@@ -14,8 +14,8 @@ export type CreditLimitTransferFeatureRow = PcPrdFeatureRow
 export const CREDIT_LIMIT_TRANSFER_META = {
   title: '信用额度记录',
   module: '推广返利',
-  updatedAt: '2026-07-15',
-  prdVersion: 'v1.3',
+  updatedAt: '2026-08-18',
+  prdVersion: 'v1.4',
 } as const
 
 export const CREDIT_LIMIT_TRANSFER_BACKGROUND = [
@@ -29,7 +29,7 @@ export const CREDIT_LIMIT_TRANSFER_GOALS = [
   '在上下分方式中支持筛选与展示「代理退水」。',
   '代理退水记录固定为：发起对象=系统、上下分对象=代理、备注=系统代理退水、无关联记录。',
   '上下分弹框支持会员ID精准检索一级代理信用代理，并去掉赚取退水表单项。',
-  '支持按信用币种（CNY / USD）筛选，并在列表展示币种列。',
+  '支持按当前筛选结果汇总上分、下分、上下分差与退水。',
 ] as const
 
 export const CREDIT_LIMIT_TRANSFER_FEATURE_LIST: CreditLimitTransferFeatureRow[] = [
@@ -86,12 +86,31 @@ export const CREDIT_LIMIT_TRANSFER_FEATURE_LIST: CreditLimitTransferFeatureRow[]
       routing: '停留列表页，不跳转；关联记录弹框内无独立币种筛选。',
     },
   },
+  {
+    id: 4,
+    module: '列表汇总',
+    feature: '筛选汇总',
+    pageLocation: '搜索工具栏左侧「币种 / 上分 / 下分 / 上下分差 / 退水」',
+    prd: {
+      functionalLogic:
+        '按当前已生效筛选结果，再按汇总币种（CNY / USD）汇总成功流水：上分、下分、上下分差（上分−下分）、退水（代理退水）。',
+      interactiveBehavior:
+        '切换汇总币种立即刷新四项数值，无需点搜索；点「搜索」后随 filteredRows 刷新；点「重置」恢复列表筛选，汇总币种保持当前选择。',
+      visualPresentation:
+        '位于「搜索 / 重置 / 信用额度上下分」左侧浅蓝底；最左为币种下拉（CNY / USD，默认 CNY），后接四项横排；上下分差带正负号与红绿色；旁侧「注4」。',
+      dataRules:
+        '仅统计 status=成功且 currency=汇总币种；上分=上分金额绝对值之和；下分=下分绝对值之和；退水=代理退水绝对值之和；上下分差=上分−下分。失败单不计入。',
+      exceptions: '该币种无匹配成功单时四项均为 0.00。',
+      routing: '停留列表页，无跳转。',
+    },
+  },
 ]
 
 export const CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO = {
   transferMode: 1,
   transferModal: 2,
   currency: 3,
+  summary: 4,
 } as const
 
 export const CREDIT_LIMIT_TRANSFER_MODE_SPEC = [
@@ -110,4 +129,10 @@ export const CREDIT_LIMIT_TRANSFER_CURRENCY_SPEC = [
   '信用币种枚举：CNY、USD。',
   '筛选支持全部 / CNY / USD；列表与关联记录弹框「金额」旁均展示币种列。',
   '关联记录与原始记录币种保持一致。',
+]
+
+export const CREDIT_LIMIT_TRANSFER_SUMMARY_SPEC = [
+  '最左侧币种下拉仅 CNY / USD，默认 CNY；四项按该币种即时汇总。',
+  '在当前筛选结果上再按币种统计成功流水：上分、下分、上下分差、退水。',
+  '上下分差 = 上分 − 下分；退水仅统计「代理退水」；失败单不计入。',
 ]

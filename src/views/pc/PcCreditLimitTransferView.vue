@@ -7,6 +7,7 @@ import {
   CREDIT_CURRENCY_OPTIONS,
   CREDIT_INITIATOR_TYPE_OPTIONS,
   CREDIT_STATUS_OPTIONS,
+  CREDIT_SUMMARY_CURRENCY_OPTIONS,
   CREDIT_TARGET_TYPE_OPTIONS,
   CREDIT_TRANSFER_MODE_FORM_OPTIONS,
   CREDIT_TRANSFER_MODE_OPTIONS,
@@ -17,6 +18,7 @@ import {
   MOCK_CREDIT_LIMIT_TRANSFER_ROWS,
   listCreditLevel1Agents,
   statusLabel,
+  summarizeCreditTransfers,
   targetTypeLabel,
   transferModeLabel,
   type CreditCurrency,
@@ -33,6 +35,7 @@ import {
   CREDIT_LIMIT_TRANSFER_MODE_SPEC,
   CREDIT_LIMIT_TRANSFER_MODAL_SPEC,
   CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO,
+  CREDIT_LIMIT_TRANSFER_SUMMARY_SPEC,
 } from '../../constants/creditLimitTransferSpec'
 import { signedNumberClass } from '../../utils/formatSignedNumber'
 import '../../styles/pc-wireframe.css'
@@ -105,6 +108,10 @@ function matchRow(row: CreditLimitTransferRow) {
 }
 
 const filteredRows = computed(() => rows.value.filter(matchRow))
+const summaryCurrency = ref<CreditCurrency>('CNY')
+const transferSummary = computed(() =>
+  summarizeCreditTransfers(filteredRows.value.filter((row) => row.currency === summaryCurrency.value)),
+)
 
 /* ---------- 关联记录弹框 ---------- */
 const relatedVisible = ref(false)
@@ -335,6 +342,41 @@ function confirmTransfer() {
       </div>
 
       <div class="wf-toolbar">
+        <div class="credit-limit__summary">
+          <select v-model="summaryCurrency" class="wf-input wf-input--select credit-limit__summary-currency">
+            <option
+              v-for="opt in CREDIT_SUMMARY_CURRENCY_OPTIONS"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </option>
+          </select>
+          <span class="credit-limit__summary-item">
+            上分
+            <em>{{ formatCreditBalance(transferSummary.up) }}</em>
+          </span>
+          <span class="credit-limit__summary-item">
+            下分
+            <em>{{ formatCreditBalance(transferSummary.down) }}</em>
+          </span>
+          <span class="credit-limit__summary-item">
+            上下分差
+            <em :class="signedNumberClass(transferSummary.diff)">{{
+              formatCreditAmount(transferSummary.diff)
+            }}</em>
+          </span>
+          <span class="credit-limit__summary-item">
+            退水
+            <em>{{ formatCreditBalance(transferSummary.rebate) }}</em>
+          </span>
+          <WfSpecAnnot
+            :no="CREDIT_LIMIT_TRANSFER_SPEC_ANNOT_NO.summary"
+            title="筛选汇总"
+            :items="CREDIT_LIMIT_TRANSFER_SUMMARY_SPEC"
+            placement="bottom"
+          />
+        </div>
         <span class="wf-toolbar__actions wf-toolbar__actions--start">
           <button type="button" class="wf-btn wf-btn--primary" @click="applyFilter">搜索</button>
           <button type="button" class="wf-btn wf-btn--default" @click="resetFilter">重置</button>
@@ -663,6 +705,30 @@ function confirmTransfer() {
 </template>
 
 <style scoped>
+.credit-limit__summary {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-right: 8px;
+  padding: 6px 10px;
+  border: 1px solid #d6e4ff;
+  background: #f4f8ff;
+  font-size: 13px;
+  color: var(--pc-text);
+}
+
+.credit-limit__summary-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.credit-limit__summary-currency {
+  width: 88px;
+}
+
 .wf-btn--credit-transfer {
   display: inline-flex;
   align-items: center;
