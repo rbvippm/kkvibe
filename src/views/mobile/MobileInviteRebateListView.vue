@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
@@ -25,10 +25,12 @@ import {
   type InviteTimePreset,
 } from '../../constants/inviteFriends'
 import { INVITE_FRIENDS_REBATE_LIST_SPEC } from '../../constants/inviteFriendsSpec'
+import { withMineHallFrom } from '../../constants/mineHall'
 import { INVITE_REBATE_SETTLE_STATUS_OPTIONS } from '../../constants/inviteRebateOps'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const route = useRoute()
 const claimTick = ref(0)
 const reasonTipRowId = ref('')
 const keyword = ref('')
@@ -56,7 +58,7 @@ const filterError = ref('')
 
 function guardRebateAccess() {
   if (memberAgentMembershipJoined.value) {
-    router.replace({ name: 'mobile-invite-friends' })
+    router.replace({ name: 'mobile-invite-friends', query: withMineHallFrom(route.query.from) })
   }
 }
 
@@ -120,7 +122,7 @@ function resetSummaryCarousel() {
 watch([startDate, endDate, settleStatus, currency, keyword], resetSummaryCarousel)
 
 function goBack() {
-  router.push({ name: 'mobile-invite-friends' })
+  router.push({ name: 'mobile-invite-friends', query: withMineHallFrom(route.query.from) })
 }
 
 function statusTone(status: InviteDailyRebateRow['status']) {

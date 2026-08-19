@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
-import { WALLET_CATALOG, sumWalletsCny } from '../../constants/walletCatalog'
+import { mineHallQuery } from '../../constants/mineHall'
+import { sumWalletsCny, walletsForSheet } from '../../constants/walletCatalog'
 import { walletTransferRoute } from '../../constants/walletTransfer'
 import {
   effectivePreferredFiat,
@@ -44,6 +45,9 @@ const preferredFiatId = computed({
   set: (id: PreferredFiatId) => pickPreferredFiat(id),
 })
 const router = useRouter()
+const route = useRoute()
+/** 信用额度只在贵宾厅「我的」出现，旗舰厅个人中心不含 */
+const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
 
 /** 总资产计价法币：按实时汇率汇总展示，默认跟随语言 */
 
@@ -58,9 +62,9 @@ const preferredFiat = computed(
   () => preferredFiatOptions.value.find((item) => item.id === preferredFiatId.value) ?? preferredFiatOptions.value[0],
 )
 
-/** 全部钱包按 Mock 汇率折合 CNY，再换算为所选计价法币 */
+/** 全部钱包按 Mock 汇率折合 CNY；旗舰厅仅现金，贵宾厅仅信用额度 */
 const totalAssetsInPreferredFiat = computed(
-  () => sumWalletsCny(WALLET_CATALOG) * preferredFiat.value.fromCny,
+  () => sumWalletsCny(walletsForSheet(false, isVipClub.value)) * preferredFiat.value.fromCny,
 )
 
 const preferredFiatAmountText = computed(() => {
@@ -111,12 +115,36 @@ interface MineMenuItem {
   route?: string
 }
 
-const walletShortcuts: MineShortcutItem[] = [
-  { key: 'bill', label: '交易记录', icon: '/images/mine/icon-bill.svg', route: 'mobile-billing-list' },
-  { key: 'bet', label: '投注记录', icon: '/images/mine/icon-bet-records.svg', route: 'mobile-bet-records' },
-  { key: 'assets', label: '资产明细', icon: '/images/mine/icon-assets.svg', route: 'mobile-asset-detail' },
-  { key: 'bank', label: '金刚银行', icon: '/images/mine/icon-bank.svg' },
+const BILL_SHORTCUT: MineShortcutItem = {
+  key: 'bill',
+  label: '账单记录',
+  icon: '/images/mine/icon-bill.svg',
+  route: 'mobile-billing-list',
+}
+const BET_SHORTCUT: MineShortcutItem = {
+  key: 'bet',
+  label: '投注记录',
+  icon: '/images/mine/icon-bet-records.svg',
+  route: 'mobile-bet-records',
+}
+
+/** 贵宾厅：账单 / 投注 / 代理交收上移到原充提兑位置；代理交收仅贵宾厅 */
+const vipRecordActions: MineShortcutItem[] = [
+  BILL_SHORTCUT,
+  BET_SHORTCUT,
+  { key: 'settle', label: '代理交收', icon: '/images/mine/icon-agent.svg', route: 'mobile-agent-settle' },
 ]
+
+const walletShortcuts = computed(() =>
+  isVipClub.value
+    ? []
+    : [
+        BILL_SHORTCUT,
+        BET_SHORTCUT,
+        { key: 'assets', label: '资产明细', icon: '/images/mine/icon-assets.svg', route: 'mobile-asset-detail' },
+        { key: 'bank', label: '金刚银行', icon: '/images/mine/icon-bank.svg' },
+      ],
+)
 
 const pendingInviteCount = computed(
   () => memberAgentInvites.value.filter((item) => item.status === 'pending').length,
@@ -135,7 +163,7 @@ const menuItems = computed<MineMenuItem[]>(() => {
     badge: claimableRebateCount.value > 0 ? claimableRebateCount.value : undefined,
   }
   const base: MineMenuItem[] = [
-    { key: 'payment', title: '收款方式', route: 'mobile-payout-methods' },
+    ...(!isVipClub.value ? [{ key: 'payment', title: '收款方式', route: 'mobile-payout-methods' }] : []),
     { key: 'live', title: '直播中心', route: 'mobile-live' },
     inviteItem,
   ]
@@ -159,12 +187,16 @@ function mask(value: string) {
   return balanceHidden.value ? '****' : value
 }
 
+function hallQuery() {
+  return mineHallQuery(isVipClub.value)
+}
+
 function goUserHome() {
-  router.push({ name: 'mobile-user-home' })
+  router.push({ name: 'mobile-user-home', query: hallQuery() })
 }
 
 function goSettings() {
-  router.push({ name: 'mobile-mine-settings' })
+  router.push({ name: 'mobile-mine-settings', query: hallQuery() })
 }
 
 function goAllWallets() {
@@ -201,7 +233,7 @@ function goWalletTransfer(tab: 'deposit' | 'withdraw' | 'exchange') {
 }
 
 function goRoute(routeName?: string) {
-  if (routeName) router.push({ name: routeName })
+  if (routeName) router.push({ name: routeName, query: hallQuery() })
 }
 
 function goMenuItem(item: MineMenuItem) {
@@ -317,7 +349,7 @@ watch(preferredFiatAmountText, () => {
             </svg>
           </button>
         </div>
-        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">{{ $t('全部钱包') }}<img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
+        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">{{ $t(isVipClub ? '信用额度' : '全部钱包') }}<img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -338,7 +370,21 @@ watch(preferredFiatAmountText, () => {
         </div>
       </div>
 
-      <div class="mh5-mine-actions">
+      <div v-if="isVipClub" class="mh5-mine-actions mh5-mine-actions--vip">
+        <button
+          v-for="item in vipRecordActions"
+          :key="item.key"
+          type="button"
+          class="mh5-mine-action"
+          @click="goRoute(item.route)"
+        >
+          <span class="mh5-mine-action__icon" aria-hidden="true">
+            <img :src="item.icon" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
+          </span>
+          {{ $t(item.label) }}
+        </button>
+      </div>
+      <div v-else class="mh5-mine-actions">
         <button type="button" class="mh5-mine-action mh5-mine-action--deposit" @click="goWalletTransfer('deposit')">
           <span class="mh5-mine-action__icon" aria-hidden="true">
             <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
@@ -353,7 +399,7 @@ watch(preferredFiatAmountText, () => {
           </span>{{ $t('兑换') }}</button>
       </div>
 
-      <div class="mh5-mine-wallet__shortcuts">
+      <div v-if="walletShortcuts.length" class="mh5-mine-wallet__shortcuts">
         <button
           v-for="item in walletShortcuts"
           :key="item.key"
@@ -435,7 +481,12 @@ watch(preferredFiatAmountText, () => {
     </section>
     </div>
 
-    <Mh5WalletSheet :open="walletSheetOpen" show-credit @close="closeWalletSheet" />
+    <Mh5WalletSheet
+      :open="walletSheetOpen"
+      :show-credit="isVipClub"
+      :credit-only="isVipClub"
+      @close="closeWalletSheet"
+    />
 
     <Transition name="mh5-wallet-sheet">
       <div

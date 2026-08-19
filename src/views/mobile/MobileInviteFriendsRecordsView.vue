@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { INVITE_FRIENDS_RECORDS_SPEC } from '../../constants/inviteFriendsSpec'
+import { withMineHallFrom } from '../../constants/mineHall'
 import {
   INVITE_PAGE_SIZE,
   INVITE_TIME_PRESETS,
@@ -23,6 +24,7 @@ import {
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const route = useRoute()
 /** 与「我的 → 代理邀请」联动：已加入代理团队则不展示返利 */
 const showInviteRebate = computed(() => !memberAgentMembershipJoined.value)
 
@@ -122,7 +124,7 @@ async function loadMore() {
 }
 
 function goBackToInviteFriends() {
-  router.push({ name: 'mobile-invite-friends' })
+  router.push({ name: 'mobile-invite-friends', query: withMineHallFrom(route.query.from) })
 }
 
 function pickDraftVip(value: '' | number) {

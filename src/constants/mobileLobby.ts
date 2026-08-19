@@ -93,7 +93,7 @@ export const LOBBY_GAMES: LobbyGame[] = [
 
 export const LOBBY_WALLET = {
   currency: 'KKC',
-  balance: '0.00',
+  balance: '50,000.00',
 }
 
 export type LobbyCurrencyId = 'kkc' | 'kkv' | 'usdt' | 'cny' | 'usd'
@@ -109,16 +109,43 @@ export type LobbyCurrencyOption = {
 }
 
 export const LOBBY_CURRENCY_OPTIONS: LobbyCurrencyOption[] = [
-  { id: 'kkc', name: 'KKC', symbol: 'K', color: '#22c55e', balance: 0 },
+  { id: 'kkc', name: 'KKC', symbol: 'K', color: '#22c55e', balance: 50000 },
   { id: 'kkv', name: 'KKV', symbol: 'V', color: '#ec4899', balance: 12880.5 },
   { id: 'usdt', name: 'USDT', symbol: '₮', color: '#26a17b', balance: 8652.3 },
   { id: 'cny', name: 'CNY', symbol: '¥', color: '#ff7a2b', balance: 50000, isCredit: true },
   { id: 'usd', name: 'USD', symbol: '$', color: '#3b82f6', balance: 1280.5, isCredit: true },
 ]
 
+export const LOBBY_CASH_CURRENCY_OPTIONS = LOBBY_CURRENCY_OPTIONS.filter((item) => !item.isCredit)
+
+export const LOBBY_CREDIT_CURRENCY_OPTIONS = LOBBY_CURRENCY_OPTIONS.filter((item) => item.isCredit)
+
 export function formatLobbyCurrencyBalance(amount: number) {
   return amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+}
+
+export const LOBBY_HALL_SWITCH_HINT_KEY = 'kkvibe.hint.vipHallSwitch'
+
+/** 会员是否持有可用信用额度（CNY / USD） */
+export function memberHasCreditLimit() {
+  return LOBBY_CURRENCY_OPTIONS.some((item) => item.isCredit && item.balance > 0)
+}
+
+export function hasSeenLobbyHallSwitchHint() {
+  try {
+    return localStorage.getItem(LOBBY_HALL_SWITCH_HINT_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+export function markLobbyHallSwitchHintSeen() {
+  try {
+    localStorage.setItem(LOBBY_HALL_SWITCH_HINT_KEY, '1')
+  } catch {
+    /* ignore */
+  }
 }

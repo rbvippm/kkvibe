@@ -21,6 +21,7 @@ import {
   type InviteTimePreset,
 } from '../../constants/inviteFriends'
 import { INVITE_FRIENDS_REBATE_DETAIL_SPEC } from '../../constants/inviteFriendsSpec'
+import { withMineHallFrom } from '../../constants/mineHall'
 import { INVITE_REBATE_SETTLE_STATUS_OPTIONS } from '../../constants/inviteRebateOps'
 import '../../styles/mobile-app-shell.css'
 
@@ -30,7 +31,7 @@ const router = useRouter()
 /** 有代理身份时不可查看返利明细，与「我的 → 代理邀请」联动 */
 function guardRebateAccess() {
   if (memberAgentMembershipJoined.value) {
-    router.replace({ name: 'mobile-invite-records' })
+    router.replace({ name: 'mobile-invite-records', query: withMineHallFrom(route.query.from) })
   }
 }
 
@@ -119,7 +120,7 @@ const rows = computed(() => {
 })
 
 function goBackToRecords() {
-  router.push({ name: 'mobile-invite-records' })
+  router.push({ name: 'mobile-invite-records', query: withMineHallFrom(route.query.from) })
 }
 
 function statusTone(status: InviteDailyRebateRow['status']) {

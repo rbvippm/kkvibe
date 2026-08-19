@@ -1,8 +1,13 @@
 /** 大厅页静态资源 */
 export const LOBBY_ASSETS = {
-  logo: '/images/lobby/logo.svg',
+  logo: '/images/lobby/logo.png',
+  logoMark: '/images/lobby/logo-mark.png',
+  vipEntry: '/images/lobby/vip-entry.png',
+  menu: '/images/lobby/icon-menu.svg',
+  arrowRight: '/images/lobby/icon-arrow-right.svg',
   walletKkc: '/images/lobby/wallet-kkc.svg',
   walletAdd: '/images/lobby/wallet-add.svg',
+  walletChevron: '/images/lobby/wallet-chevron.svg',
   history: '/images/lobby/history.svg',
   speaker: '/images/lobby/speaker.svg',
   modeSocial: '/images/lobby/mode-social.svg',

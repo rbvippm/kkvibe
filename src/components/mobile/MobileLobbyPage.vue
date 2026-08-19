@@ -1,39 +1,47 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   LOBBY_ANNOUNCEMENT,
+  LOBBY_CASH_CURRENCY_OPTIONS,
   LOBBY_CATEGORIES,
   LOBBY_CATEGORY_EMPTY,
-  LOBBY_CURRENCY_OPTIONS,
   LOBBY_FEATURED_BANNER,
   LOBBY_MODES,
   formatLobbyCurrencyBalance,
   gamesForCategory,
+  hasSeenLobbyHallSwitchHint,
+  markLobbyHallSwitchHintSeen,
+  memberHasCreditLimit,
   type LobbyCategory,
   type LobbyCurrencyId,
   type LobbyMode,
 } from '../../constants/mobileLobby'
 import { LOBBY_ASSETS } from '../../constants/mobileLobbyAssets'
+import { VIP_CLUB_ASSETS } from '../../constants/vipClub'
 import { walletTransferRoute } from '../../constants/walletTransfer'
 import {
-  effectiveLobbyCurrency,
+  effectiveFlagshipCurrency,
   pickLobbyCurrency,
   sortByLocaleCashOrder,
 } from '../../i18n'
+import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 
 const router = useRouter()
+const route = useRoute()
 const activeMode = ref<LobbyMode>('social')
 const activeCategory = ref<LobbyCategory>('hot')
 const favorites = ref<Set<string>>(new Set())
 const floatCollapsed = ref(false)
 const currencyPickerOpen = ref(false)
+const vipMenuOpen = ref(false)
+const hallSwitchHintOpen = ref(false)
 const selectedCurrencyId = computed({
-  get: () => effectiveLobbyCurrency.value as LobbyCurrencyId,
+  get: () => effectiveFlagshipCurrency.value as LobbyCurrencyId,
   set: (id: LobbyCurrencyId) => pickLobbyCurrency(id),
 })
 const lobbyCurrencyOptions = computed(() =>
-  sortByLocaleCashOrder(LOBBY_CURRENCY_OPTIONS, (item) => item.id),
+  sortByLocaleCashOrder(LOBBY_CASH_CURRENCY_OPTIONS, (item) => item.id),
 )
 
 const filteredGames = computed(() => gamesForCategory(activeCategory.value))
@@ -41,10 +49,13 @@ const categoryEmpty = computed(() => LOBBY_CATEGORY_EMPTY[activeCategory.value])
 const showBanner = computed(() => activeCategory.value === 'hot')
 
 const selectedCurrency = computed(
-  () => LOBBY_CURRENCY_OPTIONS.find((item) => item.id === selectedCurrencyId.value) ?? LOBBY_CURRENCY_OPTIONS[0],
+  () =>
+    LOBBY_CASH_CURRENCY_OPTIONS.find((item) => item.id === selectedCurrencyId.value) ??
+    LOBBY_CASH_CURRENCY_OPTIONS[0],
 )
 
 const selectedBalanceText = computed(() => formatLobbyCurrencyBalance(selectedCurrency.value.balance))
+const walletIconCode = computed(() => selectedCurrency.value.name)
 
 function toggleFavorite(id: string) {
   const next = new Set(favorites.value)
@@ -61,55 +72,153 @@ function goDeposit() {
   router.push(walletTransferRoute('deposit'))
 }
 
+function dismissHallSwitchHint() {
+  if (!hallSwitchHintOpen.value) return
+  hallSwitchHintOpen.value = false
+  markLobbyHallSwitchHintSeen()
+}
+
+function toggleVipMenu() {
+  dismissHallSwitchHint()
+  vipMenuOpen.value = !vipMenuOpen.value
+}
+
+function goVipClub() {
+  vipMenuOpen.value = false
+  dismissHallSwitchHint()
+  router.push({ name: 'mobile-vip-club' })
+}
+
 function pickCurrency(id: LobbyCurrencyId) {
   selectedCurrencyId.value = id
   currencyPickerOpen.value = false
 }
+
+const LOGO_HINT_WINDOW_MS = 1200
+const logoTapCount = ref(0)
+let logoTapTimer: ReturnType<typeof setTimeout> | null = null
+
+function showHallSwitchHint() {
+  hallSwitchHintOpen.value = true
+}
+
+function onLogoTap() {
+  if (logoTapTimer) clearTimeout(logoTapTimer)
+  logoTapCount.value += 1
+  if (logoTapCount.value >= 3) {
+    logoTapCount.value = 0
+    showHallSwitchHint()
+    return
+  }
+  logoTapTimer = setTimeout(() => {
+    logoTapCount.value = 0
+    logoTapTimer = null
+  }, LOGO_HINT_WINDOW_MS)
+}
+
+const forceHallSwitchHint = computed(() => {
+  const value = route.query.hallHint
+  const token = Array.isArray(value) ? value[0] : value
+  return token === '1' || token === 'true' || token === 'demo'
+})
+
+watch(
+  forceHallSwitchHint,
+  (force) => {
+    if (force || (memberHasCreditLimit() && !hasSeenLobbyHallSwitchHint())) {
+      hallSwitchHintOpen.value = true
+      return
+    }
+    if (!force) hallSwitchHintOpen.value = false
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div class="mh5-lobby-page">
     <header class="mh5-lobby-header">
-      <img class="mh5-lobby-header__logo" :src="LOBBY_ASSETS.logo" :alt="$t('金刚 KING KONG')" width="148" height="36" />
-
-      <div class="mh5-lobby-wallet">
-        <button type="button" class="mh5-lobby-wallet__add" :aria-label="$t('充值')" @click="goDeposit">
-          <img :src="LOBBY_ASSETS.walletAdd" alt="" width="18" height="18" />
+      <div class="mh5-lobby-header__brand">
+        <button
+          type="button"
+          class="mh5-lobby-header__menu"
+          :aria-label="vipMenuOpen ? '关闭入口' : '打开入口'"
+          :aria-expanded="vipMenuOpen"
+          aria-controls="lobby-vip-menu"
+          :class="{ 'mh5-lobby-header__menu--hint': hallSwitchHintOpen }"
+          @click="toggleVipMenu"
+        >
+          <img :src="LOBBY_ASSETS.menu" alt="" width="20" height="20" />
         </button>
         <button
           type="button"
-          class="mh5-lobby-wallet__pill"
-          :aria-label="$t('切换币种')"
-          @click="currencyPickerOpen = true"
+          class="mh5-lobby-header__logo-btn"
+          :aria-label="$t('金刚 KING KONG')"
+          @click="onLogoTap"
         >
           <img
-            v-if="selectedCurrency.id === 'kkc'"
-            class="mh5-lobby-wallet__coin"
-            :src="LOBBY_ASSETS.walletKkc"
+            class="mh5-lobby-header__logo"
+            :src="LOBBY_ASSETS.logo"
             alt=""
-            width="22"
-            height="22"
+            width="85"
+            height="36"
           />
-          <span
-            v-else
-            class="mh5-lobby-wallet__coin-fallback"
-            :style="{ background: selectedCurrency.color }"
-            aria-hidden="true"
-          >
-            {{ selectedCurrency.symbol }}
-          </span>
-          <span class="mh5-lobby-wallet__currency">{{ $t(selectedCurrency.name) }}</span>
-          <span class="mh5-lobby-wallet__balance">{{ selectedBalanceText }}</span>
-          <svg class="mh5-lobby-wallet__chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
-            <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-          </svg>
         </button>
       </div>
 
-      <button type="button" class="mh5-lobby-header__history" :aria-label="$t('投注记录')" @click="goBetRecords">
-        <img :src="LOBBY_ASSETS.history" alt="" width="22" height="22" />
-      </button>
+      <div class="mh5-lobby-header__actions">
+        <div class="mh5-lobby-wallet">
+          <button type="button" class="mh5-lobby-wallet__add" :aria-label="$t('充值')" @click="goDeposit">
+            <img :src="LOBBY_ASSETS.walletAdd" alt="" width="10" height="10" />
+          </button>
+          <button
+            type="button"
+            class="mh5-lobby-wallet__pill"
+            :aria-label="$t('切换币种')"
+            @click="currencyPickerOpen = true; vipMenuOpen = false; dismissHallSwitchHint()"
+          >
+            <img
+              v-if="selectedCurrency.id === 'kkc'"
+              class="mh5-lobby-wallet__coin"
+              :src="LOBBY_ASSETS.walletKkc"
+              alt=""
+              width="20"
+              height="20"
+            />
+            <Mh5CurrencyIcon v-else class="mh5-lobby-wallet__coin" :code="walletIconCode" :size="20" />
+            <span class="mh5-lobby-wallet__balance">{{ selectedBalanceText }}</span>
+            <span class="mh5-lobby-wallet__chevron">
+              <img :src="LOBBY_ASSETS.walletChevron" alt="" width="10" height="6" />
+            </span>
+          </button>
+        </div>
+        <button type="button" class="mh5-lobby-header__history" :aria-label="$t('投注记录')" @click="goBetRecords">
+          <img :src="LOBBY_ASSETS.history" alt="" width="20" height="20" />
+        </button>
+      </div>
     </header>
+
+    <Transition name="mh5-lobby-hall-hint">
+      <div v-if="hallSwitchHintOpen" class="mh5-lobby-hall-hint">
+        <button type="button" class="mh5-lobby-hall-hint__mask" aria-label="关闭提示" @click="dismissHallSwitchHint" />
+        <div class="mh5-lobby-hall-hint__card" role="status">
+          <img
+            class="mh5-lobby-hall-hint__vip"
+            :src="LOBBY_ASSETS.vipEntry"
+            alt=""
+            width="40"
+            height="40"
+          />
+          <div class="mh5-lobby-hall-hint__copy">
+            <p class="mh5-lobby-hall-hint__title">{{ $t('点左上角可切换贵宾厅') }}</p>
+            <p class="mh5-lobby-hall-hint__desc">{{ $t('信用额度会员专属入口') }}</p>
+          </div>
+          <button type="button" class="mh5-lobby-hall-hint__ok" @click="dismissHallSwitchHint">
+            {{ $t('知道了') }}
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <div class="mh5-lobby-notice" :aria-label="$t('公告')">
       <img class="mh5-lobby-notice__icon" :src="LOBBY_ASSETS.speaker" alt="" width="16" height="16" />
@@ -234,6 +343,28 @@ function pickCurrency(id: LobbyCurrencyId) {
         </button>
       </aside>
     </div>
+
+    <Transition name="mh5-lobby-vip-menu">
+      <div v-if="vipMenuOpen" id="lobby-vip-menu" class="mh5-lobby-vip-menu">
+        <button type="button" class="mh5-lobby-vip-menu__mask" aria-label="关闭入口" @click="vipMenuOpen = false" />
+        <div class="mh5-lobby-vip-menu__panel" role="dialog" aria-modal="true" aria-labelledby="lobby-vip-menu-title">
+          <p id="lobby-vip-menu-title" class="mh5-lobby-vip-menu__sr">选择入口</p>
+          <button type="button" class="mh5-lobby-vip-menu__item" @click="goVipClub">
+            <span class="mh5-lobby-vip-menu__lead">
+              <img
+                class="mh5-lobby-vip-menu__icon mh5-lobby-vip-menu__icon--chair"
+                :src="VIP_CLUB_ASSETS.chair"
+                alt=""
+                width="32"
+                height="32"
+              />
+              <span class="mh5-lobby-vip-menu__name">{{ $t('贵宾厅') }}</span>
+            </span>
+            <img class="mh5-lobby-vip-menu__arrow" :src="LOBBY_ASSETS.arrowRight" alt="" width="12" height="12" />
+          </button>
+        </div>
+      </div>
+    </Transition>
 
     <Teleport to="body">
       <Transition name="mh5-wallet-sheet">

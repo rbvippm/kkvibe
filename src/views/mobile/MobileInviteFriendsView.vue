@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates, INVITE_PROFILE } from '../../constants/inviteFriends'
+import { mineHomeRouteName, withMineHallFrom } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const route = useRoute()
 const toast = ref('')
 const posterIndex = ref(2)
 
@@ -44,16 +46,20 @@ function openContacts() {
   showToast('打开通讯录邀请（原型）')
 }
 
+function hallQuery() {
+  return withMineHallFrom(route.query.from)
+}
+
 function goRecords() {
-  router.push({ name: 'mobile-invite-records' })
+  router.push({ name: 'mobile-invite-records', query: hallQuery() })
 }
 
 function goInviteRebate() {
-  router.push({ name: 'mobile-invite-rebate' })
+  router.push({ name: 'mobile-invite-rebate', query: hallQuery() })
 }
 
 function goBackToMine() {
-  router.push({ name: 'mobile-mine' })
+  router.push({ name: mineHomeRouteName(route.query.from) })
 }
 
 /** 有代理身份时不展示邀请返利入口 */

@@ -85,7 +85,7 @@ function goSearch() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-header__title">{{ $t('交易记录') }}</h1>
+      <h1 class="mh5-billing-header__title">{{ $t('账单记录') }}</h1>
       <div class="mh5-billing-header__actions">
         <button type="button" class="mh5-billing-header__icon" :aria-label="$t('搜索账单')" @click="goSearch">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">

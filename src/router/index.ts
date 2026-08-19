@@ -67,6 +67,52 @@ export const router = createRouter({
           meta: { title: '大厅' },
         },
         {
+          path: 'vip-club',
+          name: 'mobile-vip-club',
+          component: () => import('../views/mobile/MobileVipClubView.vue'),
+          meta: { title: '贵宾会' },
+        },
+        {
+          path: 'vip-club/community',
+          name: 'mobile-vip-club-community',
+          component: () => import('../views/mobile/MobileCommunityView.vue'),
+          meta: { title: '社区' },
+        },
+        {
+          path: 'vip-club/chat',
+          name: 'mobile-vip-club-chat',
+          component: () => import('../views/mobile/MobileChatView.vue'),
+          meta: { title: '会话' },
+        },
+        {
+          path: 'vip-club/mine',
+          name: 'mobile-vip-club-mine',
+          component: MobileMineView,
+          meta: { title: '我的' },
+        },
+        {
+          path: 'vip-club/lottery',
+          name: 'mobile-vip-club-lottery',
+          component: () => import('../views/mobile/MobileVipClubLotteryView.vue'),
+          meta: { title: '皇者彩票', hideTabBar: true },
+        },
+        {
+          path: 'vip-club/play/:kind/:id?',
+          name: 'mobile-vip-club-play',
+          component: () => import('../views/mobile/MobileVipClubPlayView.vue'),
+          meta: { title: '进入游戏', hideTabBar: true },
+        },
+        {
+          path: 'vip-club/hall/:hallId',
+          name: 'mobile-vip-club-hall',
+          component: () => import('../views/mobile/MobileVipClubHallView.vue'),
+          meta: { title: '贵宾厅', hideTabBar: true },
+        },
+        {
+          path: 'vip-club/:hallId',
+          redirect: (to) => `/mobile/vip-club/hall/${String(to.params.hallId)}`,
+        },
+        {
           path: 'community',
           name: 'mobile-community',
           component: () => import('../views/mobile/MobileCommunityView.vue'),
@@ -343,7 +389,13 @@ export const router = createRouter({
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),
-          meta: { title: '交易记录', hideTabBar: true },
+          meta: { title: '账单记录', hideTabBar: true },
+        },
+        {
+          path: 'mine/agent-settle',
+          name: 'mobile-agent-settle',
+          component: () => import('../views/mobile/MobileAgentSettleView.vue'),
+          meta: { title: '代理交收', hideTabBar: true },
         },
         {
           path: 'mine/assets',

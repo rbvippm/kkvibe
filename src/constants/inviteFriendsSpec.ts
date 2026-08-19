@@ -51,7 +51,7 @@ export const INVITE_FRIENDS_RECORDS_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '入口：mobile-invite-friends → mobile-invite-records。',
-      '返回：mobile-invite-friends。',
+      '返回：mobile-invite-friends；从贵宾厅「我的」进入时带回厅馆来源，再返回邀请页后继续回到贵宾厅「我的」。',
       '返利查看入口：邀请页「邀请返利」（注2），本页无详情跳转。',
       '代理身份变化后与「我的 → 代理邀请」状态同步。',
     ],
@@ -148,7 +148,7 @@ export const INVITE_FRIENDS_REBATE_LIST_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '入口：mobile-invite-friends → mobile-invite-rebate（/mobile/mine/invite/rebate）。',
-      '返回：mobile-invite-friends。',
+      '返回：mobile-invite-friends；从贵宾厅「我的」进入时带回厅馆来源，再返回邀请页后继续回到贵宾厅「我的」。',
     ],
   }),
 }

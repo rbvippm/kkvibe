@@ -19,20 +19,32 @@ watch(
   },
 )
 
-const tabs = [
+type AppTab = {
+  key: 'home' | 'community' | 'chat' | 'mine'
+  name: string
+  path: string
+  label: string
+  badge?: number
+  match: (path: string) => boolean
+}
+
+const outerTabs: AppTab[] = [
   {
+    key: 'home',
     name: 'mobile-home',
     path: '/mobile/home',
     label: '大厅',
     match: (path: string) => path === '/mobile/home' || path === '/mobile',
   },
   {
+    key: 'community',
     name: 'mobile-community',
     path: '/mobile/community',
     label: '社区',
     match: (path: string) => path.startsWith('/mobile/community'),
   },
   {
+    key: 'chat',
     name: 'mobile-chat',
     path: '/mobile/chat',
     label: '会话',
@@ -40,10 +52,43 @@ const tabs = [
     match: (path: string) => path.startsWith('/mobile/chat'),
   },
   {
+    key: 'mine',
     name: 'mobile-mine',
     path: '/mobile/mine',
     label: '我的',
     match: (path: string) => path.startsWith('/mobile/mine'),
+  },
+]
+
+const vipTabs: AppTab[] = [
+  {
+    key: 'home',
+    name: 'mobile-vip-club',
+    path: '/mobile/vip-club',
+    label: '大厅',
+    match: (path: string) => path === '/mobile/vip-club' || path.startsWith('/mobile/vip-club/hall'),
+  },
+  {
+    key: 'community',
+    name: 'mobile-vip-club-community',
+    path: '/mobile/vip-club/community',
+    label: '社区',
+    match: (path: string) => path.startsWith('/mobile/vip-club/community'),
+  },
+  {
+    key: 'chat',
+    name: 'mobile-vip-club-chat',
+    path: '/mobile/vip-club/chat',
+    label: '会话',
+    badge: 3,
+    match: (path: string) => path.startsWith('/mobile/vip-club/chat'),
+  },
+  {
+    key: 'mine',
+    name: 'mobile-vip-club-mine',
+    path: '/mobile/vip-club/mine',
+    label: '我的',
+    match: (path: string) => path.startsWith('/mobile/vip-club/mine'),
   },
 ]
 
@@ -54,14 +99,17 @@ const hideTabBar = computed(
     isWorkspacePreview.value,
 )
 
-function isActive(tab: (typeof tabs)[number]) {
+const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
+const tabs = computed(() => (isVipClub.value ? vipTabs : outerTabs))
+
+function isActive(tab: AppTab) {
   return tab.match(route.path)
 }
 </script>
 
 <template>
   <div class="mh5-viewport-canvas">
-    <div class="mh5-app-shell">
+    <div class="mh5-app-shell" :class="{ 'mh5-app-shell--vip-club': isVipClub }">
       <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
         <slot v-if="$slots.default" />
         <!-- 不用 mode=out-in：离开动画未完成时会卡死 RouterView，表现为返回后白屏 -->
@@ -86,7 +134,7 @@ function isActive(tab: (typeof tabs)[number]) {
         <span class="mh5-app-tabbar__icon-wrap">
           <!-- 大厅 -->
           <svg
-            v-if="tab.name === 'mobile-home'"
+            v-if="tab.key === 'home'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -101,7 +149,7 @@ function isActive(tab: (typeof tabs)[number]) {
           </svg>
           <!-- 社区 -->
           <svg
-            v-else-if="tab.name === 'mobile-community'"
+            v-else-if="tab.key === 'community'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -124,7 +172,7 @@ function isActive(tab: (typeof tabs)[number]) {
           </svg>
           <!-- 会话 -->
           <svg
-            v-else-if="tab.name === 'mobile-chat'"
+            v-else-if="tab.key === 'chat'"
             class="mh5-app-tabbar__icon"
             viewBox="0 0 24 24"
             fill="none"
@@ -188,4 +236,3 @@ function isActive(tab: (typeof tabs)[number]) {
     <Mh5ConfirmDialog />
   </div>
 </template>
-

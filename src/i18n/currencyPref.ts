@@ -3,9 +3,11 @@ import { appLocale, type AppLocale } from './locale'
 
 export type CashCurrencyCode = 'KKC' | 'KKV' | 'USDT'
 export type LobbyCashId = 'kkc' | 'kkv' | 'usdt'
+export type LobbyCreditId = 'cny' | 'usd'
 export type PreferredFiatId = 'cny' | 'vnd' | 'usd'
 
 const STORAGE_LOBBY = 'kkvibe.pref.lobbyCurrency'
+const STORAGE_VIP = 'kkvibe.pref.vipClubCurrency'
 const STORAGE_FIAT = 'kkvibe.pref.preferredFiat'
 const STORAGE_AGENT = 'kkvibe.pref.agentCurrency'
 const STORAGE_TRANSFER = 'kkvibe.pref.walletTransferCurrency'
@@ -28,6 +30,7 @@ function writeStorage(key: string, value: string) {
 
 /** 用户手动选过的值；null 表示跟随语言默认 */
 export const userLobbyCurrency = ref<string | null>(readStorage(STORAGE_LOBBY))
+export const userVipClubCurrency = ref<string | null>(readStorage(STORAGE_VIP))
 export const userPreferredFiat = ref<PreferredFiatId | null>(parseFiat(readStorage(STORAGE_FIAT)))
 export const userAgentCurrency = ref<string | null>(readStorage(STORAGE_AGENT))
 export const userWalletTransferCurrency = ref<string | null>(readStorage(STORAGE_TRANSFER))
@@ -91,6 +94,33 @@ export const effectiveLobbyCurrency = computed(
   () => userLobbyCurrency.value || defaultLobbyCashId(),
 )
 
+export function isLobbyCashId(id: string): id is LobbyCashId {
+  return id === 'kkc' || id === 'kkv' || id === 'usdt'
+}
+
+export function isLobbyCreditId(id: string): id is LobbyCreditId {
+  return id === 'cny' || id === 'usd'
+}
+
+export function defaultVipClubCreditId(): LobbyCreditId {
+  return 'cny'
+}
+
+/** 旗舰厅只用现金币种；若当前停在信用额度，回退语言默认现金 */
+export const effectiveFlagshipCurrency = computed(() => {
+  const id = effectiveLobbyCurrency.value
+  return isLobbyCashId(id) ? id : defaultLobbyCashId()
+})
+
+/** 贵宾厅只用信用额度；与旗舰厅现金选择分开记忆 */
+export const effectiveVipClubCurrency = computed(() => {
+  const stored = userVipClubCurrency.value
+  if (stored && isLobbyCreditId(stored)) return stored
+  const lobby = userLobbyCurrency.value
+  if (lobby && isLobbyCreditId(lobby)) return lobby
+  return defaultVipClubCreditId()
+})
+
 export const effectivePreferredFiat = computed(
   () => userPreferredFiat.value || defaultPreferredFiat(),
 )
@@ -100,12 +130,17 @@ export const effectiveAgentCurrency = computed(
 )
 
 export const effectiveWalletTransferCurrency = computed(
-  () => effectiveLobbyCurrency.value,
+  () => effectiveFlagshipCurrency.value,
 )
 
 export function pickLobbyCurrency(id: string) {
   userLobbyCurrency.value = id
   writeStorage(STORAGE_LOBBY, id)
+}
+
+export function pickVipClubCurrency(id: string) {
+  userVipClubCurrency.value = id
+  writeStorage(STORAGE_VIP, id)
 }
 
 export function pickPreferredFiat(id: PreferredFiatId) {
