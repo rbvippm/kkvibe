@@ -54,7 +54,7 @@ const route = useRoute()
 const router = useRouter()
 
 const activeTab = ref<WalletTransferTab>(parseWalletTransferTab(route.query.tab))
-const selectedId = ref(effectiveWalletTransferCurrency.value)
+const selectedId = ref<string>(effectiveWalletTransferCurrency.value)
 const networkId = ref('trc20')
 const fiatMethodId = ref('alipay')
 const depositChannelId = ref('')
