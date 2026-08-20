@@ -8,12 +8,17 @@ export const VIP_CLUB_ASSETS = {
   heroArt: '/images/vip-club/hero-art.png',
   arrowRight: '/images/vip-club/icon-arrow-right.svg',
   currency: '/images/vip-club/icon-currency.svg',
+  currencyUsd: '/images/vip-club/icon-currency-usd.svg',
   chevronDown: '/images/vip-club/icon-chevron-down.svg',
-  history: '/images/vip-club/icon-history.svg',
+  history: '/images/vip-club/icon-mine-bet.png',
   close: '/images/vip-club/vendors/close.svg',
   collapseTab: '/images/vip-club/icon-collapse-tab.svg',
   menu: '/images/vip-club/icon-menu.svg',
 } as const
+
+export function vipClubCreditCurrencyIcon(id: string) {
+  return id === 'usd' ? VIP_CLUB_ASSETS.currencyUsd : VIP_CLUB_ASSETS.currency
+}
 
 export const VIP_CLUB_LOTTERY_ASSETS = {
   logo: '/images/vip-club/lottery/logo.svg',

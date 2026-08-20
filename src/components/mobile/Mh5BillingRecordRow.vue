@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   formatBillingAmount,
   formatBillingListTime,
@@ -8,12 +8,14 @@ import {
   getBillingCurrencySymbol,
   type BillingRecord,
 } from '../../constants/billingList'
+import { withMineHallFrom } from '../../constants/mineHall'
 
 defineProps<{
   row: BillingRecord
   highlight?: string
 }>()
 
+const route = useRoute()
 const router = useRouter()
 
 function highlightText(text: string, keyword?: string) {
@@ -30,7 +32,11 @@ function highlightText(text: string, keyword?: string) {
 }
 
 function openDetail(row: BillingRecord) {
-  router.push({ name: 'mobile-billing-detail', params: { id: row.id } })
+  router.push({
+    name: 'mobile-billing-detail',
+    params: { id: row.id },
+    query: withMineHallFrom(route.query.from),
+  })
 }
 </script>
 

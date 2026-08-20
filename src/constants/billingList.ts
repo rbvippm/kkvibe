@@ -96,6 +96,16 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'system', label: '系统' },
 ]
 
+/** 贵宾厅账单：转账 / 消费 / 奖金（游戏账变）+ 上下分 / 系统 */
+export const BILLING_VIP_TYPE_OPTIONS: BillingTypeOption[] = [
+  { value: '', label: '全部' },
+  { value: 'transfer', label: '转账' },
+  { value: 'consume', label: '消费' },
+  { value: 'bonus', label: '奖金' },
+  { value: 'xcoin', label: '上下分' },
+  { value: 'system', label: '系统' },
+]
+
 export const BILLING_CURRENCY_TABS: { key: 'all' | BillingCurrencyKind; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'crypto', label: '虚拟币' },
@@ -204,6 +214,24 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-18 09:22:01',
     amount: 50,
     currency: 'CNY',
+  },
+  {
+    id: 'b21',
+    month: '2025-06',
+    type: 'xcoin_credit_up',
+    typeLabel: '上下分-上分',
+    createdAt: '2025-06-21 16:40:11',
+    amount: 80,
+    currency: 'USD',
+  },
+  {
+    id: 'b22',
+    month: '2025-06',
+    type: 'xcoin_credit_down',
+    typeLabel: '上下分-下分',
+    createdAt: '2025-06-21 17:02:44',
+    amount: -25,
+    currency: 'USD',
   },
   {
     id: 'b1',
@@ -370,6 +398,14 @@ export const BILLING_SEARCH_PLACEHOLDER = '搜索账单记录'
 
 export const BILLING_HOT_KEYWORDS = ['信用会员退水', '上下分-上分', '收款', '转账【皇者体育】', '6.88']
 
+export const BILLING_VIP_HOT_KEYWORDS = [
+  '信用会员退水',
+  '上下分-上分',
+  '转账【皇者体育】',
+  '消费【电子游艺】',
+  '奖金【真人视讯】',
+]
+
 const RECENT_SEARCH_STORAGE_KEY = 'mh5-billing-recent-searches'
 
 export function formatBillingAmount(amount: number) {
@@ -436,6 +472,23 @@ export function matchBillingTypeFilter(row: BillingRecord, type?: string) {
     )
   }
   return row.type === type
+}
+
+/** 贵宾厅账单：信用额度游戏账变 + 上下分 + 系统，不含现金收款/提现等 */
+export function isVipClubBillingRecord(row: BillingRecord) {
+  if (row.currency !== 'CNY' && row.currency !== 'USD') return false
+  return (
+    row.type === 'transfer' ||
+    row.type === 'consume' ||
+    row.type === 'bonus' ||
+    matchBillingTypeFilter(row, 'xcoin') ||
+    matchBillingTypeFilter(row, 'system')
+  )
+}
+
+/** 贵宾厅信用账户币种 → 账单 CNY / USD */
+export function billingCurrencyFromCreditCode(code: string): 'CNY' | 'USD' {
+  return code === 'usd' ? 'USD' : 'CNY'
 }
 
 /** 上下分：上分=收入，下分=支出 */

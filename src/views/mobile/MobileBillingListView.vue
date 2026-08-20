@@ -1,44 +1,76 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5BillingRecordRow from '../../components/mobile/Mh5BillingRecordRow.vue'
 import Mh5BillingGroupHead from '../../components/mobile/Mh5BillingGroupHead.vue'
+import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
   BILLING_CURRENCY_OPTIONS,
   BILLING_CURRENCY_TABS,
   BILLING_TYPE_OPTIONS,
+  BILLING_VIP_TYPE_OPTIONS,
+  billingCurrencyFromCreditCode,
   filterBillingCurrencyOptions,
   filterBillingRecords,
   groupBillingByMonth,
+  isVipClubBillingRecord,
   MOCK_BILLING_RECORDS,
   type BillingCurrencyKind,
 } from '../../constants/billingList'
+import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
+import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import '../../styles/mobile-app-shell.css'
 
 type FilterKind = 'type' | 'currency' | null
 
+const route = useRoute()
 const router = useRouter()
+const isVipClubBilling = computed(() => isVipClubMineFrom(route.query.from))
+const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
+const creditSheetOpen = ref(false)
 
 const filterType = ref('')
 const filterCurrency = ref('')
 const filterOpen = ref<FilterKind>(null)
 const currencyTab = ref<'all' | BillingCurrencyKind>('all')
 
-const filteredRecords = computed(() =>
-  filterBillingRecords(MOCK_BILLING_RECORDS, {
-    type: filterType.value || undefined,
-    currency: filterCurrency.value || undefined,
-  }),
+const typeOptions = computed(() =>
+  isVipClubBilling.value ? BILLING_VIP_TYPE_OPTIONS : BILLING_TYPE_OPTIONS,
 )
+
+const vipCurrency = computed(() =>
+  billingCurrencyFromCreditCode(selectedWallet.value?.currency ?? 'cny'),
+)
+
+const vipBillingCurrency = computed(() => {
+  if (!recordsSelectAll.value) return vipCurrency.value
+  if (recordsCurrencyFilter.value) return billingCurrencyFromCreditCode(recordsCurrencyFilter.value)
+  return ''
+})
+
+const filteredRecords = computed(() => {
+  const rows = filterBillingRecords(MOCK_BILLING_RECORDS, {
+    type: filterType.value || undefined,
+    currency: isVipClubBilling.value
+      ? vipBillingCurrency.value || undefined
+      : filterCurrency.value || undefined,
+  })
+  return isVipClubBilling.value ? rows.filter(isVipClubBillingRecord) : rows
+})
 
 const groupedRecords = computed(() => groupBillingByMonth(filteredRecords.value))
 
 const typeLabel = computed(() => {
   if (!filterType.value) return '全部类型'
-  return BILLING_TYPE_OPTIONS.find((o) => o.value === filterType.value)?.label ?? '全部类型'
+  return typeOptions.value.find((o) => o.value === filterType.value)?.label ?? '全部类型'
 })
 
 const currencyLabel = computed(() => {
+  if (isVipClubBilling.value) {
+    if (recordsSelectAll.value) return creditAllWalletsLabel(recordsCurrencyFilter.value)
+    return selectedWallet.value?.displayName || '信用额度'
+  }
   if (!filterCurrency.value) return '全部币种'
   return BILLING_CURRENCY_OPTIONS.find((o) => o.value === filterCurrency.value)?.label ?? '全部币种'
 })
@@ -47,7 +79,20 @@ const currencySheetOptions = computed(() =>
   filterBillingCurrencyOptions(BILLING_CURRENCY_OPTIONS, currencyTab.value),
 )
 
+const selectedCurrencyForSummary = computed(() => {
+  if (isVipClubBilling.value) return vipBillingCurrency.value
+  return filterCurrency.value
+})
+
+function hallQuery(extra: Record<string, string> = {}) {
+  return withMineHallFrom(route.query.from, extra)
+}
+
 function openFilter(kind: FilterKind) {
+  if (kind === 'currency' && isVipClubBilling.value) {
+    creditSheetOpen.value = true
+    return
+  }
   if (kind === 'currency') currencyTab.value = 'all'
   filterOpen.value = kind
 }
@@ -67,12 +112,16 @@ function selectCurrency(value: string) {
 }
 
 function goSearch() {
-  router.push({ name: 'mobile-billing-search' })
+  router.push({ name: 'mobile-billing-search', query: hallQuery() })
+}
+
+function goStats() {
+  router.push({ name: 'mobile-billing-stats', query: hallQuery() })
 }
 </script>
 
 <template>
-  <div class="mh5-billing-page">
+  <div class="mh5-billing-page" :class="{ 'mh5-vip-records': isVipClubBilling }">
     <header class="mh5-billing-header">
       <button type="button" class="mh5-billing-header__back" :aria-label="$t('返回')" @click="router.back()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -87,7 +136,13 @@ function goSearch() {
       </button>
       <h1 class="mh5-billing-header__title">{{ $t('账单记录') }}</h1>
       <div class="mh5-billing-header__actions">
-        <button type="button" class="mh5-billing-header__icon" :aria-label="$t('搜索账单')" @click="goSearch">
+        <button
+          v-if="!isVipClubBilling"
+          type="button"
+          class="mh5-billing-header__icon"
+          :aria-label="$t('搜索账单')"
+          @click="goSearch"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.8" />
             <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -97,7 +152,7 @@ function goSearch() {
           type="button"
           class="mh5-billing-header__icon mh5-billing-header__icon--accent"
           :aria-label="$t('账单统计')"
-          @click="router.push({ name: 'mobile-billing-stats' })"
+          @click="goStats"
         >
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
             <circle cx="14" cy="14" r="11.5" stroke="currentColor" stroke-width="1.5" />
@@ -144,7 +199,7 @@ function goSearch() {
       <p v-if="!groupedRecords.length" class="mh5-billing-empty">{{ $t('暂无账单记录') }}</p>
 
       <section v-for="[month, rows] in groupedRecords" :key="month" class="mh5-billing-group">
-        <Mh5BillingGroupHead :month="month" :rows="rows" :selected-currency="filterCurrency" />
+        <Mh5BillingGroupHead :month="month" :rows="rows" :selected-currency="selectedCurrencyForSummary" />
         <Mh5BillingRecordRow v-for="row in rows" :key="row.id" :row="row" />
       </section>
     </main>
@@ -154,6 +209,7 @@ function goSearch() {
         <div v-if="filterOpen === 'type'" class="mh5-agent-overlay-mask" @click.self="closeFilter">
           <div
             class="mh5-wallet-sheet agent-currency-sheet mh5-billing-pick-sheet"
+            :class="{ 'mh5-wallet-sheet--vip-gold': isVipClubBilling }"
             role="dialog"
             aria-modal="true"
             aria-labelledby="billing-type-title"
@@ -168,7 +224,7 @@ function goSearch() {
             </div>
             <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
               <button
-                v-for="opt in BILLING_TYPE_OPTIONS"
+                v-for="opt in typeOptions"
                 :key="opt.value || 'all'"
                 type="button"
                 class="agent-currency-sheet__item"
@@ -275,6 +331,12 @@ function goSearch() {
         </div>
       </Transition>
     </Teleport>
+
+    <Mh5VipCreditAccountSheet
+      :open="creditSheetOpen"
+      hide-balance
+      @close="creditSheetOpen = false"
+    />
   </div>
 </template>
 

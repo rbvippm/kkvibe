@@ -6,12 +6,14 @@ import {
   getBillingDetail,
   type BillingDetail,
 } from '../../constants/billingList'
+import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 
 const detail = computed(() => getBillingDetail(String(route.params.id || '')))
+const isVipClubBilling = computed(() => isVipClubMineFrom(route.query.from))
 const isXcoinTransfer = computed(() => detail.value?.layout === 'xcoin_transfer')
 const isSystemPayment = computed(() => detail.value?.layout === 'system_payment')
 const amountUnit = computed(
@@ -38,7 +40,7 @@ function copyText(value: string) {
 
 function goBackOrList() {
   if (window.history.length > 1) router.back()
-  else router.replace({ name: 'mobile-billing-list' })
+  else router.replace({ name: 'mobile-billing-list', query: withMineHallFrom(route.query.from) })
 }
 
 function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
@@ -47,7 +49,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
 </script>
 
 <template>
-  <div class="mh5-billing-detail-page">
+  <div class="mh5-billing-detail-page" :class="{ 'mh5-vip-records': isVipClubBilling }">
     <header class="mh5-billing-detail-header">
       <button type="button" class="mh5-billing-detail-header__back" :aria-label="$t('返回')" @click="goBackOrList">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">

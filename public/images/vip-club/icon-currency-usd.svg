@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_vip_usd)">
+<path d="M10 0.100446C15.47 0.100446 19.9 4.53045 19.9 10.0004C19.9 15.4704 15.47 19.9004 10 19.9004C4.53001 19.9004 0.10001 15.4704 0.10001 10.0004C0.10001 4.53045 4.53001 0.100446 10 0.100446Z" fill="url(#paint0_vip_usd)"/>
+<path d="M12.2224 8.80923H7.7776C7.4422 8.80923 7.22077 8.57213 7.22077 8.21647C7.22077 7.8608 7.4422 7.62021 7.7776 7.62021H13.8896V5.23868H11.112V2.85714H8.88798V5.23868H7.7776C6.2211 5.23868 5 6.54625 5 8.21298C5 9.8797 6.2211 11.1873 7.7776 11.1873H12.2224C12.5545 11.1873 12.7792 11.4244 12.7792 11.7835C12.7792 12.1392 12.5578 12.3798 12.2224 12.3798H6.11039V14.7613H8.88798V17.1429H11.112V14.7613H12.2224C13.7789 14.7613 15 13.4537 15 11.787C15 10.1203 13.7789 8.80923 12.2224 8.80923Z" fill="#161514"/>
+</g>
+<defs>
+<linearGradient id="paint0_vip_usd" x1="10" y1="0.100446" x2="10" y2="19.9004" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFE9BD"/>
+<stop offset="1" stop-color="#D99D46"/>
+</linearGradient>
+<clipPath id="clip0_vip_usd">
+<rect width="20" height="20" fill="white"/>
+</clipPath>
+</defs>
+</svg>

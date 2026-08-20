@@ -18,7 +18,22 @@ export type CreditWalletItem = {
   cnyRate: number
   /** 上分来源代理 */
   source: string
+  agentId: string
+  avatarColor: string
+  /** 账户编号，如 Account 01 */
+  accountCode: string
+  /** 可编辑展示名 */
+  displayName: string
+  /** 黑金币种图标 */
+  icon: string
   remark: string
+}
+
+export type CreditAgentGroup = {
+  agentId: string
+  source: string
+  avatarColor: string
+  items: CreditWalletItem[]
 }
 
 export type WalletCatalogItem = {
@@ -173,10 +188,10 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
 
 const CREDIT_CURRENCY_META: Record<
   CreditCurrencyCode,
-  Pick<CreditWalletItem, 'name' | 'symbol' | 'color' | 'cnyRate'>
+  Pick<CreditWalletItem, 'name' | 'symbol' | 'color' | 'cnyRate' | 'icon'>
 > = {
-  cny: { name: 'CNY', symbol: '¥', color: '#ff7a2b', cnyRate: 1 },
-  usd: { name: 'USD', symbol: '$', color: '#3b82f6', cnyRate: 7.2 },
+  cny: { name: 'CNY', symbol: '¥', color: '#ff7a2b', cnyRate: 1, icon: '/images/vip-club/icon-currency.svg' },
+  usd: { name: 'USD', symbol: '$', color: '#3b82f6', cnyRate: 7.2, icon: '/images/vip-club/icon-currency-usd.svg' },
 }
 
 export const CREDIT_CURRENCY_TABS: { key: CreditCurrencyCode; label: string }[] = [
@@ -184,51 +199,109 @@ export const CREDIT_CURRENCY_TABS: { key: CreditCurrencyCode; label: string }[] 
   { key: 'usd', label: 'USD' },
 ]
 
+/** 账单 / 投注记录弹层：未选币种为「全部钱包」，选 CNY / USD 后改为对应信用额度 */
+export function creditAllWalletsLabel(currency: CreditCurrencyCode | '') {
+  if (currency === 'cny') return '信用额度-CNY'
+  if (currency === 'usd') return '信用额度-USD'
+  return '全部钱包'
+}
+
 export const CREDIT_REMARK_MAX_LEN = 20
+export const CREDIT_NAME_MAX_LEN = 12
+
+const AGENT_EZ = { agentId: 'ez', source: 'EZ', avatarColor: '#e11d48' }
+const AGENT_A = { agentId: 'agent-a', source: '代理 A', avatarColor: '#f97316' }
+const AGENT_B = { agentId: 'agent-b', source: '代理 B', avatarColor: '#dc2626' }
 
 /** 多个代理给同一会员上分：新代理首次上分生成对应钱包 */
 export const CREDIT_WALLET_CATALOG: CreditWalletItem[] = [
   {
-    id: 'credit-cny-jinzuan',
+    id: 'credit-ez-cny-1',
     currency: 'cny',
     ...CREDIT_CURRENCY_META.cny,
-    balance: 32000,
-    source: '金钻国际',
+    ...AGENT_EZ,
+    balance: 8000,
+    accountCode: 'Account 01',
+    displayName: 'EZ Wallet',
+    remark: '',
+  },
+  {
+    id: 'credit-ez-usd-1',
+    currency: 'usd',
+    ...CREDIT_CURRENCY_META.usd,
+    ...AGENT_EZ,
+    balance: 200,
+    accountCode: 'Account 02',
+    displayName: 'Cross',
+    remark: '',
+  },
+  {
+    id: 'credit-a-cny-1',
+    currency: 'cny',
+    ...CREDIT_CURRENCY_META.cny,
+    ...AGENT_A,
+    balance: 1000,
+    accountCode: 'account1',
+    displayName: 'account1',
+    remark: '',
+  },
+  {
+    id: 'credit-a-usd-1',
+    currency: 'usd',
+    ...CREDIT_CURRENCY_META.usd,
+    ...AGENT_A,
+    balance: 1000,
+    accountCode: 'account2',
+    displayName: '一直赢钱',
+    remark: '',
+  },
+  {
+    id: 'credit-b-cny-1',
+    currency: 'cny',
+    ...CREDIT_CURRENCY_META.cny,
+    ...AGENT_B,
+    balance: 1000,
+    accountCode: 'Account 01',
+    displayName: '一直赢钱',
     remark: '贵宾厅常用额度',
   },
   {
-    id: 'credit-cny-li',
-    currency: 'cny',
-    ...CREDIT_CURRENCY_META.cny,
-    balance: 12000,
-    source: '华南合伙人·李',
-    remark: '春节活动上分',
-  },
-  {
-    id: 'credit-cny-wang',
-    currency: 'cny',
-    ...CREDIT_CURRENCY_META.cny,
-    balance: 6000,
-    source: '城市渠道王哥',
-    remark: '',
-  },
-  {
-    id: 'credit-usd-jinzuan',
+    id: 'credit-b-usd-1',
     currency: 'usd',
     ...CREDIT_CURRENCY_META.usd,
-    balance: 800,
-    source: '金钻国际',
-    remark: '跨境额度',
-  },
-  {
-    id: 'credit-usd-wang',
-    currency: 'usd',
-    ...CREDIT_CURRENCY_META.usd,
-    balance: 480.5,
-    source: '城市渠道王哥',
+    ...AGENT_B,
+    balance: 1000,
+    accountCode: 'account2',
+    displayName: 'account2',
     remark: '',
   },
 ]
+
+export const DEFAULT_CREDIT_ACCOUNT_ID = 'credit-b-cny-1'
+
+export function cloneCreditWallets() {
+  return CREDIT_WALLET_CATALOG.map((item) => ({ ...item }))
+}
+
+export function groupCreditWalletsByAgent(items: CreditWalletItem[]): CreditAgentGroup[] {
+  const order: string[] = []
+  const map = new Map<string, CreditAgentGroup>()
+  for (const item of items) {
+    let group = map.get(item.agentId)
+    if (!group) {
+      group = {
+        agentId: item.agentId,
+        source: item.source,
+        avatarColor: item.avatarColor,
+        items: [],
+      }
+      map.set(item.agentId, group)
+      order.push(item.agentId)
+    }
+    group.items.push(item)
+  }
+  return order.map((id) => map.get(id)!)
+}
 
 export function creditWalletsByCurrency(
   currency: CreditCurrencyCode,

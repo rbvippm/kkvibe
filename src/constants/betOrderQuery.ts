@@ -914,6 +914,11 @@ export function isBetOrderCreditCurrency(
   return currency === '信用额度-CNY' || currency === '信用额度-USD'
 }
 
+/** 贵宾厅信用账户币种 → 注单「信用额度-CNY / USD」 */
+export function betCurrencyFromCreditCode(code: string): '信用额度-CNY' | '信用额度-USD' {
+  return code === 'usd' ? '信用额度-USD' : '信用额度-CNY'
+}
+
 export type BetOrderCurrencySummary = BetOrderSummary & {
   currency: Exclude<BetGameCurrency, ''>
   label: string

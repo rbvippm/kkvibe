@@ -1,0 +1,9 @@
+<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M6.91074 4.41061C7.21584 4.10552 7.69834 4.08669 8.02565 4.35365L8.08913 4.41061L13.0891 9.41055C13.4145 9.73599 13.4145 10.2636 13.0891 10.5891L8.08913 15.589C7.76369 15.9144 7.23618 15.9144 6.91074 15.589C6.58531 15.2636 6.58531 14.736 6.91074 14.4106L11.3216 9.9998L6.91074 5.589L6.85378 5.52552C6.58682 5.19821 6.60565 4.71571 6.91074 4.41061Z" fill="url(#paint_vip_mine_arrow)"/>
+<defs>
+<linearGradient id="paint_vip_mine_arrow" x1="10" y1="4.1" x2="10" y2="15.9" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFE9BD"/>
+<stop offset="1" stop-color="#D99D46"/>
+</linearGradient>
+</defs>
+</svg>

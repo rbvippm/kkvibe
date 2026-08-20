@@ -193,9 +193,46 @@ export const BILLING_STATS_DEMO_BY_CURRENCY: Record<
       { id: 'xcoin_up', name: '上下分-上分', amount: 70, count: 2 },
     ],
   },
+  USD: {
+    summary: { expense: 25, expenseCount: 1, income: 80, incomeCount: 1, net: 55 },
+    expenseRank: [{ id: 'xcoin_down', name: '上下分-下分', amount: 25, count: 1 }],
+    incomeRank: [{ id: 'xcoin_up', name: '上下分-上分', amount: 80, count: 1 }],
+  },
+}
+
+function mergeBillingStatsBundles(
+  left: { summary: BillingStatsSummary; expenseRank: BillingStatsRankItem[]; incomeRank: BillingStatsRankItem[] },
+  right: { summary: BillingStatsSummary; expenseRank: BillingStatsRankItem[]; incomeRank: BillingStatsRankItem[] },
+) {
+  const mergeRank = (a: BillingStatsRankItem[], b: BillingStatsRankItem[]) => {
+    const map = new Map<string, BillingStatsRankItem>()
+    for (const item of [...a, ...b]) {
+      const prev = map.get(item.id)
+      if (prev) {
+        map.set(item.id, { ...prev, amount: prev.amount + item.amount, count: prev.count + item.count })
+      } else {
+        map.set(item.id, { ...item })
+      }
+    }
+    return [...map.values()].sort((x, y) => y.amount - x.amount)
+  }
+  return {
+    summary: {
+      expense: left.summary.expense + right.summary.expense,
+      expenseCount: left.summary.expenseCount + right.summary.expenseCount,
+      income: left.summary.income + right.summary.income,
+      incomeCount: left.summary.incomeCount + right.summary.incomeCount,
+      net: left.summary.net + right.summary.net,
+    },
+    expenseRank: mergeRank(left.expenseRank, right.expenseRank),
+    incomeRank: mergeRank(left.incomeRank, right.incomeRank),
+  }
 }
 
 export function getBillingStatsBundle(currency: string) {
+  if (!currency || currency === 'ALL') {
+    return mergeBillingStatsBundles(BILLING_STATS_DEMO_BY_CURRENCY.CNY, BILLING_STATS_DEMO_BY_CURRENCY.USD)
+  }
   return (
     BILLING_STATS_DEMO_BY_CURRENCY[currency] ?? {
       summary: { expense: 0, expenseCount: 0, income: 0, incomeCount: 0, net: 0 },

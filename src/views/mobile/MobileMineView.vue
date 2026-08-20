@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5VipCreditWallet from '../../components/mobile/Mh5VipCreditWallet.vue'
 import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
@@ -130,9 +131,9 @@ const BET_SHORTCUT: MineShortcutItem = {
 
 /** 贵宾厅：账单 / 投注 / 代理交收上移到原充提兑位置；代理交收仅贵宾厅 */
 const vipRecordActions: MineShortcutItem[] = [
-  BILL_SHORTCUT,
-  BET_SHORTCUT,
-  { key: 'settle', label: '代理交收', icon: '/images/mine/icon-agent.svg', route: 'mobile-agent-settle' },
+  { ...BILL_SHORTCUT, icon: '/images/vip-club/icon-mine-bill.png' },
+  { ...BET_SHORTCUT, icon: '/images/vip-club/icon-mine-bet.png' },
+  { key: 'settle', label: '代理交收', icon: '/images/vip-club/icon-mine-agent.png', route: 'mobile-agent-settle' },
 ]
 
 const walletShortcuts = computed(() =>
@@ -189,6 +190,18 @@ function mask(value: string) {
 
 function hallQuery() {
   return mineHallQuery(isVipClub.value)
+}
+
+function menuIconSrc(key: string) {
+  if (isVipClub.value) {
+    if (key === 'live') return '/images/vip-club/icon-mine-live.svg'
+    if (key === 'invite') return '/images/vip-club/icon-mine-invite.svg'
+    if (key === 'agent' || key === 'agent-invite') return '/images/vip-club/icon-mine-agent.svg'
+  }
+  if (key === 'live') return '/images/mine/icon-live.svg'
+  if (key === 'invite') return '/images/mine/icon-invite.svg'
+  if (key === 'agent' || key === 'agent-invite') return '/images/mine/icon-agent.svg'
+  return '/images/mine/icon-invite.svg'
 }
 
 function goUserHome() {
@@ -264,6 +277,7 @@ watch(preferredFiatAmountText, () => {
 
 <template>
   <div class="mh5-mine-root">
+    <div id="mh5-mine-overlays" class="mh5-mine-overlays" />
     <div class="mh5-mine-page">
     <div class="mh5-mine-topbar">
       <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('客服')">
@@ -314,7 +328,9 @@ watch(preferredFiatAmountText, () => {
       </div>
     </section>
 
-    <div class="mh5-mine-wallet-overview">
+    <Mh5VipCreditWallet v-if="isVipClub" :actions="vipRecordActions" @go="goRoute" />
+
+    <div v-else class="mh5-mine-wallet-overview">
       <div class="mh5-mine-wallet__head">
         <div class="mh5-mine-wallet__label">
           <span class="mh5-mine-wallet__title">{{ $t('总资产') }}</span>
@@ -349,12 +365,12 @@ watch(preferredFiatAmountText, () => {
             </svg>
           </button>
         </div>
-        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">{{ $t(isVipClub ? '信用额度' : '全部钱包') }}<img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
+        <button type="button" class="mh5-mine-wallet__all" @click="goAllWallets">{{ $t('全部钱包') }}<img src="/images/mine/icon-arrow-down.svg" alt="" class="mh5-mine-icon mh5-mine-icon--12" aria-hidden="true" />
         </button>
       </div>
     </div>
 
-    <section class="mh5-mine-wallet">
+    <section v-if="!isVipClub" class="mh5-mine-wallet">
       <div class="mh5-mine-wallet__balance-row">
         <div class="mh5-mine-wallet__balance">
           <span ref="amountRef" class="mh5-mine-wallet__amount">{{ preferredFiatAmountText }}</span>
@@ -370,21 +386,7 @@ watch(preferredFiatAmountText, () => {
         </div>
       </div>
 
-      <div v-if="isVipClub" class="mh5-mine-actions mh5-mine-actions--vip">
-        <button
-          v-for="item in vipRecordActions"
-          :key="item.key"
-          type="button"
-          class="mh5-mine-action"
-          @click="goRoute(item.route)"
-        >
-          <span class="mh5-mine-action__icon" aria-hidden="true">
-            <img :src="item.icon" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
-          </span>
-          {{ $t(item.label) }}
-        </button>
-      </div>
-      <div v-else class="mh5-mine-actions">
+      <div class="mh5-mine-actions">
         <button type="button" class="mh5-mine-action mh5-mine-action--deposit" @click="goWalletTransfer('deposit')">
           <span class="mh5-mine-action__icon" aria-hidden="true">
             <img src="/images/mine/icon-deposit.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
@@ -440,26 +442,8 @@ watch(preferredFiatAmountText, () => {
             />
           </svg>
           <img
-            v-else-if="item.key === 'live'"
-            src="/images/mine/icon-live.svg"
-            alt=""
-            class="mh5-mine-icon mh5-mine-icon--24"
-          />
-          <img
-            v-else-if="item.key === 'invite'"
-            src="/images/mine/icon-invite.svg"
-            alt=""
-            class="mh5-mine-icon mh5-mine-icon--24"
-          />
-          <img
-            v-else-if="item.key === 'agent' || item.key === 'agent-invite'"
-            src="/images/mine/icon-agent.svg"
-            alt=""
-            class="mh5-mine-icon mh5-mine-icon--24"
-          />
-          <img
             v-else
-            src="/images/mine/icon-invite.svg"
+            :src="menuIconSrc(item.key)"
             alt=""
             class="mh5-mine-icon mh5-mine-icon--24"
           />
@@ -474,7 +458,12 @@ watch(preferredFiatAmountText, () => {
             {{ item.badge }}
           </span>
           <span v-if="item.hot" class="mh5-mine-menu__hot" :aria-label="$t('热门')">🔥</span>
-          <img src="/images/mine/icon-arrow-right.svg" alt="" class="mh5-mine-icon mh5-mine-icon--16" aria-hidden="true" />
+          <img
+            :src="isVipClub ? '/images/vip-club/icon-mine-arrow.svg' : '/images/mine/icon-arrow-right.svg'"
+            alt=""
+            class="mh5-mine-icon mh5-mine-icon--16"
+            aria-hidden="true"
+          />
         </span>
       </button>
       </div>
@@ -483,8 +472,6 @@ watch(preferredFiatAmountText, () => {
 
     <Mh5WalletSheet
       :open="walletSheetOpen"
-      :show-credit="isVipClub"
-      :credit-only="isVipClub"
       @close="closeWalletSheet"
     />
 

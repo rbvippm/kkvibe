@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
   BILLING_STATS_CURRENCY_OPTIONS,
   BILLING_STATS_CURRENCY_TABS,
@@ -15,11 +17,18 @@ import {
   type BillingStatsRangeKey,
   type BillingStatsRankMode,
 } from '../../constants/billingStats'
+import { billingCurrencyFromCreditCode } from '../../constants/billingList'
+import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
+import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import '../../styles/mobile-app-shell.css'
 
 type SheetKind = 'currency' | 'game' | null
 
+const route = useRoute()
 const router = useRouter()
+const isVipClubBilling = computed(() => isVipClubMineFrom(route.query.from))
+const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
+const creditSheetOpen = ref(false)
 
 const rangeKey = ref<BillingStatsRangeKey>('today')
 const currency = ref('KKC')
@@ -31,9 +40,21 @@ const sheetOpen = ref<SheetKind>(null)
 const rangeMeta = computed(() => getBillingStatsRange(rangeKey.value))
 const dateLabel = computed(() => rangeMeta.value.label)
 
-const currencyLabel = computed(
-  () => BILLING_STATS_CURRENCY_OPTIONS.find((item) => item.value === currency.value)?.label ?? currency.value,
-)
+const vipStatsCurrency = computed(() => {
+  if (!recordsSelectAll.value) {
+    return billingCurrencyFromCreditCode(selectedWallet.value?.currency ?? 'cny')
+  }
+  if (recordsCurrencyFilter.value) return billingCurrencyFromCreditCode(recordsCurrencyFilter.value)
+  return ''
+})
+
+const currencyLabel = computed(() => {
+  if (isVipClubBilling.value) {
+    if (recordsSelectAll.value) return creditAllWalletsLabel(recordsCurrencyFilter.value)
+    return selectedWallet.value?.displayName || '信用额度'
+  }
+  return BILLING_STATS_CURRENCY_OPTIONS.find((item) => item.value === currency.value)?.label ?? currency.value
+})
 
 const currencySheetOptions = computed(() =>
   filterBillingStatsCurrencyOptions(BILLING_STATS_CURRENCY_OPTIONS, currencyTab.value),
@@ -43,7 +64,9 @@ const gameLabel = computed(
   () => BILLING_STATS_GAME_OPTIONS.find((item) => item.value === game.value)?.label ?? '所有游戏',
 )
 
-const bundle = computed(() => getBillingStatsBundle(currency.value))
+const bundle = computed(() =>
+  getBillingStatsBundle(isVipClubBilling.value ? vipStatsCurrency.value : currency.value),
+)
 
 const summary = computed(() => {
   const base = bundle.value.summary
@@ -64,6 +87,10 @@ function pickRange(key: BillingStatsRangeKey) {
 }
 
 function openSheet(kind: SheetKind) {
+  if (kind === 'currency' && isVipClubBilling.value) {
+    creditSheetOpen.value = true
+    return
+  }
   if (kind === 'currency') currencyTab.value = 'all'
   sheetOpen.value = kind
 }
@@ -83,12 +110,12 @@ function selectGame(value: string) {
 }
 
 function goList() {
-  router.push({ name: 'mobile-billing-list' })
+  router.push({ name: 'mobile-billing-list', query: withMineHallFrom(route.query.from) })
 }
 </script>
 
 <template>
-  <div class="mh5-billing-stats-page">
+  <div class="mh5-billing-stats-page" :class="{ 'mh5-vip-records': isVipClubBilling }">
     <header class="mh5-billing-stats-header">
       <button type="button" class="mh5-billing-stats-header__back" :aria-label="$t('返回')" @click="router.back()">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -101,7 +128,7 @@ function goList() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-stats-header__title">{{ $t('账单') }}</h1>
+      <h1 class="mh5-billing-stats-header__title">{{ $t('账单统计') }}</h1>
       <button type="button" class="mh5-billing-stats-header__list" :aria-label="$t('账单列表')" @click="goList">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <rect x="5" y="4" width="11" height="14" rx="1.5" stroke="currentColor" stroke-width="1.6" />
@@ -262,9 +289,10 @@ function goList() {
 
     <Teleport to="body">
       <Transition name="mh5-billing-sheet">
-        <div v-if="sheetOpen === 'currency'" class="mh5-agent-overlay-mask" @click.self="closeSheet">
+        <div v-if="!isVipClubBilling && sheetOpen === 'currency'" class="mh5-agent-overlay-mask" @click.self="closeSheet">
           <div
             class="mh5-wallet-sheet agent-currency-sheet mh5-billing-pick-sheet"
+            :class="{ 'mh5-wallet-sheet--vip-gold': isVipClubBilling }"
             role="dialog"
             aria-modal="true"
             aria-labelledby="billing-stats-currency-title"
@@ -343,6 +371,7 @@ function goList() {
         <div v-if="sheetOpen === 'game'" class="mh5-agent-overlay-mask" @click.self="closeSheet">
           <div
             class="mh5-wallet-sheet agent-currency-sheet mh5-billing-pick-sheet"
+            :class="{ 'mh5-wallet-sheet--vip-gold': isVipClubBilling }"
             role="dialog"
             aria-modal="true"
             aria-labelledby="billing-stats-game-title"
@@ -386,6 +415,11 @@ function goList() {
         </div>
       </Transition>
     </Teleport>
+    <Mh5VipCreditAccountSheet
+      :open="creditSheetOpen"
+      hide-balance
+      @close="creditSheetOpen = false"
+    />
   </div>
 </template>
 

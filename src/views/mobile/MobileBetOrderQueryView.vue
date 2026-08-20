@@ -1,19 +1,26 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
+import { isVipClubMineFrom } from '../../constants/mineHall'
+import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import {
   getBetOrderGameNameOptions,
   BET_ORDER_CATEGORY_OPTIONS,
+  BET_ORDER_CREDIT_CURRENCY_OPTIONS,
   BET_ORDER_MAX_RANGE_DAYS,
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
   BET_TIME_PRESETS,
   MOCK_BET_ORDER_RECORDS,
+  betCurrencyFromCreditCode,
   betOrderStatusClass,
   betWinLoseClass,
   filterBetOrders,
@@ -26,6 +33,7 @@ import {
   formatMoney,
   getBetOrderCurrencyOptions,
   getBetOrderSummaryCashCurrencies,
+  isBetOrderCreditCurrency,
   summarizeBetOrdersByCurrency,
   validateBetOrderDateRange,
   getBetOrderCategoryLabel,
@@ -59,9 +67,15 @@ const emit = defineEmits<{
 }>()
 
 const { uiText, fork } = useWorkspaceFork()
+const route = useRoute()
 const pageTitle = computed(() => props.title || uiText('pageTitle', '注单查询'))
 /** 会员投注记录：顶栏游戏小类 + 同行筛选，不展示搜索 */
 const isMemberRecords = computed(() => props.hideSpec)
+const isVipClubRecords = computed(
+  () => isMemberRecords.value && isVipClubMineFrom(route.query.from),
+)
+const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
+const creditSheetOpen = ref(false)
 const forkBanner = computed(() => {
   const banner = fork.value?.mockPatches?.overviewBanner
   return typeof banner === 'string' ? banner : ''
@@ -113,19 +127,28 @@ const detailRow = ref<BetOrderRecord | null>(null)
 const foldTraceOpen = ref(false)
 const copyTip = ref('')
 
-const filteredRecords = computed(() =>
-  filterBetOrders(MOCK_BET_ORDER_RECORDS, appliedFilter.value).sort((a, b) =>
-    b.betAt.localeCompare(a.betAt),
-  ),
-)
+const filteredRecords = computed(() => {
+  let rows = filterBetOrders(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
+  if (isVipClubRecords.value && !appliedFilter.value.gameCurrency) {
+    rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
+  }
+  return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
+})
 
-const summaryRecords = computed(() =>
-  filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value).sort((a, b) =>
-    b.betAt.localeCompare(a.betAt),
-  ),
-)
+const summaryRecords = computed(() => {
+  let rows = filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
+  if (isVipClubRecords.value) {
+    rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
+  }
+  return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
+})
 
-const currencyOptions = computed(() => getBetOrderCurrencyOptions())
+const currencyOptions = computed(() => {
+  if (isVipClubRecords.value) {
+    return [{ value: '' as const, label: '全部' }, ...BET_ORDER_CREDIT_CURRENCY_OPTIONS]
+  }
+  return getBetOrderCurrencyOptions()
+})
 
 const toolbarTimeLabel = computed(() => {
   if (appliedFilter.value.timePreset === 'custom') return '时间区间'
@@ -136,15 +159,31 @@ const toolbarCategoryLabel = computed(() =>
   appliedFilter.value.category ? getBetOrderCategoryLabel(appliedFilter.value.category) : '游戏',
 )
 
-const toolbarCurrencyLabel = computed(() =>
-  appliedFilter.value.gameCurrency
+function vipRecordsGameCurrency() {
+  if (!recordsSelectAll.value) {
+    return betCurrencyFromCreditCode(selectedWallet.value?.currency ?? 'cny')
+  }
+  if (recordsCurrencyFilter.value) return betCurrencyFromCreditCode(recordsCurrencyFilter.value)
+  return ''
+}
+
+const toolbarCurrencyLabel = computed(() => {
+  if (isVipClubRecords.value) {
+    if (recordsSelectAll.value) return creditAllWalletsLabel(recordsCurrencyFilter.value)
+    return selectedWallet.value?.displayName || '信用额度'
+  }
+  return appliedFilter.value.gameCurrency
     ? formatBetOrderCurrency(appliedFilter.value.gameCurrency)
-    : '币种',
-)
+    : '币种'
+})
 
 const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
 const isToolbarCategoryDirty = computed(() => Boolean(appliedFilter.value.category))
-const isToolbarCurrencyDirty = computed(() => Boolean(appliedFilter.value.gameCurrency))
+const isToolbarCurrencyDirty = computed(() =>
+  isVipClubRecords.value
+    ? !recordsSelectAll.value || Boolean(recordsCurrencyFilter.value)
+    : Boolean(appliedFilter.value.gameCurrency),
+)
 
 const toolbarPickerTitle = computed(() => {
   if (toolbarPicker.value === 'time') return '选择日期'
@@ -156,10 +195,20 @@ const toolbarPickerTitle = computed(() => {
 const summaryCarouselRef = ref<HTMLElement | null>(null)
 const summarySlideIndex = ref(0)
 
-/** 汇总卡三张现金币种，顺序跟随语言；KKC/KKV 为默认时 USDT 排第二 */
-const currencySummaries = computed(() =>
-  summarizeBetOrdersByCurrency(summaryRecords.value, getBetOrderSummaryCashCurrencies()),
-)
+/** 汇总卡：旗舰厅现金三币种轮播；贵宾厅选「全部钱包」回显 CNY / USD 两张，选币种或钱包回显一张 */
+const currencySummaries = computed(() => {
+  if (isVipClubRecords.value) {
+    const ccy = vipRecordsGameCurrency()
+    if (!ccy) {
+      return summarizeBetOrdersByCurrency(summaryRecords.value, [
+        '信用额度-CNY',
+        '信用额度-USD',
+      ])
+    }
+    return summarizeBetOrdersByCurrency(summaryRecords.value, [ccy])
+  }
+  return summarizeBetOrdersByCurrency(summaryRecords.value, getBetOrderSummaryCashCurrencies())
+})
 
 function onSummaryCarouselScroll() {
   const el = summaryCarouselRef.value
@@ -176,6 +225,18 @@ function resetSummaryCarousel() {
 
 watch(summaryRecords, () => resetSummaryCarousel())
 watch(appLocale, () => resetSummaryCarousel())
+watch(
+  () => selectedWallet.value?.id,
+  () => {
+    if (isVipClubRecords.value) resetSummaryCarousel()
+  },
+)
+watch(recordsSelectAll, () => {
+  if (isVipClubRecords.value) resetSummaryCarousel()
+})
+watch(recordsCurrencyFilter, () => {
+  if (isVipClubRecords.value) resetSummaryCarousel()
+})
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
 
@@ -273,6 +334,38 @@ function selectToolbarCurrency(currency: BetOrderCurrencyFilter) {
   })
 }
 
+function openCreditSheet() {
+  toolbarPicker.value = null
+  creditSheetOpen.value = true
+}
+
+function closeCreditSheet() {
+  creditSheetOpen.value = false
+  if (!isVipClubRecords.value) return
+  commitToolbarFilter({
+    gameCurrency: vipRecordsGameCurrency(),
+  })
+}
+
+function openCurrencyPick() {
+  if (isVipClubRecords.value) {
+    openCreditSheet()
+    return
+  }
+  toolbarPicker.value = 'currency'
+}
+
+watch(
+  isVipClubRecords,
+  (vip) => {
+    if (!vip) return
+    const ccy = vipRecordsGameCurrency()
+    appliedFilter.value = { ...appliedFilter.value, gameCurrency: ccy }
+    filterDraft.value = { ...filterDraft.value, gameCurrency: ccy }
+  },
+  { immediate: true },
+)
+
 function openFilter() {
   toolbarPicker.value = null
   filterDraft.value = hydrateBetOrderFilterDates({
@@ -284,7 +377,11 @@ function openFilter() {
 }
 
 function resetFilter() {
-  filterDraft.value = hydrateBetOrderFilterDates(createDefaultFilter())
+  const next = hydrateBetOrderFilterDates(createDefaultFilter())
+  if (isVipClubRecords.value) {
+    next.gameCurrency = vipRecordsGameCurrency()
+  }
+  filterDraft.value = next
   filterError.value = ''
   gameNameExpanded.value = false
   gameNameOverflow.value = false
@@ -362,7 +459,7 @@ function summaryWinLoseClass(value: number) {
 </script>
 
 <template>
-  <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded }">
+  <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded, 'mh5-vip-records': isVipClubRecords }">
     <header v-if="embedded" class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
       <div class="mh5-agent-report-header__actions">
@@ -420,7 +517,7 @@ function summaryWinLoseClass(value: number) {
             type="button"
             class="mh5-bet-order-toolbar__pick"
             :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarCurrencyDirty }"
-            @click="toolbarPicker = 'currency'"
+            @click="openCurrencyPick"
           >
             <span class="mh5-bet-order-toolbar__pick-text">{{ $t(toolbarCurrencyLabel) }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
@@ -471,7 +568,10 @@ function summaryWinLoseClass(value: number) {
     </div>
 
     <main class="mh5-bet-order-main">
-      <div class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll">
+      <div
+        class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll"
+        :class="{ 'mh5-bet-order-summary-carousel--single': currencySummaries.length < 2 }"
+      >
         <div
           ref="summaryCarouselRef"
           class="mh5-bet-order-summary-carousel__track"
@@ -505,7 +605,11 @@ function summaryWinLoseClass(value: number) {
             </div>
           </div>
         </div>
-        <div class="mh5-bet-order-summary-carousel__dots" aria-hidden="true">
+        <div
+          v-if="currencySummaries.length > 1"
+          class="mh5-bet-order-summary-carousel__dots"
+          aria-hidden="true"
+        >
           <span
             v-for="(slide, idx) in currencySummaries"
             :key="`dot-${slide.currency}`"
@@ -582,7 +686,10 @@ function summaryWinLoseClass(value: number) {
           class="mh5-agent-overlay-mask"
           @click.self="toolbarPicker = null"
         >
-          <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
+          <div
+            class="mh5-xcoin-sheet mh5-bet-order-sheet"
+            :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
+          >
             <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
             <template v-if="toolbarPicker === 'time'">
               <button
@@ -608,7 +715,7 @@ function summaryWinLoseClass(value: number) {
                 {{ $t(opt.value ? opt.label : '全部游戏') }}
               </button>
             </template>
-            <template v-else>
+            <template v-else-if="toolbarPicker === 'currency'">
               <button
                 v-for="opt in currencyOptions"
                 :key="`pick-ccy-${opt.value || 'all'}`"
@@ -625,11 +732,20 @@ function summaryWinLoseClass(value: number) {
       </Transition>
     </Teleport>
 
+    <Mh5VipCreditAccountSheet
+      :open="creditSheetOpen"
+      hide-balance
+      @close="closeCreditSheet"
+    />
+
     <!-- 高级筛选（Teleport 至 body，避免 shell 内定位导致弹层无法挂载） -->
     <Teleport to="body">
       <Transition name="mh5-sheet">
         <div v-if="filterOpen" class="mh5-agent-overlay-mask" @click.self="filterOpen = false">
-          <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
+          <div
+            class="mh5-xcoin-sheet mh5-bet-order-sheet"
+            :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
+          >
           <h2 class="mh5-xcoin-sheet__title">高级筛选</h2>
           <p v-if="filterError" class="mh5-bet-order-sheet__error">{{ filterError }}</p>
 
@@ -645,7 +761,7 @@ function summaryWinLoseClass(value: number) {
           </section>
 
           <section class="mh5-xcoin-filter-group">
-            <h3 class="mh5-xcoin-filter-group__label">游戏币种</h3>
+            <h3 class="mh5-xcoin-filter-group__label">{{ isVipClubRecords ? '信用额度' : '游戏币种' }}</h3>
             <div class="mh5-xcoin-filter-chips">
               <button
                 v-for="opt in currencyOptions"
@@ -755,7 +871,10 @@ function summaryWinLoseClass(value: number) {
     <Teleport to="body">
       <Transition name="mh5-sheet">
         <div v-if="detailRow" class="mh5-agent-overlay-mask" @click.self="closeDetail">
-          <div class="mh5-xcoin-sheet mh5-bet-order-detail-sheet">
+          <div
+            class="mh5-xcoin-sheet mh5-bet-order-detail-sheet"
+            :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
+          >
           <div class="mh5-bet-order-detail-sheet__handle" aria-hidden="true" />
 
           <section class="mh5-bet-order-detail-hero">

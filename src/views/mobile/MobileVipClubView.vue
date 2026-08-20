@@ -2,33 +2,24 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
-import {
-  LOBBY_CREDIT_CURRENCY_OPTIONS,
-  formatLobbyCurrencyBalance,
-  type LobbyCurrencyId,
-} from '../../constants/mobileLobby'
+import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
+import { formatCreditWalletBalance } from '../../constants/walletCatalog'
 import { VIP_CLUB_ASSETS, VIP_CLUB_GAMES, VIP_CLUB_HALLS, getVipClubVendors, type VipClubGameAction, type VipClubVendorKind } from '../../constants/vipClub'
 import { VIP_CLUB_ENTRY_SPEC } from '../../constants/vipClubSpec'
-import { effectiveVipClubCurrency, pickVipClubCurrency } from '../../i18n'
+import { mineHallQuery } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
 const hallSheetOpen = ref(false)
 const vendorSheetKind = ref<VipClubVendorKind | null>(null)
-const currencyPickerOpen = ref(false)
+const accountSheetOpen = ref(false)
 const hallMenuOpen = ref(false)
 
-const selectedCurrencyId = computed({
-  get: () => effectiveVipClubCurrency.value as LobbyCurrencyId,
-  set: (id: LobbyCurrencyId) => pickVipClubCurrency(id),
-})
-const lobbyCurrencyOptions = LOBBY_CREDIT_CURRENCY_OPTIONS
-const selectedCurrency = computed(
-  () =>
-    LOBBY_CREDIT_CURRENCY_OPTIONS.find((item) => item.id === selectedCurrencyId.value) ??
-    LOBBY_CREDIT_CURRENCY_OPTIONS[0],
+const { selectedWallet } = useVipCreditAccounts()
+const selectedBalanceText = computed(() =>
+  selectedWallet.value ? formatCreditWalletBalance(selectedWallet.value.balance) : '',
 )
-const selectedBalanceText = computed(() => formatLobbyCurrencyBalance(selectedCurrency.value.balance))
 
 function goFlagshipHall() {
   hallMenuOpen.value = false
@@ -36,12 +27,7 @@ function goFlagshipHall() {
 }
 
 function goBetRecords() {
-  router.push({ name: 'mobile-bet-records' })
-}
-
-function pickCurrency(id: LobbyCurrencyId) {
-  selectedCurrencyId.value = id
-  currencyPickerOpen.value = false
+  router.push({ name: 'mobile-bet-records', query: mineHallQuery(true) })
 }
 
 function onGameAction(action: VipClubGameAction, key: string) {
@@ -99,12 +85,13 @@ const vendorOptions = computed(() =>
       <Mh5SpecAnnot :spec="VIP_CLUB_ENTRY_SPEC" placement="bottom" />
 
       <button
+        v-if="selectedWallet"
         type="button"
         class="mh5-vip-club-wallet"
-        :aria-label="$t('切换币种')"
-        @click="currencyPickerOpen = true; hallMenuOpen = false"
+        :aria-label="$t('信用额度')"
+        @click="accountSheetOpen = true; hallMenuOpen = false"
       >
-        <img class="mh5-vip-club-wallet__coin" :src="VIP_CLUB_ASSETS.currency" alt="" width="20" height="20" />
+        <img class="mh5-vip-club-wallet__coin" :src="selectedWallet.icon" alt="" width="20" height="20" />
         <span class="mh5-vip-club-wallet__balance">{{ selectedBalanceText }}</span>
         <img class="mh5-vip-club-wallet__chevron" :src="VIP_CLUB_ASSETS.chevronDown" alt="" width="12" height="12" />
       </button>
@@ -236,81 +223,6 @@ const vendorOptions = computed(() =>
       </div>
     </Transition>
 
-    <Teleport to="body">
-      <Transition name="mh5-wallet-sheet">
-        <div
-          v-if="currencyPickerOpen"
-          class="mh5-agent-overlay-mask"
-          @click.self="currencyPickerOpen = false"
-        >
-          <div
-            class="mh5-wallet-sheet agent-currency-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="vip-club-currency-sheet-title"
-          >
-            <div class="mh5-wallet-sheet__head">
-              <h2 id="vip-club-currency-sheet-title" class="mh5-wallet-sheet__title">{{ $t('选择币种') }}</h2>
-              <button
-                type="button"
-                class="mh5-wallet-sheet__close"
-                :aria-label="$t('关闭')"
-                @click="currencyPickerOpen = false"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M6 6l12 12M18 6L6 18"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
-              <button
-                v-for="item in lobbyCurrencyOptions"
-                :key="item.id"
-                type="button"
-                class="agent-currency-sheet__item"
-                :class="{
-                  'agent-currency-sheet__item--active': selectedCurrencyId === item.id,
-                  'agent-currency-sheet__item--credit': item.isCredit,
-                }"
-                @click="pickCurrency(item.id)"
-              >
-                <span
-                  class="agent-currency-sheet__icon"
-                  :style="{ background: item.color }"
-                  aria-hidden="true"
-                >
-                  {{ item.symbol }}
-                </span>
-                <span class="agent-currency-sheet__meta">
-                  <span class="agent-currency-sheet__name">{{ $t(item.name) }}</span>
-                  <span v-if="item.isCredit" class="mh5-lobby-currency-tip-inline">{{ $t('仅限特定游戏使用') }}</span>
-                </span>
-                <span
-                  v-if="selectedCurrencyId === item.id"
-                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
-                  aria-hidden="true"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M2.5 6.2l2.4 2.4 4.6-5"
-                      stroke="#fff"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <Mh5VipCreditAccountSheet :open="accountSheetOpen" @close="accountSheetOpen = false" />
   </div>
 </template>
