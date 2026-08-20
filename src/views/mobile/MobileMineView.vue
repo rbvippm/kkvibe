@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5VipCreditWallet from '../../components/mobile/Mh5VipCreditWallet.vue'
 import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
 import { mineHallQuery } from '../../constants/mineHall'
+import { VIP_CLUB_MINE_SPEC } from '../../constants/vipClubSpec'
 import { sumWalletsCny, walletsForSheet } from '../../constants/walletCatalog'
 import { walletTransferRoute } from '../../constants/walletTransfer'
 import {
@@ -280,12 +282,15 @@ watch(preferredFiatAmountText, () => {
     <div id="mh5-mine-overlays" class="mh5-mine-overlays" />
     <div class="mh5-mine-page">
     <div class="mh5-mine-topbar">
+      <Mh5SpecAnnot v-if="isVipClub" :spec="VIP_CLUB_MINE_SPEC" placement="bottom" />
+      <div class="mh5-mine-topbar__actions">
       <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('客服')">
         <img src="/images/mine/icon-cs.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
       <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('设置')" @click="goSettings">
         <img src="/images/mine/icon-settings.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
       </button>
+      </div>
     </div>
 
     <section

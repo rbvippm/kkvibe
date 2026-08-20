@@ -62,6 +62,9 @@ export const MOBILE_PRD_SECTION_ORDER: MobilePrdSectionKey[] = [
   'routing',
 ]
 
+/** 六大结构展示序号：一、二、三…；细项 1. 2. 3. 由 Mh5SpecAnnot 按行号渲染 */
+export const MOBILE_PRD_SECTION_ORDINALS = ['一', '二', '三', '四', '五', '六'] as const
+
 /** 视觉表现节末尾统一追加：颜色、字号以设计稿为准 */
 export const MOBILE_PRD_VISUAL_DESIGN_DRAFT_NOTE =
   '颜色、字号以实际设计稿为准。'

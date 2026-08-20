@@ -26,22 +26,23 @@ description: 移动端 H5 / 代理端 PRD 标注规范；用于移动端原型�
 - 标注组件：`src/components/mobile/Mh5SpecAnnot.vue`
 - PRD 类型：`src/constants/mobilePrdSpec.ts` → `MobilePrdSpec`
 - 组装函数：`buildMobilePrdSections()`
+- 大类序号：`MOBILE_PRD_SECTION_ORDINALS`（一至六）
 - 规范全文：`docs/H5移动端设计规范.md`
 - 常量示例：`src/constants/agentTeamSpec.ts`、`src/constants/betOrderQuerySpec.ts`
 - 页面示例：`src/views/mobile/MobileBetOrderQueryView.vue`
 
 ## 六大结构
 
-每条移动端标注都必须使用 `buildMobilePrdSections()` 组装，顺序固定且每节至少 1 条：
+每条移动端标注都必须使用 `buildMobilePrdSections()` 组装，顺序固定且每节至少 1 条。浮层展示时，大类用中文序号、细项用阿拉伯数字，由 `Mh5SpecAnnot` 自动渲染，**不要**在 `label` 或 `lines` 字符串里手写「一、」「1.」前缀。
 
-1. 功能逻辑 `logic`：模块做什么、达成什么业务目标、主链路是什么。
-2. 交互行为 `interaction`：用户动作 -> 系统反馈、动效、状态变化。
-3. 视觉表现 `visual`：只写业务 UI 的布局、组件状态、动效；禁止写「注N」、标注入口、PRD 浮层本身。使用 `buildMobilePrdSections()` 时会自动追加「颜色、字号以实际设计稿为准。」。
-4. 数据规则 `data`：用页面上的中文名称描述格式、枚举、限制、默认值；禁止写代码字段名、英文枚举或实现细节。
-5. 异常与边界 `exception`：空状态、错误提示、权限、超时、极端输入、禁用态和兜底方案。
-6. 关联与跳转 `routing`：入口、出口、路由名、页面流转、前置条件和结果状态。
+- **一、功能逻辑** `logic`：模块做什么、达成什么业务目标、主链路是什么。
+- **二、交互行为** `interaction`：用户动作 -> 系统反馈、动效、状态变化。
+- **三、视觉表现** `visual`：只写业务 UI 的布局、组件状态、动效；禁止写「注N」、标注入口、PRD 浮层本身。使用 `buildMobilePrdSections()` 时会自动追加「颜色、字号以实际设计稿为准。」。
+- **四、数据规则** `data`：用页面上的中文名称描述格式、枚举、限制、默认值；禁止写代码字段名、英文枚举或实现细节。
+- **五、异常与边界** `exception`：空状态、错误提示、权限、超时、极端输入、禁用态和兜底方案。
+- **六、关联与跳转** `routing`：入口、出口、路由名、页面流转、前置条件和结果状态。
 
-每节 `lines: string[]`，内容要尽量详细、可验证，并与页面 Mock 数据和中文 UI 文案一致。
+每节 `lines: string[]`，浮层内按 `1. 2. 3.` 编号。内容要尽量详细、可验证，并与页面 Mock 数据和中文 UI 文案一致。序号常量见 `MOBILE_PRD_SECTION_ORDINALS`（一至六）。
 
 ## 落地流程
 
@@ -92,6 +93,7 @@ export const XXX_MAIN_FEATURE_SPEC: MobilePrdSpec = {
 - 编号写在 `{MODULE}_SPEC_ANNOT_NO` 常量表中，页面引用常量，不在模板里手写裸数字。
 - `spec.no`、页面展示的「注N」和评审口径必须一致。
 - 一个「注N」只描述一个明确功能或流程；不要把多个无关功能塞进同一条标注。
+- PRD 浮层内：六大块标题为「一、功能逻辑」至「六、关联与跳转」；每块细项为「1. 2. 3.」。由 `Mh5SpecAnnot` 根据 `sections` 顺序和 `lines` 下标自动加序号，撰写 `*Spec.ts` 时只写正文。
 
 ## 原型与 PRD 双向同步
 

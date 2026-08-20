@@ -746,9 +746,17 @@
 
 .mh5-mine-topbar {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 12px;
   padding: 12px 0 0;
+}
+
+.mh5-mine-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
 }
 
 .mh5-mine-topbar__btn {
@@ -13426,10 +13434,16 @@
 
 .mh5-spec-annot__section-list {
   margin: 0;
-  padding-left: 16px;
+  padding-left: 0;
+  list-style: none;
   color: #4b5563;
   font-size: 12px;
   line-height: 1.55;
+}
+
+.mh5-spec-annot__section-list li {
+  padding-left: 1.4em;
+  text-indent: -1.4em;
 }
 
 .mh5-spec-annot__section-list li + li {

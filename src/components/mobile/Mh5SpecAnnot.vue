@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
-import type { MobilePrdSpec } from '../../constants/mobilePrdSpec'
+import { MOBILE_PRD_SECTION_ORDINALS, type MobilePrdSpec } from '../../constants/mobilePrdSpec'
 
 const props = withDefaults(
   defineProps<{
@@ -121,13 +121,15 @@ onUnmounted(() => {
           </div>
 
           <section
-            v-for="section in spec.sections"
+            v-for="(section, sectionIndex) in spec.sections"
             :key="section.key"
             class="mh5-spec-annot__section"
           >
-            <h4 class="mh5-spec-annot__section-title">{{ $t(section.label) }}</h4>
+            <h4 class="mh5-spec-annot__section-title">
+              {{ MOBILE_PRD_SECTION_ORDINALS[sectionIndex] }}、{{ $t(section.label) }}
+            </h4>
             <ul class="mh5-spec-annot__section-list">
-              <li v-for="(line, index) in section.lines" :key="index">{{ line }}</li>
+              <li v-for="(line, index) in section.lines" :key="index">{{ index + 1 }}. {{ line }}</li>
             </ul>
           </section>
         </div>
