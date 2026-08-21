@@ -117,7 +117,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 12,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【游戏输赢】 + 【-VIP退水】 + 【-场馆费】（返佣无投注退水、无代理赚水）',
+        biz: '游戏净输赢 = 游戏输赢 - VIP退水 - 场馆费（返佣无投注退水、无代理赚水）',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -125,7 +125,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 13,
         name: '净输赢',
-        biz: '净输赢 = 【游戏输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】',
+        biz: '净输赢 = 游戏输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -163,7 +163,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 17,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-场馆费】；标题不加「（实占）」；明细无退水、无代理赚水',
+        biz: '游戏净输赢 = 团队游戏输赢 - 团队VIP退水 - 场馆费；标题不加「（实占）」；明细无退水、无代理赚水',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -201,7 +201,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 21,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-场馆费】；分区合计后参与净输赢计算',
+        biz: '游戏净输赢 = 团队游戏输赢 - 团队VIP退水 - 场馆费；分区合计后参与净输赢计算',
         dimension: '代理账号 + 月份 + 币种',
         method: '10分钟',
         handler: '现金',
@@ -209,7 +209,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 22,
         name: '其他成本',
-        biz: '其他成本 = 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】',
+        biz: '其他成本 = VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费',
         dimension: '代理账号 + 月份 + 币种',
         method: '10分钟',
         handler: '现金',
@@ -239,7 +239,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 25,
         name: '游戏净输赢',
-        biz: '会员详情游戏统计：游戏净输赢 = 【游戏输赢】 + 【VIP退水】（VIP 对会员为正；无会员退水、无代理赚水、无场馆费；与代理佣金侧口径分叉）',
+        biz: '会员详情游戏统计：游戏净输赢 = 游戏输赢 + VIP退水（VIP 对会员为正；无会员退水、无代理赚水、无场馆费；与代理佣金侧口径分叉）',
         dimension: '会员+币种',
         method: '10分钟',
         handler: '现金',
@@ -279,9 +279,9 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
 ]
 
 export const AGENT_REBATE_FIELD_DEF_FORMULAS = [
-  '游戏净输赢 = 【团队游戏输赢】 + 【-团队VIP退水】 + 【-场馆费】（无投注退水、无代理赚水；不加「实占」）',
-  '佣金 = （【输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】） × 佣金比例',
+  '游戏净输赢 = 团队游戏输赢 - 团队VIP退水 - 场馆费（无投注退水、无代理赚水；不加「实占」）',
+  '佣金 = （输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费） × 佣金比例',
   '总佣金 = 当月佣金 - 负佣金累计（待派发月）；净输赢 = 游戏净输赢 - 其他成本',
-  '会员详情游戏统计：游戏净输赢 = 【游戏输赢】 + 【VIP退水】（会员视角；原型隐藏会员盈亏 Tab）；代理佣金侧仍为 −VIP退水 −场馆费',
+  '会员详情游戏统计：游戏净输赢 = 游戏输赢 + VIP退水（会员视角；原型隐藏会员盈亏 Tab）；代理佣金侧仍为 −VIP退水 −场馆费',
   '现金更新时间：10分钟左右',
 ]

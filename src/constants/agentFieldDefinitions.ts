@@ -126,7 +126,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 13,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【游戏输赢】 + 【-退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】',
+        biz: '游戏净输赢 = 游戏输赢 - 退水 - VIP退水 - 代理赚水 - 场馆费',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -134,7 +134,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 14,
         name: '净输赢',
-        biz: '代理盈亏/净输赢 = 【游戏输赢】 + 【-退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】',
+        biz: '代理盈亏/净输赢 = 游戏输赢 - 退水 - VIP退水 - 代理赚水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -276,7 +276,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 31,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【游戏输赢】 + 【-退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】（不包含我的直属会员）',
+        biz: '游戏净输赢 = 游戏输赢 - 退水 - VIP退水 - 代理赚水 - 场馆费（不包含我的直属会员）',
         dimension: '汇总：我的下级所有代理下的会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -284,7 +284,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 32,
         name: '净输赢',
-        biz: '代理盈亏/净输赢 = 【游戏输赢】 + 【-退水】 + 【-VIP退水】 + 【-代理赚水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】（不包含我的直属会员）',
+        biz: '代理盈亏/净输赢 = 游戏输赢 - 退水 - VIP退水 - 代理赚水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费（不包含我的直属会员）',
         dimension: '汇总：我的下级所有代理下的会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -352,7 +352,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 39,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-场馆费】',
+        biz: '游戏净输赢 = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 代理赚水 - 场馆费',
         dimension: '实占：（直属会员+非直属会员），日期，币种',
         method: '10分钟',
         handler: '现金',
@@ -360,7 +360,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 40,
         name: '其他成本',
-        biz: '其他成本 = 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】',
+        biz: '其他成本 = VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费',
         dimension: '实占：（直属会员+非直属会员），日期，币种',
         method: '10分钟',
         handler: '现金',
@@ -398,7 +398,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 44,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-实占代理赚水】 + 【-场馆费】',
+        biz: '游戏净输赢 = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 代理赚水 - 场馆费',
         dimension: '实占：代理账号的直属会员+非直属会员+币种',
         method: '10分钟',
         handler: '现金',
@@ -406,7 +406,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 45,
         name: '其他成本',
-        biz: '其他成本 = 【-VIP晋级礼金】+【-VIP额外奖金】+【-活动金】+【-充提手续费】',
+        biz: '其他成本 = VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费',
         dimension: '实占：代理账号的直属会员+非直属会员+币种',
         method: '10分钟',
         handler: '现金',
@@ -428,7 +428,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 47,
         name: '游戏净输赢',
-        biz: '游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】（退水对会员为正）',
+        biz: '游戏净输赢 = 游戏输赢 + 会员退水 + VIP退水（退水对会员为正）',
         dimension: '会员+币种',
         method: '10分钟',
         handler: '现金',
@@ -468,9 +468,9 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
 ]
 
 export const AGENT_FIELD_DEF_FORMULAS = [
-  '游戏净输赢（代理实占） = 【实占游戏输赢】 + 【-实占退水】 + 【-实占VIP退水】 + 【-代理赚水】 + 【-场馆费】',
-  '代理盈亏/净输赢/总盈亏 = 游戏净输赢 - 其他成本；其他成本 = 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】',
-  '会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金（退水对会员为正）；亦等于 游戏净输赢 + 其他奖励；游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】；其他奖励 = VIP晋级礼金 + VIP额外奖金 + 活动金',
+  '游戏净输赢（代理实占） = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 代理赚水 - 场馆费',
+  '代理盈亏/净输赢/总盈亏 = 游戏净输赢 - 其他成本；其他成本 = VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费',
+  '会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金（退水对会员为正）；亦等于 游戏净输赢 + 其他奖励；游戏净输赢 = 游戏输赢 + 会员退水 + VIP退水；其他奖励 = VIP晋级礼金 + VIP额外奖金 + 活动金',
   '现金更新时间：10分钟左右',
 ]
 

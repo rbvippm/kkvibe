@@ -83,6 +83,15 @@ function reportValueTone(n: number): ReportValueTone {
   return 'neutral'
 }
 
+/** 成本项展示服务端正数（无正负号），粉色表示支出 */
+function formatCostReportValue(n: number): { value: string; tone: ReportValueTone } {
+  const abs = Math.abs(n)
+  return {
+    value: formatReportValue(abs, false),
+    tone: abs > 0 ? 'negative' : 'neutral',
+  }
+}
+
 function buildDetail(
   validBet: string,
   win: number,
@@ -97,21 +106,19 @@ function buildDetail(
   const rows: ReportDetailRow[] = [
     { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
     { key: 'winLose', label: '输赢', value: formatReportValue(win), tone: reportValueTone(win) },
-    { key: 'rebate', label: '退水', value: formatReportValue(-rebate), tone: reportValueTone(-rebate) },
-    { key: 'vipRebate', label: 'VIP退水', value: formatReportValue(-vipRebate), tone: reportValueTone(-vipRebate) },
+    { key: 'rebate', label: '退水', ...formatCostReportValue(rebate) },
+    { key: 'vipRebate', label: 'VIP退水', ...formatCostReportValue(vipRebate) },
     {
       key: 'commission',
       label: '代理赚水',
-      value: formatReportValue(-commission),
-      tone: reportValueTone(-commission),
+      ...formatCostReportValue(commission),
     },
   ]
   if (venueFee !== undefined) {
     rows.push({
       key: 'venueFee',
       label: '场馆费',
-      value: formatReportValue(-venue),
-      tone: reportValueTone(-venue),
+      ...formatCostReportValue(venue),
     })
   }
 
@@ -153,10 +160,10 @@ export function getReportDetail(
         : VENDOR_DETAIL
   if (includeCommission) return detail
   const net = Number(detail.netProfit.replace(/[,+]/g, ''))
-  const commission = Number(
-    detail.rows.find((row) => row.key === 'commission')?.value.replace(/,/g, '') ?? 0,
+  const commissionAbs = Math.abs(
+    Number(detail.rows.find((row) => row.key === 'commission')?.value.replace(/,/g, '') ?? 0),
   )
-  const netWithoutCommission = net - commission
+  const netWithoutCommission = net + commissionAbs
   return {
     ...detail,
     netProfit: formatReportValue(netWithoutCommission),

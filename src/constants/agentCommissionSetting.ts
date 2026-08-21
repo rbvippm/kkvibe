@@ -70,7 +70,7 @@ export function formatProfit(value: number) {
 
 /** 当月总盈利列感叹号说明（与佣金公式分子一致） */
 export const MONTHLY_TOTAL_PROFIT_TIP =
-  '即当月代理团队净输赢，公式为 = 【输赢】 + 【-VIP退水】 + 【-场馆费】 + 【-VIP晋级礼金】 + 【-VIP额外奖金】 + 【-活动金】 + 【-充提手续费】'
+  '即当月代理团队净输赢，公式为 = 输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费'
 
 /** 最低活跃人数列感叹号说明 */
 export const MIN_ACTIVE_MEMBERS_TIP =

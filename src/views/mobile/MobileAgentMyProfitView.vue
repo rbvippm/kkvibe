@@ -139,7 +139,7 @@ const rebateSectionScale = computed<RebateSectionScale>(() => {
   if (!bill) return REBATE_DEFAULT_SECTION_SCALE
   return {
     gameTotal: bill.totalPnl,
-    costTotal: -Math.abs(bill.totalCost),
+    costTotal: Math.abs(bill.totalCost),
   }
 })
 const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissionRate ?? '5.00%')

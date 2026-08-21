@@ -38,17 +38,17 @@ export const MEMBER_PROFIT_SECTION_FORMULA = '会员盈亏 = 游戏净输赢 + �
 
 /**
  * 会员 · 游戏净输赢公式（占成；退水对会员为正）
- * 游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】
+ * 游戏净输赢 = 游戏输赢 + 会员退水 + VIP退水
  */
 export const MEMBER_PROFIT_GAME_NET_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【会员退水】 + 【VIP退水】'
+  '游戏净输赢 = 游戏输赢 + 会员退水 + VIP退水'
 
 /** 场馆明细标题与公式左侧统一为「游戏净输赢」（与上式一致） */
 export const MEMBER_GAME_PROFIT_FORMULA = MEMBER_PROFIT_GAME_NET_FORMULA
 
 /** 返佣查看会员游戏统计：无会员退水；VIP 退水对会员为正；不含场馆费 */
 export const MEMBER_REBATE_GAME_NET_PROFIT_FORMULA =
-  '游戏净输赢 = 【游戏输赢】 + 【VIP退水】'
+  '游戏净输赢 = 游戏输赢 + VIP退水'
 
 export function memberRebateGameNetProfitFormula() {
   return MEMBER_REBATE_GAME_NET_PROFIT_FORMULA
@@ -143,13 +143,15 @@ function parseProfitAmountText(text: string) {
   return Number(text.replace(/,/g, '').replace(/^\+/, '')) || 0
 }
 
-function scaleAmountList(values: number[], targetSum: number): number[] {
-  const sum = values.reduce((acc, n) => acc + n, 0)
-  if (!sum) return values.map(() => 0)
-  const scaled = values.map((n) => Number(((n * targetSum) / sum).toFixed(2)))
-  const drift = Number((targetSum - scaled.reduce((acc, n) => acc + n, 0)).toFixed(2))
-  scaled[scaled.length - 1] = Number((scaled[scaled.length - 1] + drift).toFixed(2))
-  return scaled
+/** 会员奖励项：服务端为正数，展示正绿，结算时加到输赢上 */
+const MEMBER_REWARD_ITEM_LABELS = new Set(['会员退水', 'VIP退水'])
+
+function formatRewardAmount(value: number): { amountText: string; tone: ProfitValueTone } {
+  const abs = Math.abs(value)
+  return {
+    amountText: formatProfitAmount(abs),
+    tone: abs > 0 ? 'positive' : 'neutral',
+  }
 }
 
 function getMemberProfitSummaryMock(currency: string) {
@@ -371,10 +373,25 @@ function getMemberCategoryDetailRows(
   const product = section.rows.find((row) => row.key === categoryKey)
   const targetNet = product ? parseProfitAmountText(product.value) : 650
   const base = MEMBER_CATEGORY_DETAIL_BASE.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
-  const scaled = scaleAmountList(
-    base.map((row) => parseProfitAmountText(row.amountText)),
-    targetNet,
+  const winBase = Math.abs(
+    parseProfitAmountText(base.find((row) => row.label === '输赢')?.amountText ?? '0'),
   )
+  const memberRebateBase = Math.abs(
+    parseProfitAmountText(base.find((row) => row.label === '会员退水')?.amountText ?? '0'),
+  )
+  const vipRebateBase = Math.abs(
+    parseProfitAmountText(base.find((row) => row.label === 'VIP退水')?.amountText ?? '0'),
+  )
+  const baseNet = winBase + memberRebateBase + vipRebateBase
+  const absScale = baseNet ? Math.abs(targetNet) / baseNet : 0
+  const memberRebate = Number((memberRebateBase * absScale).toFixed(2))
+  const vipRebate = Number((vipRebateBase * absScale).toFixed(2))
+  const win = Number((targetNet - memberRebate - vipRebate).toFixed(2))
+  const amounts: Record<string, number> = {
+    输赢: win,
+    会员退水: memberRebate,
+    VIP退水: vipRebate,
+  }
   const betScale = Math.max(Math.abs(targetNet) / 650, 0.2)
   const betValue = Number((10000 * betScale).toFixed(2))
   return [
@@ -386,11 +403,18 @@ function getMemberCategoryDetailRows(
       }),
       tone: 'neutral',
     },
-    ...base.map((row, index) => ({
-      ...row,
-      amountText: formatProfitAmount(scaled[index] ?? 0),
-      tone: profitTone(scaled[index] ?? 0),
-    })),
+    ...base.map((row) => {
+      const amount = amounts[row.label] ?? 0
+      if (MEMBER_REWARD_ITEM_LABELS.has(row.label)) {
+        const cell = formatRewardAmount(amount)
+        return { ...row, amountText: cell.amountText, tone: cell.tone }
+      }
+      return {
+        ...row,
+        amountText: formatProfitAmount(amount),
+        tone: profitTone(amount),
+      }
+    }),
     {
       label: '游戏净输赢',
       amountText: formatProfitAmount(targetNet),
