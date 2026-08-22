@@ -89,8 +89,14 @@ function resolveMemberDetailTab(raw: unknown): MemberDetailTab | null {
   return null
 }
 
+function resolveMemberGameSubTab(raw: unknown): MemberGameSubTab | null {
+  const key = String(raw ?? '')
+  if (key === 'instant' || key === 'records' || key === 'stats') return key
+  return null
+}
+
 const activeTab = ref<MemberDetailTab>(resolveMemberDetailTab(route.query.tab) ?? 'manage')
-const gameSubTab = ref<MemberGameSubTab>('records')
+const gameSubTab = ref<MemberGameSubTab>(resolveMemberGameSubTab(route.query.gameSub) ?? 'records')
 const currencyPickerOpen = ref(false)
 const creditCurrencyMenuOpen = ref(false)
 const currency = agentAppCurrency
@@ -189,6 +195,14 @@ watch(
     if (next && detailTabs.value.some((item) => item.key === next)) {
       activeTab.value = next
     }
+  },
+)
+
+watch(
+  () => route.query.gameSub,
+  (sub) => {
+    const next = resolveMemberGameSubTab(sub)
+    if (next) gameSubTab.value = next
   },
 )
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
@@ -113,10 +113,6 @@ const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
 }
 
 const teamQuickMenuRow = ref<TeamListItem | null>(null)
-const teamQuickMenuPos = ref({ top: 0, right: 0 })
-let skipTeamMenuClose = false
-/** 占成用底部抽屉；返佣操作少，仍用行内浮层 */
-const useQuickActionSheet = computed(() => !isRebateAgent.value)
 
 const teamQuickActions = computed(() => {
   const row = teamQuickMenuRow.value
@@ -124,8 +120,9 @@ const teamQuickActions = computed(() => {
   const actions: { key: TeamQuickAction; label: string; icon: string }[] = []
   if (isRebateAgent.value) {
     actions.push(
-      { key: 'remark', label: '备注', icon: TEAM_QUICK_ACTION_ICONS.remark },
+      { key: 'detail', label: '查看详情', icon: TEAM_QUICK_ACTION_ICONS.detail },
       { key: 'bet_order', label: '注单查询', icon: TEAM_QUICK_ACTION_ICONS.bet_order },
+      { key: 'remark', label: '修改备注', icon: TEAM_QUICK_ACTION_ICONS.remark },
     )
     return actions
   }
@@ -296,44 +293,15 @@ function toggleExpand(id: string) {
 
 function openTeamQuickMenu(row: TeamListItem, event: MouseEvent) {
   event.stopPropagation()
-  skipTeamMenuClose = true
-
   if (teamQuickMenuRow.value?.id === row.id) {
     closeTeamQuickMenu()
-    requestAnimationFrame(() => {
-      skipTeamMenuClose = false
-    })
     return
   }
-
-  if (!useQuickActionSheet.value) {
-    const btn = event.currentTarget as HTMLElement
-    const rect = btn.getBoundingClientRect()
-    teamQuickMenuPos.value = {
-      top: rect.bottom + 8,
-      right: window.innerWidth - rect.right,
-    }
-  }
   teamQuickMenuRow.value = row
-
-  requestAnimationFrame(() => {
-    skipTeamMenuClose = false
-  })
 }
 
 function closeTeamQuickMenu() {
   teamQuickMenuRow.value = null
-}
-
-function onTeamDocumentClick() {
-  if (useQuickActionSheet.value) return
-  if (skipTeamMenuClose) return
-  if (teamQuickMenuRow.value) closeTeamQuickMenu()
-}
-
-function onTeamDocumentScroll() {
-  if (useQuickActionSheet.value) return
-  closeTeamQuickMenu()
 }
 
 async function onTeamQuickAction(action: TeamQuickAction) {
@@ -515,18 +483,8 @@ async function confirmCreateAccount() {
   await mh5Alert('创建账户（原型占位）')
 }
 
-onMounted(() => {
-  document.addEventListener('click', onTeamDocumentClick)
-  document.addEventListener('scroll', onTeamDocumentScroll, true)
-})
-
 onBeforeUnmount(() => {
   closeAllSheets()
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', onTeamDocumentClick)
-  document.removeEventListener('scroll', onTeamDocumentScroll, true)
 })
 </script>
 
@@ -738,38 +696,9 @@ onUnmounted(() => {
     </main>
 
     <Teleport to="body">
-      <div
-        v-if="isRebateAgent && teamQuickMenuRow"
-        class="agent-team-quick-menu"
-        :style="{ top: `${teamQuickMenuPos.top}px`, right: `${teamQuickMenuPos.right}px` }"
-        role="menu"
-        @click.stop
-      >
-        <p class="agent-team-quick-menu__title">
-          <span class="agent-team-quick-menu__accent" aria-hidden="true" />
-          对
-          <strong>{{ teamQuickMenuRow.nickname }}</strong>
-          的更多快捷操作
-        </p>
-        <div class="agent-team-quick-menu__actions">
-          <button
-            v-for="action in teamQuickActions"
-            :key="action.key"
-            type="button"
-            class="agent-team-quick-menu__btn"
-            role="menuitem"
-            @click.stop="onTeamQuickAction(action.key)"
-          >
-            {{ action.label }}
-          </button>
-        </div>
-      </div>
-    </Teleport>
-
-    <Teleport to="body">
       <Transition name="agent-team-create-sheet">
         <div
-          v-if="useQuickActionSheet && teamQuickMenuRow"
+          v-if="teamQuickMenuRow"
           class="mh5-agent-overlay-mask agent-team-quick-sheet-mask"
           @click.self="closeTeamQuickMenu"
         >
