@@ -1,4 +1,4 @@
-export type ReportRangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
+export type ReportRangePreset = 'today' | 'yesterday' | 'thisMonth' | 'lastMonth'
 
 export type ReportCategoryKey = 'all' | 'chess' | 'esports' | 'fishing' | 'slots' | 'sports'
 
@@ -29,8 +29,18 @@ export const AGENT_REPORT_FILTER_ASSETS = {
 export const REPORT_RANGE_PRESETS: { key: ReportRangePreset; label: string }[] = [
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },
-  { key: 'thisWeek', label: '本周' },
-  { key: 'lastWeek', label: '上周' },
+  { key: 'thisMonth', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
+]
+
+/** 概况 / 代理详情 / 会员详情：今日、昨天、本月、上月 */
+export type MonthRangePreset = 'today' | 'yesterday' | 'thisMonth' | 'lastMonth'
+
+export const MONTH_RANGE_PRESETS: { key: MonthRangePreset; label: string }[] = [
+  { key: 'today', label: '今日' },
+  { key: 'yesterday', label: '昨天' },
+  { key: 'thisMonth', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
 ]
 
 export const REPORT_CATEGORY_TABS: { key: ReportCategoryKey; label: string }[] = [
@@ -291,12 +301,20 @@ export function reportNetProfitClass(tone: ReportValueTone) {
   return 'mh5-agent-report-detail__profit-total--positive'
 }
 
+export function reportPresetRange(preset: ReportRangePreset): { start: string; end: string } {
+  return monthPresetRange(preset)
+}
+
 export function reportDateRangeText(preset: ReportRangePreset): string {
-  const base = '2026-06-24'
-  if (preset === 'today') return `${base}至${base}`
-  if (preset === 'yesterday') return '2026-06-23至2026-06-23'
-  if (preset === 'thisWeek') return '2026-06-22至2026-06-24'
-  return '2026-06-15至2026-06-21'
+  const range = reportPresetRange(preset)
+  return `${range.start}至${range.end}`
+}
+
+export function monthPresetRange(preset: MonthRangePreset): { start: string; end: string } {
+  if (preset === 'yesterday') return { start: '2026-06-23', end: '2026-06-23' }
+  if (preset === 'thisMonth') return { start: '2026-06-01', end: '2026-06-24' }
+  if (preset === 'lastMonth') return { start: '2026-05-01', end: '2026-05-31' }
+  return { start: '2026-06-24', end: '2026-06-24' }
 }
 
 export function reportCategoryTitle(category: ReportCategoryKey, vendor: ReportVendorKey): string {

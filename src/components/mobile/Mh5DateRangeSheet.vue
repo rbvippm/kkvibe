@@ -2,14 +2,18 @@
 import { computed, ref, watch } from 'vue'
 import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
 import {
+  DATE_RANGE_SHEET_PRESETS,
   MH5_DATE_RANGE_MAX_MONTHS,
   MH5_DATE_RANGE_TODAY,
   addMonthsYmd,
   clampYmd,
+  dateRangeSheetPresetRange,
+  matchDateRangeSheetPreset,
   padDatePart,
   parseYmd,
   shiftYmd,
   type DatePart,
+  type DateRangeSheetPreset,
 } from '../../constants/mh5DateRange'
 
 const props = withDefaults(
@@ -34,17 +38,28 @@ const emit = defineEmits<{
 const draftStart = ref(props.start)
 const draftEnd = ref(props.end)
 const editing = ref<'start' | 'end'>('start')
+const activePreset = ref<DateRangeSheetPreset | null>(null)
 
 const minDate = computed(() => addMonthsYmd(props.today, -props.maxMonths))
 const maxDate = computed(() => props.today)
+
+function syncActivePreset() {
+  activePreset.value = matchDateRangeSheetPreset(draftStart.value, draftEnd.value, props.today)
+}
+
+function applyRange(start: string, end: string) {
+  draftStart.value = clampYmd(start, minDate.value, maxDate.value)
+  draftEnd.value = clampYmd(end, minDate.value, maxDate.value)
+  if (draftEnd.value < draftStart.value) draftEnd.value = draftStart.value
+  editing.value = 'start'
+  syncActivePreset()
+}
 
 watch(
   () => props.open,
   (open) => {
     if (!open) return
-    draftStart.value = clampYmd(props.start || props.today, minDate.value, maxDate.value)
-    draftEnd.value = clampYmd(props.end || props.today, minDate.value, maxDate.value)
-    editing.value = 'start'
+    applyRange(props.start || props.today, props.end || props.today)
   },
 )
 
@@ -56,10 +71,16 @@ function setEditingValue(next: string) {
   if (editing.value === 'start') {
     draftStart.value = clamped
     if (draftEnd.value < clamped) draftEnd.value = clamped
-    return
+  } else {
+    draftEnd.value = clamped
+    if (draftStart.value > clamped) draftStart.value = clamped
   }
-  draftEnd.value = clamped
-  if (draftStart.value > clamped) draftStart.value = clamped
+  syncActivePreset()
+}
+
+function pickPreset(key: DateRangeSheetPreset) {
+  const range = dateRangeSheetPresetRange(key, props.today)
+  applyRange(range.start, range.end)
 }
 
 function stepPart(part: DatePart, delta: number) {
@@ -75,9 +96,7 @@ function neighborLabel(part: DatePart, delta: number) {
 }
 
 function resetDraft() {
-  draftStart.value = props.today
-  draftEnd.value = props.today
-  editing.value = 'start'
+  applyRange(props.today, props.today)
 }
 
 function confirmDraft() {
@@ -127,6 +146,20 @@ function currentLabel(col: DatePart) {
           </div>
 
           <div class="mh5-date-range-sheet__body">
+            <div class="mh5-date-range-sheet__presets" role="tablist" aria-label="快捷时间">
+              <button
+                v-for="item in DATE_RANGE_SHEET_PRESETS"
+                :key="item.key"
+                type="button"
+                role="tab"
+                class="mh5-date-range-sheet__preset"
+                :class="{ 'mh5-date-range-sheet__preset--active': activePreset === item.key }"
+                :aria-selected="activePreset === item.key"
+                @click="pickPreset(item.key)"
+              >
+                {{ item.label }}
+              </button>
+            </div>
             <div class="mh5-date-range-sheet__panel">
               <div class="mh5-date-range-sheet__chips">
                 <button

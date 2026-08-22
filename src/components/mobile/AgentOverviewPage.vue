@@ -25,7 +25,9 @@ import {
 } from '../../constants/agentIdentity'
 import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
+import Mh5DateRangeSheet from './Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
+import { MH5_DATE_RANGE_TODAY, parseYmd } from '../../constants/mh5DateRange'
 import {
   findCommissionBill,
   formatCommissionAmount,
@@ -48,7 +50,7 @@ const props = withDefaults(
     profit: string
     currency: AgentOverviewCurrency
     dateRangeText: string
-    preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth'
+    preset: 'today' | 'yesterday' | 'thisMonth' | 'lastMonth' | null
     profitRankTab: ProfitRankTab
     /** 进入概况时是否自动打开占成/返佣比例弹框 */
     openShareRatio?: boolean
@@ -94,7 +96,8 @@ const profitTabValueToneClass = computed(() => {
 
 const emit = defineEmits<{
   back: []
-  pickPreset: [preset: 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth']
+  pickPreset: [preset: 'today' | 'yesterday' | 'thisMonth' | 'lastMonth']
+  pickDateRange: [start: string, end: string]
   pickProfitRankTab: [tab: ProfitRankTab]
   pickCurrency: [currency: AgentOverviewCurrency]
   shareRatioClosed: []
@@ -102,6 +105,31 @@ const emit = defineEmits<{
 
 const currencyPickerOpen = ref(false)
 const shareRatioOpen = ref(Boolean(props.openShareRatio))
+const dateSheetOpen = ref(false)
+const dateSheetStart = ref(MH5_DATE_RANGE_TODAY)
+const dateSheetEnd = ref(MH5_DATE_RANGE_TODAY)
+
+function parseOverviewDateRange(text: string) {
+  const [start = '', end = ''] = text.split('至')
+  return {
+    start: parseYmd(start) ? start : MH5_DATE_RANGE_TODAY,
+    end: parseYmd(end) ? end : MH5_DATE_RANGE_TODAY,
+  }
+}
+
+function openDateSheet() {
+  const range = parseOverviewDateRange(props.dateRangeText)
+  dateSheetStart.value = range.start
+  dateSheetEnd.value = range.end
+  dateSheetOpen.value = true
+}
+
+function confirmOverviewDate(start: string, end: string) {
+  dateSheetStart.value = start
+  dateSheetEnd.value = end
+  dateSheetOpen.value = false
+  emit('pickDateRange', start, end)
+}
 
 watch(
   () => props.openShareRatio,
@@ -110,22 +138,12 @@ watch(
   },
 )
 
-/** 返佣末项为「本月」（佣金按月）；占成仍为「上周」 */
-const presetOptions = computed(() =>
-  isRebate.value
-    ? ([
-        ['today', '今日'],
-        ['yesterday', '昨日'],
-        ['thisWeek', '本周'],
-        ['thisMonth', '本月'],
-      ] as const)
-    : ([
-        ['today', '今日'],
-        ['yesterday', '昨日'],
-        ['thisWeek', '本周'],
-        ['lastWeek', '上周'],
-      ] as const),
-)
+const presetOptions = [
+  ['today', '今日'],
+  ['yesterday', '昨天'],
+  ['thisMonth', '本月'],
+  ['lastMonth', '上月'],
+] as const
 
 const directStats = computed(() => getDirectStats(props.agentType))
 const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
@@ -312,10 +330,22 @@ function pickWalletCurrency(value: string) {
         <div class="agent-home__date-row">
           <p class="agent-home__date-label">{{ $t('数据时间段') }}</p>
           <div class="agent-home__date-picker">
-            <div class="agent-home__date-range">
+            <button
+              type="button"
+              class="agent-home__date-range"
+              :aria-label="$t('选择日期')"
+              :aria-expanded="dateSheetOpen"
+              @click="openDateSheet"
+            >
               <p>{{ dateRangeText }}</p>
-            </div>
-            <button type="button" class="agent-home__date-icon" :aria-label="$t('选择日期')">
+            </button>
+            <button
+              type="button"
+              class="agent-home__date-icon"
+              :aria-label="$t('选择日期')"
+              :aria-expanded="dateSheetOpen"
+              @click="openDateSheet"
+            >
               <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
                 <rect x="6" y="8" width="22" height="20" rx="3" stroke="#fecda6" stroke-width="1.4" />
                 <path d="M11 5v5M23 5v5" stroke="#fecda6" stroke-width="1.4" stroke-linecap="round" />
@@ -424,6 +454,14 @@ function pickWalletCurrency(value: string) {
       :mode="agentType"
       :currency="currency"
       @close="closeShareRatioDialog"
+    />
+
+    <Mh5DateRangeSheet
+      :open="dateSheetOpen"
+      :start="dateSheetStart"
+      :end="dateSheetEnd"
+      @close="dateSheetOpen = false"
+      @confirm="confirmOverviewDate"
     />
 
     <Mh5CurrencyPickerSheet

@@ -92,12 +92,25 @@ function applyFilterExpand(tab: TeamFilterTab) {
 applyFilterExpand(effectiveTeamFilterTab.value)
 
 type TeamQuickAction =
+  | 'detail'
+  | 'profit'
   | 'profit_ratio'
   | 'rebate_ratio'
   | 'remark'
   | 'bet_order'
   | 'agent_credit'
   | 'member_credit'
+
+const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
+  detail: '/images/agent-team/quick-detail.svg',
+  profit: '/images/agent-team/quick-profit.svg',
+  bet_order: '/images/agent-team/quick-bet.svg',
+  profit_ratio: '/images/agent-team/quick-ratio.svg',
+  rebate_ratio: '/images/agent-team/quick-ratio.svg',
+  agent_credit: '/images/agent-team/quick-credit.svg',
+  member_credit: '/images/agent-team/quick-credit.svg',
+  remark: '/images/agent-team/quick-remark.svg',
+}
 
 const teamQuickMenuRow = ref<TeamListItem | null>(null)
 const teamQuickMenuPos = ref({ top: 0, right: 0 })
@@ -108,17 +121,30 @@ const useQuickActionSheet = computed(() => !isRebateAgent.value)
 const teamQuickActions = computed(() => {
   const row = teamQuickMenuRow.value
   if (!row) return []
-  const actions: { key: TeamQuickAction; label: string }[] = []
-  if (!isRebateAgent.value) {
-    if (showMemberBadge(row.kind)) actions.push({ key: 'rebate_ratio', label: '退水比例' })
-    else actions.push({ key: 'profit_ratio', label: '收益比例' })
+  const actions: { key: TeamQuickAction; label: string; icon: string }[] = []
+  if (isRebateAgent.value) {
+    actions.push(
+      { key: 'remark', label: '备注', icon: TEAM_QUICK_ACTION_ICONS.remark },
+      { key: 'bet_order', label: '注单查询', icon: TEAM_QUICK_ACTION_ICONS.bet_order },
+    )
+    return actions
   }
-  actions.push({ key: 'remark', label: '备注' }, { key: 'bet_order', label: '注单查询' })
-  if (!isRebateAgent.value && canShowMemberCreditAction(row.kind)) {
-    actions.push({ key: 'member_credit', label: '会员授信' })
-  } else if (!isRebateAgent.value && canShowAgentCreditAction(row.kind)) {
-    actions.push({ key: 'agent_credit', label: '代理授信' })
+  actions.push(
+    { key: 'detail', label: '查看详情', icon: TEAM_QUICK_ACTION_ICONS.detail },
+    { key: 'profit', label: '查看盈亏', icon: TEAM_QUICK_ACTION_ICONS.profit },
+    { key: 'bet_order', label: '注单查询', icon: TEAM_QUICK_ACTION_ICONS.bet_order },
+  )
+  if (showMemberBadge(row.kind)) {
+    actions.push({ key: 'rebate_ratio', label: '退水比例', icon: TEAM_QUICK_ACTION_ICONS.rebate_ratio })
+  } else {
+    actions.push({ key: 'profit_ratio', label: '收益比例', icon: TEAM_QUICK_ACTION_ICONS.profit_ratio })
   }
+  if (canShowMemberCreditAction(row.kind)) {
+    actions.push({ key: 'member_credit', label: '会员授信', icon: TEAM_QUICK_ACTION_ICONS.member_credit })
+  } else if (canShowAgentCreditAction(row.kind)) {
+    actions.push({ key: 'agent_credit', label: '代理授信', icon: TEAM_QUICK_ACTION_ICONS.agent_credit })
+  }
+  actions.push({ key: 'remark', label: '修改备注', icon: TEAM_QUICK_ACTION_ICONS.remark })
   return actions
 })
 
@@ -326,6 +352,17 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   closeTeamQuickMenu()
+
+  if (action === 'detail') {
+    goTeamDetailByNickname(row)
+    return
+  }
+
+  if (action === 'profit') {
+    const name = showMemberBadge(row.kind) ? 'mobile-member-detail' : 'mobile-agent-detail'
+    router.push({ name, query: withAgentQuery({ id: row.id, tab: 'profit' }) })
+    return
+  }
 
   if (action === 'profit_ratio') {
     if (row.kind !== 'agent' && row.kind !== 'credit_agent') {
@@ -758,18 +795,22 @@ onUnmounted(() => {
               <strong>{{ teamQuickMenuRow.nickname }}</strong>
               操作
             </p>
-            <div v-if="teamQuickActions.length" class="agent-team-create-sheet__options">
+            <div v-if="teamQuickActions.length" class="agent-team-quick-sheet__grid">
               <button
                 v-for="action in teamQuickActions"
                 :key="action.key"
                 type="button"
-                class="agent-team-create-sheet__option agent-team-quick-sheet__option"
+                class="agent-team-quick-sheet__tile"
                 @click="onTeamQuickAction(action.key)"
               >
-                <span class="agent-team-create-sheet__label">{{ action.label }}</span>
-                <svg class="agent-team-quick-sheet__chevron" width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true">
-                  <path d="M1 1.5 6.5 7 1 12.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
+                <img
+                  class="agent-team-quick-sheet__tile-icon"
+                  :src="action.icon"
+                  alt=""
+                  width="28"
+                  height="28"
+                />
+                <span class="agent-team-quick-sheet__tile-label">{{ action.label }}</span>
               </button>
             </div>
             <p v-else class="agent-team-quick-sheet__empty">暂无可用操作</p>

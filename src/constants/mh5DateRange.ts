@@ -32,10 +32,83 @@ export function addMonthsYmd(value: string, delta: number) {
   return formatYmd(y, m, Math.min(parsed.d, daysInMonth(y, m)))
 }
 
+export function addDaysYmd(value: string, delta: number) {
+  const parsed = parseYmd(value)
+  if (!parsed) return value
+  const cursor = new Date(parsed.y, parsed.m - 1, parsed.d + delta)
+  return formatYmd(cursor.getFullYear(), cursor.getMonth() + 1, cursor.getDate())
+}
+
+/** 周一=0 … 周日=6 */
+export function weekdayMonday0(value: string) {
+  const parsed = parseYmd(value)
+  if (!parsed) return 0
+  const day = new Date(parsed.y, parsed.m - 1, parsed.d).getDay()
+  return day === 0 ? 6 : day - 1
+}
+
 export function clampYmd(value: string, min: string, max: string) {
   if (value < min) return min
   if (value > max) return max
   return value
+}
+
+/** 「筛选时间」弹层内六格快捷 */
+export type DateRangeSheetPreset =
+  | 'today'
+  | 'yesterday'
+  | 'thisWeek'
+  | 'lastWeek'
+  | 'thisMonth'
+  | 'lastMonth'
+
+export const DATE_RANGE_SHEET_PRESETS: { key: DateRangeSheetPreset; label: string }[] = [
+  { key: 'today', label: '今天' },
+  { key: 'yesterday', label: '昨天' },
+  { key: 'thisWeek', label: '本周' },
+  { key: 'lastWeek', label: '上周' },
+  { key: 'thisMonth', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
+]
+
+export function dateRangeSheetPresetRange(
+  preset: DateRangeSheetPreset,
+  today: string = MH5_DATE_RANGE_TODAY,
+): { start: string; end: string } {
+  if (preset === 'today') return { start: today, end: today }
+  if (preset === 'yesterday') {
+    const ymd = addDaysYmd(today, -1)
+    return { start: ymd, end: ymd }
+  }
+  if (preset === 'thisWeek') {
+    return { start: addDaysYmd(today, -weekdayMonday0(today)), end: today }
+  }
+  if (preset === 'lastWeek') {
+    const thisMonday = addDaysYmd(today, -weekdayMonday0(today))
+    return { start: addDaysYmd(thisMonday, -7), end: addDaysYmd(thisMonday, -1) }
+  }
+  const parsed = parseYmd(today)
+  if (!parsed) return { start: today, end: today }
+  if (preset === 'thisMonth') {
+    return { start: formatYmd(parsed.y, parsed.m, 1), end: today }
+  }
+  const last = parsed.m === 1 ? { y: parsed.y - 1, m: 12 } : { y: parsed.y, m: parsed.m - 1 }
+  return {
+    start: formatYmd(last.y, last.m, 1),
+    end: formatYmd(last.y, last.m, daysInMonth(last.y, last.m)),
+  }
+}
+
+export function matchDateRangeSheetPreset(
+  start: string,
+  end: string,
+  today: string = MH5_DATE_RANGE_TODAY,
+): DateRangeSheetPreset | null {
+  for (const item of DATE_RANGE_SHEET_PRESETS) {
+    const range = dateRangeSheetPresetRange(item.key, today)
+    if (range.start === start && range.end === end) return item.key
+  }
+  return null
 }
 
 export function diffDaysYmd(start: string, end: string) {

@@ -26,10 +26,11 @@ import { agentReportPageTab } from '../constants/agentReportTab'
 import '../styles/mobile-app-shell.css'
 
 type BottomTab = 'overview' | 'team' | 'bet-order' | 'report' | 'me'
-type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth'
+type RangePreset = 'today' | 'yesterday' | 'thisMonth' | 'lastMonth'
 
 const activeTab = ref<BottomTab>('overview')
-const preset = ref<RangePreset>('today')
+const preset = ref<RangePreset | null>('today')
+const customDateRange = ref<{ start: string; end: string } | null>(null)
 const route = useRoute()
 const router = useRouter()
 const { agentType, isRebateAgent, agentTypeLabel, withAgentQuery } = useAgentIdentity()
@@ -38,9 +39,6 @@ const { betOrderSearchSeed, setBetOrderSearchSeed } = useBetOrderSearchSeed()
 watch(
   isRebateAgent,
   (rebate) => {
-    /** 返佣无「上周」快捷；若当前仍落在上周则切到本月 */
-    if (rebate && preset.value === 'lastWeek') preset.value = 'thisMonth'
-    if (!rebate && preset.value === 'thisMonth') preset.value = 'lastWeek'
     /** 返佣无信用额度：若当前为信用币种则回退语言默认现金币种 */
     if (rebate && isAgentCreditCurrency(agentAppCurrency.value)) {
       fallbackAgentCashCurrency()
@@ -112,26 +110,15 @@ watch(isRebateAgent, (rebate) => {
   }
 })
 
-function pad2(n: number) {
-  return String(n).padStart(2, '0')
-}
-
-function formatDateYmd(d: Date) {
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
 const dateRangeText = computed(() => {
-  if (preset.value === 'thisMonth') {
-    const now = new Date()
-    const start = new Date(now.getFullYear(), now.getMonth(), 1)
-    /** 与今日/昨日/本周一致：YYYY-MM-DD至YYYY-MM-DD；本月为月初→今天 */
-    return `${formatDateYmd(start)}至${formatDateYmd(now)}`
+  if (customDateRange.value) {
+    return `${customDateRange.value.start}至${customDateRange.value.end}`
   }
-  const base = '2025-08-06'
-  if (preset.value === 'today') return `${base}至${base}`
-  if (preset.value === 'yesterday') return `2025-08-05至2025-08-05`
-  if (preset.value === 'thisWeek') return `2025-08-04至2025-08-10`
-  return `2025-07-28至2025-08-03`
+  const today = '2025-08-06'
+  if (preset.value === 'yesterday') return '2025-08-05至2025-08-05'
+  if (preset.value === 'thisMonth') return `2025-08-01至${today}`
+  if (preset.value === 'lastMonth') return '2025-07-01至2025-07-31'
+  return `${today}至${today}`
 })
 
 function pickProfitRankTab(tab: ProfitRankTab) {
@@ -157,7 +144,13 @@ function clearShareRatioQuery() {
 }
 
 function pickPreset(v: RangePreset) {
+  customDateRange.value = null
   preset.value = v
+}
+
+function pickDateRange(start: string, end: string) {
+  customDateRange.value = { start, end }
+  preset.value = null
 }
 
 function agentQueryForTab(tab: BottomTab): Record<string, string> {
@@ -224,6 +217,7 @@ function switchTab(tab: BottomTab) {
       :open-share-ratio="openShareRatio"
       @back="handleAgentBack"
       @pick-preset="pickPreset"
+      @pick-date-range="pickDateRange"
       @pick-profit-rank-tab="pickProfitRankTab"
       @pick-currency="pickCurrency"
       @share-ratio-closed="clearShareRatioQuery"

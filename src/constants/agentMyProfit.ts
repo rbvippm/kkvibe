@@ -66,7 +66,7 @@ export type AgentMyProfitDetailRow = {
   formulaTip?: string
 }
 
-export type RangePreset = 'today' | 'yesterday' | 'thisWeek' | 'lastWeek'
+export type RangePreset = 'today' | 'yesterday' | 'thisMonth' | 'lastMonth'
 
 /** 返佣「我的佣金」· 月份筛选快捷项（本月 + 前 3 个自然月） */
 export type RebateMonthPreset = 'thisMonth' | 'prev1' | 'prev2' | 'prev3'
@@ -106,8 +106,8 @@ export const AGENT_MY_PROFIT_ASSETS = {
 export const AGENT_MY_PROFIT_PRESETS: { key: RangePreset; label: string }[] = [
   { key: 'today', label: '今天' },
   { key: 'yesterday', label: '昨天' },
-  { key: 'thisWeek', label: '本周' },
-  { key: 'lastWeek', label: '上周' },
+  { key: 'thisMonth', label: '本月' },
+  { key: 'lastMonth', label: '上月' },
 ]
 
 /** 返佣快捷：本月 + 前 3 个自然月（文案为 YYYY/MM） */
@@ -393,16 +393,16 @@ export const SHARE_SECTION_SCALE_BY_PRESET: Record<
 > = {
   today: { gameTotal: 523567.88, costTotal: 168370.31 },
   yesterday: { gameTotal: 186420.5, costTotal: 52480.2 },
-  thisWeek: { gameTotal: 892340.66, costTotal: 245680.4 },
-  lastWeek: { gameTotal: 410250.33, costTotal: 132890.15 },
+  thisMonth: { gameTotal: 892340.66, costTotal: 245680.4 },
+  lastMonth: { gameTotal: 410250.33, costTotal: 132890.15 },
 }
 
 function sharePresetKey(preset: ProfitDatePreset = 'today'): RangePreset {
   if (
     preset === 'today' ||
     preset === 'yesterday' ||
-    preset === 'thisWeek' ||
-    preset === 'lastWeek'
+    preset === 'thisMonth' ||
+    preset === 'lastMonth'
   ) {
     return preset
   }
@@ -865,16 +865,15 @@ export function agentMyProfitAmountHeader(identity: AgentIdentityType) {
 }
 
 export function agentMyProfitDateRangeText(preset: ProfitDatePreset): string {
-  const rebateOffset = rebatePresetOffset(preset)
-  if (rebateOffset !== null) {
+  if (preset === 'prev1' || preset === 'prev2' || preset === 'prev3') {
     return formatCommissionMonthLabel(agentMyProfitRebateMonthKey(preset))
   }
 
-  const base = '2025-08-06'
-  if (preset === 'today') return `${base}至${base}`
+  const today = '2025-08-06'
   if (preset === 'yesterday') return '2025-08-05至2025-08-05'
-  if (preset === 'thisWeek') return '2025-08-04至2025-08-10'
-  return '2025-07-28至2025-08-03'
+  if (preset === 'thisMonth') return `2025-08-01至${today}`
+  if (preset === 'lastMonth') return '2025-07-01至2025-07-31'
+  return `${today}至${today}`
 }
 
 export function agentMyProfitDateFilterLabel(identity: AgentIdentityType) {

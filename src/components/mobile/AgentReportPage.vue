@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
 import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from './Mh5CurrencyPickerSheet.vue'
+import Mh5DateRangeSheet from './Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
@@ -26,13 +27,14 @@ import {
   getReportDetail,
   getReportSummaryCards,
   reportCategoryTitle,
-  reportDateRangeText,
+  reportPresetRange,
   reportDetailValueClass,
   reportNetProfitClass,
   type ReportCategoryKey,
   type ReportRangePreset,
   type ReportVendorKey,
 } from '../../constants/agentReport'
+import { formatDateRangeText } from '../../constants/mh5DateRange'
 import { AGENT_REPORT_GAME_STATS_SPEC } from '../../constants/agentReportSpec'
 import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
 import {
@@ -66,7 +68,11 @@ const pageTabs = computed(() => [
 const financeAnnotSpec = AGENT_MY_PROFIT_SPEC
 const gameAnnotSpec = AGENT_REPORT_GAME_STATS_SPEC
 
-const preset = ref<ReportRangePreset>('today')
+const preset = ref<ReportRangePreset | null>('today')
+const todayRange = reportPresetRange('today')
+const filterStart = ref(todayRange.start)
+const filterEnd = ref(todayRange.end)
+const filterDateOpen = ref(false)
 const category = ref<ReportCategoryKey>('all')
 const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
@@ -74,7 +80,7 @@ const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(!isRebateAgent.value))
 
-const dateRangeText = computed(() => reportDateRangeText(preset.value))
+const dateRangeText = computed(() => formatDateRangeText(filterStart.value, filterEnd.value))
 /** 占成对齐代理详情：标题带「（实占）」；返佣不加 */
 const sectionTitle = computed(() => {
   const base = reportCategoryTitle(category.value, vendor.value)
@@ -103,7 +109,17 @@ function pickPageTab(tab: AgentReportPageTab) {
 }
 
 function pickPreset(v: ReportRangePreset) {
+  const range = reportPresetRange(v)
   preset.value = v
+  filterStart.value = range.start
+  filterEnd.value = range.end
+}
+
+function confirmFilterDate(start: string, end: string) {
+  filterStart.value = start
+  filterEnd.value = end
+  preset.value = null
+  filterDateOpen.value = false
 }
 
 function pickCategory(key: ReportCategoryKey) {
@@ -171,12 +187,18 @@ function closeGameProfitFormulaTip() {
     >
       <section class="mh5-agent-report-filter" :aria-label="$t('筛选')">
         <div class="mh5-agent-report-filter__row">
-          <div class="mh5-agent-report-filter__date">
+          <button
+            type="button"
+            class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action"
+            :aria-label="$t('选择日期')"
+            :aria-expanded="filterDateOpen"
+            @click="filterDateOpen = true"
+          >
             <span>{{ dateRangeText }}</span>
             <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
               <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
             </span>
-          </div>
+          </button>
           <button
             type="button"
             class="mh5-agent-report-filter__currency"
@@ -297,6 +319,14 @@ function closeGameProfitFormulaTip() {
         </div>
       </section>
     </main>
+
+    <Mh5DateRangeSheet
+      :open="filterDateOpen"
+      :start="filterStart"
+      :end="filterEnd"
+      @close="filterDateOpen = false"
+      @confirm="confirmFilterDate"
+    />
 
     <Mh5CurrencyPickerSheet
       :open="currencyPickerOpen"

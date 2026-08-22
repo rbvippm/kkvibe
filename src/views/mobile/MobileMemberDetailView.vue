@@ -54,6 +54,9 @@ import {
   reportCategoryTitle,
   reportDetailValueClass,
   reportNetProfitClass,
+  MONTH_RANGE_PRESETS,
+  monthPresetRange,
+  type MonthRangePreset,
   type ReportCategoryKey,
   type ReportVendorKey,
 } from '../../constants/agentReport'
@@ -65,7 +68,7 @@ import {
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
-import Mh5CurrencySwitchRow from '../../components/mobile/Mh5CurrencySwitchRow.vue'
+import Mh5AgentReportFilter from '../../components/mobile/Mh5AgentReportFilter.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   MEMBER_DETAIL_CREDIT_CURRENCY_SPEC,
@@ -78,7 +81,15 @@ const route = useRoute()
 const router = useRouter()
 const { isRebateAgent } = useAgentIdentity()
 
-const activeTab = ref<MemberDetailTab>('manage')
+function resolveMemberDetailTab(raw: unknown): MemberDetailTab | null {
+  const key = String(raw ?? '')
+  if (key === 'manage' || key === 'credit' || key === 'profit' || key === 'game' || key === 'login') {
+    return key
+  }
+  return null
+}
+
+const activeTab = ref<MemberDetailTab>(resolveMemberDetailTab(route.query.tab) ?? 'manage')
 const gameSubTab = ref<MemberGameSubTab>('records')
 const currencyPickerOpen = ref(false)
 const creditCurrencyMenuOpen = ref(false)
@@ -171,6 +182,16 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => route.query.tab,
+  (tab) => {
+    const next = resolveMemberDetailTab(tab)
+    if (next && detailTabs.value.some((item) => item.key === next)) {
+      activeTab.value = next
+    }
+  },
+)
+
 const summaryItems = computed(() => {
   if (!member.value) return []
   const s = member.value.summary
@@ -214,6 +235,13 @@ const settleStart = ref(MH5_DATE_RANGE_TODAY)
 const settleEnd = ref(MH5_DATE_RANGE_TODAY)
 const settleDateOpen = ref(false)
 const settleDateText = computed(() => formatDateRangeText(settleStart.value, settleEnd.value))
+
+const todayRange = monthPresetRange('today')
+const filterPreset = ref<MonthRangePreset | null>('today')
+const filterStart = ref(todayRange.start)
+const filterEnd = ref(todayRange.end)
+const filterDateOpen = ref(false)
+const filterDateText = computed(() => formatDateRangeText(filterStart.value, filterEnd.value))
 const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCurrency.value))
 
 const creditLimitView = computed(() => {
@@ -332,6 +360,22 @@ function confirmSettleDate(start: string, end: string) {
   settleStart.value = start
   settleEnd.value = end
   settleDateOpen.value = false
+}
+
+function pickFilterPreset(key: string) {
+  if (!MONTH_RANGE_PRESETS.some((item) => item.key === key)) return
+  const preset = key as MonthRangePreset
+  const range = monthPresetRange(preset)
+  filterPreset.value = preset
+  filterStart.value = range.start
+  filterEnd.value = range.end
+}
+
+function confirmFilterDate(start: string, end: string) {
+  filterStart.value = start
+  filterEnd.value = end
+  filterPreset.value = null
+  filterDateOpen.value = false
 }
 
 function pickCurrency(value: string) {
@@ -613,7 +657,15 @@ function toggleCreditCurrencyMenu() {
 
       <!-- 占成会员盈亏：默认分区新样式；连点 Tab 切经典汇总 -->
       <template v-else-if="activeTab === 'profit'">
-        <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
+        <Mh5AgentReportFilter
+          :date-text="filterDateText"
+          :currency="currency"
+          :active-preset="filterPreset"
+          :presets="MONTH_RANGE_PRESETS"
+          @open-date="filterDateOpen = true"
+          @open-currency="currencyPickerOpen = true"
+          @pick-preset="pickFilterPreset"
+        />
         <section
           v-if="!useProfitSections"
           class="mh5-member-detail-profit"
@@ -874,6 +926,15 @@ function toggleCreditCurrencyMenu() {
           class="mh5-member-detail-profit"
           @click="closeGameProfitFormulaTip"
         >
+          <Mh5AgentReportFilter
+            :date-text="filterDateText"
+            :currency="currency"
+            :active-preset="filterPreset"
+            :presets="MONTH_RANGE_PRESETS"
+            @open-date="filterDateOpen = true"
+            @open-currency="currencyPickerOpen = true"
+            @pick-preset="pickFilterPreset"
+          />
           <!-- 返佣：对齐返佣代理游戏数据 / 我的报表结构 -->
           <template v-if="isRebateAgent">
             <div class="mh5-agent-report-categories">
@@ -911,8 +972,6 @@ function toggleCreditCurrencyMenu() {
                 </button>
               </div>
             </div>
-
-            <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
 
             <section class="mh5-agent-report-detail">
               <div class="mh5-agent-report-detail__head">
@@ -1003,8 +1062,6 @@ function toggleCreditCurrencyMenu() {
                 </button>
               </div>
             </div>
-
-            <Mh5CurrencySwitchRow :currency="currency" @click="currencyPickerOpen = true" />
 
             <section class="mh5-agent-report-detail">
               <div class="mh5-agent-report-detail__head">
@@ -1187,6 +1244,14 @@ function toggleCreditCurrencyMenu() {
       :end="settleEnd"
       @close="settleDateOpen = false"
       @confirm="confirmSettleDate"
+    />
+
+    <Mh5DateRangeSheet
+      :open="filterDateOpen"
+      :start="filterStart"
+      :end="filterEnd"
+      @close="filterDateOpen = false"
+      @confirm="confirmFilterDate"
     />
   </div>
 </template>

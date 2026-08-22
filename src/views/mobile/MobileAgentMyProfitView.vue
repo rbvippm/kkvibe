@@ -44,8 +44,10 @@ import { agentAppCurrency } from '../../constants/agentAppCurrency'
 import { formatAgentCurrencyLabel } from '../../constants/agentCurrencyIcons'
 import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
 import { AGENT_MY_PROFIT_SPEC } from '../../constants/agentMyProfitSpec'
+import { MH5_DATE_RANGE_TODAY, formatDateRangeText, parseYmd } from '../../constants/mh5DateRange'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import '../../styles/mobile-app-shell.css'
 
@@ -77,6 +79,8 @@ const detailFormulaTipOpen = ref(false)
 const netWinTipOpen = ref(false)
 const negativeTipOpen = ref(false)
 const monthSheetOpen = ref(false)
+const shareDateOpen = ref(false)
+const shareCustomRange = ref<{ start: string; end: string } | null>(null)
 /** 游戏净输赢 / 其他成本：合计下展开细项 */
 const gameDetailsExpanded = ref(false)
 /** 其他成本细项默认展开 */
@@ -116,11 +120,29 @@ watch(isRebateAgent, (rebate) => {
 const dateFilterLabel = computed(() => agentMyProfitDateFilterLabel(agentType.value))
 const datePresets = computed(() => agentMyProfitPresets(agentType.value))
 const rebateMonthOptions = computed(() => getCommissionMonthOptions())
-const dateRangeText = computed(() =>
-  isRebateAgent.value
-    ? formatCommissionMonthLabel(rebateMonth.value)
-    : agentMyProfitDateRangeText(preset.value),
-)
+const dateRangeText = computed(() => {
+  if (isRebateAgent.value) return formatCommissionMonthLabel(rebateMonth.value)
+  if (shareCustomRange.value) {
+    return formatDateRangeText(shareCustomRange.value.start, shareCustomRange.value.end)
+  }
+  return agentMyProfitDateRangeText(preset.value)
+})
+
+const shareDateToday = computed(() => {
+  const todayText = agentMyProfitDateRangeText('today')
+  const end = todayText.split('至')[1] ?? ''
+  return parseYmd(end) ? end : MH5_DATE_RANGE_TODAY
+})
+
+const shareDateStart = computed(() => {
+  if (shareCustomRange.value) return shareCustomRange.value.start
+  return dateRangeText.value.split('至')[0] || shareDateToday.value
+})
+
+const shareDateEnd = computed(() => {
+  if (shareCustomRange.value) return shareCustomRange.value.end
+  return dateRangeText.value.split('至')[1] || shareDateToday.value
+})
 
 const currency = agentAppCurrency
 const rebateMonthKey = computed(() => rebateMonth.value)
@@ -266,6 +288,7 @@ function onNegativeTipClick() {
 }
 
 function pickPreset(key: ProfitDatePreset) {
+  shareCustomRange.value = null
   preset.value = key
   if (isRebateAgent.value) {
     rebateMonth.value = agentMyProfitRebateMonthKey(key)
@@ -275,8 +298,23 @@ function pickPreset(key: ProfitDatePreset) {
 }
 
 function isPresetActive(key: ProfitDatePreset) {
-  if (!isRebateAgent.value) return preset.value === key
+  if (!isRebateAgent.value) {
+    return !shareCustomRange.value && preset.value === key
+  }
   return agentMyProfitRebateMonthKey(key) === rebateMonth.value
+}
+
+function openShareDateSheet() {
+  if (isRebateAgent.value) return
+  closeHeroTips()
+  shareDateOpen.value = true
+}
+
+function confirmShareDate(start: string, end: string) {
+  shareCustomRange.value = { start, end }
+  shareDateOpen.value = false
+  closeNetWinTip()
+  closeNegativeTip()
 }
 
 function openMonthSheet() {
@@ -368,12 +406,19 @@ onBeforeUnmount(() => {
             <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
           </span>
         </button>
-        <div v-else class="mh5-agent-report-filter__date">
+        <button
+          v-else
+          type="button"
+          class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action"
+          :aria-label="$t('选择日期')"
+          :aria-expanded="shareDateOpen"
+          @click="openShareDateSheet"
+        >
           <span>{{ dateRangeText }}</span>
           <span class="mh5-agent-report-filter__calendar" aria-hidden="true">
             <img :src="AGENT_REPORT_FILTER_ASSETS.calendar" alt="" width="16" height="16" />
           </span>
-        </div>
+        </button>
         <button
           type="button"
           class="mh5-agent-report-filter__currency"
@@ -513,14 +558,21 @@ onBeforeUnmount(() => {
               <img :src="AGENT_MY_PROFIT_ASSETS.calendarIcon" alt="" width="34" height="34" />
             </span>
           </button>
-          <div v-else class="mh5-agent-my-profit-date__picker">
+          <button
+            v-else
+            type="button"
+            class="mh5-agent-my-profit-date__picker mh5-agent-my-profit-date__picker--action"
+            :aria-label="$t('选择日期')"
+            :aria-expanded="shareDateOpen"
+            @click="openShareDateSheet"
+          >
             <div class="mh5-agent-my-profit-date__range">
               <p>{{ dateRangeText }}</p>
             </div>
             <span class="mh5-agent-my-profit-date__icon" aria-hidden="true">
               <img :src="AGENT_MY_PROFIT_ASSETS.calendarIcon" alt="" width="34" height="34" />
             </span>
-          </div>
+          </button>
         </div>
         <div class="mh5-agent-my-profit-date__presets" role="tablist" :aria-label="$t('快捷时间')">
           <button
@@ -857,6 +909,15 @@ onBeforeUnmount(() => {
         </div>
       </div>
     </Transition>
+
+    <Mh5DateRangeSheet
+      :open="shareDateOpen"
+      :start="shareDateStart"
+      :end="shareDateEnd"
+      :today="shareDateToday"
+      @close="shareDateOpen = false"
+      @confirm="confirmShareDate"
+    />
 
     <Teleport to="body">
       <Transition name="mh5-agent-my-profit-sheet">
