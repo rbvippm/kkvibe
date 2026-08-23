@@ -23,10 +23,12 @@ const props = withDefaults(
     end: string
     today?: string
     maxMonths?: number
+    tone?: 'default' | 'vip'
   }>(),
   {
     today: MH5_DATE_RANGE_TODAY,
     maxMonths: MH5_DATE_RANGE_MAX_MONTHS,
+    tone: 'default',
   },
 )
 
@@ -129,6 +131,7 @@ function currentLabel(col: DatePart) {
       >
         <div
           class="mh5-agent-overlay-sheet mh5-date-range-sheet"
+          :class="{ 'mh5-date-range-sheet--vip': tone === 'vip' }"
           role="dialog"
           aria-modal="true"
           aria-label="筛选时间"

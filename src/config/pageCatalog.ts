@@ -36,6 +36,7 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-billing-list', platform: 'mobile', routeName: 'mobile-billing-list', path: '/mobile/mine/billing', title: '账单记录', group: '我的', pagePath: ['移动端', '我的', '账单记录'] },
   { id: 'mobile-bet-records', platform: 'mobile', routeName: 'mobile-bet-records', path: '/mobile/mine/bet-orders', title: '投注记录', group: '我的', pagePath: ['移动端', '我的', '投注记录'] },
   { id: 'mobile-agent-settle', platform: 'mobile', routeName: 'mobile-agent-settle', path: '/mobile/mine/agent-settle', title: '代理交收', group: '我的', pagePath: ['移动端', '我的', '代理交收'] },
+  { id: 'mobile-agent-settle-detail', platform: 'mobile', routeName: 'mobile-agent-settle-detail', path: '/mobile/mine/agent-settle/detail', title: '代理结算明细', group: '我的', pagePath: ['移动端', '我的', '代理交收', '代理结算明细'] },
   { id: 'mobile-billing-stats', platform: 'mobile', routeName: 'mobile-billing-stats', path: '/mobile/mine/billing/stats', title: '账单统计', group: '我的', pagePath: ['移动端', '我的', '账单', '账单统计'] },
   { id: 'mobile-asset-detail', platform: 'mobile', routeName: 'mobile-asset-detail', path: '/mobile/mine/assets', title: '资产明细', group: '我的', pagePath: ['移动端', '我的', '资产明细'] },
   { id: 'mobile-wallet-transfer', platform: 'mobile', routeName: 'mobile-wallet-transfer', path: '/mobile/mine/wallet-transfer', title: '充值/提现/兑换', group: '我的', pagePath: ['移动端', '我的', '充值提现兑换'] },

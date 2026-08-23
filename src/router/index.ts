@@ -398,6 +398,12 @@ export const router = createRouter({
           meta: { title: '代理交收', hideTabBar: true },
         },
         {
+          path: 'mine/agent-settle/detail',
+          name: 'mobile-agent-settle-detail',
+          component: () => import('../views/mobile/MobileAgentSettleDetailView.vue'),
+          meta: { title: '代理结算明细', hideTabBar: true },
+        },
+        {
           path: 'mine/assets',
           name: 'mobile-asset-detail',
           component: () => import('../views/mobile/MobileAssetDetailView.vue'),

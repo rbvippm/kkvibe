@@ -30,7 +30,7 @@ const isVipClubBilling = computed(() => isVipClubMineFrom(route.query.from))
 const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
 const creditSheetOpen = ref(false)
 
-const filterType = ref('')
+const filterType = ref(String(route.query.type || '') === 'xcoin' ? 'xcoin' : '')
 const filterCurrency = ref('')
 const filterOpen = ref<FilterKind>(null)
 const currencyTab = ref<'all' | BillingCurrencyKind>('all')

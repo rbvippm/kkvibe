@@ -10186,6 +10186,17 @@
   box-sizing: border-box;
 }
 
+.mh5-agent-overlay-sheet--vip-gold {
+  --mh5-app-card: #1c1b1a;
+  --mh5-app-text: #f5ddb1;
+  --mh5-app-text-secondary: #dcc9a0;
+  --mh5-app-border: rgb(234 183 94 / 28%);
+  --mh5-app-orange: #e8c47a;
+  background: #161514;
+  color: #f5ddb1;
+  border: 1px solid rgb(234 183 94 / 28%);
+}
+
 .mh5-agent-overlay-mask > .mh5-wallet-sheet {
   width: 100%;
   max-width: var(--mh5-max-width, 375px);
@@ -10194,6 +10205,11 @@
 .mh5-agent-overlay-mask > .mh5-credit-account-sheet {
   height: min(80%, var(--mh5-viewport-height, 812px));
   max-height: min(80%, var(--mh5-viewport-height, 812px));
+}
+
+.mh5-agent-overlay-mask > .mh5-agent-settle-credit-sheet {
+  height: auto;
+  max-height: min(78%, var(--mh5-viewport-height, 812px));
 }
 
 .mh5-date-range-sheet {
@@ -10404,6 +10420,64 @@
   border: none;
   background: linear-gradient(90deg, #ff8c00 0%, #ff6d24 100%);
   color: #fff;
+}
+
+.mh5-date-range-sheet--vip {
+  --mh5-app-card: #1c1b1a;
+  --mh5-app-text: #f5ddb1;
+  --mh5-app-text-secondary: #dcc9a0;
+  --mh5-app-border: rgb(234 183 94 / 28%);
+  --mh5-app-orange: #e8c47a;
+  background: #161514;
+  color: #f5ddb1;
+  border: 1px solid rgb(234 183 94 / 28%);
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__title,
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__col span {
+  color: #f5ddb1;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__close img {
+  filter: invert(86%) sepia(28%) saturate(520%) hue-rotate(356deg) brightness(102%);
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__preset,
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__chip,
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__btn--ghost {
+  border-color: rgb(234 183 94 / 32%);
+  background: #1c1b1a;
+  color: #dcc9a0;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__preset--active,
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__chip--active {
+  border-color: #d99d46;
+  background: linear-gradient(180deg, #ffe9bd 0%, #d99d46 100%);
+  color: #161514;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__panel {
+  border-color: rgb(234 183 94 / 22%);
+  background: #12100c;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__to,
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__hint {
+  color: #dcc9a0;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__highlight {
+  background: rgb(232 196 122 / 16%);
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__col button {
+  color: #f5ddb1;
+}
+
+.mh5-date-range-sheet--vip .mh5-date-range-sheet__btn--primary {
+  background: linear-gradient(180deg, #ffe9bd 0%, #d99d46 100%);
+  color: #161514;
 }
 
 .mh5-xcoin-filter-group {
@@ -12347,6 +12421,468 @@
 
 .mh5-settlement-record__copy:active {
   opacity: 0.8;
+}
+
+/* ---------- 贵宾厅 · 代理交收 ---------- */
+.mh5-agent-settle-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background: var(--mh5-app-bg);
+}
+
+.mh5-agent-settle-sticky,
+.mh5-agent-settle-detail-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  background: var(--mh5-app-card);
+  border-bottom: 1px solid var(--mh5-app-border);
+}
+
+.mh5-agent-settle-date {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 10px;
+  background: var(--mh5-app-bg);
+  font-size: 13px;
+  color: var(--mh5-app-text);
+  cursor: pointer;
+}
+
+.mh5-agent-settle-date--compact {
+  min-height: 36px;
+  font-size: 12px;
+  color: #555;
+}
+
+.mh5-agent-settle-period {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mh5-agent-settle-period__label {
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-agent-settle-period .mh5-agent-settle-date {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-agent-settle-date__icon {
+  font-size: 14px;
+}
+
+.mh5-agent-settle-filters {
+  padding: 0 0 4px;
+  background: transparent;
+}
+
+.mh5-agent-settle-summary {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f8fa;
+}
+
+.mh5-agent-settle-summary--detail {
+  background: #fff7ed;
+}
+
+.mh5-agent-settle-summary__cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mh5-agent-settle-summary__title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.mh5-agent-settle-summary__line {
+  margin: 0 0 4px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12px;
+  color: #666;
+}
+
+.mh5-agent-settle-summary__line strong {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mh5-agent-settle-summary__line--lg strong {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.mh5-agent-settle-summary__foot {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.mh5-agent-settle-summary__foot p {
+  margin: 0;
+}
+
+.mh5-agent-settle-main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mh5-agent-settle-card {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 12px;
+  background: var(--mh5-app-card);
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mh5-agent-settle-card:active {
+  opacity: 0.92;
+}
+
+.mh5-agent-settle-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mh5-agent-settle-card__name {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-agent-settle-card__arrow {
+  margin-left: auto;
+  color: #bbb;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mh5-agent-settle-wallet {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.mh5-agent-settle-wallet__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mh5-agent-settle-wallet__icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.mh5-agent-settle-wallet__title {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.mh5-agent-settle-wallet__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  font-size: 12px;
+  color: #666;
+}
+
+.mh5-agent-settle-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.mh5-agent-settle-chip--pay,
+.mh5-agent-settle-tag--pay {
+  color: #ea580c;
+}
+
+.mh5-agent-settle-chip--pay {
+  background: #fff7ed;
+}
+
+.mh5-agent-settle-chip--receive,
+.mh5-agent-settle-tag--receive {
+  color: #16a34a;
+}
+
+.mh5-agent-settle-chip--receive {
+  background: #f0fdf4;
+}
+
+.mh5-agent-settle-chip--cleared {
+  color: #8a8a8a;
+  background: #f3f4f6;
+}
+
+.mh5-agent-settle-sheet {
+  padding-top: 16px;
+}
+
+.mh5-agent-settle-detail-agent {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mh5-agent-settle-detail-agent__name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mh5-agent-settle-single-wallet {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.mh5-agent-settle-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+
+.mh5-agent-settle-detail-grid p {
+  margin: 0;
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.mh5-agent-settle-detail-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #fed7aa;
+}
+
+.mh5-agent-settle-detail-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+}
+
+.mh5-agent-settle-detail-link:active {
+  opacity: 0.82;
+}
+
+.mh5-agent-settle-detail-grid strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.mh5-agent-settle-detail-head .mh5-sub-tabs {
+  margin: 0 -12px;
+}
+
+.mh5-agent-settle-detail-head .mh5-sub-tabs__item {
+  font-size: 12px;
+  padding: 0 8px;
+}
+
+.mh5-agent-settle-bet__game {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mh5-agent-settle-hint {
+  margin: 0;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.mh5-agent-settle-back {
+  align-self: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--mh5-app-orange);
+  color: #fff;
+  font-size: 14px;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-sub-header {
+  background: #161514;
+  border-bottom-color: rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-sub-header__back,
+.mh5-vip-records.mh5-agent-settle-page .mh5-sub-header__right {
+  color: #f5ddb1;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-date--compact {
+  color: #dcc9a0;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-period__label {
+  color: #dcc9a0;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary {
+  background: #12100c;
+  border: 1px solid rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary--detail {
+  background: #1c1b1a;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary__title,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary__line,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary__foot,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-wallet__row,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-grid p {
+  color: #dcc9a0;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-summary__foot {
+  border-top-color: rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-card {
+  background: #161514;
+  border-color: rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-card:active {
+  background: rgb(234 183 94 / 10%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-card__arrow {
+  color: #e8c47a;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-wallet {
+  border-top-color: rgb(234 183 94 / 16%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-wallet__title,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-agent__name,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-grid strong {
+  color: #f5ddb1;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-chip--pay,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-tag--pay {
+  color: #f0c36a;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-chip--pay {
+  background: rgb(232 196 122 / 16%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-chip--receive,
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-tag--receive {
+  color: #7ee08a;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-chip--receive {
+  background: rgb(126 224 138 / 14%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-chip--cleared {
+  color: #b8aa90;
+  background: #2a2418;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-links {
+  border-top-color: rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-link {
+  background: #12100c;
+  color: #f5ddb1;
+  border: 1px solid rgb(234 183 94 / 22%);
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-back {
+  background: linear-gradient(180deg, #ffe9bd 0%, #d99d46 100%);
+  color: #161514;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-grid strong.mh5-agent-settle-winlose--lose {
+  color: #ff7a86;
+}
+
+.mh5-vip-records.mh5-agent-settle-page .mh5-agent-settle-detail-grid strong.mh5-agent-settle-winlose--win {
+  color: #7ee08a;
 }
 
 /* ---------- 代理中心 · 团队管理（Figma 1433:19431） ---------- */
@@ -15524,7 +16060,7 @@ div.agent-home__profit-tab--ratio {
 .mh5-member-credit-up {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
   padding: 10px 12px calc(88px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;

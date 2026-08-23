@@ -360,8 +360,19 @@ watch(
   (vip) => {
     if (!vip) return
     const ccy = vipRecordsGameCurrency()
-    appliedFilter.value = { ...appliedFilter.value, gameCurrency: ccy }
-    filterDraft.value = { ...filterDraft.value, gameCurrency: ccy }
+    const start = String(route.query.start || '')
+    const end = String(route.query.end || '')
+    const next = {
+      ...appliedFilter.value,
+      gameCurrency: ccy,
+    }
+    if (start && end) {
+      next.timePreset = resolveBetOrderTimePreset(start, end)
+      next.customStart = start
+      next.customEnd = end
+    }
+    appliedFilter.value = next
+    filterDraft.value = { ...next }
   },
   { immediate: true },
 )
