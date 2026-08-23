@@ -124,9 +124,7 @@ const profitDialogFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
 const isCredited = computed(() => Boolean(member.value?.isCredited))
-const detailTabs = computed(() =>
-  getMemberDetailTabs(isCredited.value, isRebateAgent.value),
-)
+const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
 const cashWalletGroups = computed(() => formatMemberCashWalletGroups(member.value?.wallets))
 const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
@@ -179,14 +177,6 @@ watch(isCredited, (credited) => {
     if (isAgentCreditCurrency(currency.value)) fallbackAgentCashCurrency()
   }
 })
-
-watch(
-  isRebateAgent,
-  (rebate) => {
-    if (rebate && activeTab.value === 'profit') activeTab.value = 'manage'
-  },
-  { immediate: true },
-)
 
 watch(
   () => route.query.tab,
@@ -425,7 +415,6 @@ function toggleCreditCurrencyMenu() {
         <h1 class="mh5-member-detail-nav__title">{{ $t('会员详情') }}</h1>
         <div class="mh5-member-detail-nav__actions">
           <Mh5SpecAnnot
-            v-if="!isRebateAgent"
             :spec="MEMBER_DETAIL_CREDIT_CURRENCY_SPEC"
             placement="bottom"
           />
@@ -669,7 +658,7 @@ function toggleCreditCurrencyMenu() {
         </section>
       </template>
 
-      <!-- 占成会员盈亏：默认分区新样式；连点 Tab 切经典汇总 -->
+      <!-- 会员盈亏：默认分区新样式；连点 Tab 切经典汇总（占成 / 返佣共用） -->
       <template v-else-if="activeTab === 'profit'">
         <Mh5AgentReportFilter
           :date-text="filterDateText"

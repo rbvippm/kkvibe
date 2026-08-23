@@ -3,9 +3,14 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
-import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import {
+  AGENT_CREDIT_CURRENCY_TABS,
+  formatCreditCurrencyUnit,
+  type AgentCreditCurrency,
+} from '../../constants/agentDetail'
+import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
 import {
   DEFAULT_MEMBER_CREDIT_PRODUCTS,
   formatMemberCreditPercent,
@@ -19,7 +24,6 @@ import { promoteToCreditMember } from '../../constants/agentTeam'
 import { syncCreditRebateFromMemberCredit } from '../../constants/memberRebateRatio'
 import {
   MOCK_XCOIN_BALANCES,
-  XCOIN_CREDIT_CURRENCY_TABS,
   emptySelectableCredits,
   parseXCoinCreditCurrency,
   type XCoinCreditCurrency,
@@ -39,7 +43,6 @@ const selectedMemberId = ref(String(route.query.targetId || ''))
 const selectedMember = ref<XCoinSelectableTarget | null>(null)
 
 const kingkongQuery = ref('')
-const queryLoading = ref(false)
 const lookupTip = ref('')
 const lookupResult = ref<MemberCreditKingkongLookupResult | null>(null)
 
@@ -58,7 +61,8 @@ const editDraft = ref('')
 
 const creditAmount = ref('')
 const creditCurrency = ref<XCoinCreditCurrency>(parseXCoinCreditCurrency(route.query.currency))
-const currencyPickerOpen = ref(false)
+const creditCurrencyMenuOpen = ref(false)
+const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCurrency.value))
 
 const availableBalance = computed(() => MOCK_XCOIN_BALANCES[creditCurrency.value])
 const creditAmountNumber = computed(() => Number(creditAmount.value))
@@ -75,7 +79,7 @@ const editingProduct = computed(() =>
   products.value.find((item) => item.key === editProductKey.value),
 )
 
-const canConfirmMember = computed(() => Boolean(selectedMemberId.value && queryResult.value))
+const canConfirmMember = computed(() => Boolean(lookupResult.value?.ok && queryResult.value))
 
 watch(kingkongQuery, () => {
   lookupTip.value = ''
@@ -83,14 +87,7 @@ watch(kingkongQuery, () => {
   selectedMemberId.value = ''
 })
 
-async function lookupAccount() {
-  lookupTip.value = ''
-  lookupResult.value = null
-  selectedMemberId.value = ''
-  queryLoading.value = true
-  await new Promise((r) => setTimeout(r, 280))
-  queryLoading.value = false
-
+function lookupAccount() {
   const result = lookupMemberCreditByKingkong(kingkongQuery.value)
   lookupResult.value = result
   if (result.ok) {
@@ -99,6 +96,7 @@ async function lookupAccount() {
     return
   }
   lookupTip.value = result.message
+  selectedMemberId.value = ''
 }
 
 function flowStepIndex() {
@@ -116,6 +114,7 @@ function stepBarStatus(index: number) {
 }
 
 function goPrevious() {
+  creditCurrencyMenuOpen.value = false
   if (flowStep.value === 'success') {
     flowStep.value = isOtherMemberFlow.value ? 'credit_up' : 'rebate'
     return
@@ -142,7 +141,17 @@ function confirmMember() {
 
 function goCreditUpStep() {
   creditAmount.value = ''
+  creditCurrencyMenuOpen.value = false
   flowStep.value = 'credit_up'
+}
+
+function pickCreditCurrency(value: AgentCreditCurrency) {
+  creditCurrency.value = value
+  creditCurrencyMenuOpen.value = false
+}
+
+function toggleCreditCurrencyMenu() {
+  creditCurrencyMenuOpen.value = !creditCurrencyMenuOpen.value
 }
 
 async function confirmCreditUp() {
@@ -173,13 +182,6 @@ function confirmDirectCredit() {
   flowStep.value = 'success'
 }
 
-const creditCurrencyOptions = XCOIN_CREDIT_CURRENCY_TABS.map((tab) => tab.key)
-
-function pickCurrency(value: string) {
-  creditCurrency.value = value as XCoinCreditCurrency
-  currencyPickerOpen.value = false
-}
-
 /** 上分额度：非负数字，最多两位小数 */
 function onCreditAmountInput(event: Event) {
   const target = event.target as HTMLInputElement
@@ -202,6 +204,7 @@ function resetFlow() {
   flowStep.value = isOtherMemberFlow.value ? 'search' : 'rebate'
   rebatePercent.value = 0
   creditAmount.value = ''
+  creditCurrencyMenuOpen.value = false
   products.value = DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item }))
   if (isOtherMemberFlow.value) {
     selectedMemberId.value = ''
@@ -257,7 +260,7 @@ if (route.query.targetId && route.query.targetName) {
 </script>
 
 <template>
-  <div class="mh5-agent-credit-page">
+  <div class="mh5-agent-credit-page" @click="creditCurrencyMenuOpen = false">
     <Mh5SubPageHeader :title="pageTitle" :on-back="goPrevious">
       <template #right>
         <Mh5SpecAnnot
@@ -314,55 +317,53 @@ if (route.query.targetId && route.query.targetName) {
       </template>
     </div>
 
-    <main v-if="flowStep === 'search'" class="mh5-member-credit-search">
-      <div class="mh5-xcoin-other-search-area mh5-member-credit-search__query">
-        <div class="mh5-xcoin-other-query-bar">
+    <main v-if="flowStep === 'search'" class="mh5-agent-credit-main">
+      <section class="agent-invite-page-card">
+        <label class="agent-invite-form__label" for="member-credit-id">金刚号</label>
+        <div class="agent-invite-form__search">
           <input
+            id="member-credit-id"
             v-model="kingkongQuery"
             type="text"
-            class="mh5-xcoin-other-query-bar__input"
-            placeholder="请输入金刚号"
+            class="agent-invite-form__input"
+            placeholder="请输入对方金刚号"
             @keydown.enter.prevent="lookupAccount"
           />
-          <button
-            type="button"
-            class="mh5-xcoin-other-query-bar__btn"
-            :disabled="queryLoading"
-            @click="lookupAccount"
-          >
-            {{ queryLoading ? '查询中' : '查询' }}
-          </button>
+          <button type="button" class="agent-invite-form__verify" @click="lookupAccount">搜索/验证</button>
         </div>
         <p
           v-if="lookupTip"
-          class="agent-invite-form__tip mh5-member-credit-search__lookup-tip"
+          class="agent-invite-form__tip"
           :class="{ 'agent-invite-form__tip--error': lookupResult && !lookupResult.ok }"
         >
           {{ lookupTip }}
         </p>
-        <p class="mh5-xcoin-other-member__tip">
-          注意：非你的直属会员授信成功后将自动挂靠到你的信用会员列表，请务必核实账号信息并注意资金安全
-        </p>
-      </div>
+      </section>
 
-      <div class="mh5-member-credit-search__result">
-        <label
-          v-if="queryResult"
-          class="mh5-xcoin-select-card mh5-member-credit-result-card"
-          :class="{ 'mh5-xcoin-select-card--active': selectedMemberId === queryResult.id }"
-        >
-          <input
-            v-model="selectedMemberId"
-            type="radio"
-            class="mh5-xcoin-select-card__radio"
-            :value="queryResult.id"
-          />
-          <div class="mh5-xcoin-select-card__body">
-            <p class="mh5-member-credit-result-card__nickname">昵称：{{ queryResult.nickname }}</p>
-            <p class="mh5-member-credit-result-card__kingkong">金刚号：{{ queryResult.kingkongId }}</p>
-          </div>
-        </label>
-      </div>
+      <section v-if="queryResult" class="agent-invite-member-card">
+        <div class="agent-invite-member-card__avatar">{{ queryResult.nickname.slice(0, 1) }}</div>
+        <div class="agent-invite-member-card__main">
+          <p class="agent-invite-member-card__label">待授信会员</p>
+          <p class="agent-invite-member-card__account">昵称：{{ queryResult.nickname }}</p>
+          <p class="agent-invite-member-card__account">金刚号：{{ queryResult.kingkongId }}</p>
+          <p class="agent-invite-member-card__desc">渠道一致，且不是你的直属会员</p>
+        </div>
+      </section>
+
+      <section class="agent-invite-rule-card">
+        <p class="agent-invite-rule-card__group">授信对象</p>
+        <ul class="agent-invite-rule-card__list">
+          <li>对方须为已注册会员，且金刚号真实有效</li>
+          <li>对方渠道须与当前代理一致</li>
+          <li>对方不能已是你的直属会员（直属请走团队「会员授信」）</li>
+          <li>对方不能已是信用代理</li>
+        </ul>
+        <p class="agent-invite-rule-card__group">资金安全</p>
+        <ul class="agent-invite-rule-card__list">
+          <li>授信成功后将自动挂靠到你的信用会员列表</li>
+          <li>请务必核实账号信息并注意资金安全</li>
+        </ul>
+      </section>
     </main>
 
     <main v-else-if="flowStep === 'rebate'" class="mh5-agent-credit-main">
@@ -426,19 +427,53 @@ if (route.query.targetId && route.query.targetName) {
     </main>
 
     <main v-else-if="flowStep === 'credit_up'" class="mh5-member-credit-up">
-      <button
-        type="button"
-        class="mh5-xcoin-currency-row"
-        aria-label="选择信用额度币种"
-        @click="currencyPickerOpen = true"
-      >
+      <div class="mh5-xcoin-currency-row">
         <span class="mh5-xcoin-currency-row__label">币种</span>
-        <span class="mh5-xcoin-currency-row__value">
-          <Mh5CurrencyIcon :code="creditCurrency" :size="20" />
-          {{ $t(creditCurrency) }}
-          <span class="mh5-xcoin-currency-row__arrow">›</span>
-        </span>
-      </button>
+        <div class="mh5-agent-detail-credit-manage__ccy-wrap">
+          <button
+            type="button"
+            class="mh5-currency-switch__btn mh5-agent-detail-credit-manage__ccy"
+            aria-label="选择信用额度币种"
+            :aria-expanded="creditCurrencyMenuOpen"
+            @click.stop="toggleCreditCurrencyMenu"
+          >
+            <span class="mh5-currency-switch__main">
+              <Mh5CurrencyIcon :code="creditCurrency" :size="18" />
+              <span>{{ creditCurrencyUnitLabel }}</span>
+            </span>
+            <span
+              class="mh5-currency-switch__chevron"
+              :class="{ 'mh5-agent-detail-credit-manage__ccy-chevron--open': creditCurrencyMenuOpen }"
+              aria-hidden="true"
+            >
+              <img :src="AGENT_REPORT_FILTER_ASSETS.dropdown" alt="" width="8" height="5" />
+            </span>
+          </button>
+          <div
+            v-if="creditCurrencyMenuOpen"
+            class="mh5-agent-detail-credit-manage__ccy-menu mh5-xcoin-currency-row__menu"
+            role="listbox"
+            aria-label="信用额度币种"
+            @click.stop
+          >
+            <button
+              v-for="tab in AGENT_CREDIT_CURRENCY_TABS"
+              :key="tab.key"
+              type="button"
+              role="option"
+              class="mh5-agent-detail-credit-manage__ccy-option"
+              :class="{
+                'mh5-agent-detail-credit-manage__ccy-option--active': creditCurrency === tab.key,
+              }"
+              :aria-selected="creditCurrency === tab.key"
+              @click="pickCreditCurrency(tab.key)"
+            >
+              <Mh5CurrencyIcon :code="tab.key" :size="18" />
+              <span>{{ tab.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <section class="mh5-xcoin-wallet-card">
         <p class="mh5-xcoin-wallet-card__label">从 我的 {{ creditCurrency }} 钱包</p>
@@ -496,9 +531,12 @@ if (route.query.targetId && route.query.targetName) {
 
     <footer class="mh5-agent-credit-footer safe-pb">
       <template v-if="flowStep === 'search'">
+        <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goPrevious">
+          上一步
+        </button>
         <button
           type="button"
-          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary mh5-member-credit-footer__btn--solo"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
           :disabled="!canConfirmMember"
           @click="confirmMember"
         >
@@ -597,13 +635,6 @@ if (route.query.targetId && route.query.targetName) {
       </div>
     </Teleport>
 
-    <Mh5CurrencyPickerSheet
-      :open="currencyPickerOpen"
-      :currency="creditCurrency"
-      :options="creditCurrencyOptions"
-      @close="currencyPickerOpen = false"
-      @pick="pickCurrency"
-    />
   </div>
 </template>
 

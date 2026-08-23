@@ -1,0 +1,162 @@
+[
+  {
+    "sheet": "k2-app",
+    "row": 206,
+    "kind": "D_is_TH",
+    "a": "已过期",
+    "b": "Expired",
+    "c": "หมดอายุแล้ว",
+    "d": "Đãหมดอายุ",
+    "e": "已過期"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 641,
+    "kind": "E_is_TH",
+    "a": "因主播违规，本场直播被封禁",
+    "b": "This livestream has been banned due to a host violation.",
+    "c": "ไลฟ์นี้ถูกระงับเนื่องจากผู้จัดไลฟ์ละเมิดกฎ",
+    "d": "Livestream này đã bị cấm do主播 vi phạm.",
+    "e": "เนื่องจากผู้จัดไลฟ์ทำผิดกฎ ไลฟ์นี้จึงถูกระงับ"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 722,
+    "kind": "E_is_TH",
+    "a": "屏幕共享和主播设备必须在同一局域网内",
+    "b": "Screen sharing and the host device must be on the same LAN.",
+    "c": "การแชร์หน้าจอและอุปกรณ์ของผู้จัดไลฟ์ต้องอยู่ในเครือข่าย LAN เดียวกัน",
+    "d": "Chia sẻ màn hình và thiết bị主播 phải ở cùng mạng LAN.",
+    "e": "螢幕分享和主播裝置必須在同่าย網路內"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 801,
+    "kind": "D_is_TH",
+    "a": "请设置直播封面图",
+    "b": "Please set a live cover image",
+    "c": "โปรดตั้งค่ารูปหน้าปกไลฟ์",
+    "d": "Vui lòngตั้งค่าภาพปกไลฟ์",
+    "e": "請設定直播封面圖"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 893,
+    "kind": "C_is_EN",
+    "a": "金刚号：",
+    "b": "King Kong ID:",
+    "c": "ID King Kong:",
+    "d": "ID King Kong:",
+    "e": "金剛號："
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1139,
+    "kind": "D_is_TH",
+    "a": "点击上传身份证国徽面",
+    "b": "Tap to upload the back of your ID card",
+    "c": "แตะเพื่ออัปโหลดด้านหลังบัตรประจำตัว",
+    "d": "Nhấn để tải lên mặtหลัง thẻ căn cước",
+    "e": "點擊上傳身分證國徽面"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1315,
+    "kind": "D_is_TH",
+    "a": "异常反馈",
+    "b": "Report an Issue",
+    "c": "รายงานปัญหา",
+    "d": "Phản hồi sựผิดปกติ",
+    "e": "異常回饋"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1543,
+    "kind": "E_is_TH",
+    "a": "请输入赠送数量",
+    "b": "Please enter gift quantity",
+    "c": "โปรดกรอกจำนวนของขวัญ",
+    "d": "Vui lòng nhập số lượng quà tặng",
+    "e": "請輸入จำนวนของขวัญ"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1568,
+    "kind": "E_is_TH",
+    "a": "您的抵押借款质押率达到 %@ 已超过平仓预警线，请尽快补充抵押资金以免损失资金",
+    "b": "The pledge ratio of your loan has reached %@ and exceeded the liquidation warning line. Please add collateral as soon as possible to avoid loss.",
+    "c": "อัตราส่วนหลักประกันของเงินกู้คุณถึง %@ และเกินเส้นเตือนปิดสถานะ โปรดเพิ่มหลักประกันโดยเร็วเพื่อหลีกเลี่ยงความเสียหาย",
+    "d": "Tỷ lệ thế chấp khoản vay của bạn đã đạt %@ và vượt ngưỡng cảnh báo thanh lý. Vui lòng bổ sung tài sản thế chấp sớm để tránh tổn thất.",
+    "e": "อัตราส่วนหลักประกันของ您的抵押借款已達 %@，超過強制平倉警戒線，請盡快補充抵押資金以免損失"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1809,
+    "kind": "E_is_TH",
+    "a": "清除密码设置成功。解锁时输入该密码将自动删除账号数据，解锁时请注意",
+    "b": "Panic password cleared successfully. Entering this password when unlocking will automatically delete account data. Please use caution.",
+    "c": "ล้างการตั้งค่ารหัสผ่านล้างข้อมูลสำเร็จ เมื่อป้อนรหัสนี้ขณะปลดล็อก ข้อมูลบัญชีจะถูกลบโดยอัตโนมัติ โปรดระวัง",
+    "d": "Đã xóa cài đặt mật khẩu hủy dữ liệu. Khi nhập mật khẩu này để mở khóa, dữ liệu tài khoản sẽ tự động bị xóa, vui lòng thận trọng",
+    "e": "ล้างการตั้งค่ารหัสผ่านสำเร็จ เมื่อป้อนรหัสนี้ขณะปลดล็อก ข้อมูลบัญชีจะถูกลบโดยอัตโนมัติ โปรดระวัง"
+  },
+  {
+    "sheet": "k2-app",
+    "row": 1900,
+    "kind": "E_is_TH",
+    "a": "该群组成员已达上限",
+    "b": "This group has reached its member limit",
+    "c": "กลุ่มนี้มีสมาชิกถึงขีดจำกัดแล้ว",
+    "d": "Nhóm này đã đạt giới hạn thành viên",
+    "e": "กลุ่มนี้สมาชิก已達上限"
+  },
+  {
+    "sheet": "k2-h5（与app不同的）",
+    "row": 190,
+    "kind": "D_is_TH",
+    "a": "取消创建新订单",
+    "b": "Cancel creating new order",
+    "c": "ยกเลิกการสร้างคำสั่งซื้อใหม่",
+    "d": "Hủy tạo đơn hàngใหม่",
+    "e": "取消建立新訂單"
+  },
+  {
+    "sheet": "k2-h5（与app不同的）",
+    "row": 396,
+    "kind": "E_is_TH",
+    "a": "当前系统仅支持查询最近1年的账单记录",
+    "b": "The current system only supports bill records from the past year.",
+    "c": "ระบบปัจจุบันรองรับการดูประวัติรายการย้อนหลัง 1 ปีเท่านั้น",
+    "d": "Hệ thống hiện chỉ hỗ trợ tra cứu lịch sử hóa đơn trong vòng 1 năm gần đây.",
+    "e": "ระบบปัจจุบันรองรับการดูประวัติบิลย้อนหลัง 1 ปีเท่านั้น"
+  },
+  {
+    "sheet": "k2-h5（与app不同的）",
+    "row": 486,
+    "kind": "E_is_TH",
+    "a": "最少充值数 10.00 USDT\n该地址仅接收USDT(TRON)收款",
+    "b": "Minimum deposit: 10.00 USDT\nThis address only accepts USDT (TRON) payments",
+    "c": "ขั้นต่ำการฝาก 10.00 USDT\nที่อยู่นี้รับเฉพาะ USDT(TRON)",
+    "d": "Nạp tối thiểu 10.00 USDT\nĐịa chỉ này chỉ nhận USDT(TRON)",
+    "e": "จำนวนเงินฝากขั้นต่ำ 10.00 USDT\nที่อยู่นี้รับเฉพาะ USDT(TRON)"
+  },
+  {
+    "sheet": "k2-h5（与app不同的）",
+    "row": 762,
+    "kind": "E_is_TH",
+    "a": "支付错误将无法追回，损失自行承担",
+    "b": "Payments made in error cannot be recovered. You are responsible for any losses.",
+    "c": "หากชำระเงินผิดพลาดจะไม่สามารถเรียกคืนได้ และคุณต้องรับผิดชอบความเสียหายเอง",
+    "d": "Thanh toán sai không thể thu hồi, bạn tự chịu mọi tổn thất.",
+    "e": "หาก支付錯誤將無法追回，損失自行承擔"
+  },
+  {
+    "sheet": "k2-h5（与app不同的）",
+    "row": 2272,
+    "kind": "C_is_EN",
+    "a": "金刚号",
+    "b": "King Kong ID",
+    "c": "ID King Kong",
+    "d": "ID King Kong",
+    "e": "金剛號"
+  }
+]

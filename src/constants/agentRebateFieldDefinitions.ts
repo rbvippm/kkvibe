@@ -247,7 +247,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 26,
         name: '其他奖励',
-        biz: '其他奖励 = VIP晋级礼金 + VIP额外奖金 + 活动金（产品口径；返佣原型当前隐藏「会员盈亏」Tab）',
+        biz: '其他奖励 = VIP晋级礼金 + VIP额外奖金 + 活动金',
         dimension: '会员+币种',
         method: '10分钟',
         handler: '现金',
@@ -255,7 +255,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 27,
         name: '会员盈亏',
-        biz: '会员盈亏 = 游戏净输赢 + 其他奖励（产品口径；返佣原型当前隐藏「会员盈亏」Tab，不强制露出）',
+        biz: '会员盈亏 = 游戏净输赢 + 其他奖励',
         dimension: '会员+币种',
         method: '10分钟',
         handler: '现金',

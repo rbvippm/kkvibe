@@ -66,8 +66,21 @@ function isOwnDirectMember(normalized: string) {
     return true
   }
   return teamDirectMembers.value.some(
-    (item) => item.id.toLowerCase() === normalized || item.nickname.trim().toLowerCase() === normalized,
+    (item) =>
+      item.id.toLowerCase() === normalized ||
+      item.nickname.trim().toLowerCase() === normalized ||
+      item.kingkongId?.trim().toLowerCase() === normalized,
   )
+}
+
+function isKingkongMissing(normalized: string) {
+  if (normalized.length < 4) return true
+  if (normalized.includes('none') || normalized.includes('missing') || normalized === '404') return true
+  return false
+}
+
+function isChannelMismatch(normalized: string) {
+  return normalized.includes('channel')
 }
 
 function buildLookupMember(raw: string, normalized: string): XCoinSelectableTarget {
@@ -88,28 +101,32 @@ function buildLookupMember(raw: string, normalized: string): XCoinSelectableTarg
 
 /**
  * 其他会员授信 · 按金刚号查询校验
- * - 金刚号不存在
- * - 已是信用代理
- * - 已是自己的直属会员（须走直属会员授信入口）
+ * 1. 金刚号必须存在
+ * 2. 渠道须与当前代理一致
+ * 3. 已是自己的直属会员不可再授信
  */
 export function lookupMemberCreditByKingkong(input: string): MemberCreditKingkongLookupResult {
   const raw = input.trim()
   const normalized = raw.toLowerCase()
 
   if (!normalized) {
-    return { ok: false, message: '请输入金刚号' }
+    return { ok: false, message: '请输入对方金刚号' }
+  }
+
+  if (isKingkongMissing(normalized)) {
+    return { ok: false, message: '金刚号不存在' }
+  }
+
+  if (isChannelMismatch(normalized)) {
+    return { ok: false, message: '渠道不一致，请联系客服处理' }
+  }
+
+  if (isOwnDirectMember(normalized)) {
+    return { ok: false, message: '该账号已是你的直属会员，请从团队管理发起授信' }
   }
 
   if (isAlreadyCreditAgent(normalized)) {
     return { ok: false, message: '该账号已是信用代理' }
-  }
-
-  if (isOwnDirectMember(normalized)) {
-    return { ok: false, message: '该账号已是你的直属会员' }
-  }
-
-  if (normalized.length < 4) {
-    return { ok: false, message: '金刚号不存在' }
   }
 
   return {
