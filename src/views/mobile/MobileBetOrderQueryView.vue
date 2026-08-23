@@ -159,7 +159,7 @@ const toolbarCategoryLabel = computed(() =>
   appliedFilter.value.category ? getBetOrderCategoryLabel(appliedFilter.value.category) : '游戏',
 )
 
-function vipRecordsGameCurrency() {
+function vipRecordsGameCurrency(): BetOrderCurrencyFilter {
   if (!recordsSelectAll.value) {
     return betCurrencyFromCreditCode(selectedWallet.value?.currency ?? 'cny')
   }
