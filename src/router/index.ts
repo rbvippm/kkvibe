@@ -748,6 +748,34 @@ export const router = createRouter({
           component: () => import('../views/pc/PcCreditLimitTransferDocView.vue'),
           meta: { title: '信用额度记录-文档说明' },
         },
+        {
+          path: 'vip-hall-home-config',
+          redirect: { name: 'pc-vip-hall-module' },
+        },
+        {
+          path: 'vip-hall-module',
+          name: 'pc-vip-hall-module',
+          component: () => import('../views/pc/PcVipHallModuleView.vue'),
+          meta: { title: '模块管理' },
+        },
+        {
+          path: 'vip-hall-module/doc',
+          name: 'pc-vip-hall-module-doc',
+          component: () => import('../views/pc/PcVipHallModuleDocView.vue'),
+          meta: { title: '模块管理-文档说明' },
+        },
+        {
+          path: 'vip-hall-product',
+          name: 'pc-vip-hall-product',
+          component: () => import('../views/pc/PcVipHallProductView.vue'),
+          meta: { title: '产品管理' },
+        },
+        {
+          path: 'vip-hall-product/doc',
+          name: 'pc-vip-hall-product-doc',
+          component: () => import('../views/pc/PcVipHallProductDocView.vue'),
+          meta: { title: '产品管理-文档说明' },
+        },
       ],
     },
     {

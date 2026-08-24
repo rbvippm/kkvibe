@@ -114,6 +114,18 @@ export const pcDocRoutes: PcDocRoute[] = [
     title: '文档说明',
     pagePath: ['运营管理', '活动明细', '文档说明'],
   },
+  {
+    path: '/pc/vip-hall-module/doc',
+    routeName: 'pc-vip-hall-module-doc',
+    title: '文档说明',
+    pagePath: ['贵宾厅管理', '模块管理', '文档说明'],
+  },
+  {
+    path: '/pc/vip-hall-product/doc',
+    routeName: 'pc-vip-hall-product-doc',
+    title: '文档说明',
+    pagePath: ['贵宾厅管理', '产品管理', '文档说明'],
+  },
 ]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
@@ -231,6 +243,29 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-invite-rebate-inviters',
         pagePath: ['运营管理', '邀请列表'],
         docRouteName: 'pc-invite-rebate-inviters-doc',
+      },
+    ],
+  },
+  {
+    key: 'vip-hall',
+    title: '贵宾厅管理',
+    icon: '♛',
+    children: [
+      {
+        key: 'vip-hall-module',
+        title: '模块管理',
+        path: '/pc/vip-hall-module',
+        routeName: 'pc-vip-hall-module',
+        pagePath: ['贵宾厅管理', '模块管理'],
+        docRouteName: 'pc-vip-hall-module-doc',
+      },
+      {
+        key: 'vip-hall-product',
+        title: '产品管理',
+        path: '/pc/vip-hall-product',
+        routeName: 'pc-vip-hall-product',
+        pagePath: ['贵宾厅管理', '产品管理'],
+        docRouteName: 'pc-vip-hall-product-doc',
       },
     ],
   },
