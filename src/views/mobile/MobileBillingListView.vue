@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5BillingRecordRow from '../../components/mobile/Mh5BillingRecordRow.vue'
 import Mh5BillingGroupHead from '../../components/mobile/Mh5BillingGroupHead.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
@@ -18,6 +19,7 @@ import {
   MOCK_BILLING_RECORDS,
   type BillingCurrencyKind,
 } from '../../constants/billingList'
+import { BILLING_LIST_SPEC } from '../../constants/billingListSpec'
 import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
 import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import '../../styles/mobile-app-shell.css'
@@ -136,6 +138,7 @@ function goStats() {
       </button>
       <h1 class="mh5-billing-header__title">{{ $t('账单记录') }}</h1>
       <div class="mh5-billing-header__actions">
+        <Mh5SpecAnnot :spec="BILLING_LIST_SPEC" placement="bottom" />
         <button
           v-if="!isVipClubBilling"
           type="button"
@@ -341,6 +344,10 @@ function goStats() {
 </template>
 
 <style scoped>
+.mh5-billing-header__actions :deep(.mh5-spec-annot) {
+  margin-right: 4px;
+}
+
 .mh5-billing-sheet-enter-active,
 .mh5-billing-sheet-leave-active {
   transition: opacity 0.2s ease;

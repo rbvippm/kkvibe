@@ -18,7 +18,7 @@ import {
   type AgentSettleCurrencyFilter,
   type AgentSettleWallet,
 } from '../../constants/agentSettle'
-import { AGENT_SETTLE_DETAIL_SPEC } from '../../constants/agentSettleSpec'
+import { AGENT_SETTLE_SPEC } from '../../constants/agentSettleSpec'
 import { dateRangeSheetPresetRange } from '../../constants/mh5DateRange'
 import { withMineHallFrom } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
@@ -111,7 +111,7 @@ function winLoseClass(value: number) {
   <div class="mh5-route-view mh5-agent-settle-page mh5-vip-records">
     <Mh5SubPageHeader title="代理结算明细" :on-back="goBack">
       <template #right>
-        <Mh5SpecAnnot :spec="AGENT_SETTLE_DETAIL_SPEC" placement="bottom" />
+        <Mh5SpecAnnot :spec="AGENT_SETTLE_SPEC" placement="bottom" />
       </template>
     </Mh5SubPageHeader>
 
@@ -123,7 +123,7 @@ function winLoseClass(value: number) {
         </div>
 
         <div class="mh5-agent-settle-period">
-          <span class="mh5-agent-settle-period__label">结算周期</span>
+          <span class="mh5-agent-settle-period__label">对账周期</span>
           <button
             type="button"
             class="mh5-agent-settle-date mh5-agent-settle-date--compact"

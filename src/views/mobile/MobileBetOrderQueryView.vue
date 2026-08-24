@@ -1,13 +1,20 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
-import { AGENT_BET_ORDER_QUERY_SPEC } from '../../constants/betOrderQuerySpec'
+import { AGENT_SETTLE_TODAY } from '../../constants/agentSettle'
+import { AGENT_BET_ORDER_QUERY_SPEC, MEMBER_BET_RECORDS_SPEC } from '../../constants/betOrderQuerySpec'
+import {
+  DATE_RANGE_SHEET_PRESETS,
+  dateRangeSheetPresetRange,
+  matchDateRangeSheetPreset,
+} from '../../constants/mh5DateRange'
 import { isVipClubMineFrom } from '../../constants/mineHall'
 import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import {
@@ -56,7 +63,7 @@ const props = withDefaults(
     seedKeyword?: string
     /** 独立页标题；默认「注单查询」 */
     title?: string
-    /** 会员入口不展示代理端 PRD 标注 */
+    /** 会员入口不展示代理端注1，改挂投注记录注5 */
     hideSpec?: boolean
   }>(),
   { embedded: false, seedKeyword: '', title: '', hideSpec: false },
@@ -119,6 +126,7 @@ watch(
 )
 const filterOpen = ref(false)
 const filterError = ref('')
+const dateOpen = ref(false)
 const toolbarPicker = ref<'time' | 'category' | 'currency' | null>(null)
 const page = ref(1)
 const loadingMore = ref(false)
@@ -151,6 +159,15 @@ const currencyOptions = computed(() => {
 })
 
 const toolbarTimeLabel = computed(() => {
+  if (isVipClubRecords.value) {
+    const preset = matchDateRangeSheetPreset(
+      appliedFilter.value.customStart,
+      appliedFilter.value.customEnd,
+      AGENT_SETTLE_TODAY,
+    )
+    if (!preset) return '自定义'
+    return DATE_RANGE_SHEET_PRESETS.find((item) => item.key === preset)?.label ?? '自定义'
+  }
   if (appliedFilter.value.timePreset === 'custom') return '时间区间'
   return BET_TIME_PRESETS.find((tab) => tab.key === appliedFilter.value.timePreset)?.label ?? '今天'
 })
@@ -177,7 +194,18 @@ const toolbarCurrencyLabel = computed(() => {
     : '币种'
 })
 
-const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
+const isToolbarTimeDirty = computed(() => {
+  if (isVipClubRecords.value) {
+    return (
+      matchDateRangeSheetPreset(
+        appliedFilter.value.customStart,
+        appliedFilter.value.customEnd,
+        AGENT_SETTLE_TODAY,
+      ) !== 'today'
+    )
+  }
+  return appliedFilter.value.timePreset !== 'today'
+})
 const isToolbarCategoryDirty = computed(() => Boolean(appliedFilter.value.category))
 const isToolbarCurrencyDirty = computed(() =>
   isVipClubRecords.value
@@ -292,6 +320,7 @@ watch(
 
 onUnmounted(() => {
   filterOpen.value = false
+  dateOpen.value = false
   toolbarPicker.value = null
   detailRow.value = null
 })
@@ -319,6 +348,23 @@ function selectTimePreset(preset: BetTimePreset) {
     customStart: ranged.customStart,
     customEnd: ranged.customEnd,
   })
+}
+
+function openTimePick() {
+  if (isVipClubRecords.value) {
+    dateOpen.value = true
+    return
+  }
+  toolbarPicker.value = 'time'
+}
+
+function confirmRecordsDate(start: string, end: string) {
+  commitToolbarFilter({
+    timePreset: 'custom',
+    customStart: start,
+    customEnd: end,
+  })
+  dateOpen.value = false
 }
 
 function selectToolbarCategory(category: string) {
@@ -360,16 +406,17 @@ watch(
   (vip) => {
     if (!vip) return
     const ccy = vipRecordsGameCurrency()
-    const start = String(route.query.start || '')
-    const end = String(route.query.end || '')
+    const queryStart = String(route.query.start || '')
+    const queryEnd = String(route.query.end || '')
+    const fallback = dateRangeSheetPresetRange('today', AGENT_SETTLE_TODAY)
+    const start = queryStart || fallback.start
+    const end = queryEnd || fallback.end
     const next = {
       ...appliedFilter.value,
       gameCurrency: ccy,
-    }
-    if (start && end) {
-      next.timePreset = resolveBetOrderTimePreset(start, end)
-      next.customStart = start
-      next.customEnd = end
+      timePreset: 'custom' as const,
+      customStart: start,
+      customEnd: end,
     }
     appliedFilter.value = next
     filterDraft.value = { ...next }
@@ -379,10 +426,17 @@ watch(
 
 function openFilter() {
   toolbarPicker.value = null
-  filterDraft.value = hydrateBetOrderFilterDates({
-    ...appliedFilter.value,
-    keyword: searchInput.value.trim(),
-  })
+  if (isVipClubRecords.value) {
+    filterDraft.value = {
+      ...appliedFilter.value,
+      keyword: searchInput.value.trim(),
+    }
+  } else {
+    filterDraft.value = hydrateBetOrderFilterDates({
+      ...appliedFilter.value,
+      keyword: searchInput.value.trim(),
+    })
+  }
   filterError.value = ''
   filterOpen.value = true
 }
@@ -390,7 +444,11 @@ function openFilter() {
 function resetFilter() {
   const next = hydrateBetOrderFilterDates(createDefaultFilter())
   if (isVipClubRecords.value) {
+    const range = dateRangeSheetPresetRange('today', AGENT_SETTLE_TODAY)
     next.gameCurrency = vipRecordsGameCurrency()
+    next.timePreset = 'custom'
+    next.customStart = range.start
+    next.customEnd = range.end
   }
   filterDraft.value = next
   filterError.value = ''
@@ -401,10 +459,12 @@ function resetFilter() {
 
 function applyFilter() {
   const next = { ...filterDraft.value, keyword: filterDraft.value.keyword.trim() }
-  if (next.customStart && next.customEnd) {
+  if (isVipClubRecords.value) {
+    next.timePreset = 'custom'
+  } else if (next.customStart && next.customEnd) {
     next.timePreset = resolveBetOrderTimePreset(next.customStart, next.customEnd)
   }
-  const err = validateBetOrderDateRange(next)
+  const err = isVipClubRecords.value ? null : validateBetOrderDateRange(next)
   if (err) {
     filterError.value = err
     return
@@ -483,8 +543,8 @@ function summaryWinLoseClass(value: number) {
       </div>
     </header>
     <Mh5SubPageHeader v-else :title="pageTitle">
-      <template v-if="!isMemberRecords" #right>
-        <div class="mh5-sub-header__actions">
+      <template #right>
+        <div v-if="!isMemberRecords" class="mh5-sub-header__actions">
           <Mh5SpecAnnot
             v-if="!isRebateAgent && !hideSpec"
             :spec="AGENT_BET_ORDER_QUERY_SPEC"
@@ -492,6 +552,7 @@ function summaryWinLoseClass(value: number) {
           />
           <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
+        <Mh5SpecAnnot v-else :spec="MEMBER_BET_RECORDS_SPEC" placement="bottom" />
       </template>
     </Mh5SubPageHeader>
 
@@ -506,7 +567,7 @@ function summaryWinLoseClass(value: number) {
             type="button"
             class="mh5-bet-order-toolbar__pick"
             :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarTimeDirty }"
-            @click="toolbarPicker = 'time'"
+            @click="openTimePick"
           >
             <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarTimeLabel }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
@@ -702,7 +763,7 @@ function summaryWinLoseClass(value: number) {
             :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
           >
             <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
-            <template v-if="toolbarPicker === 'time'">
+            <template v-if="toolbarPicker === 'time' && !isVipClubRecords">
               <button
                 v-for="tab in BET_TIME_PRESETS"
                 :key="tab.key"
@@ -742,6 +803,17 @@ function summaryWinLoseClass(value: number) {
         </div>
       </Transition>
     </Teleport>
+
+    <Mh5DateRangeSheet
+      v-if="isVipClubRecords"
+      tone="vip"
+      :open="dateOpen"
+      :start="appliedFilter.customStart"
+      :end="appliedFilter.customEnd"
+      :today="AGENT_SETTLE_TODAY"
+      @close="dateOpen = false"
+      @confirm="confirmRecordsDate"
+    />
 
     <Mh5VipCreditAccountSheet
       :open="creditSheetOpen"

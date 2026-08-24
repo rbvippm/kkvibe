@@ -18,13 +18,13 @@ import {
   summarizeAgentSettle,
   type AgentSettleCurrencyFilter,
 } from '../../constants/agentSettle'
-import { AGENT_SETTLE_LIST_SPEC } from '../../constants/agentSettleSpec'
+import { AGENT_SETTLE_SPEC } from '../../constants/agentSettleSpec'
 import {
   DATE_RANGE_SHEET_PRESETS,
   dateRangeSheetPresetRange,
   matchDateRangeSheetPreset,
 } from '../../constants/mh5DateRange'
-import { withMineHallFrom } from '../../constants/mineHall'
+import { MINE_HALL_FROM_VIP, mineHomeRouteName, withMineHallFrom } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -71,6 +71,10 @@ function hallQuery(extra: Record<string, string> = {}) {
   return withMineHallFrom(route.query.from, extra)
 }
 
+function goBackToMine() {
+  router.replace({ name: mineHomeRouteName(route.query.from || MINE_HALL_FROM_VIP) })
+}
+
 function confirmDate(start: string, end: string) {
   rangeStart.value = start
   rangeEnd.value = end
@@ -102,16 +106,21 @@ function openDetail(id: string) {
 
 <template>
   <div class="mh5-route-view mh5-agent-settle-page mh5-vip-records">
-    <Mh5SubPageHeader title="代理交收">
+    <Mh5SubPageHeader title="代理交收" :on-back="goBackToMine">
       <template #right>
-        <Mh5SpecAnnot :spec="AGENT_SETTLE_LIST_SPEC" placement="bottom" />
+        <Mh5SpecAnnot :spec="AGENT_SETTLE_SPEC" placement="bottom" />
       </template>
     </Mh5SubPageHeader>
 
     <div class="mh5-agent-settle-sticky">
       <div class="mh5-billing-filters mh5-agent-settle-filters">
-        <button type="button" class="mh5-billing-filter" @click="pickerOpen = 'currency'">
-          {{ currencyLabel }}
+        <button
+          type="button"
+          class="mh5-billing-filter"
+          :aria-expanded="dateOpen"
+          @click="dateOpen = true"
+        >
+          {{ dateLabel }}
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none" aria-hidden="true">
             <path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
           </svg>
@@ -122,13 +131,8 @@ function openDetail(id: string) {
             <path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
           </svg>
         </button>
-        <button
-          type="button"
-          class="mh5-billing-filter"
-          :aria-expanded="dateOpen"
-          @click="dateOpen = true"
-        >
-          {{ dateLabel }}
+        <button type="button" class="mh5-billing-filter" @click="pickerOpen = 'currency'">
+          {{ currencyLabel }}
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none" aria-hidden="true">
             <path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
           </svg>

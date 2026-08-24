@@ -3,6 +3,9 @@ import { buildMobilePrdSections, type MobilePrdSpec } from './mobilePrdSpec'
 export const VIP_CLUB_SPEC_ANNOT_NO = {
   entry: 1,
   mine: 2,
+  settle: 3,
+  billing: 4,
+  betRecords: 5,
 } as const
 
 export const VIP_CLUB_ENTRY_SPEC: MobilePrdSpec = {
@@ -58,7 +61,7 @@ export const VIP_CLUB_ENTRY_SPEC: MobilePrdSpec = {
       '皇者彩票：mobile-vip-club-lottery（/mobile/vip-club/lottery）→ 点联盟彩卡进 mobile-vip-club-play（/mobile/vip-club/play/lottery/:id）；点 Logo 或「收起」回 mobile-vip-club。',
       '真人 / 老虎机：尊享专区弹层选商 → mobile-vip-club-play（/mobile/vip-club/play/live|slot/:id）；点「收起」回 mobile-vip-club。',
       '赌厅：mobile-vip-club-hall（/mobile/vip-club/hall/:hallId），二级页隐藏底栏。',
-      '尊享专区顶栏投注记录 → mobile-bet-records（?from=vip-club）；顶栏余额胶囊打开「信用额度」弹层。贵宾厅「我的」账单 / 投注 / 代理交收跳转见注2。',
+      '尊享专区顶栏投注记录 → mobile-bet-records（?from=vip-club），页面规则见注5；顶栏余额胶囊打开「信用额度」弹层。贵宾厅「我的」入口见注2；代理交收见注3；账单记录见注4。',
       '尊享专区顶栏三横线 →「旗舰厅」→ 外侧大厅 mobile-home；与「我的」里 VIP 等级详情（mobile-vip）互不替代。',
     ],
   }),
@@ -71,13 +74,13 @@ export const VIP_CLUB_MINE_SPEC: MobilePrdSpec = {
     logic: [
       '贵宾厅「我的」是信用额度会员的个人中心，与旗舰厅「我的」共用资料卡、客服、设置、更多功能骨架，但钱包与资金能力整段替换：只展示当前选中的代理信用账户，不展示现金总资产，也不能走充提兑。大厅 / 尊享专区（注1）讲厅馆切换与五馆入口；本注只讲「我的」页差异。',
       '相对旗舰厅，本页隐藏全部现金资金入口，避免信用额度流入充值、提现、兑换或理财通道。隐藏项：总资产、偏好计价法币、全部钱包（现金）、充值、提现、兑换、资产明细、金刚银行、收款方式。不出现 KKC / USDT / KKV。',
-      '相对旗舰厅，本页变更：钱包区改为当前信用账户（币种图标 + 钱包名称下拉 + 刷新余额）；余额卡展示该账户信用余额、显隐眼睛、「代理名称」胶囊与改名箭头；原充提兑位置改为三入口「账单记录 / 投注记录 / 代理交收」（代理交收为贵宾厅新增）。账单 / 投注从本页进入时只看信用额度流水。',
+      '相对旗舰厅，本页变更：钱包区改为当前信用账户（币种图标 + 钱包名称下拉 + 刷新余额）；余额卡展示该账户信用余额、显隐眼睛、「代理名称」胶囊与改名箭头；原充提兑位置改为三入口「账单记录 / 投注记录 / 代理交收」（代理交收见注3，账单记录见注4，投注记录见注5）。账单 / 投注从本页进入时只看信用额度流水。',
       '相对旗舰厅，「更多功能」去掉收款方式，保留直播中心、邀请好友，以及代理邀请（未加入代理）或代理中心（已加入）。列表图标改为黑金，不含橙色。资料卡（头像、昵称、金刚号、动态 / 收藏 / 关注 / 粉丝）结构与旗舰厅相同，仅跟贵宾会深色主题。',
     ],
     interaction: [
       '点左上角币种图标或钱包名称 → 打开「信用额度」弹层（有余额）：筛选全部 / CNY / USD，默认「全部」；可搜索、按代理分组折叠后单选账户。点选后头行名称、币种图标与余额卡即时回显该账户。本弹层无「全部钱包」行（与账单 / 投注的「选择钱包」弹层区分）。',
       '点头行「刷新余额」（金色刷新图标与四字文案同一热区）→ 刷新当前账户余额；刷新进行中再次点击不重复触发。点余额旁眼睛 → 金额与 **** 切换。点余额卡右下金色箭头 → 打开「钱包名称」居中弹框（取消 / 确认），确认后改写当前账户展示名称并回显到头行。',
-      '点「账单记录」→ 深色账单列表（无搜索、有统计），类型为全部 / 转账 / 消费 / 奖金 / 上下分 / 系统；币种打开「选择钱包」弹层（无余额），默认勾选「全部钱包」。点「投注记录」→ 深色投注记录，顶栏第三项为「信用额度」，同样打开「选择钱包」。点「代理交收」→ 代理交收页。',
+      '点「账单记录」→ 账单记录页（注4）。点「投注记录」→ 投注记录页（注5）。点「代理交收」→ 代理交收页（注3）。',
       '点「邀请好友」进入邀请页后，顶栏返回必须回到贵宾厅「我的」，不得掉到旗舰厅「我的」。点直播中心 / 代理邀请 / 代理中心同样带贵宾厅来源回跳。点资料卡进入个人主页；点设置进入设置页。底栏大厅 / 社区 / 会话 / 我的只在贵宾会内切换。',
     ],
     visual: [
@@ -98,7 +101,7 @@ export const VIP_CLUB_MINE_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '本页路由 mobile-vip-club-mine（/mobile/vip-club/mine）。入口：贵宾会底栏「我的」。与旗舰厅 /mobile/mine 隔离，互不跳转。',
-      '账单记录 → mobile-billing-list（?from=vip-club）；投注记录 → mobile-bet-records（?from=vip-club）；代理交收 → mobile-agent-settle（?from=vip-club）。返回均回到本页。',
+      '账单记录 → mobile-billing-list（?from=vip-club），页面规则见注4；投注记录 → mobile-bet-records（?from=vip-club），页面规则见注5；代理交收 → mobile-agent-settle（?from=vip-club），页面规则见注3。返回均回到本页。',
       '邀请好友 → mobile-invite-friends（?from=vip-club）；直播中心 → mobile-live（?from=vip-club）；代理邀请 → mobile-agent-invites（?from=vip-club）；已加入代理则进 mobile-agent（from=mine）。设置 / 个人主页同样带 from=vip-club。',
       '二级页顶栏返回、底栏「我的」都必须回到 mobile-vip-club-mine，不得落到 /mobile/mine。厅馆切换与五馆游戏入口见注1，不在本注展开。',
     ],
