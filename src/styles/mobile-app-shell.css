@@ -2756,6 +2756,7 @@
 .mh5-wallet-sheet__item-main {
   display: flex;
   align-items: center;
+  flex: 1;
   gap: 12px;
   min-width: 0;
 }
@@ -2924,6 +2925,74 @@
   font-variant-numeric: tabular-nums;
   color: var(--mh5-app-text);
   letter-spacing: -0.02em;
+}
+
+.mh5-wallet-sheet__item--metrics {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-height: auto;
+  padding: 12px 14px;
+}
+
+.mh5-wallet-sheet__item--metrics .mh5-wallet-sheet__item-main {
+  width: 100%;
+}
+
+.mh5-wallet-sheet__item--metrics .mh5-wallet-sheet__name {
+  flex: 1;
+}
+
+.mh5-wallet-sheet__item--metrics .mh5-wallet-sheet__balance {
+  margin-left: 8px;
+}
+
+.mh5-wallet-sheet__metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mh5-app-border);
+}
+
+.mh5-wallet-sheet__metrics--pair {
+  grid-template-columns: 1fr 1fr;
+}
+
+.mh5-wallet-sheet__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mh5-wallet-sheet__metric:last-child {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.mh5-wallet-sheet__metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #9ca3af;
+}
+
+.mh5-wallet-sheet__metric-value {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  color: var(--mh5-app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mh5-wallet-sheet__metric-value--muted {
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .mh5-wallet-sheet-enter-active,

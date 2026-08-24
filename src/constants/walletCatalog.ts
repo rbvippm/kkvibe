@@ -42,7 +42,10 @@ export type WalletCatalogItem = {
   symbol: string
   color: string
   kind: WalletKind
+  /** 总金额 = 可用 + 冻结 */
   balance: number
+  /** 冻结金额，缺省视为 0 */
+  frozen?: number
   /** Mock：折合人民币汇率，用于个人中心总资产 */
   cnyRate: number
   minDeposit: number
@@ -81,6 +84,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     color: '#26a17b',
     kind: 'crypto',
     balance: 9857.35,
+    frozen: 320,
     cnyRate: 7.2,
     minDeposit: 10,
     minWithdraw: 20,
@@ -92,6 +96,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     color: '#627eea',
     kind: 'crypto',
     balance: 1.256789,
+    frozen: 0.05,
     cnyRate: 25000,
     minDeposit: 0.01,
     minWithdraw: 0.02,
@@ -114,6 +119,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     color: '#ef0027',
     kind: 'crypto',
     balance: 12580.45,
+    frozen: 580.45,
     cnyRate: 1.2,
     minDeposit: 10,
     minWithdraw: 50,
@@ -136,6 +142,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     color: '#f3ba2f',
     kind: 'crypto',
     balance: 12.345678,
+    frozen: 1.2,
     cnyRate: 4500,
     minDeposit: 0.01,
     minWithdraw: 0.05,
@@ -147,6 +154,7 @@ export const WALLET_CATALOG: WalletCatalogItem[] = [
     color: '#ff7a2b',
     kind: 'fiat',
     balance: 236188.66,
+    frozen: 1280,
     cnyRate: 1,
     minDeposit: 100,
     minWithdraw: 200,
@@ -318,6 +326,7 @@ export function creditWalletToCatalogItem(item: CreditWalletItem): WalletCatalog
     color: item.color,
     kind: 'credit',
     balance: item.balance,
+    frozen: 0,
     cnyRate: item.cnyRate,
     minDeposit: 0,
     minWithdraw: 0,
@@ -382,19 +391,30 @@ export function sheetWalletGroups(showCredit: boolean, creditOnly = false) {
   ].filter((group) => group.items.length)
 }
 
-export function formatWalletBalance(item: WalletCatalogItem) {
+export function walletFrozen(item: WalletCatalogItem) {
+  return item.frozen ?? 0
+}
+
+/** 可用金额 = 总金额 − 冻结金额 */
+export function walletAvailable(item: WalletCatalogItem) {
+  return Math.max(0, Number((item.balance - walletFrozen(item)).toFixed(8)))
+}
+
+function walletAmountDigits(item: WalletCatalogItem) {
   if (item.kind === 'fiat' || item.kind === 'credit') {
-    return item.balance.toLocaleString('zh-CN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
+    return { minimumFractionDigits: 2, maximumFractionDigits: 2 }
   }
-  const maxDigits =
+  const maximumFractionDigits =
     item.id === 'btc' ? 8 : item.id === 'eth' || item.id === 'sol' || item.id === 'bnb' ? 6 : 4
-  return item.balance.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: maxDigits,
-  })
+  return { minimumFractionDigits: 2, maximumFractionDigits }
+}
+
+export function formatWalletAmount(item: WalletCatalogItem, amount: number) {
+  return amount.toLocaleString('zh-CN', walletAmountDigits(item))
+}
+
+export function formatWalletBalance(item: WalletCatalogItem) {
+  return formatWalletAmount(item, item.balance)
 }
 
 export function sumWalletsCny(items: WalletCatalogItem[]) {

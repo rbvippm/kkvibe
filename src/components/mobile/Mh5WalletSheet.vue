@@ -6,8 +6,11 @@ import {
   CREDIT_WALLET_CATALOG,
   creditWalletsByCurrency,
   formatCreditWalletBalance,
+  formatWalletAmount,
   formatWalletBalance,
   sheetWalletGroups,
+  walletAvailable,
+  walletFrozen,
   walletFilterTabs,
   type CreditCurrencyCode,
   type CreditWalletItem,
@@ -28,6 +31,8 @@ const props = withDefaults(
     selectedId?: string
     /** 收款方式选币：只展示币种，不展示余额 */
     hideBalance?: boolean
+    /** 充值选币：右侧只展示可用金额，保持原先单行样式 */
+    availableOnly?: boolean
   }>(),
   {
     title: '全部钱包',
@@ -36,6 +41,7 @@ const props = withDefaults(
     selectable: false,
     selectedId: '',
     hideBalance: false,
+    availableOnly: false,
   },
 )
 
@@ -189,6 +195,8 @@ function saveRemark() {
   closeRemarkEditor()
 }
 
+const showAmountMetrics = computed(() => !props.hideBalance && !props.availableOnly)
+
 function onSelect(item: WalletCatalogItem) {
   if (!props.selectable) return
   emit('select', item.id)
@@ -330,13 +338,43 @@ function close() {
                 :key="`${group.kind}-${item.id}`"
                 type="button"
                 class="mh5-wallet-sheet__item"
-                :class="{ 'mh5-wallet-sheet__item--selectable': selectable }"
+                :class="{
+                  'mh5-wallet-sheet__item--selectable': selectable,
+                  'mh5-wallet-sheet__item--metrics': showAmountMetrics,
+                }"
                 @click="onSelect(item)"
               >
-                <span class="mh5-wallet-sheet__icon" :style="{ background: item.color }">{{ item.symbol }}</span>
-                <span class="mh5-wallet-sheet__name">{{ $t(item.name) }}</span>
-                <span v-if="!hideBalance" class="mh5-wallet-sheet__balance">{{ formatWalletBalance(item) }}</span>
-                <span v-if="selectable && selectedId === item.id" class="mh5-wallet-transfer-check">✓</span>
+                <template v-if="showAmountMetrics">
+                  <span class="mh5-wallet-sheet__item-main">
+                    <span class="mh5-wallet-sheet__icon" :style="{ background: item.color }">{{ item.symbol }}</span>
+                    <span class="mh5-wallet-sheet__name">{{ $t(item.name) }}</span>
+                    <span class="mh5-wallet-sheet__balance">{{
+                      formatWalletAmount(item, walletAvailable(item))
+                    }}</span>
+                    <span v-if="selectable && selectedId === item.id" class="mh5-wallet-transfer-check">✓</span>
+                  </span>
+                  <span class="mh5-wallet-sheet__metrics mh5-wallet-sheet__metrics--pair">
+                    <span class="mh5-wallet-sheet__metric">
+                      <span class="mh5-wallet-sheet__metric-label">{{ $t('总金额') }}</span>
+                      <span class="mh5-wallet-sheet__metric-value">{{ formatWalletBalance(item) }}</span>
+                    </span>
+                    <span class="mh5-wallet-sheet__metric">
+                      <span class="mh5-wallet-sheet__metric-label">{{ $t('冻结金额') }}</span>
+                      <span
+                        class="mh5-wallet-sheet__metric-value"
+                        :class="{ 'mh5-wallet-sheet__metric-value--muted': walletFrozen(item) === 0 }"
+                      >{{ formatWalletAmount(item, walletFrozen(item)) }}</span>
+                    </span>
+                  </span>
+                </template>
+                <template v-else>
+                  <span class="mh5-wallet-sheet__icon" :style="{ background: item.color }">{{ item.symbol }}</span>
+                  <span class="mh5-wallet-sheet__name">{{ $t(item.name) }}</span>
+                  <span v-if="!hideBalance" class="mh5-wallet-sheet__balance">{{
+                    formatWalletAmount(item, walletAvailable(item))
+                  }}</span>
+                  <span v-if="selectable && selectedId === item.id" class="mh5-wallet-transfer-check">✓</span>
+                </template>
               </button>
             </template>
             <div class="mh5-wallet-sheet__anchor-spacer" :style="{ height: `${anchorSpacer}px` }" aria-hidden="true" />

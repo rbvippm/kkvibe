@@ -45,6 +45,7 @@ import {
   type WalletFiatWithdrawKind,
   type WalletTransferTab,
 } from '../../constants/walletTransfer'
+import { walletAvailable } from '../../constants/walletCatalog'
 import { payoutMethodsRoute, payoutListTabFromWithdraw, withdrawPayoutPick, withdrawPayoutPickPending, type WithdrawPayoutPick } from '../../constants/payoutMethods'
 import { WALLET_TRANSFER_PAGE_SPEC } from '../../constants/walletTransferSpec'
 import { effectiveWalletTransferCurrency, pickWalletTransferCurrency } from '../../i18n'
@@ -230,6 +231,12 @@ const pickerSelectedId = computed(() => {
   if (pickerKind.value === 'to') return exchangeToId.value
   return selectedId.value
 })
+const sheetAvailableOnly = computed(
+  () => activeTab.value === 'deposit' && pickerKind.value === 'more',
+)
+const currencySelectAmount = computed(() =>
+  activeTab.value === 'deposit' ? walletAvailable(activeCurrency.value) : activeCurrency.value.balance,
+)
 
 watch(
   () => route.query.tab,
@@ -538,7 +545,7 @@ function goDepositShare() {
           <span class="mh5-wallet-transfer-select__value">
             <span class="mh5-wallet-transfer-dot" :style="{ background: activeCurrency.color }">{{ activeCurrency.symbol }}</span>
             {{ activeCurrency.name }}
-            <span class="mh5-wallet-transfer-select__balance">{{ formatTransferAmount(activeCurrency.balance, 2) }}</span>
+            <span class="mh5-wallet-transfer-select__balance">{{ formatTransferAmount(currencySelectAmount, 2) }}</span>
             <span class="mh5-wallet-transfer-select__chevron" aria-hidden="true">›</span>
           </span>
         </button>
@@ -1102,6 +1109,7 @@ function goDepositShare() {
       :open="walletSheetOpen"
       :title="pickerTitle"
       selectable
+      :available-only="sheetAvailableOnly"
       :selected-id="pickerSelectedId"
       @close="pickerKind = null"
       @select="pickCurrency"
