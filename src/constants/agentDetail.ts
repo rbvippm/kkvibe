@@ -241,7 +241,7 @@ export function formatCreditLimitView(
         ? []
         : [
             {
-              label: '实占盈亏:',
+              label: '实占净输赢:',
               value: formatSignedCreditAmount(scaledProfit, 2),
             },
           ]),

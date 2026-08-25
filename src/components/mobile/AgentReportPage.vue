@@ -95,7 +95,7 @@ const gameProfitFormula = computed(() =>
 const reportDetail = computed(() =>
   isRebateAgent.value
     ? getRebateReportDetail(category.value, vendor.value)
-    : getReportDetail(category.value, vendor.value, true),
+    : getReportDetail(category.value, vendor.value),
 )
 
 function pickPageTab(tab: AgentReportPageTab) {

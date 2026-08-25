@@ -25,7 +25,7 @@ export const MOCK_AGENT_ME_PROFILE = {
 
 /**
  * 各币种汇总行 Mock。
- * 占成：总盈亏口径对齐代理详情「代理盈亏」。
+ * 占成：总盈亏口径对齐代理详情「总盈亏」（净盈亏 + 代理赚水）。
  * 返佣展示为「总佣金」：历史全部已结算汇总，不限月份。
  */
 export const AGENT_ME_ASSETS = {

@@ -25,6 +25,7 @@ import {
 import {
   AGENT_COMMISSION_FORMULA,
   AGENT_GAME_PROFIT_FORMULA,
+  AGENT_NET_PNL_FORMULA,
   AGENT_PROFIT_CATEGORY_TABS,
   AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_VENDORS,
@@ -33,13 +34,15 @@ import {
   getAgentProfitCostSection,
   getAgentProfitDetail,
   getAgentProfitDialogDetail,
+  getAgentProfitEarnSection,
   getAgentProfitFlowRows,
   getAgentProfitFormula,
   getAgentProfitGameSection,
+  getAgentProfitHero,
   getAgentProfitSummaryRows,
   getAgentTotalCommission,
   getAgentTotalProfit,
-  getAgentActualProfitAmount,
+  getAgentGrandTotalAmount,
   profitTotalClass,
   profitValueClass,
   type AgentProfitCategoryKey,
@@ -47,6 +50,8 @@ import {
   type AgentProfitVendorKey,
 } from '../../constants/agentDetailProfit'
 import {
+  AGENT_MY_PROFIT_ASSETS,
+  agentMyProfitDialogLabelHeader,
   agentMyProfitToneClass,
   rebateGameNetProfitFormula,
 } from '../../constants/agentMyProfit'
@@ -99,6 +104,7 @@ const currencyPickerOpen = ref(false)
 const creditCurrencyMenuOpen = ref(false)
 const profitFormulaTipOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
+const netPnlFormulaTipOpen = ref(false)
 /**
  * 代理盈亏展示：默认分区新样式；
  * 已在「代理盈亏」Tab 时快速连点两次 → 切回经典汇总卡（再连点回到新样式）
@@ -177,8 +183,10 @@ const agentTotalProfit = computed(() =>
 )
 const profitFlowRows = computed(() => getAgentProfitFlowRows(currency.value))
 const profitGameSection = computed(() => getAgentProfitGameSection(currency.value))
+const profitEarnSection = computed(() => getAgentProfitEarnSection(currency.value))
 const profitCostSection = computed(() => getAgentProfitCostSection(currency.value))
 const profitFormula = computed(() => getAgentProfitFormula(currency.value))
+const profitHero = computed(() => getAgentProfitHero(currency.value))
 const profitDialogTitle = computed(() =>
   profitDialogKind.value
     ? agentProfitDialogTitle(profitDialogKind.value, currency.value)
@@ -191,6 +199,9 @@ const profitDialogRows = computed(() =>
 )
 const profitDialogFormulaText = computed(
   () => profitDialogRows.value.find((row) => row.formulaTip)?.formulaTip ?? '',
+)
+const profitDialogLabelHeader = computed(() =>
+  agentMyProfitDialogLabelHeader('share', profitDialogKind.value ?? undefined),
 )
 
 watch(currency, () => {
@@ -256,6 +267,7 @@ function toggleProfitCostDetails() {
 }
 
 function openProfitDialog(kind: AgentProfitDialogKind) {
+  closeProfitFormulaTips()
   profitDialogFormulaTipOpen.value = false
   profitDialogKind.value = kind
 }
@@ -304,7 +316,7 @@ const creditLimitView = computed(() => {
     agent.value.creditLimits[creditCurrency.value],
     creditCurrency.value,
     creditSettleRangeScale(settleStart.value, settleEnd.value),
-    getAgentActualProfitAmount(creditCurrency.value),
+    getAgentGrandTotalAmount(creditCurrency.value),
   )
 })
 
@@ -379,17 +391,26 @@ function toggleCreditCurrencyMenu() {
 
 function toggleProfitFormulaTip() {
   gameProfitFormulaTipOpen.value = false
+  netPnlFormulaTipOpen.value = false
   profitFormulaTipOpen.value = !profitFormulaTipOpen.value
 }
 
 function toggleGameProfitFormulaTip() {
   profitFormulaTipOpen.value = false
+  netPnlFormulaTipOpen.value = false
   gameProfitFormulaTipOpen.value = !gameProfitFormulaTipOpen.value
+}
+
+function toggleNetPnlFormulaTip() {
+  profitFormulaTipOpen.value = false
+  gameProfitFormulaTipOpen.value = false
+  netPnlFormulaTipOpen.value = !netPnlFormulaTipOpen.value
 }
 
 function closeProfitFormulaTips() {
   profitFormulaTipOpen.value = false
   gameProfitFormulaTipOpen.value = false
+  netPnlFormulaTipOpen.value = false
 }
 </script>
 
@@ -725,166 +746,243 @@ function closeProfitFormulaTips() {
           </section>
           <template v-else>
             <section
+              class="mh5-agent-my-profit-total mh5-agent-detail-profit-hero"
+              :aria-label="`${profitHero.label} (${profitHero.currencyUnit})`"
+            >
+              <img
+                class="mh5-agent-my-profit-total__deco"
+                :src="AGENT_MY_PROFIT_ASSETS.decoCoin"
+                alt=""
+                aria-hidden="true"
+              />
+              <p class="mh5-agent-my-profit-total__label">{{ profitHero.label }}</p>
+              <p
+                class="mh5-agent-my-profit-total__value"
+                :class="agentMyProfitToneClass(profitHero.tone)"
+              >
+                {{ profitHero.amountText }}
+              </p>
+              <div
+                class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra mh5-agent-detail-profit-hero__formula"
+                aria-label="实占净输赢加上代理赚水等于总盈亏"
+              >
+                <div class="mh5-agent-commission-cell">
+                  <p class="mh5-agent-commission-cell__label">
+                    <span class="mh5-agent-detail-profit-summary__label-wrap mh5-agent-detail-profit-hero__net-tip">
+                      <button
+                        type="button"
+                        class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                        aria-label="查看实占净输赢计算公式"
+                        :aria-expanded="netPnlFormulaTipOpen"
+                        @click.stop="toggleNetPnlFormulaTip"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                          <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                          <path
+                            d="M8 4.6v5.2M8 11.6h.01"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                      </button>
+                      <span>实占净输赢</span>
+                      <span
+                        v-if="netPnlFormulaTipOpen"
+                        class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                        role="tooltip"
+                        @click.stop
+                      >
+                        {{ AGENT_NET_PNL_FORMULA }}
+                      </span>
+                    </span>
+                  </p>
+                  <button
+                    type="button"
+                    class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+                    :class="agentMyProfitToneClass(profitFormula.netTone)"
+                    aria-label="查看实占净输赢明细"
+                    @click="openProfitDialog('net_pnl')"
+                  >
+                    {{ profitFormula.netAmountText }}
+                  </button>
+                </div>
+                <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
+                <div class="mh5-agent-commission-cell">
+                  <p class="mh5-agent-commission-cell__label">代理赚水</p>
+                  <button
+                    type="button"
+                    class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+                    :class="agentMyProfitToneClass(profitFormula.earnTone)"
+                    aria-label="查看代理赚水明细"
+                    @click="openProfitDialog('rebate_earn')"
+                  >
+                    {{ profitFormula.earnAmountText }}
+                  </button>
+                </div>
+                <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+                <button
+                  type="button"
+                  class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+                  aria-label="查看总盈亏明细"
+                  @click="openProfitDialog('total')"
+                >
+                  <p class="mh5-agent-commission-cell__label">总盈亏</p>
+                  <p
+                    class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+                    :class="agentMyProfitToneClass(profitFormula.totalTone)"
+                  >
+                    {{ profitFormula.totalAmountText }}
+                  </p>
+                </button>
+              </div>
+            </section>
+
+            <section
               class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
               aria-label="游戏净输赢金额"
             >
-            <div class="mh5-agent-my-profit-table__head">
-              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                {{ profitGameSection.nameHeader }}
-              </span>
-              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
-                {{ profitGameSection.amountHeader }}
-              </span>
-            </div>
-            <div
-              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-            >
-              <button
-                type="button"
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
-                :aria-expanded="profitGameDetailsExpanded"
-                aria-label="展开或收起游戏净输赢细项"
-                @click="toggleProfitGameDetails"
-              >
-                <span>{{ profitGameSection.total.label }}</span>
-                <span
-                  class="mh5-agent-my-profit-table__chevron"
-                  :class="{ 'mh5-agent-my-profit-table__chevron--open': profitGameDetailsExpanded }"
-                  aria-hidden="true"
-                >
-                  ▾
+              <div class="mh5-agent-my-profit-table__head">
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                  {{ profitGameSection.nameHeader }}
                 </span>
-              </button>
-              <span
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-                :class="agentMyProfitToneClass(profitGameSection.total.tone)"
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                  {{ profitGameSection.amountHeader }}
+                </span>
+              </div>
+              <div
+                class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
               >
-                {{ profitGameSection.total.value }}
-              </span>
-            </div>
-            <Transition name="mh5-agent-my-profit-expand">
-              <div v-if="profitGameDetailsExpanded" class="mh5-agent-my-profit-table__details">
                 <button
-                  v-for="(row, index) in profitGameSection.rows"
-                  :key="row.key"
                   type="button"
-                  class="mh5-agent-my-profit-table__row"
-                  :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
-                  @click="openProfitDialog(row.key)"
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+                  :aria-expanded="profitGameDetailsExpanded"
+                  aria-label="展开或收起游戏净输赢细项"
+                  @click="toggleProfitGameDetails"
                 >
-                  <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                    {{ row.label }}
-                  </span>
+                  <span>{{ profitGameSection.total.label }}</span>
                   <span
-                    class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
-                    :class="agentMyProfitToneClass(row.tone)"
+                    class="mh5-agent-my-profit-table__chevron"
+                    :class="{ 'mh5-agent-my-profit-table__chevron--open': profitGameDetailsExpanded }"
+                    aria-hidden="true"
                   >
-                    {{ row.value }}
+                    ▾
                   </span>
                 </button>
-              </div>
-            </Transition>
-          </section>
-
-          <section
-            class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
-            aria-label="其他成本金额"
-          >
-            <div class="mh5-agent-my-profit-table__head">
-              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                {{ profitCostSection.nameHeader }}
-              </span>
-              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
-                {{ profitCostSection.amountHeader }}
-              </span>
-            </div>
-            <div
-              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
-            >
-              <button
-                type="button"
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
-                :aria-expanded="profitCostDetailsExpanded"
-                aria-label="展开或收起其他成本细项"
-                @click="toggleProfitCostDetails"
-              >
-                <span>{{ profitCostSection.total.label }}</span>
                 <span
-                  class="mh5-agent-my-profit-table__chevron"
-                  :class="{ 'mh5-agent-my-profit-table__chevron--open': profitCostDetailsExpanded }"
-                  aria-hidden="true"
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                  :class="agentMyProfitToneClass(profitGameSection.total.tone)"
                 >
-                  ▾
+                  {{ profitGameSection.total.value }}
                 </span>
-              </button>
-              <span
-                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-                :class="agentMyProfitToneClass(profitCostSection.total.tone)"
-              >
-                {{ profitCostSection.total.value }}
-              </span>
-            </div>
-            <Transition name="mh5-agent-my-profit-expand">
-              <div v-if="profitCostDetailsExpanded" class="mh5-agent-my-profit-table__details">
-                <div
-                  v-for="(row, index) in profitCostSection.rows"
-                  :key="row.key"
-                  class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
-                  :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
-                >
-                  <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-                    {{ row.label }}
-                  </span>
-                  <span
-                    class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
-                    :class="agentMyProfitToneClass(row.tone)"
+              </div>
+              <Transition name="mh5-agent-my-profit-expand">
+                <div v-if="profitGameDetailsExpanded" class="mh5-agent-my-profit-table__details">
+                  <button
+                    v-for="(row, index) in profitGameSection.rows"
+                    :key="row.key"
+                    type="button"
+                    class="mh5-agent-my-profit-table__row"
+                    :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+                    @click="openProfitDialog(row.key)"
                   >
-                    {{ row.value }}
-                  </span>
+                    <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                      {{ row.label }}
+                    </span>
+                    <span
+                      class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+                      :class="agentMyProfitToneClass(row.tone)"
+                    >
+                      {{ row.value }}
+                    </span>
+                  </button>
                 </div>
-              </div>
-            </Transition>
-          </section>
+              </Transition>
+            </section>
 
-          <section
-            class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-            aria-label="游戏净输赢减去其他成本等于总盈亏"
-          >
-            <div
-              class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
+            <section
+              class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+              aria-label="其他成本金额"
             >
-              <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">游戏净输赢</p>
-                <p
-                  class="mh5-agent-commission-cell__value"
-                  :class="agentMyProfitToneClass(profitFormula.gameTone)"
-                >
-                  {{ profitFormula.gameAmountText }}
-                </p>
+              <div class="mh5-agent-my-profit-table__head">
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                  {{ profitCostSection.nameHeader }}
+                </span>
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                  {{ profitCostSection.amountHeader }}
+                </span>
               </div>
-              <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
-              <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">其他成本</p>
-                <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
-                  {{ profitFormula.costAmountText }}
-                </p>
-              </div>
-              <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
-              <button
-                type="button"
-                class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-                aria-label="查看总盈亏明细"
-                @click="openProfitDialog('total')"
+              <div
+                class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
               >
-                <p class="mh5-agent-commission-cell__label">总盈亏</p>
-                <p
-                  class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
-                  :class="agentMyProfitToneClass(profitFormula.totalTone)"
+                <button
+                  type="button"
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+                  :aria-expanded="profitCostDetailsExpanded"
+                  aria-label="展开或收起其他成本细项"
+                  @click="toggleProfitCostDetails"
                 >
-                  {{ profitFormula.totalAmountText }}
-                </p>
-              </button>
-            </div>
+                  <span>{{ profitCostSection.total.label }}</span>
+                  <span
+                    class="mh5-agent-my-profit-table__chevron"
+                    :class="{ 'mh5-agent-my-profit-table__chevron--open': profitCostDetailsExpanded }"
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+                </button>
+                <span
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                  :class="agentMyProfitToneClass(profitCostSection.total.tone)"
+                >
+                  {{ profitCostSection.total.value }}
+                </span>
+              </div>
+              <Transition name="mh5-agent-my-profit-expand">
+                <div v-if="profitCostDetailsExpanded" class="mh5-agent-my-profit-table__details">
+                  <div
+                    v-for="(row, index) in profitCostSection.rows"
+                    :key="row.key"
+                    class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
+                    :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+                  >
+                    <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                      {{ row.label }}
+                    </span>
+                    <span
+                      class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                      :class="agentMyProfitToneClass(row.tone)"
+                    >
+                      {{ row.value }}
+                    </span>
+                  </div>
+                </div>
+              </Transition>
+            </section>
+
+            <section
+              class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+              aria-label="代理赚水金额"
+            >
+              <div class="mh5-agent-my-profit-table__head">
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                  {{ profitEarnSection.nameHeader }}
+                </span>
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                  {{ profitEarnSection.amountHeader }}
+                </span>
+              </div>
+              <div class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--static">
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                  {{ profitEarnSection.total.label }}
+                </span>
+                <span
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                  :class="agentMyProfitToneClass(profitEarnSection.total.tone)"
+                >
+                  {{ profitEarnSection.total.value }}
+                </span>
+              </div>
             </section>
           </template>
         </section>
@@ -1098,7 +1196,7 @@ function closeProfitFormulaTips() {
           <div class="mh5-agent-my-profit-dialog__table">
             <div class="mh5-agent-my-profit-dialog__head">
               <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--label">
-                实占细项
+                {{ profitDialogLabelHeader }}
               </span>
               <span class="mh5-agent-my-profit-dialog__cell mh5-agent-my-profit-dialog__cell--value">
                 金额

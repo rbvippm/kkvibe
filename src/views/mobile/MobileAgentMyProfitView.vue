@@ -5,6 +5,7 @@ import {
   AGENT_MY_PROFIT_ASSETS,
   AGENT_MY_PROFIT_FOOTNOTE,
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
+  AGENT_NET_PNL_FORMULA,
   REBATE_DEFAULT_SECTION_SCALE,
   agentMyProfitDateFilterLabel,
   agentMyProfitDateRangeText,
@@ -20,6 +21,7 @@ import {
   agentMyProfitRebateMonthKey,
   agentMyProfitRebatePresetFromMonthKey,
   agentMyProfitShareCostSection,
+  agentMyProfitShareEarnSection,
   agentMyProfitShareFormula,
   agentMyProfitShareGameSection,
   agentMyProfitShareTotalBlock,
@@ -77,6 +79,7 @@ const rebateMonth = ref(
 const detailProduct = ref<AgentMyProfitProductRow | null>(null)
 const detailFormulaTipOpen = ref(false)
 const netWinTipOpen = ref(false)
+const netPnlFormulaTipOpen = ref(false)
 const negativeTipOpen = ref(false)
 const monthSheetOpen = ref(false)
 const shareDateOpen = ref(false)
@@ -165,11 +168,12 @@ const rebateSectionScale = computed<RebateSectionScale>(() => {
   }
 })
 const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissionRate ?? '5.00%')
-/** 占成顶部总盈亏 = 游戏净输赢合计 − 其他成本合计（与公式卡同源；随日期快捷变化） */
+/** 占成顶部总盈亏 = 实占净输赢 + 代理赚水（与明细同源；随日期快捷变化） */
 const totalBlock = computed(() => agentMyProfitShareTotalBlock(preset.value))
 
 watch(preset, () => {
   netWinTipOpen.value = false
+  netPnlFormulaTipOpen.value = false
   negativeTipOpen.value = false
   gameDetailsExpanded.value = false
   costDetailsExpanded.value = true
@@ -188,6 +192,7 @@ const costSection = computed(() =>
     ? agentMyProfitRebateCostSection('l1', rebateSectionScale.value)
     : agentMyProfitShareCostSection(preset.value),
 )
+const shareEarnSection = computed(() => agentMyProfitShareEarnSection(preset.value))
 const rebateLevelFormula = computed(() =>
   agentMyProfitRebateLevelFormula(
     'l1',
@@ -210,7 +215,7 @@ const rebateTotalCommission = computed(() =>
   ),
 )
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
-/** 占成公式：游戏净输赢 − 其他成本 = 总盈亏 */
+/** 占成公式：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
 const shareFormula = computed(() => agentMyProfitShareFormula(preset.value))
 const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
@@ -223,12 +228,20 @@ const footnoteLines = computed(() =>
   (isRebateAgent.value ? AGENT_MY_PROFIT_REBATE_FOOTNOTE : AGENT_MY_PROFIT_FOOTNOTE).split('\n'),
 )
 const pageTitle = computed(() => agentMyProfitPageTitle(agentType.value))
-const dialogLabelHeader = computed(() => agentMyProfitDialogLabelHeader(agentType.value))
+const dialogLabelHeader = computed(() =>
+  agentMyProfitDialogLabelHeader(agentType.value, detailProduct.value?.key),
+)
 
 const detailTitle = computed(() => {
   if (!detailProduct.value) return isRebateAgent.value ? '佣金明细' : '盈亏明细'
   if (detailProduct.value.key === 'total') {
     return isRebateAgent.value ? '总佣金明细' : '总盈亏明细'
+  }
+  if (detailProduct.value.key === 'net_pnl') {
+    return '实占净输赢明细'
+  }
+  if (detailProduct.value.key === 'rebate_earn') {
+    return '代理赚水明细'
   }
   if (detailProduct.value.key.startsWith('level_')) {
     return '佣金明细'
@@ -281,6 +294,17 @@ function closeNegativeTip() {
 
 function closeHeroTips() {
   closeNegativeTip()
+  closeNetPnlFormulaTip()
+}
+
+function toggleNetPnlFormulaTip() {
+  netWinTipOpen.value = false
+  negativeTipOpen.value = false
+  netPnlFormulaTipOpen.value = !netPnlFormulaTipOpen.value
+}
+
+function closeNetPnlFormulaTip() {
+  netPnlFormulaTipOpen.value = false
 }
 
 function onNegativeTipClick() {
@@ -294,6 +318,7 @@ function pickPreset(key: ProfitDatePreset) {
     rebateMonth.value = agentMyProfitRebateMonthKey(key)
   }
   closeNetWinTip()
+  closeNetPnlFormulaTip()
   closeNegativeTip()
 }
 
@@ -314,6 +339,7 @@ function confirmShareDate(start: string, end: string) {
   shareCustomRange.value = { start, end }
   shareDateOpen.value = false
   closeNetWinTip()
+  closeNetPnlFormulaTip()
   closeNegativeTip()
 }
 
@@ -363,6 +389,7 @@ function goBack() {
 function openDetail(row: AgentMyProfitProductRow) {
   if (!agentMyProfitHasDetail(row.key, agentType.value)) return
   closeDetailFormulaTip()
+  closeNetPnlFormulaTip()
   detailProduct.value = row
 }
 
@@ -378,6 +405,7 @@ onBeforeUnmount(() => {
   closeDetail()
   closeDetailFormulaTip()
   closeNetWinTip()
+  closeNetPnlFormulaTip()
   closeNegativeTip()
 })
 </script>
@@ -524,7 +552,11 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <section v-else class="mh5-agent-my-profit-total" :aria-label="totalBlock.label">
+      <section
+        v-else
+        class="mh5-agent-my-profit-total mh5-agent-detail-profit-hero"
+        :aria-label="totalBlock.label"
+      >
         <img
           class="mh5-agent-my-profit-total__deco"
           :src="AGENT_MY_PROFIT_ASSETS.decoCoin"
@@ -538,6 +570,80 @@ onBeforeUnmount(() => {
         >
           {{ totalBlock.valueText }}
         </p>
+        <div
+          class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra mh5-agent-detail-profit-hero__formula"
+          :aria-label="$t('实占净输赢加上代理赚水等于总盈亏')"
+        >
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">
+              <span class="mh5-agent-detail-profit-summary__label-wrap mh5-agent-detail-profit-hero__net-tip">
+                <button
+                  type="button"
+                  class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
+                  :aria-label="$t('查看实占净输赢计算公式')"
+                  :aria-expanded="netPnlFormulaTipOpen"
+                  @click.stop="toggleNetPnlFormulaTip"
+                >
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.2" />
+                    <path
+                      d="M8 4.6v5.2M8 11.6h.01"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+                <span>{{ $t('实占净输赢') }}</span>
+                <span
+                  v-if="netPnlFormulaTipOpen"
+                  class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
+                  role="tooltip"
+                  @click.stop
+                >
+                  {{ AGENT_NET_PNL_FORMULA }}
+                </span>
+              </span>
+            </p>
+            <button
+              type="button"
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+              :class="agentMyProfitToneClass(shareFormula.netPnl.tone)"
+              :aria-label="$t('查看实占净输赢明细')"
+              @click="openDetail(shareFormula.netPnl)"
+            >
+              {{ shareFormula.netPnl.amountText }}
+            </button>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">{{ $t('代理赚水') }}</p>
+            <button
+              type="button"
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+              :class="agentMyProfitToneClass(shareFormula.earnTone)"
+              :aria-label="$t('查看代理赚水明细')"
+              @click="openDetail(shareEarnSection.total)"
+            >
+              {{ shareFormula.earnAmountText }}
+            </button>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+          <button
+            type="button"
+            class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+            :aria-label="`查看${shareFormula.total.name}明细`"
+            @click="openDetail(shareFormula.total)"
+          >
+            <p class="mh5-agent-commission-cell__label">{{ $t(shareFormula.total.name) }}</p>
+            <p
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+              :class="agentMyProfitToneClass(shareFormula.total.tone)"
+            >
+              {{ shareFormula.total.amountText }}
+            </p>
+          </button>
+        </div>
       </section>
 
       <div v-if="!embedded" class="mh5-agent-my-profit-date">
@@ -731,6 +837,32 @@ onBeforeUnmount(() => {
         </Transition>
       </section>
 
+      <section
+        v-if="!isRebateAgent"
+        class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+        :aria-label="$t('代理赚水金额')"
+      >
+        <div class="mh5-agent-my-profit-table__head">
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+            {{ shareEarnSection.nameHeader }}
+          </span>
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+            {{ shareEarnSection.amountHeader }}
+          </span>
+        </div>
+        <div class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--static">
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+            {{ $t(shareEarnSection.total.name) }}
+          </span>
+          <span
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+            :class="agentMyProfitToneClass(shareEarnSection.total.tone)"
+          >
+            {{ shareEarnSection.total.amountText }}
+          </span>
+        </div>
+      </section>
+
       <!-- 返佣：净输赢 × 佣金比例 = 佣金 -->
       <section
         v-if="isRebateAgent"
@@ -784,48 +916,6 @@ onBeforeUnmount(() => {
               :class="commissionToneClass(rebateLevelFormula.monthCommission)"
             >
               {{ formatCommissionAmount(rebateLevelFormula.monthCommission) }}
-            </p>
-          </button>
-        </div>
-      </section>
-
-      <!-- 占成：游戏净输赢 − 其他成本 = 总盈亏 -->
-      <section
-        v-else
-        class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-        :aria-label="$t('游戏净输赢减去其他成本等于总盈亏')"
-        @click.stop
-      >
-        <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra">
-          <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">{{ $t('游戏净输赢') }}</p>
-            <p
-              class="mh5-agent-commission-cell__value"
-              :class="agentMyProfitToneClass(shareFormula.gameTone)"
-            >
-              {{ shareFormula.gameAmountText }}
-            </p>
-          </div>
-          <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
-          <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">{{ $t('其他成本') }}</p>
-            <p class="mh5-agent-commission-cell__value mh5-agent-my-profit__amount--negative">
-              {{ shareFormula.costAmountText }}
-            </p>
-          </div>
-          <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
-          <button
-            type="button"
-            class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-            :aria-label="`查看${shareFormula.total.name}明细`"
-            @click="openDetail(shareFormula.total)"
-          >
-            <p class="mh5-agent-commission-cell__label">{{ $t(shareFormula.total.name) }}</p>
-            <p
-              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
-              :class="agentMyProfitToneClass(shareFormula.total.tone)"
-            >
-              {{ shareFormula.total.amountText }}
             </p>
           </button>
         </div>

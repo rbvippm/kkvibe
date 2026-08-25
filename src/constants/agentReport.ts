@@ -110,20 +110,25 @@ function buildDetail(
   commission: number,
   /** 传入时计入游戏净输赢并展示「场馆费」行（占成 / 返佣均支持） */
   venueFee?: number,
+  /** 占成游戏净输赢不再扣代理赚水，默认不展示该行 */
+  includeRebateEarn = false,
 ): ReportDetail {
   const venue = venueFee ?? 0
-  const net = win - rebate - vipRebate - commission - venue
+  const earn = includeRebateEarn ? commission : 0
+  const net = win - rebate - vipRebate - earn - venue
   const rows: ReportDetailRow[] = [
     { key: 'validBet', label: '下注有效金额', value: validBet, tone: 'neutral' },
     { key: 'winLose', label: '输赢', value: formatReportValue(win), tone: reportValueTone(win) },
     { key: 'rebate', label: '退水', ...formatCostReportValue(rebate) },
     { key: 'vipRebate', label: 'VIP退水', ...formatCostReportValue(vipRebate) },
-    {
+  ]
+  if (includeRebateEarn) {
+    rows.push({
       key: 'commission',
       label: '代理赚水',
       ...formatCostReportValue(commission),
-    },
-  ]
+    })
+  }
   if (venueFee !== undefined) {
     rows.push({
       key: 'venueFee',
@@ -139,19 +144,19 @@ function buildDetail(
   }
 }
 
-/** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 860 − 80 = 9980（占成含场馆费） */
+/** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 80 = 10840（占成含场馆费，不含代理赚水） */
 const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860, 80)
 
 /** 品类二级「全部」 */
 const CATEGORY_ALL_DETAIL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
-  sports: buildDetail('42,800.00', 9860, 980, 120, 340, 40), // 8380
-  chess: buildDetail('18,640.00', 3200, 280, 45, 95, 20), // 2760
-  esports: buildDetail('9,820.00', 1560, 160, 28, 52, 12), // 1308
-  fishing: buildDetail('6,450.00', -820, 90, 15, 35, 8), // -968
-  slots: buildDetail('11,200.00', 2140, 210, 38, 72, 15), // 1805
+  sports: buildDetail('42,800.00', 9860, 980, 120, 340, 40), // 8720
+  chess: buildDetail('18,640.00', 3200, 280, 45, 95, 20), // 2855
+  esports: buildDetail('9,820.00', 1560, 160, 28, 52, 12), // 1360
+  fishing: buildDetail('6,450.00', -820, 90, 15, 35, 8), // -933
+  slots: buildDetail('11,200.00', 2140, 210, 38, 72, 15), // 1877
 }
 
-/** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 10 − 20 = 320 */
+/** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 20 = 330 */
 const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10, 20)
 
 /** @deprecated 请使用 getReportDetail */
@@ -160,25 +165,13 @@ export const REPORT_DETAIL_ROWS = OVERALL_DETAIL.rows
 export function getReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
-  includeCommission = true,
+  _includeCommission = false,
 ): ReportDetail {
-  const detail =
-    category === 'all'
-      ? OVERALL_DETAIL
-      : vendor === 'all'
-        ? CATEGORY_ALL_DETAIL[category]
-        : VENDOR_DETAIL
-  if (includeCommission) return detail
-  const net = Number(detail.netProfit.replace(/[,+]/g, ''))
-  const commissionAbs = Math.abs(
-    Number(detail.rows.find((row) => row.key === 'commission')?.value.replace(/,/g, '') ?? 0),
-  )
-  const netWithoutCommission = net + commissionAbs
-  return {
-    ...detail,
-    netProfit: formatReportValue(netWithoutCommission),
-    netProfitTone: reportValueTone(netWithoutCommission),
-  }
+  return category === 'all'
+    ? OVERALL_DETAIL
+    : vendor === 'all'
+      ? CATEGORY_ALL_DETAIL[category]
+      : VENDOR_DETAIL
 }
 
 /**
