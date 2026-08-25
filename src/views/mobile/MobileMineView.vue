@@ -103,6 +103,18 @@ const user = {
   ],
 }
 
+const vipProgress = {
+  level: 0,
+  current: 50,
+  target: 100,
+}
+
+const vipProgressPercent = computed(() =>
+  Math.min(100, Math.max(0, (vipProgress.current / vipProgress.target) * 100)),
+)
+
+const vipProgressText = computed(() => `${vipProgress.current}/${vipProgress.target}`)
+
 interface MineShortcutItem {
   key: string
   label: string
@@ -210,6 +222,10 @@ function goUserHome() {
   router.push({ name: 'mobile-user-home', query: hallQuery() })
 }
 
+function goVipDetail() {
+  router.push({ name: 'mobile-vip', query: hallQuery() })
+}
+
 function goSettings() {
   router.push({ name: 'mobile-mine-settings', query: hallQuery() })
 }
@@ -302,27 +318,53 @@ watch(preferredFiatAmountText, () => {
       @keydown.space.prevent="goUserHome"
     >
       <div class="mh5-mine-profile__main">
-        <img :src="user.avatar" alt="" class="mh5-mine-profile__avatar" />
-        <div class="mh5-mine-profile__info">
-          <h2 class="mh5-mine-profile__name">{{ $t(user.name) }}</h2>
-          <p class="mh5-mine-profile__id">
-            <span>金刚号：{{ user.id }}</span>
-          </p>
+        <div class="mh5-mine-profile__head">
+          <img :src="user.avatar" alt="" class="mh5-mine-profile__avatar" />
+          <div class="mh5-mine-profile__info">
+            <h2 class="mh5-mine-profile__name">{{ $t(user.name) }}</h2>
+            <p class="mh5-mine-profile__id">
+              <span>金刚号：{{ user.id }}</span>
+            </p>
+          </div>
+          <div class="mh5-mine-profile__trailing">
+            <img
+              src="/images/mine/icon-qr.svg"
+              alt=""
+              class="mh5-mine-profile__qr mh5-mine-icon mh5-mine-icon--28"
+              aria-hidden="true"
+            />
+            <img
+              src="/images/mine/icon-arrow-right.svg"
+              alt=""
+              class="mh5-mine-profile__arrow mh5-mine-icon mh5-mine-icon--20"
+              aria-hidden="true"
+            />
+          </div>
         </div>
-        <div class="mh5-mine-profile__trailing">
+        <button
+          type="button"
+          class="mh5-mine-profile__vip"
+          :aria-label="`${$t('VIP 等级')} VIP${vipProgress.level} ${vipProgressText} ${$t('晋级流水')}`"
+          @click.stop="goVipDetail"
+        >
           <img
-            src="/images/mine/icon-qr.svg"
+            src="/images/mine/vip0.svg"
             alt=""
-            class="mh5-mine-profile__qr mh5-mine-icon mh5-mine-icon--28"
+            class="mh5-mine-profile__vip-badge"
             aria-hidden="true"
           />
-          <img
-            src="/images/mine/icon-arrow-right.svg"
-            alt=""
-            class="mh5-mine-profile__arrow mh5-mine-icon mh5-mine-icon--20"
-            aria-hidden="true"
-          />
-        </div>
+          <span class="mh5-mine-profile__vip-ratio">{{ vipProgressText }}</span>
+          <span
+            class="mh5-mine-profile__vip-bar"
+            role="progressbar"
+            :aria-valuenow="vipProgress.current"
+            :aria-valuemin="0"
+            :aria-valuemax="vipProgress.target"
+          >
+            <i class="mh5-mine-profile__vip-bar-fill" :style="{ width: `${vipProgressPercent}%` }" />
+          </span>
+          <span class="mh5-mine-profile__vip-label">{{ $t('晋级流水') }}</span>
+        </button>
       </div>
 
       <div class="mh5-mine-profile__stats">

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 36" width="96" height="36" fill="none">
+  <defs>
+    <linearGradient id="vip0-pill" x1="16" y1="18" x2="94" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9a9294"/>
+      <stop offset="42%" stop-color="#c4bdbd"/>
+      <stop offset="100%" stop-color="#d8d2d3"/>
+    </linearGradient>
+    <linearGradient id="vip0-hex" x1="18" y1="3" x2="18" y2="33" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f4f2f3"/>
+      <stop offset="48%" stop-color="#cfc9ca"/>
+      <stop offset="100%" stop-color="#8f8889"/>
+    </linearGradient>
+    <linearGradient id="vip0-hex-inner" x1="18" y1="8" x2="18" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6b6566"/>
+      <stop offset="100%" stop-color="#3a3637"/>
+    </linearGradient>
+    <linearGradient id="vip0-bolt" x1="18" y1="11" x2="18" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#f3efef"/>
+      <stop offset="100%" stop-color="#c3bcbd"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="7" width="78" height="22" rx="11" fill="url(#vip0-pill)"/>
+  <rect x="16.5" y="7.5" width="77" height="21" rx="10.5" stroke="#fff" stroke-opacity=".28"/>
+  <path
+    d="M18 3.2 30.2 10.2v14L18 31.2 5.8 24.2v-14L18 3.2Z"
+    fill="url(#vip0-hex)"
+    stroke="#f6f4f5"
+    stroke-width="1.1"
+    stroke-linejoin="round"
+  />
+  <path d="M18 8.1 26.4 13v10.2L18 28.1 9.6 23.2V13L18 8.1Z" fill="url(#vip0-hex-inner)"/>
+  <path d="M20.2 11.2 14.6 19.2h4.1l-2.7 6.6 7.1-8.6h-4.1l3.2-6Z" fill="url(#vip0-bolt)"/>
+  <text
+    x="40"
+    y="22.6"
+    fill="#fff"
+    font-size="13"
+    font-weight="800"
+    font-style="italic"
+    font-family="Arial, Helvetica, sans-serif"
+    letter-spacing=".6"
+  >VIP0</text>
+</svg>
