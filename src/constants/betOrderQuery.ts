@@ -35,6 +35,8 @@ export type BetOrderRecord = {
   /** 代理备注 */
   memberRemark?: string
   currency: Exclude<BetGameCurrency, ''>
+  /** 贵宾厅信用钱包，对应「我的」账户，列表展示图标 + 备注 */
+  creditWalletId?: string
   productName: string
   /** 游戏名称（与游戏分类联动） */
   gameName: string
@@ -106,11 +108,12 @@ export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, stri
   '信用额度-USD': '信用额度-USD',
 }
 
-/** 游戏币种筛选项：全部 / KKC / KKV / USDT，不含信用额度 */
-export function getBetOrderCurrencyOptions() {
+/** 游戏币种筛选项：全部 + 现金三币种；占成代理另含信用额度-CNY / USD */
+export function getBetOrderCurrencyOptions(includeCredit = false) {
   return [
     { value: '' as const, label: '全部' },
     ...sortByLocaleCashOrder([...BET_ORDER_CASH_CURRENCY_OPTIONS], (item) => item.value),
+    ...(includeCredit ? [...BET_ORDER_CREDIT_CURRENCY_OPTIONS] : []),
   ]
 }
 
@@ -345,6 +348,16 @@ function enrichBetOrderMemberFields(row: BetOrderRecord): BetOrderRecord {
   }
 }
 
+function attachBetOrderCreditWallet(row: BetOrderRecord, salt: number): BetOrderRecord {
+  if (row.creditWalletId) return row
+  if (row.currency !== '信用额度-CNY' && row.currency !== '信用额度-USD') return row
+  const pool =
+    row.currency === '信用额度-USD'
+      ? ['credit-ez-usd-1', 'credit-a-usd-1', 'credit-b-usd-1']
+      : ['credit-ez-cny-1', 'credit-a-cny-1', 'credit-b-cny-1']
+  return { ...row, creditWalletId: pool[salt % pool.length] }
+}
+
 const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
   {
     id: 'bo1',
@@ -475,6 +488,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     memberAccount: 'fafa8888888',
     memberRemark: 'VIP客户',
     currency: '信用额度-CNY',
+    creditWalletId: 'credit-b-cny-1',
     productName: '皇者-电子',
     gameName: 'hz-slots',
     gameCategory: 'slots',
@@ -485,7 +499,7 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
     validBet: 0,
     winLose: 0,
     status: 'cancelled',
-    betAt: mockBetAt(1, 12, 0, 0),
+    betAt: mockBetAt(2, 12, 0, 0),
     gameSettledAt: null,
     platformSettledAt: null,
     dividendAmount: 0,
@@ -723,7 +737,9 @@ const MOCK_BET_ORDER_RECORDS_RAW: BetOrderRecord[] = [
   }),
 ]
 
-export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOrderMemberFields)
+export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOrderMemberFields).map(
+  (row, index) => attachBetOrderCreditWallet(row, index),
+)
 
 export type BetOrderCurrencyFilter = BetGameCurrency
 
@@ -912,6 +928,19 @@ export function isBetOrderCreditCurrency(
   currency: string,
 ): currency is '信用额度-CNY' | '信用额度-USD' {
   return currency === '信用额度-CNY' || currency === '信用额度-USD'
+}
+
+/** 贵宾厅注单卡：按账户回显图标 + 备注（展示名） */
+export function findBetOrderCreditWallet<
+  T extends { id: string; currency: string; displayName: string; icon: string },
+>(row: Pick<BetOrderRecord, 'currency' | 'creditWalletId'>, wallets: T[]): T | null {
+  if (row.creditWalletId) {
+    const matched = wallets.find((item) => item.id === row.creditWalletId)
+    if (matched) return matched
+  }
+  if (!isBetOrderCreditCurrency(row.currency)) return null
+  const code = row.currency === '信用额度-USD' ? 'usd' : 'cny'
+  return wallets.find((item) => item.currency === code) ?? null
 }
 
 /** 贵宾厅信用账户币种 → 注单「信用额度-CNY / USD」 */

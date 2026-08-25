@@ -12,7 +12,9 @@ import { AGENT_SETTLE_TODAY } from '../../constants/agentSettle'
 import { AGENT_BET_ORDER_QUERY_SPEC, MEMBER_BET_RECORDS_SPEC } from '../../constants/betOrderQuerySpec'
 import {
   DATE_RANGE_SHEET_PRESETS,
+  addMonthsYmd,
   dateRangeSheetPresetRange,
+  formatYmd,
   matchDateRangeSheetPreset,
 } from '../../constants/mh5DateRange'
 import { isVipClubMineFrom } from '../../constants/mineHall'
@@ -32,6 +34,7 @@ import {
   betWinLoseClass,
   filterBetOrders,
   filterBetOrdersForSummary,
+  findBetOrderCreditWallet,
   formatBetWinLose,
   formatBetOrderContentPreview,
   formatBetOrderCurrency,
@@ -81,7 +84,7 @@ const isMemberRecords = computed(() => props.hideSpec)
 const isVipClubRecords = computed(
   () => isMemberRecords.value && isVipClubMineFrom(route.query.from),
 )
-const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
+  const { selectedWallet, recordsSelectAll, recordsCurrencyFilter, wallets } = useVipCreditAccounts()
 const creditSheetOpen = ref(false)
 const forkBanner = computed(() => {
   const banner = fork.value?.mockPatches?.overviewBanner
@@ -127,7 +130,15 @@ watch(
 const filterOpen = ref(false)
 const filterError = ref('')
 const dateOpen = ref(false)
-const toolbarPicker = ref<'time' | 'category' | 'currency' | null>(null)
+const toolbarPicker = ref<'category' | 'currency' | null>(null)
+
+function machineTodayYmd() {
+  const d = new Date()
+  return formatYmd(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}
+
+const recordsToday = computed(() => (isVipClubRecords.value ? AGENT_SETTLE_TODAY : machineTodayYmd()))
+const recordsDateMin = computed(() => addMonthsYmd(recordsToday.value, -6))
 const page = ref(1)
 const loadingMore = ref(false)
 
@@ -137,8 +148,11 @@ const copyTip = ref('')
 
 const filteredRecords = computed(() => {
   let rows = filterBetOrders(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
-  if (isVipClubRecords.value && !appliedFilter.value.gameCurrency) {
+  if (isVipClubRecords.value) {
     rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
+    if (!recordsSelectAll.value && selectedWallet.value?.id) {
+      rows = rows.filter((row) => row.creditWalletId === selectedWallet.value?.id)
+    }
   }
   return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
 })
@@ -147,6 +161,9 @@ const summaryRecords = computed(() => {
   let rows = filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
   if (isVipClubRecords.value) {
     rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
+    if (!recordsSelectAll.value && selectedWallet.value?.id) {
+      rows = rows.filter((row) => row.creditWalletId === selectedWallet.value?.id)
+    }
   }
   return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
 })
@@ -155,15 +172,16 @@ const currencyOptions = computed(() => {
   if (isVipClubRecords.value) {
     return [{ value: '' as const, label: '全部' }, ...BET_ORDER_CREDIT_CURRENCY_OPTIONS]
   }
-  return getBetOrderCurrencyOptions()
+  /** 占成代理含信用额度；返佣与会员旗舰厅仅现金三币种 */
+  return getBetOrderCurrencyOptions(!isMemberRecords.value && !isRebateAgent.value)
 })
 
 const toolbarTimeLabel = computed(() => {
-  if (isVipClubRecords.value) {
+  if (isMemberRecords.value) {
     const preset = matchDateRangeSheetPreset(
       appliedFilter.value.customStart,
       appliedFilter.value.customEnd,
-      AGENT_SETTLE_TODAY,
+      recordsToday.value,
     )
     if (!preset) return '自定义'
     return DATE_RANGE_SHEET_PRESETS.find((item) => item.key === preset)?.label ?? '自定义'
@@ -195,12 +213,12 @@ const toolbarCurrencyLabel = computed(() => {
 })
 
 const isToolbarTimeDirty = computed(() => {
-  if (isVipClubRecords.value) {
+  if (isMemberRecords.value) {
     return (
       matchDateRangeSheetPreset(
         appliedFilter.value.customStart,
         appliedFilter.value.customEnd,
-        AGENT_SETTLE_TODAY,
+        recordsToday.value,
       ) !== 'today'
     )
   }
@@ -214,7 +232,6 @@ const isToolbarCurrencyDirty = computed(() =>
 )
 
 const toolbarPickerTitle = computed(() => {
-  if (toolbarPicker.value === 'time') return '选择日期'
   if (toolbarPicker.value === 'category') return '选择游戏分类'
   if (toolbarPicker.value === 'currency') return '选择游戏币种'
   return ''
@@ -264,6 +281,13 @@ watch(recordsSelectAll, () => {
 })
 watch(recordsCurrencyFilter, () => {
   if (isVipClubRecords.value) resetSummaryCarousel()
+})
+
+watch(isRebateAgent, (rebate) => {
+  if (!rebate || isMemberRecords.value) return
+  if (!isBetOrderCreditCurrency(appliedFilter.value.gameCurrency)) return
+  appliedFilter.value = { ...appliedFilter.value, gameCurrency: '' }
+  filterDraft.value = { ...filterDraft.value, gameCurrency: '' }
 })
 
 const visibleRecords = computed(() => filteredRecords.value.slice(0, page.value * BET_ORDER_PAGE_SIZE))
@@ -351,11 +375,8 @@ function selectTimePreset(preset: BetTimePreset) {
 }
 
 function openTimePick() {
-  if (isVipClubRecords.value) {
-    dateOpen.value = true
-    return
-  }
-  toolbarPicker.value = 'time'
+  toolbarPicker.value = null
+  dateOpen.value = true
 }
 
 function confirmRecordsDate(start: string, end: string) {
@@ -402,21 +423,22 @@ function openCurrencyPick() {
 }
 
 watch(
-  isVipClubRecords,
-  (vip) => {
-    if (!vip) return
-    const ccy = vipRecordsGameCurrency()
+  [isMemberRecords, isVipClubRecords],
+  () => {
+    if (!isMemberRecords.value) return
     const queryStart = String(route.query.start || '')
     const queryEnd = String(route.query.end || '')
-    const fallback = dateRangeSheetPresetRange('today', AGENT_SETTLE_TODAY)
+    const fallback = dateRangeSheetPresetRange('today', recordsToday.value)
     const start = queryStart || fallback.start
     const end = queryEnd || fallback.end
     const next = {
       ...appliedFilter.value,
-      gameCurrency: ccy,
       timePreset: 'custom' as const,
       customStart: start,
       customEnd: end,
+    }
+    if (isVipClubRecords.value) {
+      next.gameCurrency = vipRecordsGameCurrency()
     }
     appliedFilter.value = next
     filterDraft.value = { ...next }
@@ -426,7 +448,7 @@ watch(
 
 function openFilter() {
   toolbarPicker.value = null
-  if (isVipClubRecords.value) {
+  if (isMemberRecords.value) {
     filterDraft.value = {
       ...appliedFilter.value,
       keyword: searchInput.value.trim(),
@@ -443,12 +465,12 @@ function openFilter() {
 
 function resetFilter() {
   const next = hydrateBetOrderFilterDates(createDefaultFilter())
-  if (isVipClubRecords.value) {
-    const range = dateRangeSheetPresetRange('today', AGENT_SETTLE_TODAY)
-    next.gameCurrency = vipRecordsGameCurrency()
+  if (isMemberRecords.value) {
+    const range = dateRangeSheetPresetRange('today', recordsToday.value)
     next.timePreset = 'custom'
     next.customStart = range.start
     next.customEnd = range.end
+    if (isVipClubRecords.value) next.gameCurrency = vipRecordsGameCurrency()
   }
   filterDraft.value = next
   filterError.value = ''
@@ -459,12 +481,12 @@ function resetFilter() {
 
 function applyFilter() {
   const next = { ...filterDraft.value, keyword: filterDraft.value.keyword.trim() }
-  if (isVipClubRecords.value) {
+  if (isMemberRecords.value) {
     next.timePreset = 'custom'
   } else if (next.customStart && next.customEnd) {
     next.timePreset = resolveBetOrderTimePreset(next.customStart, next.customEnd)
   }
-  const err = isVipClubRecords.value ? null : validateBetOrderDateRange(next)
+  const err = isMemberRecords.value ? null : validateBetOrderDateRange(next)
   if (err) {
     filterError.value = err
     return
@@ -519,6 +541,10 @@ function toggleGameNameExpanded() {
 function formatSummaryWinLose(value: number, currency?: string) {
   if (value > 0) return `+${formatMoney(value, currency)}`
   return formatMoney(value, currency)
+}
+
+function creditWalletOf(row: BetOrderRecord) {
+  return findBetOrderCreditWallet(row, wallets.value)
 }
 
 function summaryWinLoseClass(value: number) {
@@ -707,7 +733,11 @@ function summaryWinLoseClass(value: number) {
         <div class="mh5-bet-order-card__head">
           <div class="mh5-bet-order-card__member">
             <strong>{{ formatBetOrderMemberLabel(row) }}</strong>
-            <span class="mh5-bet-order-card__currency">{{ formatBetOrderCurrency(row.currency) }}</span>
+            <span v-if="isVipClubRecords && creditWalletOf(row)" class="mh5-bet-order-card__wallet">
+              <img :src="creditWalletOf(row)!.icon" alt="" width="20" height="20" />
+              <span>{{ creditWalletOf(row)!.displayName }}</span>
+            </span>
+            <span v-else class="mh5-bet-order-card__currency">{{ formatBetOrderCurrency(row.currency) }}</span>
           </div>
           <span class="mh5-bet-order-card__status" :class="betOrderStatusClass(row.status)">
             {{ BET_ORDER_STATUS_LABEL[row.status] }}
@@ -763,19 +793,7 @@ function summaryWinLoseClass(value: number) {
             :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
           >
             <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
-            <template v-if="toolbarPicker === 'time' && !isVipClubRecords">
-              <button
-                v-for="tab in BET_TIME_PRESETS"
-                :key="tab.key"
-                type="button"
-                class="mh5-xcoin-sheet__option"
-                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.timePreset === tab.key }"
-                @click="selectTimePreset(tab.key)"
-              >
-                {{ tab.label }}
-              </button>
-            </template>
-            <template v-else-if="toolbarPicker === 'category'">
+            <template v-if="toolbarPicker === 'category'">
               <button
                 v-for="opt in BET_ORDER_CATEGORY_OPTIONS"
                 :key="`pick-cat-${opt.value || 'all'}`"
@@ -805,12 +823,12 @@ function summaryWinLoseClass(value: number) {
     </Teleport>
 
     <Mh5DateRangeSheet
-      v-if="isVipClubRecords"
-      tone="vip"
+      v-if="isMemberRecords"
+      :tone="isVipClubRecords ? 'vip' : 'default'"
       :open="dateOpen"
       :start="appliedFilter.customStart"
       :end="appliedFilter.customEnd"
-      :today="AGENT_SETTLE_TODAY"
+      :today="recordsToday"
       @close="dateOpen = false"
       @confirm="confirmRecordsDate"
     />
@@ -836,11 +854,29 @@ function summaryWinLoseClass(value: number) {
           <section class="mh5-xcoin-filter-group">
             <h3 class="mh5-xcoin-filter-group__label">时间区间</h3>
             <div class="mh5-bet-order-date-row">
-              <input v-model="filterDraft.customStart" type="date" class="mh5-xcoin-filter-input" />
+              <input
+                v-model="filterDraft.customStart"
+                type="date"
+                class="mh5-xcoin-filter-input"
+                :min="isMemberRecords ? recordsDateMin : undefined"
+                :max="isMemberRecords ? recordsToday : undefined"
+              />
               <span>至</span>
-              <input v-model="filterDraft.customEnd" type="date" class="mh5-xcoin-filter-input" />
+              <input
+                v-model="filterDraft.customEnd"
+                type="date"
+                class="mh5-xcoin-filter-input"
+                :min="isMemberRecords ? recordsDateMin : undefined"
+                :max="isMemberRecords ? recordsToday : undefined"
+              />
             </div>
-            <p class="mh5-xcoin-filter-hint">选择自定义日期后将覆盖顶部快捷 Tab，区间最长{{ BET_ORDER_MAX_RANGE_DAYS }}天</p>
+            <p class="mh5-xcoin-filter-hint">
+              {{
+                isMemberRecords
+                  ? '仅支持查询近 6 个月的记录'
+                  : `选择自定义日期后将覆盖顶部快捷 Tab，区间最长${BET_ORDER_MAX_RANGE_DAYS}天`
+              }}
+            </p>
           </section>
 
           <section class="mh5-xcoin-filter-group">
@@ -854,7 +890,7 @@ function summaryWinLoseClass(value: number) {
                 :class="{ 'mh5-xcoin-chip--active': filterDraft.gameCurrency === opt.value }"
                 @click="filterDraft.gameCurrency = opt.value"
               >
-                {{ opt.label }}
+                {{ $t(opt.label) }}
               </button>
             </div>
           </section>
@@ -963,7 +999,11 @@ function summaryWinLoseClass(value: number) {
           <section class="mh5-bet-order-detail-hero">
             <p class="mh5-bet-order-detail-hero__amount" :class="betWinLoseClass(detailRow)">
               {{ formatBetWinLose(detailRow) }}
-              <span>{{ formatBetOrderCurrency(detailRow.currency) }}</span>
+              <span v-if="isVipClubRecords && creditWalletOf(detailRow)" class="mh5-bet-order-card__wallet">
+                <img :src="creditWalletOf(detailRow)!.icon" alt="" width="20" height="20" />
+                <span>{{ creditWalletOf(detailRow)!.displayName }}</span>
+              </span>
+              <span v-else>{{ formatBetOrderCurrency(detailRow.currency) }}</span>
             </p>
             <span class="mh5-bet-order-card__status" :class="betOrderStatusClass(detailRow.status)">
               {{ BET_ORDER_STATUS_LABEL[detailRow.status] }}
@@ -990,6 +1030,13 @@ function summaryWinLoseClass(value: number) {
               </span>
             </div>
             <div class="mh5-bet-order-detail-row"><span>游戏名称</span><span>{{ detailRow.productName }}</span></div>
+            <div v-if="isVipClubRecords && creditWalletOf(detailRow)" class="mh5-bet-order-detail-row">
+              <span>钱包</span>
+              <span class="mh5-bet-order-card__wallet">
+                <img :src="creditWalletOf(detailRow)!.icon" alt="" width="20" height="20" />
+                <span>{{ creditWalletOf(detailRow)!.displayName }}</span>
+              </span>
+            </div>
             <div v-if="!isMemberRecords" class="mh5-bet-order-detail-row"><span>期数/场次</span><span>{{ detailRow.periodNo }}</span></div>
             <div class="mh5-bet-order-detail-row mh5-bet-order-detail-row--stack">
               <span>投注内容</span>

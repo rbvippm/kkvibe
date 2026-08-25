@@ -781,6 +781,13 @@
 
 .mh5-mine-profile__main {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.mh5-mine-profile__head {
+  display: flex;
   align-items: center;
   gap: 10px;
 }
@@ -813,6 +820,69 @@
   font-size: 12px;
   line-height: 1.4;
   color: var(--mh5-mine-text-secondary);
+}
+
+.mh5-mine-profile__vip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-mine-profile__vip-badge {
+  display: block;
+  flex-shrink: 0;
+  height: 18px;
+  width: auto;
+}
+
+.mh5-mine-profile__vip-ratio {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--mh5-mine-text);
+}
+
+.mh5-mine-profile__vip-bar {
+  display: block;
+  flex: 1;
+  min-width: 44px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #ececec;
+}
+
+.mh5-mine-profile__vip-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffc14d 0%, #ff7a2b 100%);
+}
+
+.mh5-mine-profile__vip-label {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--mh5-mine-text-secondary);
+}
+
+.mh5-app-shell--vip-club .mh5-mine-profile__vip-bar {
+  background: #2a2a2a;
+}
+
+.mh5-app-shell--vip-club .mh5-mine-profile__vip-bar-fill {
+  background: linear-gradient(90deg, #e8c47a 0%, #c9a056 100%);
 }
 
 .mh5-mine-profile__arrow {
@@ -1880,6 +1950,14 @@
 .mh5-wallet-sheet--vip-gold .agent-currency-sheet__check,
 .mh5-wallet-sheet--vip-gold .agent-currency-sheet__check--active {
   background: #d99d46;
+}
+
+.mh5-wallet-sheet--vip-gold .agent-currency-sheet__icon--avatar {
+  border-radius: 50%;
+  background: rgb(232 196 122 / 16%);
+  color: #f5ddb1;
+  font-size: 15px;
+  border: 1px solid rgb(234 183 94 / 28%);
 }
 
 .mh5-credit-account-sheet .mh5-wallet-sheet__title,
@@ -13326,12 +13404,14 @@
 }
 
 .agent-team-toolbar {
+  position: relative;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   gap: 8px;
   padding: 10px 12px 10px 16px;
   background: #fff;
+  z-index: 3;
 }
 
 .agent-team-toolbar__tabs {
@@ -13363,6 +13443,67 @@
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.agent-team-toolbar__sort--active {
+  color: #ff7a2b;
+  font-weight: 600;
+}
+
+.agent-team-toolbar__sort-caret {
+  display: block;
+  transition: transform 0.18s ease;
+}
+
+.agent-team-toolbar__sort-caret--open {
+  transform: rotate(180deg);
+}
+
+.agent-team-toolbar__filter-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.agent-team-toolbar__filter-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 4;
+  min-width: 108px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.agent-team-toolbar__filter-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.agent-team-toolbar__filter-option--active {
+  background: #fff4eb;
+  color: #ff7a2b;
+  font-weight: 600;
+}
+
+.agent-team-empty {
+  margin: 0;
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #999;
 }
 
 .agent-team-invite-entry {
@@ -19448,6 +19589,33 @@ div.agent-home__profit-tab--ratio {
   color: var(--mh5-app-orange);
 }
 
+.mh5-bet-order-card__wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 140px;
+}
+
+.mh5-bet-order-card__wallet img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.mh5-bet-order-card__wallet span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
 .mh5-bet-order-card__status {
   flex-shrink: 0;
   font-size: 12px;
@@ -19666,6 +19834,10 @@ div.agent-home__profit-tab--ratio {
   color: #f0c36a;
 }
 
+.mh5-vip-records .mh5-bet-order-card__wallet span {
+  color: #f5ddb1;
+}
+
 .mh5-vip-records .mh5-bet-order__status--settled {
   color: #7ee08a;
 }
@@ -19862,6 +20034,16 @@ div.agent-home__profit-tab--ratio {
   font-size: 14px;
   font-weight: 600;
   color: var(--mh5-app-text-secondary);
+}
+
+.mh5-bet-order-detail-hero__amount .mh5-bet-order-card__wallet {
+  display: inline-flex;
+  vertical-align: middle;
+  max-width: 160px;
+}
+
+.mh5-bet-order-detail-hero__amount .mh5-bet-order-card__wallet span {
+  margin-left: 0;
 }
 
 .mh5-bet-order-detail-block {

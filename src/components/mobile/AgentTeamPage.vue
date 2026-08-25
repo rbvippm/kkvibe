@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
   TEAM_FILTER_TABS,
+  TEAM_ONLINE_FILTER_OPTIONS,
   TEAM_SEARCH_HINT,
   TEAM_TREE_DEFAULT_EXPANDED,
   TEAM_TREE_DEFAULT_VISIBLE,
@@ -26,6 +27,7 @@ import {
   type CreateAccountOption,
   type TeamFilterTab,
   type TeamListItem,
+  type TeamOnlineFilter,
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
 import {
@@ -51,6 +53,9 @@ const createAccountOptions = computed(() =>
 const teamFilterTabs = computed(() => TEAM_FILTER_TABS)
 
 const teamFilterTab = ref<TeamFilterTab>(isRebateAgent.value ? 'direct_member' : 'all')
+const onlineFilter = ref<TeamOnlineFilter | null>(null)
+const onlineFilterOpen = ref(false)
+const onlineFilterWrapRef = ref<HTMLElement | null>(null)
 
 /** 返佣固定「直属会员」，不提供全部/直属代理切换 */
 const effectiveTeamFilterTab = computed<TeamFilterTab>(() =>
@@ -60,6 +65,8 @@ const effectiveTeamFilterTab = computed<TeamFilterTab>(() =>
 watch(isRebateAgent, (rebate) => {
   if (rebate) {
     teamFilterTab.value = 'direct_member'
+    onlineFilter.value = null
+    onlineFilterOpen.value = false
     applyFilterExpand('direct_member')
     return
   }
@@ -76,11 +83,12 @@ const teamTreeOptions = computed(() => ({
   includeCredit: !isRebateAgent.value,
   singleLayer: isRebateAgent.value,
   flatDirectMembers: isRebateAgent.value,
+  onlineFilter: onlineFilter.value,
 }))
 
 function applyFilterExpand(tab: TeamFilterTab) {
-  if (tab === 'all') {
-    const state = collectTeamFullExpandState('all', teamTreeOptions.value)
+  if (tab === 'all' || onlineFilter.value) {
+    const state = collectTeamFullExpandState(tab, teamTreeOptions.value)
     expandedIds.value = state.expandedIds
     moreVisibleCount.value = state.moreVisibleCount
     return
@@ -91,6 +99,27 @@ function applyFilterExpand(tab: TeamFilterTab) {
 
 applyFilterExpand(effectiveTeamFilterTab.value)
 
+function closeOnlineFilterMenu() {
+  onlineFilterOpen.value = false
+}
+
+function toggleOnlineFilterMenu() {
+  onlineFilterOpen.value = !onlineFilterOpen.value
+}
+
+function pickOnlineFilter(next: TeamOnlineFilter) {
+  onlineFilter.value = onlineFilter.value === next ? null : next
+  closeOnlineFilterMenu()
+  applyFilterExpand(effectiveTeamFilterTab.value)
+}
+
+function onDocumentClickCloseFilter(event: MouseEvent) {
+  if (!onlineFilterOpen.value) return
+  const wrap = onlineFilterWrapRef.value
+  if (wrap && event.target instanceof Node && wrap.contains(event.target)) return
+  closeOnlineFilterMenu()
+}
+
 type TeamQuickAction =
   | 'detail'
   | 'profit'
@@ -100,6 +129,7 @@ type TeamQuickAction =
   | 'bet_order'
   | 'agent_credit'
   | 'member_credit'
+  | 'credit_transfer'
 
 const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
   detail: '/images/agent-team/quick-detail.svg',
@@ -109,6 +139,7 @@ const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
   rebate_ratio: '/images/agent-team/quick-ratio.svg',
   agent_credit: '/images/agent-team/quick-credit.svg',
   member_credit: '/images/agent-team/quick-credit.svg',
+  credit_transfer: '/images/agent-team/quick-credit.svg',
   remark: '/images/agent-team/quick-remark.svg',
 }
 
@@ -136,7 +167,9 @@ const teamQuickActions = computed(() => {
   } else {
     actions.push({ key: 'profit_ratio', label: '收益比例', icon: TEAM_QUICK_ACTION_ICONS.profit_ratio })
   }
-  if (canShowMemberCreditAction(row.kind)) {
+  if (isCreditTeamKind(row.kind)) {
+    actions.push({ key: 'credit_transfer', label: '上下分', icon: TEAM_QUICK_ACTION_ICONS.credit_transfer })
+  } else if (canShowMemberCreditAction(row.kind)) {
     actions.push({ key: 'member_credit', label: '会员授信', icon: TEAM_QUICK_ACTION_ICONS.member_credit })
   } else if (canShowAgentCreditAction(row.kind)) {
     actions.push({ key: 'agent_credit', label: '代理授信', icon: TEAM_QUICK_ACTION_ICONS.agent_credit })
@@ -182,6 +215,7 @@ const teamSearchInputRef = ref<HTMLInputElement | null>(null)
 async function openTeamSearch() {
   closeTeamQuickMenu()
   closeCreateAccountSheet()
+  closeOnlineFilterMenu()
   teamSearchOpen.value = true
   teamSearchDraft.value = ''
   teamSearchKeyword.value = ''
@@ -265,6 +299,7 @@ function showMoreChildren(parentId: string) {
 
 watch(teamFilterTab, (tab) => {
   if (isRebateAgent.value) return
+  closeOnlineFilterMenu()
   applyFilterExpand(tab)
 })
 
@@ -379,6 +414,25 @@ async function onTeamQuickAction(action: TeamQuickAction) {
     return
   }
 
+  if (action === 'credit_transfer') {
+    if (isRebateAgent.value) {
+      await mh5Alert('返佣代理不支持上下分')
+      return
+    }
+    if (!isCreditTeamKind(row.kind)) {
+      await mh5Alert('仅信用会员/代理可上下分')
+      return
+    }
+    router.push({
+      name: showMemberBadge(row.kind) ? 'mobile-xcoin-credit-member' : 'mobile-xcoin-credit-agent',
+      query: withAgentQuery({
+        targetId: row.id,
+        targetName: formatTeamMemberBetSearchKeyword(row),
+      }),
+    })
+    return
+  }
+
   if (action === 'member_credit') {
     if (isRebateAgent.value) {
       await mh5Alert('返佣代理不支持会员授信，请使用占成代理入口')
@@ -416,6 +470,7 @@ async function onTeamQuickAction(action: TeamQuickAction) {
 function openCreateAccountSheet() {
   closeTeamQuickMenu()
   closeTeamSearch()
+  closeOnlineFilterMenu()
   const allowed = createAccountOptions.value.map((item) => item.key)
   const preferred = createAccountSelection.value
   createAccountDraft.value = allowed.includes(preferred) ? preferred : (allowed[0] ?? 'agent')
@@ -435,6 +490,7 @@ function closeAllSheets() {
   createAccountSheetOpen.value = false
   closeTeamSearch()
   closeTeamQuickMenu()
+  closeOnlineFilterMenu()
 }
 
 watch(
@@ -483,7 +539,12 @@ async function confirmCreateAccount() {
   await mh5Alert('创建账户（原型占位）')
 }
 
+onMounted(() => {
+  document.addEventListener('click', onDocumentClickCloseFilter, true)
+})
+
 onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocumentClickCloseFilter, true)
   closeAllSheets()
 })
 </script>
@@ -560,14 +621,65 @@ onBeforeUnmount(() => {
           {{ $t(tab.label) }}
         </button>
       </div>
-      <button type="button" class="agent-team-toolbar__sort" :aria-label="$t('排序')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M4 7h12M4 12h8M4 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        </svg>{{ $t('排序') }}</button>
+      <div
+        ref="onlineFilterWrapRef"
+        class="agent-team-toolbar__filter-wrap"
+      >
+        <button
+          type="button"
+          class="agent-team-toolbar__sort"
+          :class="{ 'agent-team-toolbar__sort--active': Boolean(onlineFilter) }"
+          :aria-label="$t('筛选')"
+          :aria-expanded="onlineFilterOpen"
+          aria-haspopup="listbox"
+          @click="toggleOnlineFilterMenu"
+        >
+          <span>{{ $t('筛选') }}</span>
+          <svg
+            class="agent-team-toolbar__sort-caret"
+            :class="{ 'agent-team-toolbar__sort-caret--open': onlineFilterOpen }"
+            width="10"
+            height="10"
+            viewBox="0 0 12 12"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 4.5 6 7.5 9 4.5"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div
+          v-if="onlineFilterOpen"
+          class="agent-team-toolbar__filter-menu"
+          role="listbox"
+          :aria-label="$t('筛选')"
+        >
+          <button
+            v-for="opt in TEAM_ONLINE_FILTER_OPTIONS"
+            :key="opt.key"
+            type="button"
+            role="option"
+            class="agent-team-toolbar__filter-option"
+            :class="{ 'agent-team-toolbar__filter-option--active': onlineFilter === opt.key }"
+            :aria-selected="onlineFilter === opt.key"
+            @click="pickOnlineFilter(opt.key)"
+          >
+            {{ $t(opt.label) }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <main class="agent-team-list">
-      <div class="agent-team-list__track">
+      <p v-if="!teamTreeRows.length" class="agent-team-empty">
+        {{ onlineFilter === 'offline' ? $t('暂无离线成员') : $t('暂无在线成员') }}
+      </p>
+      <div v-else class="agent-team-list__track">
         <template v-for="row in teamTreeRows" :key="treeRowKey(row)">
           <!-- 查看更多：对齐 Figma 两侧虚线 + 文案 -->
           <button

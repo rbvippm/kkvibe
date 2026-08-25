@@ -332,6 +332,13 @@ export function promoteToCreditMember(input: {
   })
 }
 
+export type TeamOnlineFilter = 'online' | 'offline'
+
+export const TEAM_ONLINE_FILTER_OPTIONS: { key: TeamOnlineFilter; label: string }[] = [
+  { key: 'online', label: '在线' },
+  { key: 'offline', label: '离线' },
+]
+
 export type BuildTeamTreeOptions = {
   /** 是否包含信用代理 / 信用会员；返佣代理为 false */
   includeCredit?: boolean
@@ -339,6 +346,25 @@ export type BuildTeamTreeOptions = {
   singleLayer?: boolean
   /** 返佣：扁平直属会员列表，不展示「我」节点、无树形缩进 */
   flatDirectMembers?: boolean
+  /** 在线 / 离线筛选；空则不过滤 */
+  onlineFilter?: TeamOnlineFilter | null
+}
+
+function isTeamMemberOnline(item: TeamListItem): boolean {
+  return item.online === true
+}
+
+/** 保留命中节点及其祖先，便于树形查看 */
+function pruneTeamTreeByOnline(node: TeamListItem, wantOnline: boolean): TeamListItem | null {
+  const children = (node.children ?? [])
+    .map((child) => pruneTeamTreeByOnline(child, wantOnline))
+    .filter((child): child is TeamListItem => Boolean(child))
+  const selfMatch = isTeamMemberOnline(node) === wantOnline
+  if (!selfMatch && !children.length) return null
+  return {
+    ...node,
+    children: children.length ? children : undefined,
+  }
 }
 
 function stripCreditTeamNodes(items: TeamListItem[]): TeamListItem[] {
@@ -399,6 +425,14 @@ function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): 
   }
 }
 
+function applyOnlineFilterToRoot(
+  root: TeamListItem,
+  onlineFilter?: TeamOnlineFilter | null,
+): TeamListItem | null {
+  if (!onlineFilter) return root
+  return pruneTeamTreeByOnline(root, onlineFilter === 'online')
+}
+
 /** 收集树中所有可展开节点 id，以及各层「全部可见」条数（用于默认全部展开） */
 export function collectTeamFullExpandState(
   tab: TeamFilterTab,
@@ -407,7 +441,10 @@ export function collectTeamFullExpandState(
   expandedIds: Set<string>
   moreVisibleCount: Record<string, number>
 } {
-  const root = buildTeamTree(tab, options)
+  const root = applyOnlineFilterToRoot(buildTeamTree(tab, options), options.onlineFilter) ?? {
+    ...MOCK_TEAM_SELF,
+    children: [],
+  }
   const expandedIds = new Set<string>()
   const moreVisibleCount: Record<string, number> = {}
 
@@ -435,7 +472,10 @@ export function getTeamTreeRows(
 ): TeamTreeRow[] {
   /** 返佣：仅扁平直属会员，不渲染本人层级 */
   if (options.flatDirectMembers) {
-    const members = teamDirectMembers.value.map((item) => ({ ...item, children: undefined }))
+    const wantOnline = options.onlineFilter ? options.onlineFilter === 'online' : null
+    const members = teamDirectMembers.value
+      .filter((item) => wantOnline === null || isTeamMemberOnline(item) === wantOnline)
+      .map((item) => ({ ...item, children: undefined }))
     const flatParentId = MOCK_TEAM_SELF.id
     const limit = moreVisibleCount[flatParentId] ?? TEAM_TREE_DEFAULT_VISIBLE
     const visible = members.slice(0, limit)
@@ -461,7 +501,8 @@ export function getTeamTreeRows(
     return rows
   }
 
-  const root = buildTeamTree(tab, options)
+  const root = applyOnlineFilterToRoot(buildTeamTree(tab, options), options.onlineFilter)
+  if (!root) return []
   const rows: TeamTreeRow[] = []
 
   function walk(node: TeamListItem, depth: number, ancestorLastFlags: boolean[], isLast: boolean) {

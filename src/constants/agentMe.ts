@@ -37,6 +37,7 @@ export const AGENT_ME_ASSETS = {
 export const MOCK_AGENT_ME_PROFIT_ROWS: AgentMeProfitRow[] = [
   { key: 'kkc', currency: 'KKC', label: 'KKC', value: getAgentTotalProfit('KKC').value },
   { key: 'kkv', currency: 'KKV', label: 'KKV', value: getAgentTotalProfit('KKV').value },
+  { key: 'usdt', currency: 'USDT', label: 'USDT', value: getAgentTotalProfit('USDT').value },
   {
     key: 'credit-cny',
     currency: '信用额度-CNY',
@@ -49,7 +50,6 @@ export const MOCK_AGENT_ME_PROFIT_ROWS: AgentMeProfitRow[] = [
     label: '信用额度-USD',
     value: getAgentTotalProfit('信用额度-USD').value,
   },
-  { key: 'usdt', currency: 'USDT', label: 'USDT', value: getAgentTotalProfit('USDT').value },
 ]
 
 export const MOCK_AGENT_ME_UPDATED_AT = '2026-06-18 00:18:58'

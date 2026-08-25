@@ -293,25 +293,60 @@ function openDetail(id: string) {
     </Teleport>
 
     <Teleport to="body">
-      <Transition name="mh5-settlement-sheet">
+      <Transition name="mh5-wallet-sheet">
         <div v-if="pickerOpen === 'agent'" class="mh5-agent-overlay-mask" @click.self="pickerOpen = null">
           <div
-            class="mh5-agent-overlay-sheet mh5-agent-settle-sheet mh5-agent-overlay-sheet--vip-gold"
+            class="mh5-wallet-sheet agent-currency-sheet mh5-wallet-sheet--vip-gold mh5-billing-pick-sheet mh5-agent-settle-credit-sheet"
             role="dialog"
             aria-modal="true"
-            aria-label="选择代理"
+            aria-labelledby="mh5-agent-settle-agent-title"
           >
-            <h2 class="mh5-settlement-sheet__title">选择代理</h2>
-            <button
-              v-for="opt in agentOptions"
-              :key="opt.value || 'all'"
-              type="button"
-              class="mh5-settlement-sheet__option"
-              :class="{ 'mh5-settlement-sheet__option--active': agentId === opt.value }"
-              @click="pickAgent(opt.value)"
-            >
-              {{ opt.label }}
-            </button>
+            <div class="mh5-wallet-sheet__head">
+              <h2 id="mh5-agent-settle-agent-title" class="mh5-wallet-sheet__title">选择代理</h2>
+              <button type="button" class="mh5-wallet-sheet__close" aria-label="关闭" @click="pickerOpen = null">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
+              <button
+                v-for="opt in agentOptions"
+                :key="opt.value || 'all'"
+                type="button"
+                class="agent-currency-sheet__item"
+                :class="{ 'agent-currency-sheet__item--active': agentId === opt.value }"
+                @click="pickAgent(opt.value)"
+              >
+                <img
+                  v-if="!opt.value"
+                  class="agent-currency-sheet__icon agent-currency-sheet__icon--asset"
+                  src="/images/vip-club/icon-credit-all.svg"
+                  alt=""
+                  width="36"
+                  height="36"
+                />
+                <span v-else class="agent-currency-sheet__icon agent-currency-sheet__icon--avatar" aria-hidden="true">
+                  {{ opt.label.slice(0, 1) }}
+                </span>
+                <span class="agent-currency-sheet__name">{{ opt.label }}</span>
+                <span
+                  v-if="agentId === opt.value"
+                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
+                  aria-hidden="true"
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path
+                      d="M2.5 6.2l2.4 2.4 4.6-5"
+                      stroke="#fff"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </Transition>

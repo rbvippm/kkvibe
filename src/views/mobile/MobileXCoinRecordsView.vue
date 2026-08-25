@@ -7,7 +7,6 @@ import {
   TRANSFER_LANE_TABS,
   TRANSFER_RECORD_PAGE_SIZE,
   TRANSFER_SUMMARY_METRICS,
-  TRANSFER_TIME_PRESETS,
   XCOIN_CREDIT_CURRENCY_TABS,
   filterTransferRecords,
   getTransferSceneOptionsByLane,
@@ -23,25 +22,37 @@ import {
   transferRelatedOrderNo,
   transferSceneLabel,
   transferSceneStatusClass,
-  validateTransferRecordDateRange,
   type TransferLane,
   type TransferRecordFilter,
   type TransferRoleFilter,
-  type TransferTimePreset,
   type XCoinTransferRecord,
 } from '../../constants/xCoinTransfer'
+import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import {
+  DATE_RANGE_SHEET_PRESETS,
+  addMonthsYmd,
+  dateRangeSheetPresetRange,
+  formatYmd,
+  matchDateRangeSheetPreset,
+} from '../../constants/mh5DateRange'
 import { XCOIN_CREDIT_CURRENCY_SPEC, XCOIN_RECORDS_LANE_SPEC } from '../../constants/xCoinCreditSpec'
 import '../../styles/mobile-app-shell.css'
 
+function machineTodayYmd() {
+  const d = new Date()
+  return formatYmd(d.getFullYear(), d.getMonth() + 1, d.getDate())
+}
+
 function createDefaultFilter(currency?: string, lane: TransferLane = 'all'): TransferRecordFilter {
+  const today = dateRangeSheetPresetRange('today', machineTodayYmd())
   return {
     keyword: '',
-    timePreset: 'today',
-    customStart: '',
-    customEnd: '',
+    timePreset: 'custom',
+    customStart: today.start,
+    customEnd: today.end,
     recordType: '',
     scene: '',
     lane,
@@ -80,7 +91,10 @@ watch(
 )
 const filterOpen = ref(false)
 const filterError = ref('')
-const toolbarPicker = ref<'time' | 'lane' | 'currency' | null>(null)
+const dateOpen = ref(false)
+const toolbarPicker = ref<'lane' | 'currency' | null>(null)
+const recordsToday = computed(() => machineTodayYmd())
+const recordsDateMin = computed(() => addMonthsYmd(recordsToday.value, -6))
 const summaryHintOpen = ref(false)
 const page = ref(1)
 const loadingMore = ref(false)
@@ -145,8 +159,13 @@ watch(
 )
 
 const toolbarTimeLabel = computed(() => {
-  if (appliedFilter.value.timePreset === 'custom') return '时间区间'
-  return TRANSFER_TIME_PRESETS.find((tab) => tab.key === appliedFilter.value.timePreset)?.label ?? '今天'
+  const preset = matchDateRangeSheetPreset(
+    appliedFilter.value.customStart,
+    appliedFilter.value.customEnd,
+    recordsToday.value,
+  )
+  if (!preset) return '自定义'
+  return DATE_RANGE_SHEET_PRESETS.find((item) => item.key === preset)?.label ?? '自定义'
 })
 
 const toolbarLaneLabel = computed(() => {
@@ -160,12 +179,18 @@ const toolbarCurrencyLabel = computed(() => {
   return '币种'
 })
 
-const isToolbarTimeDirty = computed(() => appliedFilter.value.timePreset !== 'today')
+const isToolbarTimeDirty = computed(
+  () =>
+    matchDateRangeSheetPreset(
+      appliedFilter.value.customStart,
+      appliedFilter.value.customEnd,
+      recordsToday.value,
+    ) !== 'today',
+)
 const isToolbarLaneDirty = computed(() => appliedFilter.value.lane !== 'all')
 const isToolbarCurrencyDirty = computed(() => Boolean(appliedFilter.value.currency))
 
 const toolbarPickerTitle = computed(() => {
-  if (toolbarPicker.value === 'time') return '选择日期'
   if (toolbarPicker.value === 'lane') return '选择类型'
   if (toolbarPicker.value === 'currency') return '选择币种'
   return ''
@@ -177,6 +202,7 @@ let copyTipTimer = 0
 onUnmounted(() => {
   window.clearTimeout(copyTipTimer)
   filterOpen.value = false
+  dateOpen.value = false
   toolbarPicker.value = null
   summaryHintOpen.value = false
   detailRow.value = null
@@ -186,14 +212,20 @@ function runSearch() {
   appliedFilter.value = { ...appliedFilter.value, keyword: searchInput.value.trim() }
 }
 
-function selectTimePreset(preset: Exclude<TransferTimePreset, 'custom'>) {
+function openTimePick() {
+  toolbarPicker.value = null
+  dateOpen.value = true
+}
+
+function confirmRecordsDate(start: string, end: string) {
   appliedFilter.value = {
     ...appliedFilter.value,
-    timePreset: preset,
-    customStart: '',
-    customEnd: '',
+    timePreset: 'custom',
+    customStart: start,
+    customEnd: end,
   }
-  toolbarPicker.value = null
+  filterDraft.value = { ...appliedFilter.value }
+  dateOpen.value = false
 }
 
 function sceneFitsLane(scene: TransferRecordFilter['scene'], lane: TransferLane) {
@@ -221,6 +253,8 @@ function pickDownstreamRole(role: TransferRoleFilter) {
 }
 
 function openFilter() {
+  toolbarPicker.value = null
+  dateOpen.value = false
   filterDraft.value = { ...appliedFilter.value }
   filterError.value = ''
   filterOpen.value = true
@@ -246,17 +280,10 @@ function resetFilter() {
 }
 
 function applyFilter() {
-  const next = { ...filterDraft.value, keyword: searchInput.value.trim() }
-  if (next.customStart && next.customEnd) {
-    next.timePreset = 'custom'
-  }
-  const error = validateTransferRecordDateRange(next)
-  if (error) {
-    filterError.value = error
-    return
-  }
+  const next = { ...filterDraft.value, keyword: searchInput.value.trim(), timePreset: 'custom' as const }
   appliedFilter.value = next
   filterOpen.value = false
+  filterError.value = ''
 }
 
 function loadMore() {
@@ -330,7 +357,7 @@ function summaryToneClass(value: number) {
             type="button"
             class="mh5-bet-order-toolbar__pick"
             :class="{ 'mh5-bet-order-toolbar__pick--active': isToolbarTimeDirty }"
-            @click="toolbarPicker = 'time'"
+            @click="openTimePick"
           >
             <span class="mh5-bet-order-toolbar__pick-text">{{ toolbarTimeLabel }}</span>
             <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
@@ -532,19 +559,7 @@ function summaryToneClass(value: number) {
         >
           <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
             <h2 class="mh5-xcoin-sheet__title">{{ toolbarPickerTitle }}</h2>
-            <template v-if="toolbarPicker === 'time'">
-              <button
-                v-for="tab in TRANSFER_TIME_PRESETS"
-                :key="tab.key"
-                type="button"
-                class="mh5-xcoin-sheet__option"
-                :class="{ 'mh5-xcoin-sheet__option--active': appliedFilter.timePreset === tab.key }"
-                @click="selectTimePreset(tab.key)"
-              >
-                {{ tab.label }}
-              </button>
-            </template>
-            <template v-else-if="toolbarPicker === 'lane'">
+            <template v-if="toolbarPicker === 'lane'">
               <button
                 v-for="tab in TRANSFER_LANE_TABS"
                 :key="tab.key"
@@ -580,6 +595,15 @@ function summaryToneClass(value: number) {
         </div>
       </Transition>
     </Teleport>
+
+    <Mh5DateRangeSheet
+      :open="dateOpen"
+      :start="appliedFilter.customStart"
+      :end="appliedFilter.customEnd"
+      :today="recordsToday"
+      @close="dateOpen = false"
+      @confirm="confirmRecordsDate"
+    />
 
     <Transition name="mh5-agent-my-profit-dialog">
       <div
@@ -626,11 +650,23 @@ function summaryToneClass(value: number) {
               <section class="mh5-xcoin-filter-group">
                 <h3 class="mh5-xcoin-filter-group__label">时间区间</h3>
                 <div class="mh5-bet-order-date-row">
-                  <input v-model="filterDraft.customStart" type="date" class="mh5-xcoin-filter-input" />
+                  <input
+                    v-model="filterDraft.customStart"
+                    type="date"
+                    class="mh5-xcoin-filter-input"
+                    :min="recordsDateMin"
+                    :max="recordsToday"
+                  />
                   <span>至</span>
-                  <input v-model="filterDraft.customEnd" type="date" class="mh5-xcoin-filter-input" />
+                  <input
+                    v-model="filterDraft.customEnd"
+                    type="date"
+                    class="mh5-xcoin-filter-input"
+                    :min="recordsDateMin"
+                    :max="recordsToday"
+                  />
                 </div>
-                <p class="mh5-xcoin-filter-hint">选择自定义日期后将覆盖顶部快捷 Tab，最长 90 天</p>
+                <p class="mh5-xcoin-filter-hint">仅支持查询近 6 个月的记录</p>
               </section>
 
               <section class="mh5-xcoin-filter-group">
