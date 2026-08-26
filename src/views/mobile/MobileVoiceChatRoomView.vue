@@ -5,6 +5,7 @@ import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { liveListRouteName } from '../../constants/mobileDiscover'
 import { type LiveShareActionKey } from '../../constants/mobileLiveStream'
 import {
   MOCK_VOICE_GIFTS,
@@ -27,8 +28,8 @@ const shareLink = computed(
 )
 
 function goBack() {
-  // 关闭房间：replace 回列表，避免 history 残留导致列表再「返回」又进房
-  router.replace({ name: 'mobile-discover' })
+  // 关闭房间：replace 回社区直播列表，避免 history 残留导致列表再「返回」又进房
+  router.replace({ name: liveListRouteName(String(route.query.from || '')) })
 }
 
 function toggleFollow() {

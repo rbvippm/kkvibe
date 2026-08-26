@@ -11,7 +11,7 @@ export const DISCOVER_CHANNEL_ASSETS = {
 } as const
 
 /** id 与发现页 Tab key 对齐 */
-export type DiscoverChannelId = 'feed' | 'live' | 'short' | 'movie'
+export type DiscoverChannelId = 'feed' | 'short' | 'movie'
 
 export type DiscoverChannelItem = {
   id: DiscoverChannelId
@@ -22,7 +22,6 @@ export type DiscoverChannelItem = {
 
 export const MOCK_DISCOVER_CHANNELS: DiscoverChannelItem[] = [
   { id: 'feed', label: '动态', icon: DISCOVER_CHANNEL_ASSETS.feed, enabled: true },
-  { id: 'live', label: '直播', icon: DISCOVER_CHANNEL_ASSETS.live, enabled: true },
   { id: 'short', label: '短视频', icon: DISCOVER_CHANNEL_ASSETS.reels, enabled: true },
   { id: 'movie', label: '电影', icon: DISCOVER_CHANNEL_ASSETS.cinema, enabled: true },
 ]

@@ -4,7 +4,9 @@ import { useRoute, useRouter } from 'vue-router'
 import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue'
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
+import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { liveListRouteName } from '../../constants/mobileDiscover'
 import {
   LIVE_STREAM_ASSETS,
   LIVE_STREAM_QUALITY_LABEL,
@@ -84,8 +86,8 @@ const shareLink = computed(
 )
 
 function goBack() {
-  // 关闭房间：replace 回列表，避免 history 残留导致列表再「返回」又进房
-  router.replace({ name: 'mobile-discover' })
+  // 关闭房间：replace 回社区直播列表，避免 history 残留导致列表再「返回」又进房
+  router.replace({ name: liveListRouteName(String(route.query.from || '')) })
 }
 
 function toggleFollow() {
@@ -211,18 +213,7 @@ async function handleForwarded(names: string[]) {
         </div>
 
         <div class="mh5-livestream-header__right">
-          <div class="mh5-livestream-viewers">
-            <div class="mh5-livestream-viewers__avatars">
-              <img
-                v-for="(av, i) in room.topViewers"
-                :key="i"
-                class="mh5-livestream-viewers__avatar"
-                :src="av"
-                alt=""
-              />
-            </div>
-            <span class="mh5-livestream-viewers__count">{{ room.viewerCount }}</span>
-          </div>
+          <Mh5LiveOnlineViewers :room-id="room.id" />
           <button type="button" class="mh5-livestream-close" :aria-label="$t('关闭')" @click="goBack">
             <img :src="LIVE_STREAM_ASSETS.close" alt="" width="24" height="24" />
           </button>

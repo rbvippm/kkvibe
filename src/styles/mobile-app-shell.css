@@ -153,6 +153,8 @@
 /* 贵宾会内：社区 / 会话 / 我的 与外侧同一套页面，仅换深色主题 */
 .mh5-app-shell--vip-club .mh5-community-page,
 .mh5-app-shell--vip-club .mh5-community-header,
+.mh5-app-shell--vip-club .mh5-community-live,
+.mh5-app-shell--vip-club .mh5-community-live .mh5-discover-filters,
 .mh5-app-shell--vip-club .mh5-chat-page,
 .mh5-app-shell--vip-club .mh5-chat-header {
   background: #0c0c0c;
@@ -4386,6 +4388,30 @@
   opacity: 0.7;
 }
 
+.mh5-community-live {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}
+
+.mh5-community-live .mh5-discover-filters {
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.mh5-community-empty {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  min-height: 240px;
+  padding: 24px 16px;
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+}
+
 .mh5-community-main {
   flex: 1;
   min-height: 0;
@@ -6710,7 +6736,8 @@
 .mh5-discover-tabs {
   display: flex;
   align-items: flex-end;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 18px;
   height: 100%;
   min-width: 0;
 }
@@ -7012,6 +7039,44 @@
   display: block;
   width: 16px;
   height: 16px;
+}
+
+.mh5-discover-card__status {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mh5-discover-card__status--live {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #e53935;
+}
+
+.mh5-discover-card__status--preview {
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+.mh5-discover-card__time {
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 55%);
+  white-space: nowrap;
 }
 
 .mh5-discover-card__voice {
@@ -7819,6 +7884,82 @@
   height: 24px;
 }
 
+/* ---------- 社区直播 · 预告等待页（复用直播间骨架） ---------- */
+.mh5-live-preview-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.mh5-live-preview-stage__img {
+  filter: blur(8px) brightness(0.42) saturate(0.9);
+  transform: scale(1.08);
+}
+
+.mh5-live-preview-title {
+  margin: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+}
+
+.mh5-live-preview-time {
+  margin: 6px 0 0;
+  color: rgb(255 255 255 / 88%);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mh5-live-preview-label {
+  margin: 10px 0 0;
+  color: rgb(255 255 255 / 82%);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-live-preview-count {
+  margin-top: 8px;
+  min-width: 148px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 46%);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+.mh5-live-preview-late {
+  margin: 12px 0 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 46%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.mh5-room-bar__input--disabled,
+.mh5-room-bar__input:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
 /* ---------- 视频直播间（Figma 1494:53973） ---------- */
 .mh5-livestream-page {
   position: relative;
@@ -8004,6 +8145,8 @@
   padding: 0 12px 0 8px;
   border-radius: 31px;
   background: rgb(93 93 93 / 40%);
+  cursor: default;
+  pointer-events: none;
 }
 
 .mh5-livestream-viewers__avatars {
@@ -8029,6 +8172,7 @@
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 

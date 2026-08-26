@@ -1,9 +1,11 @@
-/** 会话 · 发现页（社区-直播）Mock · Figma 515:63521 */
+/** 会话 · 发现页（动态 / 短视频）Mock · Figma 515:63521 */
 
-export type DiscoverMainTab = 'feed' | 'live' | 'short' | 'movie'
+export type DiscoverMainTab = 'feed' | 'short' | 'movie'
 export type DiscoverLiveFilter = 'all' | 'talent' | 'game' | 'emotion' | 'chat'
 
 export type DiscoverCategoryKey = 'game' | 'talent' | 'emotion' | 'tag'
+
+export type DiscoverLiveStatus = 'live' | 'preview'
 
 export type DiscoverLiveCard = {
   id: string
@@ -14,12 +16,21 @@ export type DiscoverLiveCard = {
   categoryLabel: string
   tag: string
   cover: string
+  /** 直播中 / 预告；缺省视为直播中 */
+  status?: DiscoverLiveStatus
+  /** 预告开播时间（毫秒时间戳） */
+  startAt?: number
   /** 是否展示语聊房角标 */
   voiceRoom?: boolean
   /** 开播为 16:9/4:3（进房后由房间 videoRatio 决定，不再展示横屏角标） */
   landscape?: boolean
   filterKeys: DiscoverLiveFilter[]
 }
+
+/** 预告开播后主播迟到超过此时长，从直播列表移除 */
+export const LIVE_PREVIEW_LATE_LIMIT_MS = 15 * 60 * 1000
+
+const PREVIEW_ANCHOR_MS = Date.now()
 
 export const DISCOVER_ASSETS = {
   cover: '/images/discover/cover.png',
@@ -48,10 +59,20 @@ export const DISCOVER_ASSETS = {
 
 export const DISCOVER_MAIN_TABS: { key: DiscoverMainTab; label: string }[] = [
   { key: 'feed', label: '动态' },
-  { key: 'live', label: '直播' },
   { key: 'short', label: '短视频' },
   { key: 'movie', label: '电影' },
 ]
+
+/** 直播列表已迁到社区末位 Tab；房间返回按来源回社区 */
+export function liveListRouteName(from?: string) {
+  try {
+    sessionStorage.setItem('mh5-community-main-tab', 'live')
+  } catch {
+    /* ignore */
+  }
+  if (from === 'vip-club-community') return 'mobile-vip-club-community'
+  return 'mobile-community'
+}
 
 export const DISCOVER_LIVE_FILTERS: { key: DiscoverLiveFilter; label: string }[] = [
   { key: 'all', label: '全部' },
@@ -91,6 +112,8 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
     tag: '直播一姐',
     cover: DISCOVER_ASSETS.covers[1],
     voiceRoom: true,
+    status: 'preview',
+    startAt: PREVIEW_ANCHOR_MS + 2 * 60 * 60 * 1000 + 15 * 60 * 1000 + 3 * 1000,
     filterKeys: ['all', 'talent', 'chat'],
   },
   {
@@ -114,6 +137,8 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
     categoryLabel: '情感',
     tag: '知心姐姐',
     cover: DISCOVER_ASSETS.covers[3],
+    status: 'preview',
+    startAt: PREVIEW_ANCHOR_MS - 2 * 60 * 1000,
     filterKeys: ['all', 'emotion', 'chat'],
   },
   {
@@ -138,11 +163,57 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
     tag: '知心姐姐',
     cover: DISCOVER_ASSETS.covers[5],
     landscape: true,
+    status: 'preview',
+    startAt: PREVIEW_ANCHOR_MS + 18 * 60 * 1000,
     filterKeys: ['all', 'emotion'],
   },
 ]
 
-export function filterDiscoverLiveCards(filter: DiscoverLiveFilter): DiscoverLiveCard[] {
-  if (filter === 'all') return MOCK_DISCOVER_LIVE_CARDS
-  return MOCK_DISCOVER_LIVE_CARDS.filter((card) => card.filterKeys.includes(filter))
+export function isLivePreviewCard(card: DiscoverLiveCard): boolean {
+  return card.status === 'preview' && typeof card.startAt === 'number'
+}
+
+export function isLivePreviewExpired(card: DiscoverLiveCard, now = Date.now()): boolean {
+  if (!isLivePreviewCard(card) || card.startAt == null) return false
+  return now >= card.startAt + LIVE_PREVIEW_LATE_LIMIT_MS
+}
+
+export function isLivePreviewLate(card: DiscoverLiveCard, now = Date.now()): boolean {
+  if (!isLivePreviewCard(card) || card.startAt == null) return false
+  return now >= card.startAt && !isLivePreviewExpired(card, now)
+}
+
+export function livePreviewRemainMs(card: DiscoverLiveCard, now = Date.now()): number {
+  if (!isLivePreviewCard(card) || card.startAt == null) return 0
+  return Math.max(0, card.startAt - now)
+}
+
+export function formatLivePreviewClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const seconds = total % 60
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+}
+
+export function formatLivePreviewStartAt(ts: number): string {
+  const date = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+export function getDiscoverLiveCardById(id: string): DiscoverLiveCard | undefined {
+  return MOCK_DISCOVER_LIVE_CARDS.find((card) => card.id === id)
+}
+
+export function filterDiscoverLiveCards(
+  filter: DiscoverLiveFilter,
+  now = Date.now(),
+): DiscoverLiveCard[] {
+  const source =
+    filter === 'all'
+      ? MOCK_DISCOVER_LIVE_CARDS
+      : MOCK_DISCOVER_LIVE_CARDS.filter((card) => card.filterKeys.includes(filter))
+  return source.filter((card) => !isLivePreviewExpired(card, now))
 }

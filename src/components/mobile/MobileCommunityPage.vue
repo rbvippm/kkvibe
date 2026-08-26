@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useCommunityChannels } from '../../composables/useCommunityChannels'
 import {
   COMMUNITY_BANNER,
   COMMUNITY_TABS,
@@ -7,11 +9,49 @@ import {
   type CommunityTab,
 } from '../../constants/mobileCommunity'
 import { COMMUNITY_ASSETS } from '../../constants/mobileCommunityAssets'
+import MobileCommunityLivePanel from './MobileCommunityLivePanel.vue'
 
-const activeTab = ref<CommunityTab>('service')
+const COMMUNITY_TAB_STORAGE_KEY = 'mh5-community-main-tab'
+
+function readStoredTab(): CommunityTab {
+  try {
+    const saved = sessionStorage.getItem(COMMUNITY_TAB_STORAGE_KEY)
+    if (saved && COMMUNITY_TABS.some((tab) => tab.key === saved)) {
+      return saved as CommunityTab
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'service'
+}
+
+const route = useRoute()
+const router = useRouter()
+const { visibleTabs } = useCommunityChannels()
+const activeTab = ref<CommunityTab>(readStoredTab())
 const joinedIds = ref<Set<string>>(new Set(['brand', 's2']))
 
+watch(
+  visibleTabs,
+  (tabs) => {
+    if (!tabs.length) return
+    if (!tabs.some((tab) => tab.key === activeTab.value)) {
+      activeTab.value = tabs[0].key
+    }
+  },
+  { immediate: true },
+)
+
+watch(activeTab, (tab) => {
+  try {
+    sessionStorage.setItem(COMMUNITY_TAB_STORAGE_KEY, tab)
+  } catch {
+    /* ignore */
+  }
+})
+
 const groups = computed(() => groupsForTab(activeTab.value))
+const isLiveTab = computed(() => activeTab.value === 'live')
 
 function toggleJoin(id: string) {
   const next = new Set(joinedIds.value)
@@ -26,6 +66,13 @@ function isJoined(group: { id: string; joined: boolean }) {
 
 const showBanner = computed(() => activeTab.value === 'service')
 const showMemberCount = computed(() => activeTab.value !== 'news')
+
+function openChannelSettings() {
+  router.push({
+    name: 'mobile-community-channel',
+    query: route.path.startsWith('/mobile/vip-club') ? { from: 'vip-club-community' } : {},
+  })
+}
 </script>
 
 <template>
@@ -33,7 +80,7 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
     <header class="mh5-community-header">
       <div class="mh5-community-tabs" role="tablist" :aria-label="$t('社区分类')">
         <button
-          v-for="tab in COMMUNITY_TABS"
+          v-for="tab in visibleTabs"
           :key="tab.key"
           type="button"
           role="tab"
@@ -45,12 +92,16 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
           {{ $t(tab.label) }}
         </button>
       </div>
-      <button type="button" class="mh5-community-menu" :aria-label="$t('更多菜单')">
+      <button type="button" class="mh5-community-menu" :aria-label="$t('频道设置')" @click="openChannelSettings">
         <img :src="COMMUNITY_ASSETS.menu" alt="" width="20" height="20" />
       </button>
     </header>
 
-    <main class="mh5-community-main">
+    <p v-if="!visibleTabs.length" class="mh5-community-empty">{{ $t('暂无频道，请在频道设置中开启') }}</p>
+
+    <MobileCommunityLivePanel v-else-if="isLiveTab" />
+
+    <main v-else class="mh5-community-main">
       <section v-if="showBanner" class="mh5-community-banner" :aria-label="$t('创业推广')">
         <img
           class="mh5-community-banner__img"

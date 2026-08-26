@@ -1,6 +1,6 @@
 import { COMMUNITY_ASSETS } from './mobileCommunityAssets'
 
-export type CommunityTab = 'service' | 'strategy' | 'news'
+export type CommunityTab = 'service' | 'strategy' | 'news' | 'live'
 
 export type CommunityGroup = {
   id: string
@@ -15,6 +15,7 @@ export const COMMUNITY_TABS: { key: CommunityTab; label: string }[] = [
   { key: 'service', label: '服务' },
   { key: 'strategy', label: '策略' },
   { key: 'news', label: '新闻' },
+  { key: 'live', label: '直播' },
 ]
 
 export const COMMUNITY_BANNER = {
@@ -113,6 +114,7 @@ export const COMMUNITY_NEWS_ITEMS: CommunityGroup[] = [
 ]
 
 export function groupsForTab(tab: CommunityTab): CommunityGroup[] {
+  if (tab === 'live') return []
   if (tab === 'strategy') return COMMUNITY_STRATEGY_GROUPS
   if (tab === 'news') return COMMUNITY_NEWS_ITEMS
   return COMMUNITY_SERVICE_GROUPS

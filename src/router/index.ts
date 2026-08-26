@@ -119,6 +119,12 @@ export const router = createRouter({
           meta: { title: '社区' },
         },
         {
+          path: 'community/channel',
+          name: 'mobile-community-channel',
+          component: () => import('../views/mobile/MobileDiscoverChannelView.vue'),
+          meta: { title: '频道设置', hideTabBar: true },
+        },
+        {
           path: 'chat',
           name: 'mobile-chat',
           component: () => import('../views/mobile/MobileChatView.vue'),
@@ -147,6 +153,12 @@ export const router = createRouter({
           name: 'mobile-live-stream',
           component: () => import('../views/mobile/MobileLiveStreamRoomView.vue'),
           meta: { title: '直播间', hideTabBar: true },
+        },
+        {
+          path: 'live/preview',
+          name: 'mobile-live-preview',
+          component: () => import('../views/mobile/MobileLivePreviewView.vue'),
+          meta: { title: '直播预告', hideTabBar: true },
         },
         {
           path: 'live/voice-room',

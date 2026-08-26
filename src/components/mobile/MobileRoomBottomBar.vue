@@ -8,10 +8,13 @@ withDefaults(
     inputLabel?: string
     /** 表情是否内嵌在输入框右侧（直播间） */
     inputWithEmoji?: boolean
+    /** 预告态：禁止发言 */
+    inputDisabled?: boolean
   }>(),
   {
     inputLabel: '说点什么',
     inputWithEmoji: false,
+    inputDisabled: false,
   },
 )
 
@@ -27,7 +30,12 @@ const emit = defineEmits<{
     <button
       type="button"
       class="mh5-room-bar__input"
-      :class="{ 'mh5-room-bar__input--emoji': inputWithEmoji }"
+      :class="{
+        'mh5-room-bar__input--emoji': inputWithEmoji,
+        'mh5-room-bar__input--disabled': inputDisabled,
+      }"
+      :disabled="inputDisabled"
+      :aria-disabled="inputDisabled"
       :aria-label="inputLabel"
     >
       <span>{{ inputLabel }}</span>
