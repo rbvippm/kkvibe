@@ -284,6 +284,97 @@ export const CHAT_ROOM_MENU_ACTIONS = [
 
 export const CHAT_ROOM_REACTIONS = ['👍', '❤️', '😄', '😭', '🎉'] as const
 
+const UNREAD_HISTORY_TEXTS = [
+  '在吗',
+  '好的',
+  '收到',
+  '稍等一下',
+  '晚上见',
+  '这波稳了',
+  '看回放',
+  '发我一下',
+  '没问题',
+  '先这样',
+]
+
+const UNREAD_FILL_TEXTS = [
+  '刚看到消息',
+  '这局可以冲',
+  '比分出来了',
+  '晚上有空吗',
+  '发张图我看看',
+  '群里有人问',
+  '我这边没问题',
+  '等下同步',
+]
+
+const UNREAD_SENDERS = ['刘世豪5122', '骄傲的鸭子', '肖虎']
+
+function makeHistoryMessage(
+  id: string,
+  text: string,
+  index: number,
+  kind: ChatRoomKind,
+  time: string,
+): ChatRoomMessage {
+  const received = index % 3 !== 0
+  return {
+    id,
+    direction: received ? 'received' : 'sent',
+    senderName: received && kind === 'group' ? UNREAD_SENDERS[index % UNREAD_SENDERS.length] : undefined,
+    avatar: received && kind === 'group' ? CHAT_ROOM_ASSETS.avatar : undefined,
+    time,
+    read: !received,
+    layout: '1-square',
+    media: [],
+    text,
+  }
+}
+
+/**
+ * 未读较多时在现有演示气泡前垫历史，保证入房停在底部后「第一条未读」仍在视口上方。
+ * 角标用真实未读数；气泡只生成够滚动的条数，避免铺 100 张图。
+ */
+export function attachChatUnreadHistory(
+  base: ChatRoomMessage[],
+  kind: ChatRoomKind,
+  unreadCount: number,
+): { messages: ChatRoomMessage[]; firstUnreadId: string | null } {
+  if (unreadCount <= 0) {
+    return { messages: base, firstUnreadId: null }
+  }
+
+  const readHistory = Array.from({ length: 16 }, (_, index) =>
+    makeHistoryMessage(
+      `hist-read-${index}`,
+      UNREAD_HISTORY_TEXTS[index % UNREAD_HISTORY_TEXTS.length]!,
+      index,
+      kind,
+      '昨天 21:08',
+    ),
+  )
+  const unreadFill = Array.from({ length: 28 }, (_, index) =>
+    makeHistoryMessage(
+      `hist-unread-${index}`,
+      UNREAD_FILL_TEXTS[index % UNREAD_FILL_TEXTS.length]!,
+      index + 1,
+      kind,
+      '今天 09:16',
+    ),
+  )
+  const firstUnreadId = unreadFill[0]?.id ?? base[0]?.id ?? null
+  return {
+    messages: [...readHistory, ...unreadFill, ...base],
+    firstUnreadId,
+  }
+}
+
+export function formatUnreadJumpLabel(count: number) {
+  if (count <= 0) return ''
+  const n = count > 999 ? '999+' : String(count)
+  return `${n}条未读消息`
+}
+
 export function getChatRoomDemo(id?: string): ChatRoomDemo {
   if (id === CHAT_ROOM_DIRECT_DEMO.id) return CHAT_ROOM_DIRECT_DEMO
   if (id === CHAT_ROOM_H5_ARTICLE_DEMO.id) return CHAT_ROOM_H5_ARTICLE_DEMO

@@ -5,12 +5,15 @@ import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
   CHAT_ROOM_REACTIONS,
+  attachChatUnreadHistory,
+  formatUnreadJumpLabel,
   getChatRoomDemo,
   layoutForMediaCount,
   type ChatMediaItem,
   type ChatRoomMessage,
 } from '../../constants/mobileChatRoom'
-import { syncConversationAfterMediaSend } from '../../constants/mobileChat'
+import { getConversationUnreadByRoomId, syncConversationAfterMediaSend } from '../../constants/mobileChat'
+import { CHAT_UNREAD_JUMP_SPEC } from '../../constants/mobileChatUnreadSpec'
 import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC } from '../../constants/mobileChatMediaPickerSpec'
 import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
@@ -44,6 +47,16 @@ const showJumpBottom = ref(false)
 const newMsgCount = ref(0)
 const incomingDemoArmed = ref(false)
 const incomingTimers: number[] = []
+const firstUnreadId = ref<string | null>(null)
+const historyUnreadCount = ref(0)
+const showUnreadJump = ref(false)
+const unreadJumpConsumed = ref(false)
+const showNewMsgDivider = ref(false)
+const dividerFlashing = ref(false)
+const dividerFlashArmed = ref(false)
+const newMsgFlashTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const unreadArriveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const unreadArriveAbort = ref<AbortController | null>(null)
 const canSend = computed(() => draft.value.trim().length > 0)
 const UPLOAD_RING_R = 28
 const UPLOAD_RING = 2 * Math.PI * UPLOAD_RING_R
@@ -55,6 +68,15 @@ const jumpBadgeText = computed(() => {
   if (count <= 0) return ''
   return count > JUMP_BADGE_MAX ? `${JUMP_BADGE_MAX}+` : String(count)
 })
+const unreadJumpLabel = computed(() => formatUnreadJumpLabel(historyUnreadCount.value))
+const overlayOpen = computed(
+  () =>
+    plusOpen.value ||
+    mediaPickerOpen.value ||
+    tgH5Open.value ||
+    Boolean(activeMsgId.value) ||
+    Boolean(resendMsgId.value),
+)
 
 function clearIncomingDemo() {
   incomingTimers.forEach((id) => window.clearTimeout(id))
@@ -66,6 +88,51 @@ function resetJumpState() {
   newMsgCount.value = 0
   incomingDemoArmed.value = false
   clearIncomingDemo()
+}
+
+function clearNewMsgFlash() {
+  if (newMsgFlashTimer.value) {
+    clearTimeout(newMsgFlashTimer.value)
+    newMsgFlashTimer.value = null
+  }
+  if (unreadArriveTimer.value) {
+    clearTimeout(unreadArriveTimer.value)
+    unreadArriveTimer.value = null
+  }
+  unreadArriveAbort.value?.abort()
+  unreadArriveAbort.value = null
+  showNewMsgDivider.value = false
+  dividerFlashing.value = false
+  dividerFlashArmed.value = false
+}
+
+function resetUnreadJump() {
+  showUnreadJump.value = false
+  unreadJumpConsumed.value = false
+  firstUnreadId.value = null
+  historyUnreadCount.value = 0
+  clearNewMsgFlash()
+}
+
+function unreadAnchorOffset(behavior: ScrollBehavior) {
+  const main = mainEl.value
+  const anchor = unreadAnchorNode()
+  if (!main || !anchor) return
+  const pad = Number.parseFloat(getComputedStyle(main).paddingTop) || 0
+  const top =
+    anchor.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop - pad
+  main.scrollTo({ top: Math.max(0, top), behavior })
+}
+
+function unreadAnchorNode() {
+  return mainEl.value?.querySelector<HTMLElement>('.mh5-chat-room-unread-anchor') ?? null
+}
+
+function isFirstUnreadAboveView() {
+  const main = mainEl.value
+  const anchor = unreadAnchorNode()
+  if (!main || !anchor) return false
+  return anchor.getBoundingClientRect().top < main.getBoundingClientRect().top + 8
 }
 
 function pushIncomingDemo(index: number) {
@@ -107,17 +174,79 @@ function updateJumpBottom() {
   const gap = el.scrollHeight - el.scrollTop - el.clientHeight
   if (gap > JUMP_BOTTOM_GAP) {
     showJumpBottom.value = true
-    armIncomingDemo()
+    if (!showNewMsgDivider.value) armIncomingDemo()
     return
   }
   resetJumpState()
 }
 
-async function scrollToBottom() {
+async function waitMainEl() {
   await nextTick()
-  const el = mainEl.value
+  if (mainEl.value) return mainEl.value
+  await nextTick()
+  return mainEl.value
+}
+
+async function scrollToBottom() {
+  const el = await waitMainEl()
   if (el) el.scrollTop = el.scrollHeight
   resetJumpState()
+}
+
+function revealUnreadJump(unread: number, unreadId: string | null) {
+  const el = mainEl.value
+  if (el) el.scrollTop = el.scrollHeight
+  showUnreadJump.value =
+    !unreadJumpConsumed.value && unread > 0 && Boolean(unreadId) && isFirstUnreadAboveView()
+}
+
+function startNewMsgFlash() {
+  if (dividerFlashArmed.value || !showNewMsgDivider.value) return
+  dividerFlashArmed.value = true
+  unreadAnchorOffset('auto')
+  if (newMsgFlashTimer.value) clearTimeout(newMsgFlashTimer.value)
+  newMsgFlashTimer.value = setTimeout(() => {
+    dividerFlashing.value = true
+    newMsgFlashTimer.value = setTimeout(() => {
+      showNewMsgDivider.value = false
+      dividerFlashing.value = false
+      newMsgFlashTimer.value = null
+    }, 2000)
+  }, 320)
+}
+
+function bindUnreadArrive() {
+  unreadArriveAbort.value?.abort()
+  const ac = new AbortController()
+  unreadArriveAbort.value = ac
+  const onArrive = () => {
+    if (unreadArriveTimer.value) {
+      clearTimeout(unreadArriveTimer.value)
+      unreadArriveTimer.value = null
+    }
+    startNewMsgFlash()
+  }
+  mainEl.value?.addEventListener('scrollend', onArrive, { signal: ac.signal })
+  unreadArriveTimer.value = setTimeout(onArrive, 900)
+}
+
+async function jumpToFirstUnread() {
+  if (!firstUnreadId.value || unreadJumpConsumed.value) return
+  unreadJumpConsumed.value = true
+  showUnreadJump.value = false
+  if (newMsgFlashTimer.value) {
+    clearTimeout(newMsgFlashTimer.value)
+    newMsgFlashTimer.value = null
+  }
+  dividerFlashing.value = false
+  showNewMsgDivider.value = true
+  await nextTick()
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      unreadAnchorOffset('smooth')
+      bindUnreadArrive()
+    })
+  })
 }
 
 function jumpToBottom() {
@@ -130,10 +259,21 @@ function jumpToBottom() {
 watch(
   () => room.value.id,
   async () => {
-    messages.value = room.value.messages.map((msg) => ({
-      ...msg,
-      media: msg.media.map((item) => ({ ...item })),
-    }))
+    const unread = getConversationUnreadByRoomId(room.value.id)
+    const packed = attachChatUnreadHistory(
+      room.value.messages.map((msg) => ({
+        ...msg,
+        media: msg.media.map((item) => ({ ...item })),
+      })),
+      room.value.kind,
+      unread,
+    )
+    messages.value = packed.messages
+    firstUnreadId.value = packed.firstUnreadId
+    historyUnreadCount.value = unread
+    showUnreadJump.value = false
+    unreadJumpConsumed.value = false
+    clearNewMsgFlash()
     activeMsgId.value = null
     resendMsgId.value = null
     clearAllUploads()
@@ -143,6 +283,12 @@ watch(
     tgH5Open.value = false
     resetJumpState()
     await scrollToBottom()
+    await nextTick()
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        revealUnreadJump(unread, packed.firstUnreadId)
+      })
+    })
   },
   { immediate: true },
 )
@@ -355,6 +501,7 @@ onBeforeUnmount(() => {
   if (toastTimer.value) clearTimeout(toastTimer.value)
   clearAllUploads()
   clearIncomingDemo()
+  clearNewMsgFlash()
 })
 </script>
 
@@ -374,6 +521,7 @@ onBeforeUnmount(() => {
             placement="bottom"
           />
         </h1>
+        <Mh5SpecAnnot :spec="CHAT_UNREAD_JUMP_SPEC" placement="bottom" />
       </div>
       <div class="mh5-chat-room-header__actions">
         <template v-if="room.kind === 'direct'">
@@ -395,11 +543,30 @@ onBeforeUnmount(() => {
         <img :src="CHAT_ROOM_ASSETS.lock" alt="" width="16" height="16" />
         <span>此会话所发送信息都已经进行端到端加密</span>
       </div>
-      <div class="mh5-chat-room-hint mh5-chat-room-hint--date">今天 14:40</div>
+      <div class="mh5-chat-room-hint mh5-chat-room-hint--date">昨天 21:08</div>
 
+      <template v-for="msg in messages" :key="msg.id">
+      <div
+        v-if="msg.id === firstUnreadId"
+        class="mh5-chat-room-unread-anchor"
+      >
+        <div
+          v-if="showNewMsgDivider"
+          class="mh5-chat-room-new-divider"
+          :class="{ 'mh5-chat-room-new-divider--flash': dividerFlashing }"
+          role="status"
+        >
+          <span>以下为新消息</span>
+        </div>
+      </div>
+      <div
+        v-if="msg.id === 'm1'"
+        class="mh5-chat-room-hint mh5-chat-room-hint--date"
+      >
+        今天 14:40
+      </div>
       <article
-        v-for="msg in messages"
-        :key="msg.id"
+        :data-msg-id="msg.id"
         class="mh5-chat-room-msg"
         :class="[
           `mh5-chat-room-msg--${msg.direction}`,
@@ -438,6 +605,7 @@ onBeforeUnmount(() => {
               {{ msg.senderName }}
             </p>
             <div
+              v-if="msg.media.length"
               class="mh5-chat-room-media"
               :class="[
                 `mh5-chat-room-media--${msg.layout}`,
@@ -500,9 +668,11 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <p v-if="msg.text" class="mh5-chat-room-bubble__text">{{ msg.text }}</p>
+            <div v-if="!msg.media.length" class="mh5-chat-room-bubble__time">{{ msg.time }}</div>
           </button>
         </div>
       </article>
+      </template>
 
       <p v-if="!messages.length" class="mh5-chat-room-empty">暂无消息</p>
     </main>
@@ -595,9 +765,45 @@ onBeforeUnmount(() => {
       </Transition>
     </footer>
 
+    <Transition name="mh5-chat-room-unread">
+      <div
+        v-if="showUnreadJump && unreadJumpLabel && !overlayOpen"
+        class="mh5-chat-room-unread-wrap"
+      >
+        <button
+          type="button"
+          class="mh5-chat-room-unread"
+          :aria-label="unreadJumpLabel"
+          @click.stop="jumpToFirstUnread"
+        >
+          <span class="mh5-chat-room-unread__arrows" aria-hidden="true">
+            <svg viewBox="0 0 16 16" width="14" height="14">
+              <path
+                d="M3.2 9.4 8 4.6l4.8 4.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M3.2 13.2 8 8.4l4.8 4.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
+          <span>{{ unreadJumpLabel }}</span>
+        </button>
+      </div>
+    </Transition>
+
     <Transition name="mh5-chat-room-jump">
       <button
-        v-if="showJumpBottom && !plusOpen && !mediaPickerOpen && !tgH5Open && !activeMsg && !resendMsg"
+        v-if="showJumpBottom && !overlayOpen"
         type="button"
         class="mh5-chat-room-jump"
         :class="{ 'mh5-chat-room-jump--new': Boolean(jumpBadgeText) }"

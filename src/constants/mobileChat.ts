@@ -51,7 +51,7 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [
       text: '照片',
     },
     time: '13:32',
-    unread: 0,
+    unread: 100,
     highlighted: false,
     pinned: true,
     avatar: CHAT_ASSETS.avatarH5Article,
@@ -68,7 +68,7 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [
       text: '视频',
     },
     time: '13:31',
-    unread: 0,
+    unread: 100,
     highlighted: false,
     pinned: true,
     avatar: CHAT_ASSETS.avatarDirect,
@@ -138,6 +138,13 @@ export const chatConversationsState = reactive(
     previewLine: { ...item.previewLine },
   })),
 )
+
+/** 同一 room 被多条会话复用时，取最大未读数供详情演示 */
+export function getConversationUnreadByRoomId(roomId: string): number {
+  const matches = chatConversationsState.filter((item) => item.roomId === roomId)
+  if (!matches.length) return 0
+  return Math.max(...matches.map((item) => item.unread))
+}
 
 export function conversationsForFilter(filter: ChatFilter): ChatConversation[] {
   if (filter === 'all') return chatConversationsState
