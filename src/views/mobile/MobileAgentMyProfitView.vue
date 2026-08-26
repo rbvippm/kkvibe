@@ -84,10 +84,12 @@ const negativeTipOpen = ref(false)
 const monthSheetOpen = ref(false)
 const shareDateOpen = ref(false)
 const shareCustomRange = ref<{ start: string; end: string } | null>(null)
-/** 游戏净输赢 / 其他成本：合计下展开细项 */
+/** 游戏净输赢 / 其他成本 / 代理赚水：合计下展开细项 */
 const gameDetailsExpanded = ref(false)
 /** 其他成本细项默认展开 */
 const costDetailsExpanded = ref(true)
+/** 代理赚水细项默认收起 */
+const earnDetailsExpanded = ref(false)
 
 /** 返佣进入页 / 切身份：强制默认「本月」并同步结算月 */
 function syncRebateDefaultThisMonth() {
@@ -177,6 +179,7 @@ watch(preset, () => {
   negativeTipOpen.value = false
   gameDetailsExpanded.value = false
   costDetailsExpanded.value = true
+  earnDetailsExpanded.value = false
   detailProduct.value = null
   detailFormulaTipOpen.value = false
 })
@@ -242,6 +245,9 @@ const detailTitle = computed(() => {
   }
   if (detailProduct.value.key === 'rebate_earn') {
     return '代理赚水明细'
+  }
+  if (detailProduct.value.key.startsWith('earn_')) {
+    return `${detailProduct.value.name}赚水`
   }
   if (detailProduct.value.key.startsWith('level_')) {
     return '佣金明细'
@@ -399,6 +405,10 @@ function toggleGameDetails() {
 
 function toggleCostDetails() {
   costDetailsExpanded.value = !costDetailsExpanded.value
+}
+
+function toggleEarnDetails() {
+  earnDetailsExpanded.value = !earnDetailsExpanded.value
 }
 
 onBeforeUnmount(() => {
@@ -698,7 +708,7 @@ onBeforeUnmount(() => {
     </div>
 
     <main class="mh5-agent-my-profit-main mh5-agent-my-profit-main--rebate">
-      <!-- 占成 / 返佣共用：游戏净输赢 + 其他成本（可展开） -->
+      <!-- 占成 / 返佣共用：游戏净输赢 + 其他成本（可展开）；占成另有代理赚水 -->
       <section
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
         :aria-label="$t('游戏净输赢金额')"
@@ -850,10 +860,25 @@ onBeforeUnmount(() => {
             {{ shareEarnSection.amountHeader }}
           </span>
         </div>
-        <div class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--static">
-          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
-            {{ $t(shareEarnSection.total.name) }}
-          </span>
+        <div
+          class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+        >
+          <button
+            type="button"
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+            :aria-expanded="earnDetailsExpanded"
+            :aria-label="$t('展开或收起代理赚水细项')"
+            @click="toggleEarnDetails"
+          >
+            <span>{{ $t(shareEarnSection.total.name) }}</span>
+            <span
+              class="mh5-agent-my-profit-table__chevron"
+              :class="{ 'mh5-agent-my-profit-table__chevron--open': earnDetailsExpanded }"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
           <span
             class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
             :class="agentMyProfitToneClass(shareEarnSection.total.tone)"
@@ -861,6 +886,29 @@ onBeforeUnmount(() => {
             {{ shareEarnSection.total.amountText }}
           </span>
         </div>
+        <Transition name="mh5-agent-my-profit-expand">
+          <div v-if="earnDetailsExpanded" class="mh5-agent-my-profit-table__details">
+            <button
+              v-for="(row, index) in shareEarnSection.rows"
+              :key="row.key"
+              type="button"
+              class="mh5-agent-my-profit-table__row"
+              :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+              :aria-label="`查看${row.name}赚水`"
+              @click="openDetail(row)"
+            >
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ $t(row.name) }}
+              </span>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount mh5-agent-my-profit-table__link"
+                :class="agentMyProfitToneClass(row.tone)"
+              >
+                {{ row.amountText }}
+              </span>
+            </button>
+          </div>
+        </Transition>
       </section>
 
       <!-- 返佣：净输赢 × 佣金比例 = 佣金 -->
@@ -928,7 +976,8 @@ onBeforeUnmount(() => {
       </p>
     </main>
 
-    <Transition name="mh5-agent-my-profit-dialog">
+    <Teleport to=".mh5-app-shell" defer>
+      <Transition name="mh5-agent-my-profit-dialog">
       <div
         v-if="detailProduct"
         class="mh5-agent-my-profit-dialog-mask"
@@ -998,7 +1047,8 @@ onBeforeUnmount(() => {
           <button type="button" class="mh5-agent-my-profit-dialog__btn" @click="closeDetail">{{ $t('我知道了') }}</button>
         </div>
       </div>
-    </Transition>
+      </Transition>
+    </Teleport>
 
     <Mh5DateRangeSheet
       :open="shareDateOpen"

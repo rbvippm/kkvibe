@@ -18,7 +18,7 @@ export type AgentProfitSummaryRow = {
 }
 
 /** 经典汇总卡 · 总盈亏公式 tip */
-export const AGENT_PROFIT_FORMULA = '总盈亏 = 实占净输赢 + 代理赚水'
+export const AGENT_PROFIT_FORMULA = '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水'
 
 /** 分区 · 实占净输赢简写（总盈亏卡气泡） */
 export const AGENT_NET_PNL_FORMULA = '实占净输赢 = 游戏净输赢 - 其他成本'
@@ -30,12 +30,33 @@ export const AGENT_NET_PNL_FORMULA = '实占净输赢 = 游戏净输赢 - 其他
 export const AGENT_NET_PNL_DETAIL_FORMULA =
   '实占净输赢 = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 场馆费 - 实占VIP晋级礼金 - 实占VIP额外奖金 - 实占活动金 - 实占充提手续费'
 
-/** 分区新结构 · 总盈亏公式 */
-export const AGENT_PROFIT_SECTION_FORMULA = '总盈亏 = 实占净输赢 + 代理赚水'
+/** 分区新结构 · 总盈亏公式（实占净输赢展开为游戏净输赢 − 其他成本） */
+export const AGENT_PROFIT_SECTION_FORMULA =
+  '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水'
 
-/** 代理赚水明细 tip（按游戏大类求和，与明细行顺序一致） */
-export const AGENT_REBATE_EARN_FORMULA =
-  '代理赚水 = 刮刮乐 + 弹珠 + 棋牌 + 彩票 + 趣投 + 体育 + 真人 + 老虎机 + 捕鱼'
+/** 加项公式：结果 = 细项1 + 细项2 + …；无细项时不拼公式 */
+export function joinProfitSumFormula(resultLabel: string, itemLabels: string[]) {
+  if (!itemLabels.length) return ''
+  return `${resultLabel} = ${itemLabels.join(' + ')}`
+}
+
+/** 代理赚水明细 tip（按当前开启的游戏大类动态拼接，不要写死九项） */
+export function rebateEarnSumFormula(itemLabels: string[]) {
+  return joinProfitSumFormula('代理赚水', itemLabels)
+}
+
+/** @deprecated 请用 rebateEarnSumFormula(当前明细行)；全开示例仅供对照 */
+export const AGENT_REBATE_EARN_FORMULA = rebateEarnSumFormula([
+  '刮刮乐',
+  '弹珠',
+  '棋牌',
+  '彩票',
+  '趣投',
+  '体育',
+  '真人',
+  '老虎机',
+  '捕鱼',
+])
 
 /** @deprecated 请用 AGENT_GAME_PROFIT_FORMULA（含场馆费；不含代理赚水） */
 export const AGENT_PROFIT_GAME_FORMULA =
@@ -305,6 +326,66 @@ const SHARE_GAME_CATEGORY_BASE: { key: string; label: string; weight: number }[]
   { key: 'fishing', label: '捕鱼', weight: 123567.88 },
 ]
 
+/** 代理赚水 · 各大类下的游戏（随后台开关；enabled=false 不进明细与公式） */
+export type ShareEarnGameItem = {
+  key: string
+  name: string
+  weight: number
+  enabled?: boolean
+}
+
+export const SHARE_EARN_GAMES_BY_CATEGORY: Record<string, ShareEarnGameItem[]> = {
+  scratch: [
+    { key: 'ggl', name: 'GGL刮乐', weight: 120 },
+    { key: 'jingang', name: '金刚刮刮乐', weight: 90 },
+    { key: 'lucky', name: '幸运刮刮乐', weight: 70 },
+  ],
+  marble: [
+    { key: 'im', name: 'IM弹珠', weight: 80 },
+    { key: 'magic', name: '魔幻弹珠', weight: 60 },
+  ],
+  chess: [
+    { key: 'im', name: 'IM棋牌', weight: 70 },
+    { key: 'cdn', name: 'CDN棋牌', weight: 50 },
+    { key: 'niuniu', name: '牛牛大战', weight: 40 },
+  ],
+  lottery: [
+    { key: 'saba', name: 'SABA彩票', weight: 60 },
+    { key: 'cdn', name: 'CDN彩票', weight: 50 },
+    { key: 'kuai3', name: '一分快三', weight: 40 },
+  ],
+  qutou: [
+    { key: 'guess', name: '趣投竞猜', weight: 80 },
+    { key: 'market', name: '趣投盘口', weight: 55 },
+  ],
+  sports: [
+    { key: 'im', name: 'IM体育', weight: 70 },
+    { key: 'jingang', name: '金刚体育', weight: 55 },
+    { key: 'saba', name: 'SABA体育', weight: 45 },
+  ],
+  live: [
+    { key: 'im', name: 'IM真人', weight: 80 },
+    { key: 'jingang', name: '金刚真人', weight: 60 },
+  ],
+  slots: [
+    { key: 'pp', name: 'PP老虎机', weight: 70 },
+    { key: 'pg', name: 'PG老虎机', weight: 65 },
+  ],
+  fishing: [
+    { key: 'master', name: '捕鱼达人', weight: 60 },
+    { key: 'im', name: 'IM捕鱼', weight: 50 },
+  ],
+}
+
+export function parseEarnCategoryKey(rowKey: string): string | null {
+  if (!rowKey.startsWith('earn_')) return null
+  return rowKey.slice('earn_'.length)
+}
+
+export function getEnabledShareEarnGames(categoryKey: string): ShareEarnGameItem[] {
+  return (SHARE_EARN_GAMES_BY_CATEGORY[categoryKey] ?? []).filter((item) => item.enabled !== false)
+}
+
 function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
   const sum = weights.reduce((acc, n) => acc + n, 0)
   if (!sum) return weights.map(() => 0)
@@ -463,13 +544,31 @@ export function getAgentProfitFormula(currency: string) {
   }
 }
 
-/** 占成 · 代理赚水分区（补齐明细；合计只读，点总盈亏卡内代理赚水金额打开赚水明细） */
+/** 占成 · 代理赚水按游戏大类拆分（利润为正，与明细弹框同源） */
+function getAgentRebateEarnCategoryRows(currency: string): AgentProfitSectionRow[] {
+  const earn = getAgentRebateEarn(currency)
+  const scaled = scaleWeightsToTarget(
+    SHARE_GAME_CATEGORY_BASE.map((item) => Math.abs(item.weight)),
+    Math.abs(earn),
+  )
+  return SHARE_GAME_CATEGORY_BASE.map((item, index) => {
+    const value = Math.abs(scaled[index] ?? 0)
+    return {
+      key: `earn_${item.key}`,
+      label: item.label,
+      value: formatProfitAmount(value),
+      tone: profitTone(value),
+    }
+  })
+}
+
+/** 占成 · 代理赚水分区（合计只读可展开；点总盈亏卡内代理赚水金额打开赚水明细） */
 export function getAgentProfitEarnSection(currency: string): AgentProfitSection {
   const earn = getAgentRebateEarn(currency)
   return {
     nameHeader: '代理赚水',
     amountHeader: '金额（利润）',
-    rows: [],
+    rows: getAgentRebateEarnCategoryRows(currency),
     total: {
       key: 'rebate_earn',
       label: '合计',
@@ -490,6 +589,46 @@ export type AgentProfitDialogDetailRow = {
 
 /** total = 总盈亏明细；net_pnl = 实占净输赢明细；其余为游戏大类 key */
 export type AgentProfitDialogKind = 'total' | string
+
+/** 大类赚水弹框：末行与公式左侧为「{大类}赚水」 */
+export function rebateEarnCategoryResultLabel(categoryLabel: string) {
+  return `${categoryLabel}赚水`
+}
+
+/** 某大类代理赚水 = 该大类下当前开启游戏之和（金额为正，公式动态拼接） */
+export function buildRebateEarnGameDetailRows(
+  categoryKey: string,
+  categoryLabel: string,
+  targetAmount: number,
+): AgentProfitDialogDetailRow[] {
+  const games = getEnabledShareEarnGames(categoryKey)
+  const scaled = scaleWeightsToTarget(
+    games.map((item) => Math.abs(item.weight)),
+    Math.abs(targetAmount),
+  )
+  const items = games.map((item, index) => {
+    const value = Math.abs(scaled[index] ?? 0)
+    return {
+      label: item.name,
+      amountText: formatProfitAmount(value),
+      tone: profitTone(value),
+    }
+  })
+  const resultLabel = rebateEarnCategoryResultLabel(categoryLabel)
+  return [
+    ...items,
+    {
+      label: resultLabel,
+      amountText: formatProfitAmount(Math.abs(targetAmount)),
+      tone: profitTone(Math.abs(targetAmount)),
+      emphasize: true,
+      formulaTip: joinProfitSumFormula(
+        resultLabel,
+        items.map((item) => item.label),
+      ),
+    },
+  ]
+}
 
 function parseProfitAmountText(text: string) {
   return Number(text.replace(/,/g, '').replace(/^\+/, '')) || 0
@@ -592,27 +731,24 @@ export function getAgentProfitDialogDetail(
 
   if (kind === 'rebate_earn') {
     const earn = getAgentRebateEarn(currency)
-    const scaled = scaleWeightsToTarget(
-      SHARE_GAME_CATEGORY_BASE.map((item) => Math.abs(item.weight)),
-      Math.abs(earn),
-    )
+    const categories = getAgentRebateEarnCategoryRows(currency)
     return [
-      ...SHARE_GAME_CATEGORY_BASE.map((item, index) => {
-        const value = Math.abs(scaled[index] ?? 0)
-        return {
-          label: item.label,
-          amountText: formatProfitAmount(value),
-          tone: profitTone(value),
-        }
-      }),
+      ...categories.map(mapRow),
       {
         label: '代理赚水',
         amountText: formatProfitAmount(earn),
         tone: profitTone(earn),
         emphasize: true,
-        formulaTip: AGENT_REBATE_EARN_FORMULA,
+        formulaTip: rebateEarnSumFormula(categories.map((row) => row.label)),
       },
     ]
+  }
+
+  const earnCategory = parseEarnCategoryKey(kind)
+  if (earnCategory) {
+    const row = getAgentRebateEarnCategoryRows(currency).find((item) => item.key === kind)
+    const target = row ? Math.abs(parseProfitAmountText(row.value)) : 0
+    return buildRebateEarnGameDetailRows(earnCategory, row?.label ?? '合计', target)
   }
 
   if (kind === 'net_pnl') {
@@ -632,14 +768,20 @@ export function getAgentProfitDialogDetail(
   }
 
   if (kind === 'total') {
-    const net = getAgentSectionNetPnl(currency)
+    const game = getAgentProfitGameSection(currency).total
+    const costCell = formatCostAmount(getAgentOtherCostAbs(currency))
     const earn = getAgentRebateEarn(currency)
     const total = getAgentSectionTotalProfit(currency)
     return [
       {
-        label: '实占净输赢',
-        amountText: net.value,
-        tone: net.tone,
+        label: '游戏净输赢',
+        amountText: game.value,
+        tone: game.tone,
+      },
+      {
+        label: '其他成本',
+        amountText: costCell.value,
+        tone: costCell.tone,
       },
       {
         label: '代理赚水',
@@ -663,6 +805,11 @@ export function agentProfitDialogTitle(kind: AgentProfitDialogKind, currency = '
   if (kind === 'total') return '总盈亏明细'
   if (kind === 'net_pnl') return '实占净输赢明细'
   if (kind === 'rebate_earn') return '代理赚水明细'
+  const earnCategory = parseEarnCategoryKey(kind)
+  if (earnCategory) {
+    const row = getAgentRebateEarnCategoryRows(currency).find((item) => item.key === kind)
+    return `${row?.label ?? '游戏'}赚水`
+  }
   const row = getAgentProfitGameSection(currency).rows.find((item) => item.key === kind)
   return `${row?.label ?? '游戏'}明细`
 }

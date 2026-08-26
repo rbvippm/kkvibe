@@ -13,6 +13,9 @@ import {
   AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_SECTION_FORMULA,
   AGENT_REBATE_EARN_FORMULA,
+  buildRebateEarnGameDetailRows,
+  parseEarnCategoryKey,
+  rebateEarnSumFormula,
   scaleAgentGameNetParts,
 } from './agentDetailProfit'
 import type { AgentIdentityType } from './agentIdentity'
@@ -529,7 +532,27 @@ export const AGENT_MY_PROFIT_SUMMARY_ROW: AgentMyProfitProductRow = {
   tone: 'positive',
 }
 
-/** 占成 · 代理赚水分区（金额列为利润；合计只读，明细从总盈亏卡内代理赚水金额进入） */
+/** 占成 · 代理赚水按游戏大类拆分（利润为正，与明细弹框同源） */
+function agentMyProfitShareRebateEarnCategoryRows(
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitProductRow[] {
+  const earn = agentMyProfitShareRebateEarn(preset)
+  const weights = AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row) =>
+    Math.abs(parseProfitAmountText(row.amountText)),
+  )
+  const scaled = scaleAmountList(weights, earn)
+  return AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row, index) => {
+    const cell = formatProfitAmountText(Math.abs(scaled[index] ?? 0))
+    return {
+      key: `earn_${row.key}`,
+      name: row.name,
+      amountText: cell.amountText,
+      tone: cell.tone,
+    }
+  })
+}
+
+/** 占成 · 代理赚水分区（金额列为利润；合计只读可展开，大类可点看游戏明细） */
 export function agentMyProfitShareEarnSection(
   preset: ProfitDatePreset = 'today',
 ): MyProfitSection {
@@ -538,7 +561,7 @@ export function agentMyProfitShareEarnSection(
   return {
     nameHeader: '代理赚水',
     amountHeader: '金额（利润）',
-    rows: [],
+    rows: agentMyProfitShareRebateEarnCategoryRows(preset),
     total: {
       key: 'rebate_earn',
       name: '合计',
@@ -607,19 +630,26 @@ export function agentMyProfitShareNetPnlDetailRows(
   ]
 }
 
-/** 占成总盈亏明细：实占净输赢 + 代理赚水 = 总盈亏 */
+/** 占成总盈亏明细：游戏净输赢 − 其他成本 + 代理赚水 = 总盈亏 */
 export function agentMyProfitShareTotalDetailRows(
   preset: ProfitDatePreset = 'today',
 ): AgentMyProfitDetailRow[] {
-  const net = agentMyProfitShareNetPnlRow(preset)
+  const game = agentMyProfitShareGameSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset).total
+  const costCell = formatCostAmountText(Math.abs(parseProfitAmountText(cost.amountText)))
   const earn = agentMyProfitShareRebateEarn(preset)
   const earnCell = formatProfitAmountText(earn)
   const total = agentMyProfitShareSummaryRow(preset)
   return [
     {
-      label: '实占净输赢',
-      amountText: net.amountText,
-      tone: net.tone,
+      label: '游戏净输赢',
+      amountText: game.amountText,
+      tone: game.tone,
+    },
+    {
+      label: '其他成本',
+      amountText: costCell.amountText,
+      tone: costCell.tone,
     },
     {
       label: '代理赚水',
@@ -641,28 +671,34 @@ export function agentMyProfitShareRebateEarnDetailRows(
   preset: ProfitDatePreset = 'today',
 ): AgentMyProfitDetailRow[] {
   const earn = agentMyProfitShareRebateEarn(preset)
-  const weights = AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row) =>
-    Math.abs(parseProfitAmountText(row.amountText)),
-  )
-  const scaled = scaleAmountList(weights, earn)
   const earnCell = formatProfitAmountText(earn)
+  const categories = agentMyProfitShareRebateEarnCategoryRows(preset)
   return [
-    ...AGENT_MY_PROFIT_SHARE_GAME_ROWS.map((row, index) => {
-      const cell = formatProfitAmountText(Math.abs(scaled[index] ?? 0))
-      return {
-        label: row.name,
-        amountText: cell.amountText,
-        tone: cell.tone,
-      }
-    }),
+    ...categories.map((row) => ({
+      label: row.name,
+      amountText: row.amountText,
+      tone: row.tone,
+    })),
     {
       label: '代理赚水',
       amountText: earnCell.amountText,
       tone: earnCell.tone,
       emphasize: true,
-      formulaTip: AGENT_REBATE_EARN_FORMULA,
+      formulaTip: rebateEarnSumFormula(categories.map((row) => row.name)),
     },
   ]
+}
+
+/** 占成代理赚水 · 某大类下的游戏明细（公式按当前开启游戏动态拼接） */
+export function agentMyProfitShareRebateEarnGameDetailRows(
+  categoryKey: string,
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitDetailRow[] {
+  const category = agentMyProfitShareRebateEarnCategoryRows(preset).find(
+    (row) => row.key === `earn_${categoryKey}`,
+  )
+  const target = category ? Math.abs(parseProfitAmountText(category.amountText)) : 0
+  return buildRebateEarnGameDetailRows(categoryKey, category?.name ?? '合计', target)
 }
 
 /** 占成游戏细项明细：结果行随当前日期该场馆金额对齐（其余行等比缩放） */
@@ -959,6 +995,8 @@ export function agentMyProfitDetailRows(
   if (rowKey === 'total') return agentMyProfitShareTotalDetailRows(sharePreset)
   if (rowKey === 'net_pnl') return agentMyProfitShareNetPnlDetailRows(sharePreset)
   if (rowKey === 'rebate_earn') return agentMyProfitShareRebateEarnDetailRows(sharePreset)
+  const earnCategory = parseEarnCategoryKey(rowKey)
+  if (earnCategory) return agentMyProfitShareRebateEarnGameDetailRows(earnCategory, sharePreset)
   return agentMyProfitShareGameDetailRows(rowKey, sharePreset)
 }
 
@@ -972,6 +1010,7 @@ export function agentMyProfitDialogLabelHeader(
 ) {
   if (identity === 'rebate') return '佣金细项'
   if (rowKey === 'rebate_earn') return '游戏分类'
+  if (rowKey && parseEarnCategoryKey(rowKey)) return '游戏'
   return '盈亏项'
 }
 
