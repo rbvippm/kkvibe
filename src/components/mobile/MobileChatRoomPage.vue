@@ -768,26 +768,24 @@ onBeforeUnmount(() => {
           :aria-label="unreadJumpLabel"
           @click.stop="jumpToFirstUnread"
         >
-          <span class="mh5-chat-room-unread__arrows" aria-hidden="true">
-            <svg viewBox="0 0 16 16" width="14" height="14">
-              <path
-                d="M3.2 9.4 8 4.6l4.8 4.8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M3.2 13.2 8 8.4l4.8 4.8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </span>
+          <svg class="mh5-chat-room-unread__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path
+              d="M7 13.4 12 8.4 17 13.4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M7 17.8 12 12.8 17 17.8"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
           <span>{{ unreadJumpLabel }}</span>
         </button>
       </div>

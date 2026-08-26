@@ -4893,45 +4893,47 @@
 .mh5-chat-room-unread-wrap {
   position: absolute;
   top: 56px;
-  right: 0;
+  right: 16px;
   z-index: 12;
 }
 
 .mh5-chat-room-unread {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-height: 44px;
-  padding: 0 14px 0 10px;
+  padding: 0 14px 0 8px;
   border: none;
-  border-radius: 22px 0 0 22px;
-  background: #fff;
-  color: var(--mh5-app-orange, #ff7a2b);
+  border-radius: 999px;
+  background: #222;
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgb(15 23 42 / 12%);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 22%);
+  transition: transform 0.1s, background 0.15s;
 }
 
 .mh5-chat-room-unread:active {
-  opacity: 0.86;
+  transform: scale(0.96);
+  background: #111;
 }
 
-.mh5-chat-room-unread__arrows {
-  display: grid;
-  place-items: center;
+.mh5-chat-room-unread__icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .mh5-chat-room-unread-enter-active,
 .mh5-chat-room-unread-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
 .mh5-chat-room-unread-enter-from,
 .mh5-chat-room-unread-leave-to {
   opacity: 0;
-  transform: translateX(12px);
+  transform: translateY(-8px) scale(0.92);
 }
 
 .mh5-chat-room-unread-anchor {

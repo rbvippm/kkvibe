@@ -372,7 +372,7 @@ export function attachChatUnreadHistory(
 export function formatUnreadJumpLabel(count: number) {
   if (count <= 0) return ''
   const n = count > 999 ? '999+' : String(count)
-  return `${n}条未读消息`
+  return `${n}条未读`
 }
 
 export function getChatRoomDemo(id?: string): ChatRoomDemo {
