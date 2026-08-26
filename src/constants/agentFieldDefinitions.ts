@@ -12,6 +12,7 @@ export type AgentFieldDefRow = {
 export type AgentFieldDefModule = {
   id: string
   title: string
+  note?: string
   rows: AgentFieldDefRow[]
 }
 
@@ -26,6 +27,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
   {
     id: 'direct',
     title: '模块：【代理中心：我的直属】',
+    note: '概况页账号卡不提供「取款」入口；「我的直属」指标展示至「游戏输赢」为止，不展示「游戏净输赢」「净输赢」。该两项口径仍见「我的报表-盈亏」与「我的盈亏」。',
     rows: [
       {
         no: 1,
@@ -123,27 +125,12 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
         method: '10分钟',
         handler: '现金',
       },
-      {
-        no: 13,
-        name: '游戏净输赢',
-        biz: '游戏净输赢 = 游戏输赢 - 退水 - VIP退水 - 场馆费',
-        dimension: '汇总：我的直属会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
-      {
-        no: 14,
-        name: '净输赢',
-        biz: '净盈亏 = 游戏输赢 - 退水 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费；总盈亏 = 净盈亏 + 代理赚水',
-        dimension: '汇总：我的直属会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
     ],
   },
   {
     id: 'sub-agent',
     title: '模块：【代理中心：下级代理】',
+    note: '概况「下级代理」指标展示至「游戏输赢」为止，不展示「游戏净输赢」「净输赢」。',
     rows: [
       {
         no: 15,
@@ -269,22 +256,6 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
         no: 30,
         name: '游戏输赢',
         biz: '我的下级所有代理下的会员在某个日期段某个币种游戏输赢总额（不包含我的直属会员）',
-        dimension: '汇总：我的下级所有代理下的会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
-      {
-        no: 31,
-        name: '游戏净输赢',
-        biz: '游戏净输赢 = 游戏输赢 - 退水 - VIP退水 - 场馆费（不包含我的直属会员）',
-        dimension: '汇总：我的下级所有代理下的会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
-      {
-        no: 32,
-        name: '净输赢',
-        biz: '净盈亏 = 游戏输赢 - 退水 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费（不包含我的直属会员）；总盈亏 = 净盈亏 + 代理赚水',
         dimension: '汇总：我的下级所有代理下的会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -500,6 +471,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
 ]
 
 export const AGENT_FIELD_DEF_FORMULAS = [
+  '概况「我的直属 / 下级代理」不展示游戏净输赢、净输赢，账号卡无取款入口；游戏净输赢口径仍见我的报表与我的盈亏。',
   '游戏净输赢（代理实占） = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 场馆费',
   '实占净输赢 = 游戏净输赢 - 其他成本；总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水；其他成本 = VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费',
   '会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + VIP晋级礼金 + VIP额外奖金 + 活动金（退水对会员为正）；亦等于 游戏净输赢 + 其他奖励；游戏净输赢 = 游戏输赢 + 会员退水 + VIP退水；其他奖励 = VIP晋级礼金 + VIP额外奖金 + 活动金',

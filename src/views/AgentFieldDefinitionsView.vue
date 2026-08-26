@@ -47,6 +47,7 @@ onUnmounted(() => {
         class="agent-field-def__section"
       >
         <h2 class="agent-field-def__section-title">{{ mod.title }}</h2>
+        <p v-if="mod.note" class="agent-field-def__section-note">{{ mod.note }}</p>
         <div class="agent-field-def__table-wrap">
           <table class="agent-field-def__table">
             <thead>

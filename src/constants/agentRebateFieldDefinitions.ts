@@ -12,6 +12,7 @@ export type AgentRebateFieldDefRow = {
 export type AgentRebateFieldDefModule = {
   id: string
   title: string
+  note?: string
   rows: AgentRebateFieldDefRow[]
 }
 
@@ -25,6 +26,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
   {
     id: 'direct',
     title: '模块：【代理中心：我的直属】',
+    note: '概况页账号卡不提供「取款」入口；「我的直属」指标展示至「游戏输赢」为止，不展示「游戏净输赢」「净输赢」。该两项口径仍见「我的报表-佣金」与「我的佣金」。',
     rows: [
       {
         no: 1,
@@ -110,22 +112,6 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
         no: 11,
         name: '游戏输赢',
         biz: '我的直属会员在某个日期段的某个币种游戏输赢总额',
-        dimension: '汇总：我的直属会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
-      {
-        no: 12,
-        name: '游戏净输赢',
-        biz: '游戏净输赢 = 游戏输赢 - VIP退水 - 场馆费（返佣无投注退水、无代理赚水）',
-        dimension: '汇总：我的直属会员+日期+币种',
-        method: '10分钟',
-        handler: '现金',
-      },
-      {
-        no: 13,
-        name: '净输赢',
-        biz: '净输赢 = 游戏输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费',
         dimension: '汇总：我的直属会员+日期+币种',
         method: '10分钟',
         handler: '现金',
@@ -279,6 +265,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
 ]
 
 export const AGENT_REBATE_FIELD_DEF_FORMULAS = [
+  '概况「我的直属」不展示游戏净输赢、净输赢，账号卡无取款入口；游戏净输赢 / 净输赢仅出现在我的报表与我的佣金。',
   '游戏净输赢 = 团队游戏输赢 - 团队VIP退水 - 场馆费（无投注退水、无代理赚水；不加「实占」）',
   '佣金 = （输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费） × 佣金比例',
   '总佣金 = 当月佣金 - 负佣金累计（待派发月）；净输赢 = 游戏净输赢 - 其他成本',

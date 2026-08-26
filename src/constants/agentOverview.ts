@@ -94,7 +94,7 @@ export function chunkOverviewStatsByColumns(
   return rows
 }
 
-/** 我的直属 · 14 项（占成含投注退水；VIP晋级礼金右侧为 VIP额外奖金） */
+/** 我的直属 · 12 项（占成含投注退水；概况不展示游戏净输赢 / 净输赢） */
 export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'new', label: '新增会员', value: '126' },
   { key: 'active', label: '活跃人数', value: '126' },
@@ -108,8 +108,6 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'vipExtraBonus', label: 'VIP额外奖金', value: '0.00' },
   { key: 'fee', label: '充提手续费', value: '0.00' },
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
-  { key: 'netLose', label: '游戏净输赢', value: '0.00' },
-  { key: 'netPnl', label: '净输赢', value: '0.00' },
 ]
 
 /** 返佣代理无「投注退水」指标 */
@@ -125,7 +123,7 @@ export function getDirectStatRows(identity: 'share' | 'rebate' = 'share') {
   return chunkOverviewStatsByColumns(getDirectStats(identity), 3)
 }
 
-/** 下级代理 · 18 项（占成 / 返佣共用；VIP晋级礼金右侧为 VIP额外奖金） */
+/** 下级代理 · 16 项（占成；概况不展示游戏净输赢 / 净输赢） */
 export const MOCK_SUB_AGENT_STATS: AgentOverviewStat[] = [
   { key: 'newMember', label: '新增会员', value: '126' },
   { key: 'newAgent', label: '新增代理', value: '126' },
@@ -143,8 +141,6 @@ export const MOCK_SUB_AGENT_STATS: AgentOverviewStat[] = [
   { key: 'vipExtraBonus', label: 'VIP额外奖金', value: '0.00' },
   { key: 'fee', label: '充提手续费', value: '0.00' },
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
-  { key: 'netLose', label: '游戏净输赢', value: '0.00' },
-  { key: 'netPnl', label: '净输赢', value: '0.00' },
 ]
 
 export const PROFIT_RANK_TABS: { key: ProfitRankTab; label: string }[] = [

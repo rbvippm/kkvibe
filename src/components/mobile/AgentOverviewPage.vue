@@ -251,9 +251,6 @@ function pickWalletCurrency(value: string) {
                     {{ identityLabel }}
                   </span>
                 </div>
-                <button type="button" class="agent-home__withdraw-btn">
-                  <p>{{ $t('取款') }}</p>
-                </button>
               </div>
               <div class="agent-home__profile-balance">
                 <button
