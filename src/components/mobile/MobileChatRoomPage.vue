@@ -106,14 +106,6 @@ function clearNewMsgFlash() {
   dividerFlashArmed.value = false
 }
 
-function resetUnreadJump() {
-  showUnreadJump.value = false
-  unreadJumpConsumed.value = false
-  firstUnreadId.value = null
-  historyUnreadCount.value = 0
-  clearNewMsgFlash()
-}
-
 function unreadAnchorOffset(behavior: ScrollBehavior) {
   const main = mainEl.value
   const anchor = unreadAnchorNode()
