@@ -33,6 +33,36 @@ const SOURCE_BY_ROUTE: Record<string, WorkspacePageSource> = {
     viewPath: 'src/views/mobile/MobileLiveSectionView.vue',
     annotComponent: 'Mh5SpecAnnot',
   },
+  'mobile-community': {
+    viewPath: 'src/components/mobile/MobileCommunityPage.vue',
+    specPath: 'src/constants/goLiveSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
+  'mobile-vip-club-community': {
+    viewPath: 'src/components/mobile/MobileCommunityPage.vue',
+    specPath: 'src/constants/goLiveSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
+  'mobile-go-live': {
+    viewPath: 'src/views/mobile/MobileGoLiveView.vue',
+    specPath: 'src/constants/goLiveSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
+  'mobile-live-preview': {
+    viewPath: 'src/views/mobile/MobileLivePreviewView.vue',
+    specPath: 'src/constants/liveRoomMetricsSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
+  'mobile-live-stream': {
+    viewPath: 'src/views/mobile/MobileLiveStreamRoomView.vue',
+    specPath: 'src/constants/liveRoomMetricsSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
+  'mobile-voice-room': {
+    viewPath: 'src/views/mobile/MobileVoiceChatRoomView.vue',
+    specPath: 'src/constants/liveRoomMetricsSpec.ts',
+    annotComponent: 'Mh5SpecAnnot',
+  },
   'mobile-home': {
     viewPath: 'src/views/mobile/MobileLobbyView.vue',
     annotComponent: 'Mh5SpecAnnot',

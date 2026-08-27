@@ -1,8 +1,39 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useLiveStartNotice, type TopNoticeKind } from '../composables/useLiveStartNotice'
 
 const { visible, current, dismiss, enterRoom } = useLiveStartNotice()
+const router = useRouter()
+const teleportTo = ref('body')
+
+onMounted(() => {
+  if (document.querySelector('.mh5-app-shell')) teleportTo.value = '.mh5-app-shell'
+})
+
+function onEnterRoom() {
+  const notice = current.value
+  enterRoom()
+  if (!notice) return
+  const route = router.currentRoute.value
+  const alreadyInRoom =
+    (route.name === 'mobile-live-stream' || route.name === 'mobile-voice-room') &&
+    String(route.query.id || '') === notice.roomId
+  if (alreadyInRoom) return
+  const query = {
+    id: notice.roomId,
+    host: notice.hostName,
+    title: notice.roomTitle,
+    cover: notice.cover || '',
+    heat: notice.heat || '',
+    from: notice.from || 'notice',
+  }
+  if (notice.kind === 'voice_mic_on' || notice.voiceRoom) {
+    void router.push({ name: 'mobile-voice-room', query })
+    return
+  }
+  void router.push({ name: 'mobile-live-stream', query })
+}
 
 type NoticeUi = {
   label: string
@@ -51,11 +82,12 @@ const subtitle = computed(() => {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport :to="teleportTo">
     <Transition name="live-start-notice">
       <div
         v-if="visible && current"
-        class="live-start-notice-root pointer-events-none fixed inset-x-0 top-0 z-[9999] flex justify-center px-3 pt-[max(0.5rem,env(safe-area-inset-top))]"
+        class="live-start-notice-root pointer-events-none z-[9999] flex justify-center px-3 pt-[max(0.5rem,env(safe-area-inset-top))]"
+        :class="teleportTo === '.mh5-app-shell' ? 'live-start-notice-root--shell' : 'live-start-notice-root--page'"
         role="alert"
         aria-live="polite"
       >
@@ -82,7 +114,7 @@ const subtitle = computed(() => {
             </span>
           </div>
 
-          <button type="button" class="min-w-0 flex-1 text-left" @click="enterRoom()">
+          <button type="button" class="min-w-0 flex-1 text-left" @click="onEnterRoom()">
             <p class="text-[11px] font-medium" :class="ui.labelClass">{{ ui.label }}</p>
             <p class="truncate text-sm font-semibold text-[#111827] dark:text-[#f3f4f6]">
               {{ current.hostName }}
@@ -96,7 +128,7 @@ const subtitle = computed(() => {
             <button
               type="button"
               class="rounded-full bg-[#111827] px-3.5 py-1.5 text-xs font-semibold text-white transition active:scale-[0.97] dark:bg-white dark:text-[#111827]"
-              @click="enterRoom()"
+              @click="onEnterRoom()"
             >
               {{ ui.cta }}
             </button>
@@ -118,6 +150,16 @@ const subtitle = computed(() => {
 </template>
 
 <style scoped>
+.live-start-notice-root--page {
+  position: fixed;
+  inset: 0 0 auto;
+}
+
+.live-start-notice-root--shell {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
 .live-start-notice-enter-active,
 .live-start-notice-leave-active {
   transition:

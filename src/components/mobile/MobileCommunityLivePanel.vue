@@ -7,7 +7,10 @@ import {
   DISCOVER_LIVE_FILTERS,
   filterDiscoverLiveCards,
   formatLivePreviewStartAt,
+  discoverLiveMode,
+  discoverLiveModeLabel,
   isLivePreviewCard,
+  previewSubscriberCount,
   type DiscoverLiveCard,
   type DiscoverLiveFilter,
 } from '../../constants/mobileDiscover'
@@ -103,7 +106,7 @@ function enterLiveRoom(card: DiscoverLiveCard) {
     })
     return
   }
-  if (card.voiceRoom) {
+  if (discoverLiveMode(card) === 'voice') {
     router.replace({
       name: 'mobile-voice-room',
       query: {
@@ -201,9 +204,13 @@ function enterLiveRoom(card: DiscoverLiveCard) {
                 <rect x="8.8" y="1.2" width="2.2" height="9.8" rx="0.5" fill="#fff" />
               </svg>
             </div>
-            <div v-if="card.voiceRoom" class="mh5-discover-card__voice">
-              <img :src="DISCOVER_ASSETS.mic" alt="" width="12" height="12" />
-              <span>{{ $t('语聊房') }}</span>
+            <div
+              v-if="!isLivePreviewCard(card) && discoverLiveMode(card) !== 'video'"
+              class="mh5-discover-card__voice"
+              :class="`mh5-discover-card__voice--${discoverLiveMode(card)}`"
+            >
+              <img v-if="discoverLiveMode(card) === 'voice'" :src="DISCOVER_ASSETS.mic" alt="" width="12" height="12" />
+              <span>{{ $t(discoverLiveModeLabel(card)) }}</span>
             </div>
             <div class="mh5-discover-card__meta">
               <span class="mh5-discover-card__host">{{ card.hostName }}</span>
@@ -218,7 +225,13 @@ function enterLiveRoom(card: DiscoverLiveCard) {
           </div>
           <div class="mh5-discover-card__body">
             <h3 class="mh5-discover-card__title">{{ card.roomTitle }}</h3>
-            <span class="mh5-discover-card__tag">{{ card.tag }}</span>
+            <span class="mh5-discover-card__tag">
+              {{
+                isLivePreviewCard(card)
+                  ? `${previewSubscriberCount(card)}${$t('人已预约')}`
+                  : card.tag
+              }}
+            </span>
           </div>
         </article>
       </div>

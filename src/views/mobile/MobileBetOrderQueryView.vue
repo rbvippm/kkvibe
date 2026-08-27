@@ -27,6 +27,8 @@ import {
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
+  BET_ORDER_STATUS_TABS,
+  BET_ORDER_VALID_BET_TIP,
   BET_TIME_PRESETS,
   MOCK_BET_ORDER_RECORDS,
   betCurrencyFromCreditCode,
@@ -52,6 +54,7 @@ import {
   type BetOrderFilter,
   type BetOrderRecord,
   type BetOrderCurrencyFilter,
+  type BetOrderStatusTabKey,
   type BetTimePreset,
 } from '../../constants/betOrderQuery'
 import '../../styles/mobile-app-shell.css'
@@ -156,6 +159,46 @@ const filteredRecords = computed(() => {
   }
   return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
 })
+
+const scopedRecords = computed(() => {
+  let rows = filterBetOrders(MOCK_BET_ORDER_RECORDS, { ...appliedFilter.value, status: '' })
+  if (isVipClubRecords.value) {
+    rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
+    if (!recordsSelectAll.value && selectedWallet.value?.id) {
+      rows = rows.filter((row) => row.creditWalletId === selectedWallet.value?.id)
+    }
+  }
+  return rows
+})
+
+const statusTabCounts = computed(() => ({
+  unsettled: scopedRecords.value.filter((row) => row.status === 'unsettled').length,
+  settled: scopedRecords.value.filter((row) => row.status === 'settled').length,
+}))
+
+const activeStatusTab = computed<BetOrderStatusTabKey | null>(() => {
+  const status = appliedFilter.value.status
+  if (status === '' || status === 'unsettled' || status === 'settled') return status
+  return null
+})
+
+const validBetTipOpen = ref(false)
+
+function pickStatusTab(key: BetOrderStatusTabKey) {
+  validBetTipOpen.value = false
+  appliedFilter.value = { ...appliedFilter.value, status: key }
+  filterDraft.value = { ...filterDraft.value, status: key }
+}
+
+function toggleValidBetTip() {
+  validBetTipOpen.value = !validBetTipOpen.value
+}
+
+function statusTabCount(key: BetOrderStatusTabKey) {
+  if (key === 'unsettled') return statusTabCounts.value.unsettled
+  if (key === 'settled') return statusTabCounts.value.settled
+  return 0
+}
 
 const summaryRecords = computed(() => {
   let rows = filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
@@ -556,7 +599,11 @@ function summaryWinLoseClass(value: number) {
 </script>
 
 <template>
-  <div class="mh5-bet-order-page" :class="{ 'mh5-bet-order-page--embedded': embedded, 'mh5-vip-records': isVipClubRecords }">
+  <div
+    class="mh5-bet-order-page"
+    :class="{ 'mh5-bet-order-page--embedded': embedded, 'mh5-vip-records': isVipClubRecords }"
+    @click="validBetTipOpen = false"
+  >
     <header v-if="embedded" class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
       <div class="mh5-agent-report-header__actions">
@@ -587,6 +634,75 @@ function summaryWinLoseClass(value: number) {
     </p>
 
     <div class="mh5-bet-order-toolbar" :class="{ 'mh5-bet-order-toolbar--member': isMemberRecords }">
+      <div
+        v-if="isMemberRecords"
+        class="mh5-bet-order-status-tabs"
+        role="tablist"
+        :aria-label="$t('订单状态')"
+      >
+        <button
+          v-for="tab in BET_ORDER_STATUS_TABS"
+          :key="tab.tone"
+          type="button"
+          class="mh5-bet-order-status-tab"
+          :class="[
+            `mh5-bet-order-status-tab--${tab.tone}`,
+            { 'mh5-bet-order-status-tab--active': activeStatusTab === tab.key },
+          ]"
+          role="tab"
+          :aria-selected="activeStatusTab === tab.key"
+          @click="pickStatusTab(tab.key)"
+        >
+          <svg
+            v-if="tab.tone === 'all'"
+            class="mh5-bet-order-status-tab__icon"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect x="2" y="3" width="12" height="3.2" rx="1" stroke="currentColor" stroke-width="1.4" />
+            <rect x="2" y="7.4" width="12" height="3.2" rx="1" stroke="currentColor" stroke-width="1.4" />
+            <rect x="2" y="11.8" width="8.5" height="2.2" rx="0.8" fill="currentColor" />
+          </svg>
+          <svg
+            v-else-if="tab.tone === 'open'"
+            class="mh5-bet-order-status-tab__icon"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.4" />
+            <path d="M8 5.2v3.1l2.1 1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          <svg
+            v-else
+            class="mh5-bet-order-status-tab__icon"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="8" r="5.4" stroke="currentColor" stroke-width="1.4" />
+            <path d="M5.4 8.1l1.8 1.8 3.4-3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span>{{ $t(tab.label) }}</span>
+          <span
+            v-if="statusTabCount(tab.key) > 0"
+            class="mh5-bet-order-status-tab__badge"
+            :class="{
+              'mh5-bet-order-status-tab__badge--alert': tab.tone === 'open',
+              'mh5-bet-order-status-tab__badge--muted': tab.tone === 'done',
+            }"
+          >
+            {{ statusTabCount(tab.key) }}
+          </span>
+        </button>
+      </div>
       <div v-if="isMemberRecords" class="mh5-bet-order-toolbar__row">
         <div class="mh5-bet-order-toolbar__picks">
           <button
@@ -668,7 +784,10 @@ function summaryWinLoseClass(value: number) {
     <main class="mh5-bet-order-main">
       <div
         class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll"
-        :class="{ 'mh5-bet-order-summary-carousel--single': currencySummaries.length < 2 }"
+        :class="{
+          'mh5-bet-order-summary-carousel--single': currencySummaries.length < 2,
+          'mh5-bet-order-summary-carousel--tip': validBetTipOpen,
+        }"
       >
         <div
           ref="summaryCarouselRef"
@@ -676,7 +795,7 @@ function summaryWinLoseClass(value: number) {
           @scroll.passive="onSummaryCarouselScroll"
         >
           <div
-            v-for="slide in currencySummaries"
+            v-for="(slide, slideIndex) in currencySummaries"
             :key="slide.currency"
             class="mh5-bet-order-summary mh5-bet-order-summary--slide"
           >
@@ -691,7 +810,24 @@ function summaryWinLoseClass(value: number) {
                 <strong>{{ formatMoney(slide.betAmount, slide.currency) }}</strong>
               </div>
               <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总有效投注</span>
+                <span class="mh5-bet-order-summary__label mh5-bet-order-summary__label--tip">
+                  {{ $t('总有效投注') }}
+                  <button
+                    type="button"
+                    class="mh5-bet-order-summary__tip-btn"
+                    :aria-label="$t('查看有效投注说明')"
+                    :aria-expanded="validBetTipOpen && summarySlideIndex === slideIndex"
+                    @click.stop="toggleValidBetTip"
+                  >!</button>
+                  <span
+                    v-if="validBetTipOpen && summarySlideIndex === slideIndex"
+                    class="mh5-bet-order-summary__tip-bubble"
+                    role="tooltip"
+                    @click.stop
+                  >
+                    {{ $t(BET_ORDER_VALID_BET_TIP) }}
+                  </span>
+                </span>
                 <strong>{{ formatMoney(slide.validBet, slide.currency) }}</strong>
               </div>
               <div class="mh5-bet-order-summary__item">

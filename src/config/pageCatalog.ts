@@ -35,6 +35,7 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-invite-rebate-detail', platform: 'mobile', routeName: 'mobile-invite-rebate-detail', path: '/mobile/mine/invite/records/:id', title: '返利明细', group: '我的', pagePath: ['移动端', '我的', '邀请好友', '邀请好友记录', '返利明细'] },
   { id: 'mobile-billing-list', platform: 'mobile', routeName: 'mobile-billing-list', path: '/mobile/mine/billing', title: '账单记录', group: '我的', pagePath: ['移动端', '我的', '账单记录'] },
   { id: 'mobile-bet-records', platform: 'mobile', routeName: 'mobile-bet-records', path: '/mobile/mine/bet-orders', title: '投注记录', group: '我的', pagePath: ['移动端', '我的', '投注记录'] },
+  { id: 'mobile-go-live', platform: 'mobile', routeName: 'mobile-go-live', path: '/mobile/mine/go-live', title: '开播设置', group: '我的', pagePath: ['移动端', '我的', '直播中心'] },
   { id: 'mobile-agent-settle', platform: 'mobile', routeName: 'mobile-agent-settle', path: '/mobile/mine/agent-settle', title: '代理交收', group: '我的', pagePath: ['移动端', '我的', '代理交收'] },
   { id: 'mobile-agent-settle-detail', platform: 'mobile', routeName: 'mobile-agent-settle-detail', path: '/mobile/mine/agent-settle/detail', title: '代理结算明细', group: '我的', pagePath: ['移动端', '我的', '代理交收', '代理结算明细'] },
   { id: 'mobile-billing-stats', platform: 'mobile', routeName: 'mobile-billing-stats', path: '/mobile/mine/billing/stats', title: '账单统计', group: '我的', pagePath: ['移动端', '我的', '账单', '账单统计'] },

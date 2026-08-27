@@ -58,6 +58,12 @@ const quickLinks = [
     desc: '直播画面、弹幕消息管理，支持禁言与删除弹幕。',
   },
   {
+    to: '/pc/live-anchor-list',
+    icon: '📋',
+    title: '主播列表',
+    desc: '全局与按主播配置基准人数、预约、热度、本场点赞及高阶增减规则。',
+  },
+  {
     to: '/pc/live-danmaku-mute-list',
     icon: '🚫',
     title: '禁言列表',

@@ -2,11 +2,13 @@
 import { computed, watch } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Mh5ConfirmDialog from '../components/mobile/Mh5ConfirmDialog.vue'
+import { useGoLiveReservedStartNotice } from '../composables/useGoLiveReservedStartNotice'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const { isWorkspacePreview } = useWorkspaceInlinePreview()
+useGoLiveReservedStartNotice()
 
 /**
  * 仅清理团队「创建账户」残留遮罩（历史问题）。

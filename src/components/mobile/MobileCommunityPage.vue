@@ -9,6 +9,8 @@ import {
   type CommunityTab,
 } from '../../constants/mobileCommunity'
 import { COMMUNITY_ASSETS } from '../../constants/mobileCommunityAssets'
+import { GO_LIVE_PREVIEW_SPEC } from '../../constants/goLiveSpec'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileCommunityLivePanel from './MobileCommunityLivePanel.vue'
 
 const COMMUNITY_TAB_STORAGE_KEY = 'mh5-community-main-tab'
@@ -79,18 +81,27 @@ function openChannelSettings() {
   <div class="mh5-community-page">
     <header class="mh5-community-header">
       <div class="mh5-community-tabs" role="tablist" :aria-label="$t('社区分类')">
-        <button
+        <div
           v-for="tab in visibleTabs"
           :key="tab.key"
-          type="button"
-          role="tab"
-          class="mh5-community-tab"
-          :class="{ 'mh5-community-tab--active': activeTab === tab.key }"
-          :aria-selected="activeTab === tab.key"
-          @click="activeTab = tab.key"
+          class="mh5-community-tab-slot"
         >
-          {{ $t(tab.label) }}
-        </button>
+          <button
+            type="button"
+            role="tab"
+            class="mh5-community-tab"
+            :class="{ 'mh5-community-tab--active': activeTab === tab.key }"
+            :aria-selected="activeTab === tab.key"
+            @click="activeTab = tab.key"
+          >
+            {{ $t(tab.label) }}
+          </button>
+          <Mh5SpecAnnot
+            v-if="tab.key === 'live'"
+            :spec="GO_LIVE_PREVIEW_SPEC"
+            placement="bottom"
+          />
+        </div>
       </div>
       <button type="button" class="mh5-community-menu" :aria-label="$t('频道设置')" @click="openChannelSettings">
         <img :src="COMMUNITY_ASSETS.menu" alt="" width="20" height="20" />

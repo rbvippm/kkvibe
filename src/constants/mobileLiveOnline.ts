@@ -59,6 +59,9 @@ export const MOCK_LIVE_ONLINE_CONFIG: LiveOnlineHostConfig[] = [
   { roomId: 'ls-land-music', baseCount: 28400, enterDelta: [5, 18], leaveDelta: [3, 12] },
   { roomId: 'd2', baseCount: 860, enterDelta: [1, 5], leaveDelta: [1, 3] },
   { roomId: 'd4', baseCount: 420, enterDelta: [1, 4], leaveDelta: [1, 3] },
+  { roomId: 'voice-demo', baseCount: 430, enterDelta: [1, 5], leaveDelta: [1, 3] },
+  { roomId: 'sch_20260827_88392', baseCount: 1580, enterDelta: [2, 8], leaveDelta: [1, 5] },
+  { roomId: 'sch_20260828_11021', baseCount: 420, enterDelta: [1, 5], leaveDelta: [1, 3] },
 ]
 
 /** 大赏排名 · 不足 3 人时顶栏用系统头像补齐 */
@@ -90,6 +93,15 @@ export const MOCK_LIVE_REWARD_RANK: Record<string, LiveRewardRankUser[]> = {
     { id: 'rk-d2b', name: '点歌小鹿', avatar: FRIEND[0], score: 1800 },
   ],
   d4: [{ id: 'rk-d4a', name: '树洞常客', avatar: AV[1], score: 900 }],
+  'voice-demo': [
+    { id: 'rk-v1', name: '麦序常客', avatar: SYS_EXTRA[1], score: 1800 },
+    { id: 'rk-v2', name: '点歌达人', avatar: SYS_EXTRA[2], score: 1200 },
+    { id: 'rk-v3', name: '夜听电台', avatar: SYS_EXTRA[3], score: 640 },
+  ],
+  sch_20260828_11021: [
+    { id: 'rk-sch-v1', name: '水友一号', avatar: SYS_EXTRA[0], score: 900 },
+    { id: 'rk-sch-v2', name: '解说粉', avatar: SYS_EXTRA[4], score: 520 },
+  ],
 }
 
 export function getLiveOnlineConfig(roomId: string): LiveOnlineHostConfig {

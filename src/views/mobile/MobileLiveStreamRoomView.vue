@@ -5,6 +5,9 @@ import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
+import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import { liveListRouteName } from '../../constants/mobileDiscover'
 import {
@@ -213,6 +216,7 @@ async function handleForwarded(names: string[]) {
         </div>
 
         <div class="mh5-livestream-header__right">
+          <Mh5SpecAnnot :spec="LIVE_ROOM_METRICS_SPEC" placement="bottom" />
           <Mh5LiveOnlineViewers :room-id="room.id" />
           <button type="button" class="mh5-livestream-close" :aria-label="$t('关闭')" @click="goBack">
             <img :src="LIVE_STREAM_ASSETS.close" alt="" width="24" height="24" />
@@ -225,6 +229,7 @@ async function handleForwarded(names: string[]) {
           <img :src="LIVE_STREAM_ASSETS.fire" alt="" width="24" height="24" />
           <span>{{ room.heat }}</span>
         </div>
+        <Mh5LiveMoreEntry />
       </div>
     </header>
 

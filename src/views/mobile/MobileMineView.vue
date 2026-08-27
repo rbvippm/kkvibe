@@ -179,7 +179,7 @@ const menuItems = computed<MineMenuItem[]>(() => {
   }
   const base: MineMenuItem[] = [
     ...(!isVipClub.value ? [{ key: 'payment', title: '收款方式', route: 'mobile-payout-methods' }] : []),
-    { key: 'live', title: '直播中心', route: 'mobile-live' },
+    { key: 'live', title: '直播中心', route: 'mobile-go-live' },
     inviteItem,
   ]
 

@@ -81,7 +81,7 @@ export const VIP_CLUB_MINE_SPEC: MobilePrdSpec = {
       '点左上角币种图标或钱包名称 → 打开「信用额度」弹层（有余额）：筛选全部 / CNY / USD，默认「全部」；可搜索、按代理分组折叠后单选账户。点选后头行名称、币种图标与余额卡即时回显该账户。本弹层无「全部钱包」行（与账单 / 投注的「选择钱包」弹层区分）。',
       '点头行「刷新余额」（金色刷新图标与四字文案同一热区）→ 刷新当前账户余额；刷新进行中再次点击不重复触发。点余额旁眼睛 → 金额与 **** 切换。点余额卡右下金色箭头 → 打开「钱包名称」居中弹框（取消 / 确认），确认后改写当前账户展示名称并回显到头行。',
       '点「账单记录」→ 账单记录页（注4）。点「投注记录」→ 投注记录页（注5）。点「代理交收」→ 代理交收页（注3）。',
-      '点「邀请好友」进入邀请页后，顶栏返回必须回到贵宾厅「我的」，不得掉到旗舰厅「我的」。点直播中心 / 代理邀请 / 代理中心同样带贵宾厅来源回跳。点资料卡进入个人主页；点 VIP 晋级流水行进入 VIP 详情；点设置进入设置页。底栏大厅 / 社区 / 会话 / 我的只在贵宾会内切换。',
+      '点「邀请好友」进入邀请页后，顶栏返回必须回到贵宾厅「我的」，不得掉到旗舰厅「我的」。点直播中心进入开播设置（同样带贵宾厅来源回跳）。点代理邀请 / 代理中心同样带贵宾厅来源回跳。点资料卡进入个人主页；点 VIP 晋级流水行进入 VIP 详情；点设置进入设置页。底栏大厅 / 社区 / 会话 / 我的只在贵宾会内切换。',
     ],
     visual: [
       '整页深色金：背景与卡片跟贵宾会一致。顶栏右侧仍为客服、设置。资料卡为深色圆角卡，头像 + 昵称 +「金刚号：EZ888888」+ 二维码 + 右箭头；金刚号下一行：VIP0 银标、50/100、进度条、「晋级流水」；其下四列动态 / 收藏 / 关注 / 粉丝。进度条为金色填充。',
@@ -102,7 +102,7 @@ export const VIP_CLUB_MINE_SPEC: MobilePrdSpec = {
     routing: [
       '本页路由 mobile-vip-club-mine（/mobile/vip-club/mine）。入口：贵宾会底栏「我的」。与旗舰厅 /mobile/mine 隔离，互不跳转。',
       '账单记录 → mobile-billing-list（?from=vip-club），页面规则见注4；投注记录 → mobile-bet-records（?from=vip-club），页面规则见注5；代理交收 → mobile-agent-settle（?from=vip-club），页面规则见注3。返回均回到本页。',
-      '邀请好友 → mobile-invite-friends（?from=vip-club）；直播中心 → mobile-live（?from=vip-club）；代理邀请 → mobile-agent-invites（?from=vip-club）；已加入代理则进 mobile-agent（from=mine）。设置 / 个人主页 / VIP 详情同样带 from=vip-club。',
+      '邀请好友 → mobile-invite-friends（?from=vip-club）；直播中心 → 开播设置 mobile-go-live（?from=vip-club），不再进入观众侧直播大厅；代理邀请 → mobile-agent-invites（?from=vip-club）；已加入代理则进 mobile-agent（from=mine）。设置 / 个人主页 / VIP 详情同样带 from=vip-club。',
       '二级页顶栏返回、底栏「我的」都必须回到 mobile-vip-club-mine，不得落到 /mobile/mine。厅馆切换与五馆游戏入口见注1，不在本注展开。',
     ],
   }),

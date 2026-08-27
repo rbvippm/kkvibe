@@ -5,15 +5,22 @@ import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
+import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { findGoLiveSchedule } from '../../constants/goLive'
+import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import {
   formatLivePreviewClock,
   formatLivePreviewStartAt,
   getDiscoverLiveCardById,
+  isDiscoverPreviewReserved,
   isLivePreviewExpired,
   isLivePreviewLate,
   liveListRouteName,
   livePreviewRemainMs,
+  previewSubscriberCount,
+  toggleDiscoverPreviewReserve,
 } from '../../constants/mobileDiscover'
 import {
   LIVE_STREAM_ASSETS,
@@ -30,11 +37,19 @@ const followed = ref(false)
 const showShareSheet = ref(false)
 const showGameCenter = ref(false)
 const muted = ref(false)
+const toast = ref('')
+const reservedTick = ref(0)
 
 let tick: number | undefined
 let leaving = false
 
 const card = computed(() => getDiscoverLiveCardById(String(route.query.id || '')))
+
+const hostLive = computed(() => {
+  if (!card.value) return false
+  const schedule = findGoLiveSchedule(card.value.id)
+  return schedule?.status === 'live' || card.value.status === 'live'
+})
 
 const room = computed(() => {
   if (!card.value) return null
@@ -43,7 +58,7 @@ const room = computed(() => {
     hostName: card.value.hostName,
     stage: card.value.cover,
     heat: card.value.heat,
-    likeText: '预告中',
+    likeText: hostLive.value ? '直播中' : '预告中',
     roomTitle: card.value.roomTitle,
     videoRatio: '16:9',
     orientation: 'portrait',
@@ -67,25 +82,58 @@ const startLabel = computed(() => {
   return formatLivePreviewStartAt(card.value.startAt)
 })
 
+const reserved = computed(() => {
+  reservedTick.value
+  return card.value ? isDiscoverPreviewReserved(card.value.id) : false
+})
+
+const reserveCount = computed(() => {
+  reservedTick.value
+  nowMs.value
+  return card.value ? previewSubscriberCount(card.value) : 0
+})
+
 const shareLink = computed(() => {
   if (!room.value) return ''
   return `https://kkvibe.app/live/${room.value.id}?host=${encodeURIComponent(room.value.hostName)}`
 })
+
+function showToast(message: string) {
+  toast.value = message
+  window.setTimeout(() => {
+    if (toast.value === message) toast.value = ''
+  }, 1800)
+}
 
 function goBack() {
   router.replace({ name: liveListRouteName(String(route.query.from || '')) })
 }
 
 function leaveIfExpired() {
-  if (leaving) return
+  if (leaving || hostLive.value) return
   if (!card.value || isLivePreviewExpired(card.value, nowMs.value)) {
     leaving = true
+    showToast('预告已取消')
     goBack()
   }
 }
 
-onMounted(() => {
+function syncHostScheduleState() {
+  if (hostLive.value) return
   leaveIfExpired()
+}
+
+function toggleReserve() {
+  if (!card.value) return
+  const result = toggleDiscoverPreviewReserve(card.value.id)
+  reservedTick.value += 1
+  if (result === 'reserved') showToast('预约成功，开播时会提醒你')
+  else if (result === 'cancelled') showToast('已取消预约')
+  else showToast('本场预告已失效')
+}
+
+onMounted(() => {
+  syncHostScheduleState()
   tick = window.setInterval(() => {
     nowMs.value = Date.now()
   }, 1000)
@@ -95,8 +143,8 @@ onBeforeUnmount(() => {
   if (tick) window.clearInterval(tick)
 })
 
-watch(nowMs, () => {
-  leaveIfExpired()
+watch([nowMs, card], () => {
+  syncHostScheduleState()
 })
 
 function toggleFollow() {
@@ -162,13 +210,26 @@ async function handleForwarded(names: string[]) {
       <div class="mh5-live-preview-stage">
         <h1 class="mh5-live-preview-title">{{ card.roomTitle }}</h1>
         <p class="mh5-live-preview-time">{{ startLabel }}</p>
-        <template v-if="isLate">
+        <template v-if="hostLive">
+          <p class="mh5-live-preview-late" aria-live="polite">{{ $t('主播已开播') }}</p>
+        </template>
+        <template v-else-if="isLate">
           <p class="mh5-live-preview-late" aria-live="polite">{{ $t('主播迟到了～正在赶来') }}</p>
         </template>
         <template v-else>
           <p class="mh5-live-preview-label">{{ $t('距离开播还有') }}</p>
           <div class="mh5-live-preview-count" aria-live="polite">{{ countdown }}</div>
         </template>
+        <p class="mh5-live-preview-subs">{{ reserveCount }}{{ $t('人已预约') }}</p>
+        <button
+          v-if="!hostLive"
+          type="button"
+          class="mh5-live-preview-reserve"
+          :class="{ 'is-on': reserved }"
+          @click="toggleReserve"
+        >
+          {{ reserved ? $t('已预约') : $t('预约直播') }}
+        </button>
       </div>
     </div>
 
@@ -193,6 +254,7 @@ async function handleForwarded(names: string[]) {
         </div>
 
         <div class="mh5-livestream-header__right">
+          <Mh5SpecAnnot :spec="LIVE_ROOM_METRICS_SPEC" placement="bottom" />
           <Mh5LiveOnlineViewers :room-id="room.id" />
           <button type="button" class="mh5-livestream-close" :aria-label="$t('关闭')" @click="goBack">
             <img :src="LIVE_STREAM_ASSETS.close" alt="" width="24" height="24" />
@@ -205,6 +267,7 @@ async function handleForwarded(names: string[]) {
           <img :src="LIVE_STREAM_ASSETS.fire" alt="" width="24" height="24" />
           <span>{{ room.heat }}</span>
         </div>
+        <Mh5LiveMoreEntry />
       </div>
     </header>
 
@@ -212,7 +275,7 @@ async function handleForwarded(names: string[]) {
       <div class="mh5-livestream-side">
         <div class="mh5-livestream-chat">
           <div class="mh5-livestream-bubble mh5-livestream-bubble--system">
-            {{ $t('主播尚未开播，开播后即可互动') }}
+            {{ hostLive ? $t('主播已开播') : $t('主播尚未开播，开播后即可互动') }}
           </div>
         </div>
       </div>
@@ -233,5 +296,6 @@ async function handleForwarded(names: string[]) {
       @share-friend="shareToFriend"
       @forwarded="handleForwarded"
     />
+    <p v-if="toast" class="mh5-golive-toast" role="status">{{ toast }}</p>
   </div>
 </template>

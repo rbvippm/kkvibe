@@ -398,6 +398,12 @@ export const router = createRouter({
           meta: { title: '投注记录', hideTabBar: true },
         },
         {
+          path: 'mine/go-live',
+          name: 'mobile-go-live',
+          component: () => import('../views/mobile/MobileGoLiveView.vue'),
+          meta: { title: '开播设置', hideTabBar: true },
+        },
+        {
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),
@@ -527,6 +533,18 @@ export const router = createRouter({
           name: 'pc-live-broadcast-doc',
           component: () => import('../views/pc/PcLiveBroadcastDocView.vue'),
           meta: { title: '直播中控台-文档说明' },
+        },
+        {
+          path: 'live-anchor-list',
+          name: 'pc-live-anchor-list',
+          component: () => import('../views/pc/PcLiveAnchorListView.vue'),
+          meta: { title: '主播列表' },
+        },
+        {
+          path: 'live-anchor-list/doc',
+          name: 'pc-live-anchor-list-doc',
+          component: () => import('../views/pc/PcLiveAnchorListDocView.vue'),
+          meta: { title: '主播列表-文档说明' },
         },
         {
           path: 'live-danmaku-mute-list',

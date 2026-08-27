@@ -76,6 +76,19 @@ export const BET_ORDER_STATUS_OPTIONS = [
   { value: 'partial_settled', label: '部分结算' },
 ] as const
 
+/** 会员投注记录顶栏快捷状态：全部 / 未结 / 已结 */
+export const BET_ORDER_STATUS_TABS = [
+  { key: '' as const, label: '全部', tone: 'all' },
+  { key: 'unsettled' as const, label: '未结', tone: 'open' },
+  { key: 'settled' as const, label: '已结', tone: 'done' },
+] as const
+
+export type BetOrderStatusTabKey = (typeof BET_ORDER_STATUS_TABS)[number]['key']
+
+/** 汇总卡「总有效投注」感叹号气泡 */
+export const BET_ORDER_VALID_BET_TIP =
+  '有效投注为实际计入输赢统计的投注额。和局、取消或未完成结算的注单可能不计或按场馆规则折算，与「总下注」不一定相同。'
+
 export const BET_ORDER_WINLOSE_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'win', label: '赢' },

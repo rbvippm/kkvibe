@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
+import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue'
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
+import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import { liveListRouteName } from '../../constants/mobileDiscover'
 import { type LiveShareActionKey } from '../../constants/mobileLiveStream'
@@ -22,7 +26,7 @@ const showGameCenter = ref(false)
 const showShareSheet = ref(false)
 
 const hostName = computed(() => String(route.query.host || '晚风吉他'))
-const viewerCount = computed(() => String(route.query.heat || '1.2w'))
+const roomId = computed(() => String(route.query.id || 'voice-demo'))
 const shareLink = computed(
   () => `https://kkvibe.app/voice/${encodeURIComponent(hostName.value)}`,
 )
@@ -100,32 +104,33 @@ async function handleForwarded(names: string[]) {
     <div class="mh5-voice-room__shade" aria-hidden="true" />
 
     <header class="mh5-voice-room__header">
-      <div class="mh5-voice-room__host">
-        <img class="mh5-voice-room__host-avatar" :src="VOICE_ROOM_ASSETS.avatars[1]" alt="" />
-        <div class="mh5-voice-room__host-meta">
-          <p class="mh5-voice-room__host-name">{{ hostName }}</p>
-          <p class="mh5-voice-room__host-likes">{{ $t('2.4万本场点赞') }}</p>
+      <div class="mh5-voice-room__header-main">
+        <div class="mh5-voice-room__host">
+          <img class="mh5-voice-room__host-avatar" :src="VOICE_ROOM_ASSETS.avatars[1]" alt="" />
+          <div class="mh5-voice-room__host-meta">
+            <p class="mh5-voice-room__host-name">{{ hostName }}</p>
+            <p class="mh5-voice-room__host-likes">{{ $t('2.4万本场点赞') }}</p>
+          </div>
+          <button
+            type="button"
+            class="mh5-voice-room__follow"
+            :class="{ 'mh5-voice-room__follow--on': followed }"
+            @click="toggleFollow"
+          >
+            {{ followed ? '已关注' : '关注' }}
+          </button>
         </div>
-        <button
-          type="button"
-          class="mh5-voice-room__follow"
-          :class="{ 'mh5-voice-room__follow--on': followed }"
-          @click="toggleFollow"
-        >
-          {{ followed ? '已关注' : '关注' }}
-        </button>
-      </div>
 
-      <div class="mh5-voice-room__header-right">
-        <div class="mh5-voice-room__viewers">
-          <img :src="VOICE_ROOM_ASSETS.avatars[2]" alt="" />
-          <img :src="VOICE_ROOM_ASSETS.avatars[3]" alt="" />
-          <img :src="VOICE_ROOM_ASSETS.avatars[4]" alt="" />
-          <span>{{ viewerCount }}</span>
+        <div class="mh5-voice-room__header-right">
+          <Mh5SpecAnnot :spec="LIVE_ROOM_METRICS_SPEC" placement="bottom" />
+          <Mh5LiveOnlineViewers :room-id="roomId" />
+          <button type="button" class="mh5-voice-room__close" :aria-label="$t('关闭')" @click="goBack">
+            <img :src="VOICE_ROOM_ASSETS.close" alt="" width="24" height="24" />
+          </button>
         </div>
-        <button type="button" class="mh5-voice-room__close" :aria-label="$t('关闭')" @click="goBack">
-          <img :src="VOICE_ROOM_ASSETS.close" alt="" width="24" height="24" />
-        </button>
+      </div>
+      <div class="mh5-livestream-heat-row">
+        <Mh5LiveMoreEntry />
       </div>
     </header>
 

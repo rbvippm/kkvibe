@@ -12,6 +12,10 @@ export type TopNoticePayload = {
   hostAvatar: string
   roomId: string
   roomTitle: string
+  cover?: string
+  heat?: string
+  from?: string
+  voiceRoom?: boolean
   /** 仅 voice_mic_on：麦位序号（展示用） */
   micIndex?: number
 }

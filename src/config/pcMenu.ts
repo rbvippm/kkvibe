@@ -73,6 +73,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['管理后台', '直播管理', '直播中控台', '文档说明'],
   },
   {
+    path: '/pc/live-anchor-list/doc',
+    routeName: 'pc-live-anchor-list-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '直播管理', '主播列表', '文档说明'],
+  },
+  {
     path: '/pc/user-list/doc',
     routeName: 'pc-user-list-doc',
     title: '文档说明',
@@ -281,6 +287,14 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-live-broadcast',
         pagePath: ['管理后台', '直播管理', '直播中控台'],
         docRouteName: 'pc-live-broadcast-doc',
+      },
+      {
+        key: 'live-anchor-list',
+        title: '主播列表',
+        path: '/pc/live-anchor-list',
+        routeName: 'pc-live-anchor-list',
+        pagePath: ['管理后台', '直播管理', '主播列表'],
+        docRouteName: 'pc-live-anchor-list-doc',
       },
       {
         key: 'live-danmaku-mute-list',
