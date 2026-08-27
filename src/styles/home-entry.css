@@ -24,6 +24,8 @@ html.theme-home-light #app {
   --home-agent-rebate-light: #ecfdf5;
   --home-pc: #1890ff;
   --home-pc-light: #e6f7ff;
+  --home-pca: #5c6bc0;
+  --home-pca-light: #eef0fa;
   --home-workspace: #7c3aed;
   --home-workspace-light: #f3e8ff;
   --home-radius: 16px;
@@ -74,11 +76,82 @@ html.theme-home-light #app {
 }
 
 .home-entry__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin: 14px 0 0;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--home-text);
   letter-spacing: -0.02em;
+}
+
+.home-entry__secret {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #d8dbe2;
+  opacity: 0.35;
+  cursor: pointer;
+}
+
+.home-entry__secret:hover,
+.home-entry__secret.is-on {
+  opacity: 0.7;
+}
+
+.home-entry__secret:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+.home-entry__lab {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px auto 0;
+  max-width: 320px;
+}
+
+.home-entry__lab-input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--home-text);
+  font-size: 14px;
+}
+
+.home-entry__lab-input:focus {
+  outline: none;
+  border-color: #c4c9d2;
+}
+
+.home-entry__lab-btn {
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--home-text);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.home-entry__lab-error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #e11d48;
+  font-size: 12px;
+  text-align: center;
 }
 
 .home-entry__desc {
@@ -137,6 +210,11 @@ html.theme-home-light #app {
   box-shadow: 0 8px 24px rgb(24 144 255 / 12%);
 }
 
+.home-entry__card--pca:hover {
+  border-color: rgb(92 107 192 / 35%);
+  box-shadow: 0 8px 24px rgb(92 107 192 / 12%);
+}
+
 .home-entry__card--workspace:hover {
   border-color: rgb(124 58 237 / 35%);
   box-shadow: 0 8px 24px rgb(124 58 237 / 12%);
@@ -173,6 +251,10 @@ html.theme-home-light #app {
 
 .home-entry__card-icon--pc {
   background: var(--home-pc-light);
+}
+
+.home-entry__card-icon--pca {
+  background: var(--home-pca-light);
 }
 
 .home-entry__card-icon--workspace {
@@ -257,6 +339,11 @@ html.theme-home-light #app {
   color: var(--home-pc);
 }
 
+.home-entry__tag--pca {
+  background: var(--home-pca-light);
+  color: var(--home-pca);
+}
+
 .home-entry__tag--workspace {
   background: var(--home-workspace-light);
   color: var(--home-workspace);
@@ -329,6 +416,10 @@ html.theme-home-light #app {
 
 .home-entry__card-action--pc {
   color: var(--home-pc);
+}
+
+.home-entry__card-action--pca {
+  color: var(--home-pca);
 }
 
 .home-entry__card-action--workspace {

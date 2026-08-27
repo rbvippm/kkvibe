@@ -1,4 +1,4 @@
-import { flattenPcMenuLeaves, pcDocRoutes } from './pcMenu'
+import { flattenPcMenuLeaves, pcAnchorDocRoutes, pcAnchorMenuTree, pcDocRoutes } from './pcMenu'
 import type { PageCatalogItem, WorkspacePlatform } from '../constants/versionWorkspace/types'
 
 function withPath(path: string, query?: Record<string, string>): string {
@@ -100,7 +100,7 @@ const AGENT_H5_CATALOG: PageCatalogItem[] = [
 ]
 
 function buildPcCatalog(): PageCatalogItem[] {
-  const leaves = flattenPcMenuLeaves()
+  const leaves = [...flattenPcMenuLeaves(), ...flattenPcMenuLeaves(pcAnchorMenuTree)]
   const fromMenu: PageCatalogItem[] = leaves.map((item) => ({
     id: item.routeName,
     platform: 'pc' as WorkspacePlatform,
@@ -110,7 +110,7 @@ function buildPcCatalog(): PageCatalogItem[] {
     group: item.pagePath?.[0] ?? 'PC 后台',
     pagePath: item.pagePath ?? ['PC 后台', item.title],
   }))
-  const fromDocs: PageCatalogItem[] = pcDocRoutes.map((item) => ({
+  const fromDocs: PageCatalogItem[] = [...pcDocRoutes, ...pcAnchorDocRoutes].map((item) => ({
     id: item.routeName,
     platform: 'pc',
     routeName: item.routeName,

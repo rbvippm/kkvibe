@@ -1,0 +1,224 @@
+/**
+ * PC 主播后台登录页
+ */
+
+.pca-login {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f4f5f7;
+  color: #333;
+  font-size: 14px;
+}
+
+.pca-login__inner {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 420px;
+  gap: 48px;
+  align-items: center;
+  width: min(100%, 960px);
+}
+
+.pca-login__hero {
+  text-align: center;
+}
+
+.pca-login__art {
+  height: 220px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #eef1ff, #f7f8fb);
+  border: 1px solid #e8e8e8;
+  display: grid;
+  place-items: center;
+  color: #8b8fd9;
+  font-size: 64px;
+}
+
+.pca-login__hero-title {
+  margin: 20px 0 6px;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.pca-login__hero-desc {
+  margin: 0 0 16px;
+  color: #999;
+}
+
+.pca-login__dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.pca-login__dot {
+  width: 28px;
+  height: 3px;
+  border: none;
+  border-radius: 2px;
+  background: #d9d9d9;
+  cursor: pointer;
+}
+
+.pca-login__dot--on {
+  background: #595959;
+}
+
+.pca-login__card {
+  position: relative;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 8%);
+  padding: 28px 32px 20px;
+}
+
+.pca-login__qr-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 56px;
+  height: 56px;
+  border: none;
+  background: linear-gradient(135deg, transparent 50%, #7b79e8 50%);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  border-top-right-radius: 8px;
+}
+
+.pca-login__welcome {
+  margin: 0 48px 16px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.pca-login__tabs {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.pca-login__tab {
+  padding: 0 0 10px;
+  border: none;
+  background: none;
+  color: #999;
+  cursor: pointer;
+}
+
+.pca-login__tab--on {
+  color: #1890ff;
+  box-shadow: inset 0 -2px 0 #1890ff;
+}
+
+.pca-login__row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pca-login__field,
+.pca-login select,
+.pca-login input {
+  height: 40px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 0 12px;
+  font-size: 14px;
+  width: 100%;
+  background: #fff;
+}
+
+.pca-login select {
+  width: 108px;
+  flex-shrink: 0;
+}
+
+.pca-login__code {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pca-login__send {
+  flex-shrink: 0;
+  height: 40px;
+  border: none;
+  background: none;
+  color: #1890ff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.pca-login__send:disabled {
+  color: #999;
+  cursor: not-allowed;
+}
+
+.pca-login__submit {
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 4px;
+  background: #7b79e8;
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.pca-login__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.pca-login__error {
+  min-height: 20px;
+  margin: 8px 0 0;
+  color: #ff4d4f;
+  font-size: 12px;
+}
+
+.pca-login__hint {
+  margin: 8px 0 0;
+  color: #999;
+  font-size: 12px;
+}
+
+.pca-login__line {
+  margin: 16px 0 0;
+  color: #999;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pca-login__qr {
+  text-align: center;
+  padding: 12px 0 8px;
+}
+
+.pca-login__qr-box {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto 12px;
+  border: 1px dashed #d9d9d9;
+  display: grid;
+  place-items: center;
+  color: #7b79e8;
+  font-size: 13px;
+}
+
+@media (max-width: 840px) {
+  .pca-login__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .pca-login__hero {
+    display: none;
+  }
+}

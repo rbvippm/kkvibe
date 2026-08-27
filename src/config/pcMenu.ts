@@ -134,6 +134,8 @@ export const pcDocRoutes: PcDocRoute[] = [
   },
 ]
 
+export const pcAnchorDocRoutes: PcDocRoute[] = []
+
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
 export const pcMenuV2Children: PcMenuItem[] = [
   {
@@ -430,6 +432,32 @@ export const pcMenuTree: PcMenuItem[] = [
   },
 ]
 
+/** PC 主播后台侧栏（与管理后台同壳，独立菜单） */
+export const pcAnchorMenuTree: PcMenuItem[] = [
+  {
+    key: 'pca-home',
+    title: '首页',
+    path: '/pc-anchor',
+    routeName: 'pca',
+    icon: '🏠',
+    affix: true,
+  },
+  {
+    key: 'pca-my-live',
+    title: '我的直播',
+    icon: '📺',
+    children: [
+      {
+        key: 'pca-live-assistant',
+        title: '直播助手',
+        path: '/pc-anchor/live-assistant',
+        routeName: 'pca-live-assistant',
+        pagePath: ['主播后台', '我的直播', '直播助手'],
+      },
+    ],
+  },
+]
+
 export type PcMenuLeaf = PcMenuItem & { path: string; routeName: string }
 
 /** 扁平化所有可路由菜单项 */
@@ -447,11 +475,14 @@ export function flattenPcMenuLeaves(items: PcMenuItem[] = pcMenuTree): PcMenuLea
 }
 
 export function findPcDocRoute(routeName: string): PcDocRoute | undefined {
-  return pcDocRoutes.find((item) => item.routeName === routeName)
+  return pcDocRoutes.find((item) => item.routeName === routeName) ?? pcAnchorDocRoutes.find((item) => item.routeName === routeName)
 }
 
 export function findPcMenuByRouteName(routeName: string): PcMenuLeaf | undefined {
-  return flattenPcMenuLeaves().find((item) => item.routeName === routeName)
+  return (
+    flattenPcMenuLeaves(pcMenuTree).find((item) => item.routeName === routeName) ??
+    flattenPcMenuLeaves(pcAnchorMenuTree).find((item) => item.routeName === routeName)
+  )
 }
 
 /** 当前业务页关联的文档说明路由名 */
@@ -471,15 +502,18 @@ export type BreadcrumbItem = {
 
 /** 根据路由名生成面包屑路径 */
 export function getPcBreadcrumb(routeName: string): BreadcrumbItem[] {
-  const trail: BreadcrumbItem[] = [{ title: '首页', path: '/pc' }]
+  const isAnchor = routeName === 'pca' || routeName.startsWith('pca-')
+  const trail: BreadcrumbItem[] = isAnchor
+    ? [{ title: '首页', path: '/pc-anchor' }]
+    : [{ title: '首页', path: '/pc' }]
 
-  if (routeName === 'pc') return trail
+  if (routeName === 'pc' || routeName === 'pca') return trail
 
   function walk(items: PcMenuItem[], ancestors: PcMenuItem[]): boolean {
     for (const item of items) {
       if (item.routeName === routeName) {
         for (const ancestor of ancestors) {
-          if (ancestor.key !== 'home') {
+          if (ancestor.key !== 'home' && ancestor.key !== 'pca-home') {
             trail.push({ title: ancestor.title })
           }
         }
@@ -493,6 +527,6 @@ export function getPcBreadcrumb(routeName: string): BreadcrumbItem[] {
     return false
   }
 
-  walk(pcMenuTree, [])
+  walk(isAnchor ? pcAnchorMenuTree : pcMenuTree, [])
   return trail
 }

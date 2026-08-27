@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { findPcDocRoute, findPcMenuByRouteName } from '../config/pcMenu'
 
@@ -9,17 +9,28 @@ export type PcTag = {
   affix?: boolean
 }
 
-const visitedTags = ref<PcTag[]>([
-  { path: '/pc', routeName: 'pc', title: '首页', affix: true },
-])
+const adminTags = ref<PcTag[]>([{ path: '/pc', routeName: 'pc', title: '首页', affix: true }])
+const anchorTags = ref<PcTag[]>([{ path: '/pc-anchor', routeName: 'pca', title: '首页', affix: true }])
+
+function isAnchorName(name: string) {
+  return name === 'pca' || name.startsWith('pca-')
+}
 
 function isPcRoute(name: unknown): name is string {
-  return typeof name === 'string' && (name === 'pc' || name.startsWith('pc-'))
+  return typeof name === 'string' && (name === 'pc' || name.startsWith('pc-') || isAnchorName(name))
 }
 
 export function usePcTagsView() {
   const route = useRoute()
   const router = useRouter()
+
+  const tagStore = computed(() => {
+    const name = route.name
+    if (typeof name === 'string' && isAnchorName(name)) return anchorTags
+    return adminTags
+  })
+
+  const visitedTags = computed(() => tagStore.value.value)
 
   function addTag(routeName: string) {
     const menu = findPcMenuByRouteName(routeName)
@@ -27,9 +38,10 @@ export function usePcTagsView() {
     const source = menu ?? doc
     if (!source) return
 
-    if (visitedTags.value.some((tag) => tag.routeName === routeName)) return
+    const store = isAnchorName(routeName) ? anchorTags : adminTags
+    if (store.value.some((tag) => tag.routeName === routeName)) return
 
-    visitedTags.value.push({
+    store.value.push({
       path: source.path,
       routeName: source.routeName,
       title: source.title,
@@ -39,17 +51,17 @@ export function usePcTagsView() {
 
   function closeTag(routeName: string, event?: MouseEvent) {
     event?.stopPropagation()
-
-    const tag = visitedTags.value.find((item) => item.routeName === routeName)
+    const store = isAnchorName(routeName) ? anchorTags : adminTags
+    const tag = store.value.find((item) => item.routeName === routeName)
     if (!tag || tag.affix) return
 
-    const index = visitedTags.value.findIndex((item) => item.routeName === routeName)
-    visitedTags.value.splice(index, 1)
+    const index = store.value.findIndex((item) => item.routeName === routeName)
+    store.value.splice(index, 1)
 
     if (route.name !== routeName) return
 
-    const fallback = visitedTags.value[index] ?? visitedTags.value[index - 1]
-    router.push(fallback?.path ?? '/pc')
+    const fallback = store.value[index] ?? store.value[index - 1]
+    router.push(fallback?.path ?? (isAnchorName(routeName) ? '/pc-anchor' : '/pc'))
   }
 
   function activateTag(tag: PcTag) {

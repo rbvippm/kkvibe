@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
-import { getPcBreadcrumb, pcMenuTree, type PcMenuItem } from '../config/pcMenu'
+import { getPcBreadcrumb, pcAnchorMenuTree, pcMenuTree, type PcMenuItem } from '../config/pcMenu'
 import { usePcTagsView } from '../composables/usePcTagsView'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/pc-admin-layout.css'
@@ -11,9 +11,13 @@ const sidebarCollapsed = ref(false)
 const { isWorkspacePreview } = useWorkspaceInlinePreview()
 const { visitedTags, closeTag, activateTag } = usePcTagsView()
 
+const isAnchorLayout = computed(() => route.path.startsWith('/pc-anchor'))
+const menuTree = computed(() => (isAnchorLayout.value ? pcAnchorMenuTree : pcMenuTree))
+const brandTitle = computed(() => (isAnchorLayout.value ? 'KK 主播后台' : 'KK 管理后台'))
+
 const breadcrumbs = computed(() => {
   const name = route.name
-  if (typeof name !== 'string') return [{ title: '首页', path: '/pc' }]
+  if (typeof name !== 'string') return [{ title: '首页', path: isAnchorLayout.value ? '/pc-anchor' : '/pc' }]
   return getPcBreadcrumb(name)
 })
 
@@ -38,11 +42,11 @@ function isMenuActive(item: PcMenuItem) {
     >
       <div class="pc-admin-sidebar__brand">
         <span class="pc-admin-sidebar__brand-mark">K</span>
-        <span v-show="!sidebarCollapsed">KK 管理后台</span>
+        <span v-show="!sidebarCollapsed">{{ brandTitle }}</span>
       </div>
 
       <nav class="pc-admin-sidebar__nav" aria-label="PC 后台菜单">
-        <template v-for="group in pcMenuTree" :key="group.key">
+        <template v-for="group in menuTree" :key="group.key">
           <!-- 首页等单级菜单 -->
           <RouterLink
             v-if="group.path && !group.children?.length"

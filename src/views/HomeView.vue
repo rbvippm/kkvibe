@@ -1,23 +1,86 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import '../styles/home-entry.css'
 
+const LAB_STORAGE_KEY = 'kkvibe-home-lab-unlocked'
+const LAB_PASSWORD = '070809'
+
+const labUnlocked = ref(false)
+const labOpen = ref(false)
+const labPassword = ref('')
+const labError = ref('')
+const labInput = ref<HTMLInputElement | null>(null)
+
 onMounted(() => {
   document.documentElement.classList.add('theme-home-light')
+  labUnlocked.value = sessionStorage.getItem(LAB_STORAGE_KEY) === '1'
 })
 
 onUnmounted(() => {
   document.documentElement.classList.remove('theme-home-light')
 })
+
+function openLabGate() {
+  if (labUnlocked.value) return
+  labOpen.value = !labOpen.value
+  labError.value = ''
+  labPassword.value = ''
+  if (labOpen.value) {
+    nextTick(() => labInput.value?.focus())
+  }
+}
+
+function submitLabPassword() {
+  const value = labPassword.value.trim()
+  if (!value) {
+    labError.value = '请输入访问密码'
+    return
+  }
+  if (value !== LAB_PASSWORD) {
+    labError.value = '密码不正确'
+    return
+  }
+  labUnlocked.value = true
+  labOpen.value = false
+  labPassword.value = ''
+  labError.value = ''
+  sessionStorage.setItem(LAB_STORAGE_KEY, '1')
+}
 </script>
 
 <template>
   <div class="home-entry">
     <header class="home-entry__header">
       <span class="home-entry__brand">K</span>
-      <h1 class="home-entry__title">KK Vibe 原型</h1>
+      <h1 class="home-entry__title">
+        KK Vibe 原型
+        <button
+          type="button"
+          class="home-entry__secret"
+          :class="{ 'is-on': labOpen }"
+          :aria-label="labUnlocked ? '实验室已解锁' : '隐藏入口'"
+          :aria-expanded="labOpen"
+          :disabled="labUnlocked"
+          @click="openLabGate"
+        />
+      </h1>
       <p class="home-entry__desc">移动端、代理端与 PC 管理后台分入口演示，便于评审与联调。</p>
+      <form v-if="labOpen && !labUnlocked" class="home-entry__lab" @submit.prevent="submitLabPassword">
+        <input
+          ref="labInput"
+          v-model="labPassword"
+          class="home-entry__lab-input"
+          type="password"
+          inputmode="numeric"
+          maxlength="8"
+          autocomplete="off"
+          placeholder="请输入访问密码"
+          aria-label="访问密码"
+        />
+        <button type="submit" class="home-entry__lab-btn">确定</button>
+        <p v-if="labError" class="home-entry__lab-error">{{ labError }}</p>
+      </form>
     </header>
 
     <main class="home-entry__main">
@@ -134,7 +197,28 @@ onUnmounted(() => {
         </span>
       </RouterLink>
 
-      <RouterLink to="/workspace" class="home-entry__card home-entry__card--workspace">
+      <RouterLink v-if="labUnlocked" to="/pc-anchor/login" class="home-entry__card home-entry__card--pca">
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--pca">📺</span>
+          <div class="home-entry__card-body">
+            <h2 class="home-entry__card-title">PC 主播后台</h2>
+            <p class="home-entry__card-text">
+              主播登录与直播助手开播；侧栏、面包屑与多标签沿用 PC 管理后台结构。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--pca">登录</span>
+              <span class="home-entry__tag home-entry__tag--pca">直播助手</span>
+              <span class="home-entry__tag home-entry__tag--pca">开播设置</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--pca">
+          进入主播后台
+          <span class="ml-1">→</span>
+        </span>
+      </RouterLink>
+
+      <RouterLink v-if="labUnlocked" to="/workspace" class="home-entry__card home-entry__card--workspace">
         <div class="home-entry__card-top">
           <span class="home-entry__card-icon home-entry__card-icon--workspace">📋</span>
           <div class="home-entry__card-body">

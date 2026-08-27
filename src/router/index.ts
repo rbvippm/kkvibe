@@ -809,6 +809,31 @@ export const router = createRouter({
       ],
     },
     {
+      path: '/pc-anchor/login',
+      name: 'pca-login',
+      component: () => import('../views/pc-anchor/PcAnchorLoginView.vue'),
+      meta: { title: '主播登录' },
+    },
+    {
+      path: '/pc-anchor',
+      component: PcAdminLayout,
+      meta: { title: 'PC 主播后台' },
+      children: [
+        {
+          path: '',
+          name: 'pca',
+          component: () => import('../views/pc-anchor/PcAnchorHubView.vue'),
+          meta: { title: '首页' },
+        },
+        {
+          path: 'live-assistant',
+          name: 'pca-live-assistant',
+          component: () => import('../views/pc-anchor/PcAnchorLiveAssistantView.vue'),
+          meta: { title: '直播助手' },
+        },
+      ],
+    },
+    {
       path: '/workspace',
       name: 'workspace-hub',
       component: () => import('../views/workspace/WorkspaceHubView.vue'),
@@ -825,6 +850,16 @@ export const router = createRouter({
 })
 
 router.beforeEach((to) => {
+  if (to.path.startsWith('/pc-anchor') && to.name !== 'pca-login') {
+    try {
+      if (!sessionStorage.getItem('kkvibe-pc-anchor-session')) {
+        return { name: 'pca-login', query: { redirect: to.fullPath } }
+      }
+    } catch {
+      return { name: 'pca-login', query: { redirect: to.fullPath } }
+    }
+  }
+
   if (!to.path.startsWith('/mobile/agent')) return true
 
   const raw = to.query.agentType
