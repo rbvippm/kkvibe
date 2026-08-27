@@ -57,10 +57,6 @@ export function discoverLiveMode(card: DiscoverLiveCard): DiscoverLiveMode {
   return 'video'
 }
 
-export function discoverPreviewStatusLabel(card: DiscoverLiveCard): string {
-  return DISCOVER_PREVIEW_MODE_LABEL[discoverLiveMode(card)]
-}
-
 export function discoverLiveModeLabel(card: DiscoverLiveCard): string {
   return DISCOVER_LIVE_MODE_LABEL[discoverLiveMode(card)]
 }

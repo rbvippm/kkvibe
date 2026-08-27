@@ -389,11 +389,6 @@ async function removeSchedule(item: GoLiveSchedule) {
   showToast('预告已删除，已通知预约粉丝（原型）')
 }
 
-function shareSchedule(item: GoLiveSchedule) {
-  posterItem.value = item
-  sheet.value = 'poster'
-}
-
 function sendPoster() {
   showToast('预告海报已生成，可转发给粉丝（原型）')
   closeSheet()
