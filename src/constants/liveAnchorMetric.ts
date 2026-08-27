@@ -4,6 +4,8 @@ import { ref } from 'vue'
 
 export type AnchorMetricSource = 'global' | 'custom'
 export type MetricPreset = 'low' | 'mid' | 'high' | 'custom'
+export type AnchorLiveStatus = 'live' | 'offline'
+export type AnchorBanStatus = 'normal' | 'banned'
 
 export type MetricRange = {
   min: number
@@ -13,13 +15,11 @@ export type MetricRange = {
 export type PeopleRule = {
   enter: MetricRange
   leave: MetricRange
-  includeGuest: boolean
 }
 
 export type AppointmentRule = {
   book: MetricRange
   cancel: MetricRange
-  includeGuest: boolean
 }
 
 export type LikeRule = {
@@ -48,6 +48,13 @@ export type AnchorMetricConfig = {
 export type LiveAnchorRow = {
   id: string
   nickname: string
+  roomId: string
+  sessionId: number
+  giftSharePercent: number
+  fans: number
+  tag: string
+  liveStatus: AnchorLiveStatus
+  banStatus: AnchorBanStatus
   source: AnchorMetricSource
   custom: AnchorMetricConfig | null
 }
@@ -64,11 +71,21 @@ export const ANCHOR_METRIC_SOURCE_OPTIONS = [
   { value: 'custom' as const, label: '自定义' },
 ]
 
+export const ANCHOR_LIVE_STATUS_OPTIONS = [
+  { value: 'live' as const, label: '直播中' },
+  { value: 'offline' as const, label: '未直播' },
+]
+
+export const ANCHOR_BAN_STATUS_OPTIONS = [
+  { value: 'normal' as const, label: '未封禁' },
+  { value: 'banned' as const, label: '已封禁' },
+]
+
 export const METRIC_PRESET_OPTIONS = [
-  { value: 'low' as const, label: '低', hint: '约几十人' },
-  { value: 'mid' as const, label: '中', hint: '约几百人' },
-  { value: 'high' as const, label: '高', hint: '约几千人' },
-  { value: 'custom' as const, label: '自定义', hint: '按当前数字微调' },
+  { value: 'low' as const, label: '低' },
+  { value: 'mid' as const, label: '中' },
+  { value: 'high' as const, label: '高' },
+  { value: 'custom' as const, label: '自定义' },
 ]
 
 export const DEFAULT_HEAT_PREVIEW: HeatPreviewInput = {
@@ -92,12 +109,10 @@ export function createDefaultMetricConfig(): AnchorMetricConfig {
     people: {
       enter: createRange(3, 8),
       leave: createRange(2, 6),
-      includeGuest: true,
     },
     appointment: {
       book: createRange(2, 5),
       cancel: createRange(1, 4),
-      includeGuest: true,
     },
     like: {
       tap: createRange(1, 3),
@@ -122,12 +137,10 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     people: {
       enter: createRange(1, 3),
       leave: createRange(1, 2),
-      includeGuest: true,
     },
     appointment: {
       book: createRange(1, 2),
       cancel: createRange(1, 1),
-      includeGuest: true,
     },
     like: { tap: createRange(1, 1) },
     heat: {
@@ -146,12 +159,10 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     people: {
       enter: createRange(4, 9),
       leave: createRange(3, 7),
-      includeGuest: true,
     },
     appointment: {
       book: createRange(2, 5),
       cancel: createRange(1, 3),
-      includeGuest: true,
     },
     like: { tap: createRange(1, 3) },
     heat: {
@@ -170,12 +181,10 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     people: {
       enter: createRange(16, 42),
       leave: createRange(12, 32),
-      includeGuest: true,
     },
     appointment: {
       book: createRange(6, 16),
       cancel: createRange(4, 12),
-      includeGuest: true,
     },
     like: { tap: createRange(2, 6) },
     heat: {
@@ -212,12 +221,10 @@ export function cloneMetricConfig(config: AnchorMetricConfig): AnchorMetricConfi
     people: {
       enter: cloneRange(config.people.enter),
       leave: cloneRange(config.people.leave),
-      includeGuest: config.people.includeGuest,
     },
     appointment: {
       book: cloneRange(config.appointment.book),
       cancel: cloneRange(config.appointment.cancel),
-      includeGuest: config.appointment.includeGuest,
     },
     like: {
       tap: cloneRange(config.like.tap),
@@ -228,6 +235,23 @@ export function cloneMetricConfig(config: AnchorMetricConfig): AnchorMetricConfi
 
 export function anchorMetricSourceLabel(source: AnchorMetricSource) {
   return source === 'custom' ? '自定义' : '跟随全局'
+}
+
+export function anchorLiveStatusLabel(status: AnchorLiveStatus) {
+  return ANCHOR_LIVE_STATUS_OPTIONS.find((item) => item.value === status)?.label ?? '未直播'
+}
+
+export function anchorBanStatusLabel(status: AnchorBanStatus) {
+  return ANCHOR_BAN_STATUS_OPTIONS.find((item) => item.value === status)?.label ?? '未封禁'
+}
+
+export function formatGiftShare(percent: number) {
+  if (Number.isInteger(percent)) return `${percent}%`
+  return `${percent.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`
+}
+
+export function formatAnchorTag(tag: string) {
+  return tag.trim() ? tag : '-'
 }
 
 export function effectiveMetricConfig(
@@ -258,6 +282,13 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
   {
     id: '10086001',
     nickname: '小夜不困',
+    roomId: '200482544305901568',
+    sessionId: 1662,
+    giftSharePercent: 1.23,
+    fans: 3,
+    tag: '主播标签中文',
+    liveStatus: 'live',
+    banStatus: 'normal',
     source: 'custom',
     custom: {
       preset: 'custom',
@@ -268,12 +299,10 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       people: {
         enter: createRange(5, 12),
         leave: createRange(3, 8),
-        includeGuest: true,
       },
       appointment: {
         book: createRange(3, 7),
         cancel: createRange(2, 5),
-        includeGuest: true,
       },
       like: {
         tap: createRange(2, 5),
@@ -289,12 +318,26 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
   {
     id: '10086012',
     nickname: '星河主播',
+    roomId: '200482544305901601',
+    sessionId: 1537,
+    giftSharePercent: 10,
+    fans: 2,
+    tag: '',
+    liveStatus: 'live',
+    banStatus: 'normal',
     source: 'global',
     custom: null,
   },
   {
     id: '10086028',
     nickname: '阿凯开播',
+    roomId: '200482544305901612',
+    sessionId: 0,
+    giftSharePercent: 1,
+    fans: 1,
+    tag: '',
+    liveStatus: 'offline',
+    banStatus: 'normal',
     source: 'custom',
     custom: {
       preset: 'custom',
@@ -305,12 +348,10 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       people: {
         enter: createRange(1, 3),
         leave: createRange(1, 2),
-        includeGuest: false,
       },
       appointment: {
         book: createRange(1, 2),
         cancel: createRange(1, 1),
-        includeGuest: false,
       },
       like: {
         tap: createRange(1, 1),
@@ -326,18 +367,39 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
   {
     id: '10086035',
     nickname: '晚风陪聊',
+    roomId: '200482544305901628',
+    sessionId: 0,
+    giftSharePercent: 10,
+    fans: 0,
+    tag: '',
+    liveStatus: 'offline',
+    banStatus: 'banned',
     source: 'global',
     custom: null,
   },
   {
     id: '10086047',
     nickname: '好运来了',
+    roomId: '200482544305901640',
+    sessionId: 1595,
+    giftSharePercent: 1,
+    fans: 2,
+    tag: '颜值',
+    liveStatus: 'live',
+    banStatus: 'normal',
     source: 'global',
     custom: null,
   },
   {
     id: '10086059',
     nickname: '清酒微醺',
+    roomId: '200482544305901655',
+    sessionId: 0,
+    giftSharePercent: 20,
+    fans: 0,
+    tag: '',
+    liveStatus: 'offline',
+    banStatus: 'normal',
     source: 'custom',
     custom: {
       preset: 'custom',
@@ -348,12 +410,10 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       people: {
         enter: createRange(4, 9),
         leave: createRange(2, 7),
-        includeGuest: true,
       },
       appointment: {
         book: createRange(2, 6),
         cancel: createRange(1, 3),
-        includeGuest: true,
       },
       like: {
         tap: createRange(1, 4),

@@ -4,19 +4,28 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { LIVE_ANCHOR_LIST_ANNOT_MAP } from '../../constants/liveAnchorListSpec'
 import {
+  ANCHOR_BAN_STATUS_OPTIONS,
+  ANCHOR_LIVE_STATUS_OPTIONS,
   ANCHOR_METRIC_SOURCE_OPTIONS,
   DEFAULT_HEAT_PREVIEW,
   HEAT_PREVIEW_BY_PRESET,
   METRIC_PRESETS,
   METRIC_PRESET_OPTIONS,
+  anchorBanStatusLabel,
+  anchorLiveStatusLabel,
   anchorMetricSourceLabel,
   cloneMetricConfig,
   createDefaultMetricConfig,
   effectiveMetricConfig,
+  formatAnchorTag,
+  formatGiftShare,
   formatRange,
   liveAnchorGlobalConfig,
   liveAnchorStore,
+  metricPresetLabel,
   previewHeat,
+  type AnchorBanStatus,
+  type AnchorLiveStatus,
   type AnchorMetricConfig,
   type AnchorMetricSource,
   type HeatPreviewInput,
@@ -28,13 +37,23 @@ import '../../styles/pc-wireframe.css'
 
 type ListFilter = {
   id: string
+  roomId: string
   nickname: string
+  liveStatus: '' | AnchorLiveStatus
+  banStatus: '' | AnchorBanStatus
   source: '' | AnchorMetricSource
 }
 
 type ModalKind = 'global' | 'anchor'
 
-const defaultFilter = (): ListFilter => ({ id: '', nickname: '', source: '' })
+const defaultFilter = (): ListFilter => ({
+  id: '',
+  roomId: '',
+  nickname: '',
+  liveStatus: '',
+  banStatus: '',
+  source: '',
+})
 
 const filter = ref<ListFilter>(defaultFilter())
 const appliedFilter = ref<ListFilter>(defaultFilter())
@@ -66,11 +85,17 @@ const modalTitle = computed(() => {
 })
 const heatPreview = computed(() => previewHeat(form.value, heatSample.value))
 const filteredRows = computed(() => liveAnchorStore.value.filter(matchRow))
+const isSystemPreset = computed(
+  () => !formReadonly.value && form.value.preset !== 'custom',
+)
 
 function matchRow(row: LiveAnchorRow) {
   const f = appliedFilter.value
-  if (f.id && row.id !== f.id.trim()) return false
+  if (f.id && !row.id.includes(f.id.trim())) return false
+  if (f.roomId && !row.roomId.includes(f.roomId.trim())) return false
   if (f.nickname && !row.nickname.includes(f.nickname.trim())) return false
+  if (f.liveStatus && row.liveStatus !== f.liveStatus) return false
+  if (f.banStatus && row.banStatus !== f.banStatus) return false
   if (f.source && row.source !== f.source) return false
   return true
 }
@@ -90,22 +115,28 @@ function resetFilter() {
   actionHint.value = ''
 }
 
+function hydrateForm(config: AnchorMetricConfig) {
+  applyingPreset.value = true
+  form.value = cloneMetricConfig(config)
+  heatSample.value = { ...HEAT_PREVIEW_BY_PRESET[config.preset ?? 'custom'] }
+  formHint.value = ''
+  nextTick(() => {
+    applyingPreset.value = false
+  })
+}
+
 function openGlobal() {
   modalKind.value = 'global'
   editingId.value = null
   formSource.value = 'global'
-  form.value = cloneMetricConfig(liveAnchorGlobalConfig.value)
-  heatSample.value = { ...DEFAULT_HEAT_PREVIEW }
-  formHint.value = ''
+  hydrateForm(liveAnchorGlobalConfig.value)
 }
 
 function openAnchor(row: LiveAnchorRow) {
   modalKind.value = 'anchor'
   editingId.value = row.id
   formSource.value = row.source
-  form.value = effectiveMetricConfig(row, liveAnchorGlobalConfig.value)
-  heatSample.value = { ...DEFAULT_HEAT_PREVIEW }
-  formHint.value = ''
+  hydrateForm(effectiveMetricConfig(row, liveAnchorGlobalConfig.value))
 }
 
 function closeModal() {
@@ -118,13 +149,11 @@ function onSourceChange(source: AnchorMetricSource) {
   formSource.value = source
   formHint.value = ''
   if (source === 'global') {
-    form.value = cloneMetricConfig(liveAnchorGlobalConfig.value)
+    hydrateForm(liveAnchorGlobalConfig.value)
     return
   }
   const row = liveAnchorStore.value.find((item) => item.id === editingId.value)
-  form.value = row?.custom
-    ? cloneMetricConfig(row.custom)
-    : cloneMetricConfig(liveAnchorGlobalConfig.value)
+  hydrateForm(row?.custom ?? liveAnchorGlobalConfig.value)
 }
 
 function applyPreset(preset: MetricPreset) {
@@ -183,7 +212,7 @@ function validateMetricConfig(config: AnchorMetricConfig) {
     validateRange(config.people.leave, '退出随机范围') ||
     validateRange(config.appointment.book, '点击预约随机范围') ||
     validateRange(config.appointment.cancel, '取消预约随机范围') ||
-    validateRange(config.like.tap, '用户点赞随机范围') ||
+    validateRange(config.like.tap, '点赞随机范围') ||
     asNonNegDecimal(config.heat.peopleWeight, '人数系数') ||
     asNonNegDecimal(config.heat.danmakuWeight, '弹幕系数') ||
     asNonNegDecimal(config.heat.giftWeight, '礼物系数') ||
@@ -215,17 +244,41 @@ function normalizeConfig(config: AnchorMetricConfig): AnchorMetricConfig {
   return next
 }
 
+function applyPayload(payload: AnchorMetricConfig, closeAfter: boolean) {
+  if (modalKind.value === 'global') {
+    liveAnchorGlobalConfig.value = payload
+    actionHint.value = '已保存全局基准配置，跟随全局的主播即时生效'
+    if (closeAfter) closeModal()
+    return true
+  }
+
+  const idx = liveAnchorStore.value.findIndex((item) => item.id === editingId.value)
+  if (idx < 0) {
+    formHint.value = '未找到该主播'
+    return false
+  }
+  liveAnchorStore.value[idx].source = 'custom'
+  liveAnchorStore.value[idx].custom = payload
+  actionHint.value = `已保存「${liveAnchorStore.value[idx].nickname}」的自定义指标`
+  if (closeAfter) closeModal()
+  return true
+}
+
+function confirmFollowGlobal() {
+  const idx = liveAnchorStore.value.findIndex((item) => item.id === editingId.value)
+  if (idx < 0) {
+    formHint.value = '未找到该主播'
+    return
+  }
+  liveAnchorStore.value[idx].source = 'global'
+  liveAnchorStore.value[idx].custom = null
+  actionHint.value = `「${liveAnchorStore.value[idx].nickname}」已改为跟随全局`
+  closeModal()
+}
+
 function confirmModal() {
   if (modalKind.value === 'anchor' && formSource.value === 'global') {
-    const idx = liveAnchorStore.value.findIndex((item) => item.id === editingId.value)
-    if (idx < 0) {
-      formHint.value = '未找到该主播'
-      return
-    }
-    liveAnchorStore.value[idx].source = 'global'
-    liveAnchorStore.value[idx].custom = null
-    actionHint.value = `「${liveAnchorStore.value[idx].nickname}」已改为跟随全局`
-    closeModal()
+    confirmFollowGlobal()
     return
   }
 
@@ -235,23 +288,24 @@ function confirmModal() {
     return
   }
 
-  const payload = normalizeConfig(form.value)
-  if (modalKind.value === 'global') {
-    liveAnchorGlobalConfig.value = payload
-    actionHint.value = '已保存全局基准配置，跟随全局的主播即时生效'
-    closeModal()
+  applyPayload(normalizeConfig(form.value), true)
+}
+
+function saveModal() {
+  if (formReadonly.value || form.value.preset === 'custom') return
+
+  const error = validateMetricConfig(form.value)
+  if (error) {
+    formHint.value = error
     return
   }
 
-  const idx = liveAnchorStore.value.findIndex((item) => item.id === editingId.value)
-  if (idx < 0) {
-    formHint.value = '未找到该主播'
-    return
-  }
-  liveAnchorStore.value[idx].source = 'custom'
-  liveAnchorStore.value[idx].custom = payload
-  actionHint.value = `已保存「${liveAnchorStore.value[idx].nickname}」的自定义指标`
-  closeModal()
+  const payload = normalizeConfig(form.value)
+  const preset = payload.preset
+  if (preset === 'custom') return
+  METRIC_PRESETS[preset] = cloneMetricConfig(payload)
+  HEAT_PREVIEW_BY_PRESET[preset] = { ...heatSample.value }
+  formHint.value = `已保存「${metricPresetLabel(preset)}」档`
 }
 </script>
 
@@ -272,10 +326,29 @@ function confirmModal() {
             placement="bottom"
           />
         </label>
-        <input v-model="filter.id" type="text" class="wf-input" placeholder="请输入完整主播ID" />
+        <input v-model="filter.id" type="text" class="wf-input" placeholder="请输入主播ID" />
+
+        <label class="wf-label">直播间ID：</label>
+        <input v-model="filter.roomId" type="text" class="wf-input" placeholder="请输入直播间ID" />
 
         <label class="wf-label">主播昵称：</label>
         <input v-model="filter.nickname" type="text" class="wf-input" placeholder="请输入主播昵称" />
+
+        <label class="wf-label">直播状态：</label>
+        <select v-model="filter.liveStatus" class="wf-input wf-input--select">
+          <option value="">全部</option>
+          <option v-for="opt in ANCHOR_LIVE_STATUS_OPTIONS" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+
+        <label class="wf-label">封禁状态：</label>
+        <select v-model="filter.banStatus" class="wf-input wf-input--select">
+          <option value="">全部</option>
+          <option v-for="opt in ANCHOR_BAN_STATUS_OPTIONS" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
 
         <label class="wf-label">配置来源：</label>
         <select v-model="filter.source" class="wf-input wf-input--select">
@@ -304,12 +377,19 @@ function confirmModal() {
         <div class="lal-list-head">
           <WfSpecAnnot :no="listAnnot.no" :title="listAnnot.title" :items="[...listAnnot.items]" />
         </div>
-        <table class="wf-table">
+        <table class="wf-table wf-table--manage lal-table">
           <thead>
             <tr>
               <th class="wf-th wf-th--no">序号</th>
               <th class="wf-th">主播</th>
               <th class="wf-th">主播ID</th>
+              <th class="wf-th">直播间ID</th>
+              <th class="wf-th">直播场次ID</th>
+              <th class="wf-th">礼物分成比例</th>
+              <th class="wf-th">粉丝数</th>
+              <th class="wf-th">主播标签</th>
+              <th class="wf-th">直播状态</th>
+              <th class="wf-th">封禁状态</th>
               <th class="wf-th">配置来源</th>
               <th class="wf-th">基准人数</th>
               <th class="wf-th">基础预约</th>
@@ -330,12 +410,33 @@ function confirmModal() {
           </thead>
           <tbody>
             <tr v-if="!filteredRows.length">
-              <td colspan="9" class="wf-td wf-td--empty">暂无主播数据</td>
+              <td colspan="16" class="wf-td wf-td--empty">暂无主播数据</td>
             </tr>
             <tr v-for="(row, index) in filteredRows" :key="row.id">
               <td class="wf-td wf-td--center">{{ index + 1 }}</td>
               <td class="wf-td">{{ row.nickname }}</td>
               <td class="wf-td">{{ row.id }}</td>
+              <td class="wf-td">{{ row.roomId }}</td>
+              <td class="wf-td wf-td--center">{{ row.sessionId }}</td>
+              <td class="wf-td wf-td--center">{{ formatGiftShare(row.giftSharePercent) }}</td>
+              <td class="wf-td wf-td--center">{{ row.fans }}</td>
+              <td class="wf-td">{{ formatAnchorTag(row.tag) }}</td>
+              <td class="wf-td">
+                <span
+                  class="wf-status-badge"
+                  :class="row.liveStatus === 'live' ? 'wf-status-badge--enabled' : 'wf-status-badge--disabled'"
+                >
+                  {{ anchorLiveStatusLabel(row.liveStatus) }}
+                </span>
+              </td>
+              <td class="wf-td">
+                <span
+                  class="wf-status-badge"
+                  :class="row.banStatus === 'banned' ? 'wf-status-badge--disabled' : 'wf-status-badge--enabled'"
+                >
+                  {{ anchorBanStatusLabel(row.banStatus) }}
+                </span>
+              </td>
               <td class="wf-td">
                 <span :class="row.source === 'custom' ? 'lal-badge lal-badge--custom' : 'lal-badge'">
                   {{ anchorMetricSourceLabel(row.source) }}
@@ -415,7 +516,6 @@ function confirmModal() {
                       @change="applyPreset(opt.value)"
                     />
                     {{ opt.label }}
-                    <span class="lal-radio__hint">{{ opt.hint }}</span>
                   </label>
                   <WfSpecAnnot
                     :no="presetAnnot.no"
@@ -423,9 +523,6 @@ function confirmModal() {
                     :items="[...presetAnnot.items]"
                   />
                 </div>
-                <p class="wf-form-row__hint">
-                  低约几十人、中约几百人、高约几千人。选档后回填基准与高阶；再改数字即视为自定义。
-                </p>
               </div>
             </div>
 
@@ -469,18 +566,15 @@ function confirmModal() {
               </div>
               <div class="wf-form-row lal-form-row">
                 <label class="wf-form-row__label wf-form-row__label--required">本场点赞</label>
-                <div>
-                  <input
-                    v-model.number="form.likeBase"
-                    type="number"
-                    min="0"
-                    step="1"
-                    class="wf-input wf-input--full"
-                    :disabled="formReadonly"
-                    placeholder="请输入本场点赞底数"
-                  />
-                  <p class="wf-form-row__hint">开场展示底数；之后只由登录用户点赞叠加，游客点赞不计入。</p>
-                </div>
+                <input
+                  v-model.number="form.likeBase"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="wf-input wf-input--full"
+                  :disabled="formReadonly"
+                  placeholder="请输入本场点赞底数"
+                />
               </div>
             </div>
 
@@ -552,10 +646,6 @@ function confirmModal() {
                     <span class="wf-muted">当前 {{ formatRange(form.people.leave) }}</span>
                   </div>
                 </div>
-                <label class="lal-check">
-                  <input v-model="form.people.includeGuest" type="checkbox" :disabled="formReadonly" />
-                  计入游客（未登录观众进入 / 退出同样加减）
-                </label>
               </div>
 
               <div class="lal-sub">
@@ -609,19 +699,15 @@ function confirmModal() {
                     <span class="wf-muted">当前 {{ formatRange(form.appointment.cancel) }}</span>
                   </div>
                 </div>
-                <label class="lal-check">
-                  <input v-model="form.appointment.includeGuest" type="checkbox" :disabled="formReadonly" />
-                  计入游客（未登录观众点击 / 取消预约同样加减）
-                </label>
               </div>
 
               <div class="lal-sub">
                 <h5 class="lal-sub__title">本场点赞</h5>
                 <p class="lal-sub__desc">
-                  仅登录用户每次点赞，本场点赞 + 范围内随机整数；游客点赞、取消点赞均不改值。结果不低于 0。
+                  每次点赞，本场点赞 + 范围内随机整数；结果不低于 0。
                 </p>
                 <div class="wf-form-row lal-form-row">
-                  <label class="wf-form-row__label">用户点赞</label>
+                  <label class="wf-form-row__label">点赞增加</label>
                   <div class="lal-range">
                     <input
                       v-model.number="form.like.tap.min"
@@ -643,13 +729,12 @@ function confirmModal() {
                     <span class="wf-muted">当前 {{ formatRange(form.like.tap) }}</span>
                   </div>
                 </div>
-                <p class="lal-check lal-check--text">不计入游客，无勾选项。</p>
               </div>
 
               <div class="lal-sub">
                 <h5 class="lal-sub__title">热度综合</h5>
                 <p class="lal-sub__desc">
-                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。点赞项只取本场点赞（登录用户累计），游客点赞不进热度。
+                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 真实进出人数。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">人数系数</label>
@@ -703,7 +788,7 @@ function confirmModal() {
                   <p class="lal-preview__label">试算示例（可改数字，即时看热度）</p>
                   <div class="lal-preview__grid">
                     <label>
-                      人数
+                      展示人数
                       <input v-model.number="heatSample.people" type="number" min="0" class="wf-input" />
                     </label>
                     <label>
@@ -731,6 +816,14 @@ function confirmModal() {
 
           <footer class="wf-modal__footer">
             <button type="button" class="wf-btn wf-btn--default" @click="closeModal">取消</button>
+            <button
+              v-if="isSystemPreset"
+              type="button"
+              class="wf-btn wf-btn--add"
+              @click="saveModal"
+            >
+              更新档位
+            </button>
             <button type="button" class="wf-btn wf-btn--primary" @click="confirmModal">确定</button>
           </footer>
         </div>
@@ -760,6 +853,10 @@ function confirmModal() {
   white-space: nowrap;
 }
 
+.lal-table {
+  min-width: 2280px;
+}
+
 .lal-badge {
   color: var(--pc-text-muted);
 }
@@ -785,8 +882,7 @@ function confirmModal() {
 }
 
 .lal-source,
-.lal-range,
-.lal-check {
+.lal-range {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -799,11 +895,6 @@ function confirmModal() {
   font-size: 14px;
 }
 
-.lal-radio__hint {
-  color: var(--pc-text-muted);
-  font-size: 12px;
-}
-
 .lal-source {
   flex-wrap: wrap;
 }
@@ -813,16 +904,6 @@ function confirmModal() {
 }
 
 .lal-range__sep {
-  color: var(--pc-text-secondary);
-}
-
-.lal-check {
-  margin: 0 0 4px 104px;
-  font-size: 13px;
-  color: var(--pc-text);
-}
-
-.lal-check--text {
   color: var(--pc-text-secondary);
 }
 
