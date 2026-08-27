@@ -33,6 +33,7 @@ import {
 import {
   COMMISSION_NEGATIVE_TIP,
   COMMISSION_STATUS_META,
+  MOCK_AGENT_JOIN_DATE,
   commissionHeroTitle,
   commissionTone,
   findCommissionBill,
@@ -40,6 +41,7 @@ import {
   formatCommissionMonthLabel,
   getCommissionMonthOptions,
   getDefaultCommissionMonth,
+  isCommissionMonthBeforeJoin,
   shouldShowCommissionNegativeAccum,
 } from '../../constants/agentCommissionReport'
 import { agentAppCurrency } from '../../constants/agentAppCurrency'
@@ -151,11 +153,16 @@ const shareDateEnd = computed(() => {
 
 const currency = agentAppCurrency
 const rebateMonthKey = computed(() => rebateMonth.value)
-const rebateCommissionBill = computed(() => findCommissionBill(rebateMonthKey.value))
+const isRebateNotJoined = computed(
+  () => isRebateAgent.value && isCommissionMonthBeforeJoin(rebateMonthKey.value),
+)
+const rebateCommissionBill = computed(() =>
+  isRebateNotJoined.value ? null : findCommissionBill(rebateMonthKey.value),
+)
 const rebateHeroTitle = computed(() => commissionHeroTitle(rebateMonthKey.value))
-/** 待派发（预计佣金）展示并计入负佣金累计；已派发历史月不展示 */
-const showRebateNegativeAccum = computed(() =>
-  shouldShowCommissionNegativeAccum(rebateMonthKey.value),
+/** 待派发（预计佣金）展示并计入负佣金累计；已派发历史月、未入驻不展示 */
+const showRebateNegativeAccum = computed(
+  () => !isRebateNotJoined.value && shouldShowCommissionNegativeAccum(rebateMonthKey.value),
 )
 const rebateNegativeAccum = computed(() => rebateCommissionBill.value?.negativeAccum ?? 0)
 const rebateNegativeForTotal = computed(() =>
@@ -499,13 +506,32 @@ onBeforeUnmount(() => {
         </div>
       </header>
 
-      <!-- 返佣：对齐佣金详情卡（预计/发放 + 状态 + 总佣金币种 tip + 金额） -->
+      <!-- 返佣：对齐佣金详情卡（预计/发放 + 状态 + 总佣金币种 tip + 金额）；未入驻走空态卡 -->
       <section
-        v-if="isRebateAgent && rebateCommissionBill"
+        v-if="isRebateAgent && (rebateCommissionBill || isRebateNotJoined)"
         class="mh5-agent-my-profit-total mh5-agent-my-profit-total--commission"
-        :aria-label="rebateHeroTitle"
+        :class="{ 'mh5-agent-my-profit-total--not-joined': isRebateNotJoined }"
+        :aria-label="isRebateNotJoined ? $t('未入驻') : rebateHeroTitle"
         @click.stop
       >
+        <div v-if="isRebateNotJoined" class="mh5-agent-my-profit-total__inner">
+          <img
+            class="mh5-agent-my-profit-total__pattern"
+            :src="AGENT_MY_PROFIT_ASSETS.cardPattern"
+            alt=""
+            aria-hidden="true"
+          />
+          <div class="mh5-agent-commission-hero__not-joined">
+            <div class="mh5-agent-my-profit-hero-metric">
+              <p class="mh5-agent-commission-hero__unit">总佣金({{ currency }})</p>
+              <p class="mh5-agent-commission-hero__amount mh5-agent-commission-hero__amount--empty">--</p>
+            </div>
+            <span class="mh5-agent-commission-status mh5-agent-commission-status--not-joined">
+              {{ $t('未入驻') }}
+            </span>
+          </div>
+        </div>
+        <template v-else-if="rebateCommissionBill">
         <div class="mh5-agent-commission-hero__head">
           <span class="mh5-agent-commission-hero__title">{{ rebateHeroTitle }}</span>
           <span
@@ -560,6 +586,7 @@ onBeforeUnmount(() => {
             </p>
           </div>
         </div>
+        </template>
       </section>
 
       <section
@@ -656,6 +683,23 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
+      <div
+        v-if="isRebateNotJoined"
+        class="mh5-agent-my-profit-join-notice"
+        role="status"
+      >
+        <img
+          class="mh5-agent-my-profit-join-notice__icon"
+          :src="AGENT_MY_PROFIT_ASSETS.notJoinedAlert"
+          alt=""
+          width="24"
+          height="24"
+        />
+        <p class="mh5-agent-my-profit-join-notice__text">
+          {{ $t('您于{date} 成为代理，此前周期暂无业务数据', { date: MOCK_AGENT_JOIN_DATE }) }}
+        </p>
+      </div>
+
       <div v-if="!embedded" class="mh5-agent-my-profit-date">
         <div class="mh5-agent-my-profit-date__row">
           <p class="mh5-agent-my-profit-date__label">{{ dateFilterLabel }}</p>
@@ -708,6 +752,18 @@ onBeforeUnmount(() => {
     </div>
 
     <main class="mh5-agent-my-profit-main mh5-agent-my-profit-main--rebate">
+      <div v-if="isRebateNotJoined" class="mh5-agent-my-profit-empty" aria-live="polite">
+        <img
+          class="mh5-agent-my-profit-empty__art"
+          :src="AGENT_MY_PROFIT_ASSETS.emptyNoData"
+          alt=""
+          width="240"
+          height="240"
+        />
+        <p class="mh5-agent-my-profit-empty__text">{{ $t('暂无数据') }}</p>
+      </div>
+
+      <template v-else>
       <!-- 占成 / 返佣共用：游戏净输赢 + 其他成本（可展开）；占成另有代理赚水 -->
       <section
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
@@ -974,6 +1030,7 @@ onBeforeUnmount(() => {
           {{ line }}<br v-if="i < footnoteLines.length - 1" />
         </span>
       </p>
+      </template>
     </main>
 
     <Teleport to=".mh5-app-shell" defer>

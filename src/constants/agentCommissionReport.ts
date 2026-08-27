@@ -55,6 +55,18 @@ export function getDefaultCommissionMonth(date = new Date()) {
   return `${y}-${m}`
 }
 
+/** 当前登录代理成为代理的日期（原型 Mock，对齐 Figma 未入驻） */
+export const MOCK_AGENT_JOIN_DATE = '2026-07-15'
+
+export function agentJoinMonth(joinDate = MOCK_AGENT_JOIN_DATE) {
+  return joinDate.slice(0, 7)
+}
+
+/** 所选结算月早于成为代理的月份 → 未入驻 */
+export function isCommissionMonthBeforeJoin(month: string, joinDate = MOCK_AGENT_JOIN_DATE) {
+  return Boolean(month) && month < agentJoinMonth(joinDate)
+}
+
 /** 相对当前月偏移（0=本月，-1=上月）→ YYYY-MM */
 export function shiftCommissionMonth(month: string, offset: number) {
   const [ys, ms] = month.split('-')

@@ -115,6 +115,9 @@ export const AGENT_MY_PROFIT_ASSETS = {
   backIcon: '/images/agent-my-profit/icon-back.svg',
   calendarIcon: '/images/agent-my-profit/icon-calendar.png',
   decoCoin: '/images/agent-my-profit/deco-coin.png',
+  emptyNoData: '/images/agent-my-profit/empty-no-data.png',
+  cardPattern: '/images/agent-my-profit/card-pattern.png',
+  notJoinedAlert: '/images/agent-my-profit/icon-not-joined-alert.svg',
 } as const
 
 export const AGENT_MY_PROFIT_PRESETS: { key: RangePreset; label: string }[] = [

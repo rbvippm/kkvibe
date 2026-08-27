@@ -477,6 +477,8 @@
   "总有效投注": "Tổng cược hợp lệ",
   "总输赢": "Tổng lãi/lỗ",
   "未结": "Chưa kết",
+  "未入驻": "Chưa gia nhập",
+  "您于{date} 成为代理，此前周期暂无业务数据": "Bạn trở thành đại lý vào {date}, các kỳ trước đó chưa có dữ liệu nghiệp vụ",
   "已结": "Đã kết",
   "查看有效投注说明": "Xem giải thích cược hợp lệ",
   "有效投注为实际计入输赢统计的投注额。和局、取消或未完成结算的注单可能不计或按场馆规则折算，与「总下注」不一定相同。": "Cược hợp lệ là số tiền thực sự tính vào lãi/lỗ. Hòa, hủy hoặc chưa quyết toán có thể không tính hoặc quy đổi theo luật nhà game, nên có thể khác tổng cược.",

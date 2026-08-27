@@ -477,6 +477,8 @@
   "总有效投注": "Total valid bets",
   "总输赢": "Total P/L",
   "未结": "Open",
+  "未入驻": "Not joined",
+  "您于{date} 成为代理，此前周期暂无业务数据": "You became an agent on {date}. No business data for earlier periods.",
   "已结": "Settled",
   "查看有效投注说明": "Valid bet explanation",
   "有效投注为实际计入输赢统计的投注额。和局、取消或未完成结算的注单可能不计或按场馆规则折算，与「总下注」不一定相同。": "Valid bets are the stake counted toward win/loss. Draws, cancelled or unfinished bets may be excluded or adjusted by venue rules, so this can differ from total stake.",
