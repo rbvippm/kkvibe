@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
+import { showPcToast } from '../../composables/usePcToast'
 import { LIVE_ANCHOR_LIST_ANNOT_MAP } from '../../constants/liveAnchorListSpec'
 import {
   ANCHOR_BAN_STATUS_OPTIONS,
@@ -57,7 +58,6 @@ const defaultFilter = (): ListFilter => ({
 
 const filter = ref<ListFilter>(defaultFilter())
 const appliedFilter = ref<ListFilter>(defaultFilter())
-const actionHint = ref('')
 const modalKind = ref<ModalKind | null>(null)
 const editingId = ref<string | null>(null)
 const formSource = ref<AnchorMetricSource>('global')
@@ -106,13 +106,11 @@ function rowConfig(row: LiveAnchorRow) {
 
 function applyFilter() {
   appliedFilter.value = { ...filter.value }
-  actionHint.value = ''
 }
 
 function resetFilter() {
   filter.value = defaultFilter()
   appliedFilter.value = defaultFilter()
-  actionHint.value = ''
 }
 
 function hydrateForm(config: AnchorMetricConfig) {
@@ -247,7 +245,7 @@ function normalizeConfig(config: AnchorMetricConfig): AnchorMetricConfig {
 function applyPayload(payload: AnchorMetricConfig, closeAfter: boolean) {
   if (modalKind.value === 'global') {
     liveAnchorGlobalConfig.value = payload
-    actionHint.value = '已保存全局基准配置，跟随全局的主播即时生效'
+    showPcToast('已保存全局基准配置，跟随全局的主播即时生效')
     if (closeAfter) closeModal()
     return true
   }
@@ -258,8 +256,8 @@ function applyPayload(payload: AnchorMetricConfig, closeAfter: boolean) {
     return false
   }
   liveAnchorStore.value[idx].source = 'custom'
-  liveAnchorStore.value[idx].custom = payload
-  actionHint.value = `已保存「${liveAnchorStore.value[idx].nickname}」的自定义指标`
+  liveAnchorStore.value[idx].custom = { ...payload, preset: 'custom' }
+  showPcToast(`已保存「${liveAnchorStore.value[idx].nickname}」的自定义指标`)
   if (closeAfter) closeModal()
   return true
 }
@@ -272,7 +270,7 @@ function confirmFollowGlobal() {
   }
   liveAnchorStore.value[idx].source = 'global'
   liveAnchorStore.value[idx].custom = null
-  actionHint.value = `「${liveAnchorStore.value[idx].nickname}」已改为跟随全局`
+  showPcToast(`「${liveAnchorStore.value[idx].nickname}」已改为跟随全局`)
   closeModal()
 }
 
@@ -305,7 +303,8 @@ function saveModal() {
   if (preset === 'custom') return
   METRIC_PRESETS[preset] = cloneMetricConfig(payload)
   HEAT_PREVIEW_BY_PRESET[preset] = { ...heatSample.value }
-  formHint.value = `已保存「${metricPresetLabel(preset)}」档`
+  formHint.value = ''
+  showPcToast(`已保存「${metricPresetLabel(preset)}」档`)
 }
 </script>
 
@@ -370,7 +369,6 @@ function saveModal() {
             :items="[...globalBaseAnnot.items]"
           />
         </span>
-        <p v-if="actionHint" class="wf-modal__hint">{{ actionHint }}</p>
       </div>
 
       <div class="wf-table-wrap">
@@ -502,7 +500,7 @@ function saveModal() {
               </div>
             </template>
 
-            <div class="wf-form-row lal-form-row">
+            <div v-if="isGlobalModal" class="wf-form-row lal-form-row">
               <label class="wf-form-row__label">档位</label>
               <div>
                 <div class="lal-source">
@@ -598,7 +596,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">人数增减</h5>
                 <p class="lal-sub__desc">
-                  每人进入直播间，展示人数 + 范围内随机整数；每人退出，展示人数 − 范围内随机整数；结果不低于 0。
+                  登录用户进入直播间，展示人数 + 范围内随机整数；登录用户退出，展示人数 − 范围内随机整数；结果不低于 0。游客进出不计入。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">进入增加</label>
@@ -651,7 +649,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">预约增减</h5>
                 <p class="lal-sub__desc">
-                  每人点击预约，展示预约 + 范围内随机整数；每人取消预约，展示预约 − 范围内随机整数；结果不低于 0。
+                  登录用户点击预约，展示预约 + 范围内随机整数；登录用户取消预约，展示预约 − 范围内随机整数；结果不低于 0。游客不计入。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">点击增加</label>
@@ -704,7 +702,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">本场点赞</h5>
                 <p class="lal-sub__desc">
-                  每次点赞，本场点赞 + 范围内随机整数；结果不低于 0。
+                  登录用户每次点赞，本场点赞 + 范围内随机整数；结果不低于 0。游客点赞不计入。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">点赞增加</label>
@@ -734,7 +732,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">热度综合</h5>
                 <p class="lal-sub__desc">
-                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 真实进出人数。
+                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 登录用户进出人数。弹幕、礼物、点赞均不计游客。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">人数系数</label>
@@ -817,7 +815,7 @@ function saveModal() {
           <footer class="wf-modal__footer">
             <button type="button" class="wf-btn wf-btn--default" @click="closeModal">取消</button>
             <button
-              v-if="isSystemPreset"
+              v-if="isGlobalModal && isSystemPreset"
               type="button"
               class="wf-btn wf-btn--add"
               @click="saveModal"

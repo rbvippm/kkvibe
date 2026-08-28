@@ -254,6 +254,31 @@ import '../../styles/pc-wireframe.css'
 - 比例输入：`wf-input wf-input--pct` + `wf-pct` 后缀。
 - 分页：原型阶段用 `<div class="wf-pagination">分页组件</div>` 占位。
 
+### 5.4 全局顶部提示
+
+保存成功、删除成功、启用/禁用、复制成功等**即时通知**，统一走 `PcAdminLayout` 顶部的全局提示，不要写在工具栏或页面正文。
+
+```ts
+import { showPcToast } from '../../composables/usePcToast'
+
+showPcToast('已保存全局基准配置，跟随全局的主播即时生效')
+showPcToast('复制失败，请手动复制', 'error')
+```
+
+| 场景 | 用法 |
+|------|------|
+| 保存 / 删除 / 启用成功 | `showPcToast(文案)`，默认 success，约 3 秒消失 |
+| 中性说明 | `showPcToast(文案, 'info')` |
+| 操作失败但已关弹框 | `showPcToast(文案, 'error')` |
+| 弹框内校验失败、查询无结果 | 仍用弹框内 `wf-modal__hint`，不关弹框 |
+
+禁止：
+
+- 在 `wf-toolbar` 用 `wf-modal__hint` / `actionHint` 当成功通知。
+- 业务页各自再做一套 toast 或顶部条。
+
+实现：`src/composables/usePcToast.ts` + `src/components/wireframe/PcToastHost.vue`。
+
 ## 6. PRD 标注与文档说明页
 
 业务页存在 `WfSpecAnnot`（「注」）标注时，应同步提供 PRD / 功能清单数据。对外可通过文档说明子页聚合展示。

@@ -12,7 +12,7 @@ function nextTickMs() {
 }
 
 /**
- * 顶栏在线人数：后台基准 + 进出（含游客）随机波动；头像取大赏前三，不足用系统头像补。
+ * 顶栏在线人数：后台基准 + 登录用户进出随机波动（游客不计）；头像取大赏前三，不足用系统头像补。
  * 不提供点击进列表。
  */
 export function useLiveOnlinePresence(roomId: MaybeRefOrGetter<string>) {

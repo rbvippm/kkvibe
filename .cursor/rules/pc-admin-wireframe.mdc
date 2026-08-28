@@ -1,6 +1,6 @@
 ---
 description: KK Vibe PC 后台规范，以代理占成配置和文档说明页为主样例，统一 PcAdminLayout、pcMenu、wf 线框与 PRD 标注
-globs: src/layouts/PcAdminLayout.vue,src/config/pcMenu.ts,src/router/index.ts,src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/components/wireframe/**/*.vue,src/constants/pcPrdSpec.ts,src/constants/shareAgentConfigSpec.ts,src/styles/pc-admin-layout.css,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
+globs: src/layouts/PcAdminLayout.vue,src/config/pcMenu.ts,src/router/index.ts,src/views/pc/**/*.vue,src/views/*Admin*.vue,src/views/LiveCommission*.vue,src/components/wireframe/**/*.vue,src/composables/usePcToast.ts,src/constants/pcPrdSpec.ts,src/constants/shareAgentConfigSpec.ts,src/styles/pc-admin-layout.css,src/styles/pc-wireframe.css,docs/PC后台设计规范.md
 alwaysApply: false
 ---
 
@@ -23,6 +23,7 @@ alwaysApply: false
 4. 表格单元格内容默认换行展示，禁止用 `text-overflow: ellipsis`、`overflow: hidden` 或 `white-space: nowrap` 截断正文；长文本用 `word-break: break-word` / `overflow-wrap: break-word` 在单元格内折行。操作列、编号列等需保持单行时可单独加 `white-space: nowrap`。
 5. 弹框使用 `Teleport` + `wf-modal-*`；内容较高时加 `wf-modal--scroll`，整体 `max-height: 70vh`，仅 `wf-modal__body` 滚动。
 6. Tab 标注不得放进 `wf-tab` 按钮内部；用 `wf-tab-item` 包裹 Tab 按钮，标注置于按钮外侧。
+7. **即时反馈**：保存成功、删除成功、启用/禁用、复制成功等用 `showPcToast()`（`src/composables/usePcToast.ts`），由 `PcAdminLayout` 的全局顶部提示展示，约 3 秒消失。禁止再往工具栏、路径条或页面正文塞 `wf-modal__hint` / `actionHint` 当成功通知。弹框内校验失败、查询无结果等仍用弹框内 `wf-modal__hint`。
 
 ## PRD 与文档说明
 
@@ -37,10 +38,12 @@ alwaysApply: false
 - 在 PC 后台新页使用 `admin-page` + 大圆角 `rounded-xl` + 深色顶栏（旧页面风格）。
 - 在业务页硬编码旧式「一、直播管理/…」路径文本。
 - 移动端规范（Tailwind 移动优先）套用到 `/pc` 路由。
+- 把保存成功等即时通知写进工具栏 `wf-modal__hint`（应使用 `showPcToast`）。
 
 ## 参考实现
 
 - 后台壳层：`src/layouts/PcAdminLayout.vue`
+- 全局顶部提示：`src/composables/usePcToast.ts` + `src/components/wireframe/PcToastHost.vue`
 - 主样例：`src/views/pc/PcShareAgentConfigView.vue`
 - 文档说明页：`src/views/pc/PcShareAgentConfigDocView.vue`
 - PRD 数据：`src/constants/shareAgentConfigSpec.ts`

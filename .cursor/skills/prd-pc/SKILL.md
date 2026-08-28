@@ -44,6 +44,7 @@ description: 为 PC 后台原型生成 PRD 标注、功能清单与文档说明�
 
 - 【文档说明】路径条入口
 - 纯布局/壳层（侧栏、Tags、路径条本身）
+- 全局顶部提示（`showPcToast`，壳层即时反馈，不为它单独开「注N」）
 - 无独立业务含义的占位（如分页占位、纯装饰文案）
 
 **不允许：**
@@ -57,7 +58,7 @@ description: 为 PC 后台原型生成 PRD 标注、功能清单与文档说明�
 每个 `PcPrdFeatureRow.prd` 必须完整覆盖以下字段，字段名与 `PcPrdDimension` 保持一致：
 
 - `functionalLogic` 功能逻辑：说明模块或元素的核心作用、业务目标和系统处理。
-- `interactiveBehavior` 交互行为：说明用户动作、系统反馈、状态变化、弹框/筛选/保存流程。
+- `interactiveBehavior` 交互行为：说明用户动作、系统反馈、状态变化、弹框/筛选/保存流程。保存成功等即时通知写「全局顶部提示」，弹框校验失败写「弹框底部 hint」。
 - `visualPresentation` 视觉表现：说明页面位置、默认态、悬停态、禁用态、空态、错误态等可见表现。
 - `dataRules` 数据规则：说明字段格式、必填、默认值、枚举、校验区间、展示条件和 Mock 口径。
 - `exceptions` 异常与边界：说明空数据、无权限、接口失败、校验失败、不可操作、超长内容等处理。
@@ -72,6 +73,14 @@ description: 为 PC 后台原型生成 PRD 标注、功能清单与文档说明�
 5. 配置 `docRouteName` 与文档说明子路由；文档页使用 `pc-wireframe-page wf-doc-page`，复用 `PRD_DIMENSION_LABELS` 渲染六大维度。
 6. **执行「功能清单 ↔ 标注」一致性检查**（见下节）；不通过则补齐或删减，直至双向一致。
 7. 修改原型时同步更新 PRD、标注与功能清单；修改 PRD 时同步检查原型与标注编号。
+8. 保存/删除/启用等成功反馈用 `showPcToast`；对应条目的 `interactiveBehavior` 写「全局顶部提示 + 文案」，不要写成工具栏 hint。
+
+## 即时通知（全局顶部提示）
+
+- 调用：`import { showPcToast } from '../../composables/usePcToast'`，`showPcToast(中文文案)`；失败用 `'error'`，中性用 `'info'`。
+- 宿主：`PcAdminLayout` 已挂 `PcToastHost`，业务页只调函数，不要再造 toast。
+- 弹框内校验失败、查询无结果：继续用弹框 `wf-modal__hint`，不关弹框、不用顶部提示。
+- 不为 toast 单独加功能清单条目或「注N」。
 
 ## 标注编号规则
 
@@ -109,6 +118,7 @@ C. pageNos = 业务页中所有 WfSpecAnnot 的 :no（含封装组件传入的 n
 - PRD 文案必须中文、具体、可验证，避免「优化体验」「支持配置」这类空泛表达。
 - 功能清单只描述**已在页面标注**的业务功能；不把【文档说明】入口、无标注的筛选项/表格列写进清单。
 - PC 页面遵循 `docs/PC后台设计规范.md`：`pc-wireframe-page`、`wf-*` 线框风、中文 Mock 数据、空态/错误态/禁用态可见。
+- **即时通知**：保存成功、删除成功、启用/禁用等写「全局顶部提示」（`showPcToast`），不写工具栏 `wf-modal__hint` / `actionHint`。弹框内校验失败仍写弹框 `wf-modal__hint`。`interactiveBehavior` / `visualPresentation` 须写明用哪一种。
 - 新页面参考 `src/constants/liveDanmakuMuteSpec.ts` + 对应 DocView；历史页若清单与标注不一致，改动时优先收敛到一致，而非继续沿用「清单多、标注少」旧模式。
 
 ## 异常处理
@@ -127,4 +137,5 @@ C. pageNos = 业务页中所有 WfSpecAnnot 的 :no（含封装组件传入的 n
 - [ ] 有标注的业务页已配置 `docRouteName` 与文档说明子路由。
 - [ ] 未把【文档说明】入口写进功能清单。
 - [ ] 空态、异常、禁用态、校验失败等在对应条目的 `exceptions` 中有说明。
+- [ ] 保存/删除等成功反馈写全局顶部提示，未把成功通知做成工具栏 hint。
 - [ ] 未混用移动端 `Mh5SpecAnnot` / `MobilePrdSpec`。

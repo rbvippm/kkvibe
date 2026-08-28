@@ -361,3 +361,62 @@ body:has(.pc-admin-layout) {
   font-size: 13px;
   line-height: 1.5;
 }
+
+/* ---------- 全局顶部提示 ---------- */
+.pc-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 1200;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow:
+    0 6px 16px rgb(0 0 0 / 8%),
+    0 3px 6px -4px rgb(0 0 0 / 12%),
+    0 9px 28px 8px rgb(0 0 0 / 5%);
+  color: #333;
+  font-size: 14px;
+  line-height: 1.4;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.pc-toast__icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.pc-toast--success .pc-toast__icon {
+  background: #52c41a;
+}
+
+.pc-toast--info .pc-toast__icon {
+  background: #1890ff;
+}
+
+.pc-toast--error .pc-toast__icon {
+  background: #ff4d4f;
+}
+
+.pc-toast-enter-active,
+.pc-toast-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.pc-toast-enter-from,
+.pc-toast-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px);
+}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
+import PcToastHost from '../components/wireframe/PcToastHost.vue'
 import { getPcBreadcrumb, pcAnchorMenuTree, pcMenuTree, type PcMenuItem } from '../config/pcMenu'
 import { usePcTagsView } from '../composables/usePcTagsView'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
@@ -153,6 +154,7 @@ function isMenuActive(item: PcMenuItem) {
         </RouterView>
       </main>
     </div>
+    <PcToastHost />
   </div>
 </template>
 

@@ -3,7 +3,7 @@
 import type { AppLocale } from '../i18n/locale'
 import { LIVE_STREAM_ASSETS } from './mobileLiveStream'
 
-/** 后台可改：每人进入 / 退出时的人数波动区间 */
+/** 后台可改：登录用户进入 / 退出时的人数波动区间（游客不计入） */
 export type LiveOnlineDeltaRange = readonly [number, number]
 
 export type LiveOnlineHostConfig = {
@@ -11,7 +11,7 @@ export type LiveOnlineHostConfig = {
   roomId: string
   /** 后台可改的基准在线人数 */
   baseCount: number
-  /** 有人进入（含游客）时增加的随机区间 */
+  /** 登录用户进入时增加的随机区间；游客进出不触发 */
   enterDelta: LiveOnlineDeltaRange
   /** 有人退出时减少的随机区间 */
   leaveDelta: LiveOnlineDeltaRange
