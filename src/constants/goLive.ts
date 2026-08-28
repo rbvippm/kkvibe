@@ -76,13 +76,30 @@ export const GO_LIVE_GAMES: {
 ]
 
 export const GO_LIVE_BACKGROUNDS = [
-  { id: 'star', name: '星钻派对厅', image: '/images/voice-room/bg.png' },
-  { id: 'royal', name: '皇家会所', image: '/images/vip-club/hall/singapore-hero.png' },
-  { id: 'yacht', name: '至尊游艇会', image: '/images/vip-club/lottery/cover-hawaii.png' },
-  { id: 'studio', name: '超级主播间', image: '/images/live-stream/stage.png' },
+  { id: 'star', name: '星钻派对厅', image: '/images/voice-room/backgrounds/star-diamond.png' },
+  { id: 'royal', name: '皇家会所', image: '/images/voice-room/backgrounds/royal-club.png' },
+  { id: 'yacht', name: '至尊游艇会', image: '/images/voice-room/backgrounds/yacht-club.png' },
+  { id: 'studio', name: '超级主播间', image: '/images/voice-room/backgrounds/streamer-studio.png' },
+  { id: 'sky', name: '天空会所', image: '/images/voice-room/backgrounds/sky-club.png' },
+  { id: 'esports', name: '红黑电竞馆', image: '/images/voice-room/backgrounds/esports-arena.png' },
+  { id: 'supercar', name: '超跑俱乐部', image: '/images/voice-room/backgrounds/supercar-club.png' },
+  { id: 'starship', name: '星际舰桥', image: '/images/voice-room/backgrounds/starship-bridge.png' },
 ] as const
 
 export const GO_LIVE_DEFAULT_COVER = '/images/vip-club/lottery/cover-desert.png'
+
+export const GO_LIVE_COVERS = [
+  GO_LIVE_DEFAULT_COVER,
+  '/images/live-stream/stage.png',
+  '/images/discover/cover-1.jpg',
+  '/images/discover/cover-2.jpg',
+  '/images/vip-club/lottery/cover-hawaii.png',
+] as const
+
+export function nextGoLiveCover(current: string) {
+  const index = GO_LIVE_COVERS.findIndex((item) => item === current)
+  return GO_LIVE_COVERS[(index + 1) % GO_LIVE_COVERS.length]
+}
 
 export const GO_LIVE_SCREEN_HINT = '开始直播后，观众会实时看到你手机上的画面'
 

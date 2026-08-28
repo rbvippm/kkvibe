@@ -35,6 +35,7 @@ import {
   isGoLiveScheduleOvertime,
   listActiveGoLiveSchedules,
   nearestPendingGoLiveSchedule,
+  nextGoLiveCover,
   splitGoLiveScheduleTime,
   suggestGoLiveScheduleTime,
   validateGoLiveScheduleTime,
@@ -283,7 +284,8 @@ function pickBackground(id: string) {
 }
 
 function changeCover() {
-  showToast('更改封面（原型）')
+  cover.value = nextGoLiveCover(cover.value)
+  showToast('封面已更新')
 }
 
 function flipCamera() {
@@ -404,7 +406,6 @@ function startCreateSchedule() {
   draftTime.value = null
   title.value = goLiveTitleForTab(tab.value)
   category.value = GO_LIVE_DEFAULT_CATEGORY
-  cover.value = GO_LIVE_DEFAULT_COVER
   openTimeSheet()
 }
 
@@ -881,7 +882,9 @@ onUnmounted(() => {
             :class="{ 'is-active': backgroundId === item.id }"
             @click="pickBackground(item.id)"
           >
-            <img :src="item.image" alt="" />
+            <span class="mh5-golive-bg__frame">
+              <img :src="item.image" alt="" />
+            </span>
             <span>{{ item.name }}</span>
           </button>
         </div>

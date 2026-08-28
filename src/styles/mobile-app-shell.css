@@ -27021,7 +27021,7 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-golive-bg {
-  flex: 0 0 86px;
+  flex: 0 0 82px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -27033,16 +27033,27 @@ div.agent-home__profit-tab--ratio {
   cursor: pointer;
 }
 
-.mh5-golive-bg img {
-  width: 86px;
-  height: 118px;
-  border-radius: 10px;
-  object-fit: cover;
+.mh5-golive-bg__frame {
+  display: block;
+  padding: 4px;
   border: 2px solid transparent;
+  border-radius: 10px;
+  line-height: 0;
 }
 
-.mh5-golive-bg.is-active img {
+.mh5-golive-bg img {
+  width: 74px;
+  height: 102px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.mh5-golive-bg.is-active .mh5-golive-bg__frame {
   border-color: #ff8c00;
+}
+
+.mh5-golive-bg.is-active {
+  color: #ff8c00;
 }
 
 .mh5-golive-album {

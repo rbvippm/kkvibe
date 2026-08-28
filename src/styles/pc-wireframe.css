@@ -953,6 +953,10 @@
   max-width: 960px;
 }
 
+.wf-modal--narrow {
+  max-width: 420px;
+}
+
 .wf-input--grow {
   flex: 1;
   min-width: 200px;

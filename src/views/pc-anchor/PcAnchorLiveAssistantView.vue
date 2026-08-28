@@ -9,8 +9,9 @@ import {
   ASSISTANT_CHAT_EMOJIS,
   ASSISTANT_CHAT_FILTERS,
   ASSISTANT_GIFT_CURRENCY,
-  ASSISTANT_GIFT_ICON,
   ASSISTANT_TOOLBOX,
+  assistantAvatarOf,
+  assistantGiftIconOf,
   assistantChatFilterKey,
   formatAssistantGiftAmount,
   assistantChatKindLabel,
@@ -18,7 +19,9 @@ import {
   assistantChatRoleOf,
   formatAssistantChatLine,
   isAssistantChatMuteDisabled,
+  GO_LIVE_GUIDE_LEAD,
   GO_LIVE_GUIDE_STEPS,
+  GO_LIVE_GUIDE_TIPS,
   LIVE_CATEGORIES,
   type AssistantChatFilterKey,
   type AssistantChatMsg,
@@ -71,7 +74,103 @@ const chatFilters = reactive<Record<AssistantChatFilterKey, boolean>>({
 const visibleChats = computed(() =>
   a.chatMessages.value.filter((msg) => chatFilters[assistantChatFilterKey(msg.kind)]),
 )
+const chatListEl = ref<HTMLElement | null>(null)
+const chatPinnedToBottom = ref(true)
+const chatUnseen = ref(0)
+const CHAT_BOTTOM_GAP = 28
+const CHAT_INCOMING_DEMO: Omit<AssistantChatMsg, 'id'>[] = [
+  { nickname: '夜色观星', userId: 'u10086', kind: 'chat', text: '主播再讲一遍规则' },
+  { nickname: '三1放', userId: 'u10089', kind: 'like' },
+  { nickname: '艾米粒', userId: 'u10090', kind: 'liveGift', giftName: '小心心', giftCount: 1 },
+]
+let chatIncomingArmed = false
+let chatIncomingTimers: number[] = []
 let skipNextDocumentClose = false
+
+const showChatJump = computed(() => !chatPinnedToBottom.value)
+const chatUnseenLabel = computed(() => {
+  if (chatUnseen.value <= 0) return ''
+  return chatUnseen.value > 99 ? '99+' : String(chatUnseen.value)
+})
+
+function isChatNearBottom() {
+  const el = chatListEl.value
+  if (!el) return true
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= CHAT_BOTTOM_GAP
+}
+
+function scrollChatToBottom() {
+  const el = chatListEl.value
+  if (!el) return
+  el.scrollTop = el.scrollHeight
+}
+
+function clearChatIncomingDemo() {
+  chatIncomingTimers.forEach((id) => window.clearTimeout(id))
+  chatIncomingTimers = []
+  chatIncomingArmed = false
+}
+
+function armChatIncomingDemo() {
+  if (chatIncomingArmed) return
+  chatIncomingArmed = true
+  ;[800, 2000, 3600].forEach((ms, index) => {
+    const sample = CHAT_INCOMING_DEMO[index]
+    if (!sample) return
+    chatIncomingTimers.push(
+      window.setTimeout(() => {
+        if (chatPinnedToBottom.value) return
+        a.chatMessages.value = [
+          ...a.chatMessages.value,
+          { ...sample, id: `c-in-${Date.now()}-${index}` },
+        ]
+      }, ms),
+    )
+  })
+}
+
+function pinChatToLatest() {
+  chatPinnedToBottom.value = true
+  chatUnseen.value = 0
+  clearChatIncomingDemo()
+  void nextTick(() => {
+    scrollChatToBottom()
+  })
+}
+
+function onChatScroll() {
+  if (isChatNearBottom()) {
+    chatPinnedToBottom.value = true
+    chatUnseen.value = 0
+    clearChatIncomingDemo()
+    return
+  }
+  chatPinnedToBottom.value = false
+  armChatIncomingDemo()
+}
+
+function jumpChatToBottom() {
+  pinChatToLatest()
+}
+
+function sendChatFromComposer() {
+  if (!a.chatDraft.value.trim()) return
+  a.sendChat()
+  pinChatToLatest()
+}
+
+watch(
+  () => visibleChats.value.length,
+  (count, prev) => {
+    const delta = count - (prev ?? 0)
+    if (delta <= 0) return
+    if (chatPinnedToBottom.value) {
+      void nextTick(() => scrollChatToBottom())
+      return
+    }
+    chatUnseen.value += delta
+  },
+)
 
 const activeRoleLabel = computed(() => {
   const target = activeTarget.value
@@ -91,7 +190,7 @@ const activeBlocked = computed(() => !!activeTarget.value && isUserBlocked(activ
 
 function placeActionMenu(event: MouseEvent) {
   const menuW = 248
-  const menuH = 132
+  const menuH = 176
   actionMenuPos.value = {
     x: Math.min(Math.max(12, event.clientX), window.innerWidth - menuW),
     y: Math.min(Math.max(12, event.clientY), window.innerHeight - menuH),
@@ -235,11 +334,13 @@ function confirmMute() {
 
 onMounted(() => {
   document.addEventListener('click', onDocumentClick)
+  void nextTick(() => scrollChatToBottom())
 })
 
 onUnmounted(() => {
   a.bindToolboxShell(null)
   document.removeEventListener('click', onDocumentClick)
+  clearChatIncomingDemo()
 })
 
 function pickSchedulePart(part: 'day' | 'hour' | 'minute', value: number) {
@@ -251,10 +352,6 @@ function pickSchedulePart(part: 'day' | 'hour' | 'minute', value: number) {
 
 function onScheduleHourChange(event: Event) {
   pickSchedulePart('hour', Number((event.target as HTMLSelectElement).value))
-}
-
-function onCoverClick() {
-  a.toast('已选择示意图封面（原型）')
 }
 </script>
 
@@ -362,6 +459,18 @@ function onCoverClick() {
             </em>
             <b>{{ a.formatAssistantMetric(a.sessionHeat.value) }}</b>
           </span>
+          <span class="lal-stats__item lal-stats__item--time">
+            <em>
+              <svg class="lal-stats__ico" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M8 1.5A6.5 6.5 0 1 0 14.5 8 6.51 6.51 0 0 0 8 1.5Zm0 11.6A5.1 5.1 0 1 1 13.1 8 5.1 5.1 0 0 1 8 13.1Zm.6-8.4H7.2v3.7l2.9 1.7.7-1.2-2.2-1.3V4.7Z"
+                />
+              </svg>
+              直播时长
+            </em>
+            <b>{{ a.durationText.value }}</b>
+          </span>
         </div>
         <button v-if="a.linkedSchedule.value" type="button" class="lal-linkbar" @click="a.openScheduleSheet">
           <span>
@@ -377,7 +486,12 @@ function onCoverClick() {
           <div class="lal-preview__stage">
             <div class="lal-preview__frame" :class="{ 'is-voice': a.liveMode.value === 'voice' }">
               <template v-if="a.liveMode.value === 'voice'">
-                <img class="lal-voice__bg" :src="voice.VOICE_ROOM_ASSETS.bg" alt="" />
+                <div
+                  class="lal-voice__bg"
+                  :style="{ backgroundImage: `url(${a.selectedBackground.value.image})` }"
+                  aria-hidden="true"
+                />
+                <div class="lal-voice__shade" aria-hidden="true" />
                 <div class="lal-voice__mics" aria-label="麦位">
                   <button
                     v-for="seat in voice.seats.value"
@@ -429,10 +543,9 @@ function onCoverClick() {
                     <template v-else>
                       <span class="lal-voice-seat__hole">
                         <img
+                          class="lal-voice-seat__hole-ico"
                           :src="seat.kind === 'locked' ? voice.VOICE_ROOM_ASSETS.lock : voice.VOICE_ROOM_ASSETS.chair"
                           alt=""
-                          width="16"
-                          height="16"
                         />
                         <span v-if="seat.seatMuted" class="lal-voice-seat__mic is-mute">
                           <img :src="voice.VOICE_ROOM_ASSETS.mute" alt="" />
@@ -453,13 +566,26 @@ function onCoverClick() {
                   :src="a.cover.value"
                   alt=""
                 />
-                <div class="lal-preview__state">
-                  <div class="lal-preview__icon" aria-hidden="true">
-                    {{ a.liveMode.value === 'screen' ? '📱' : '📺' }}
+                <div class="lal-preview__state" :class="{ 'is-signal': a.isStreamSignal.value }">
+                  <div v-if="a.isStreamSignal.value" class="lal-signal">
+                    <div class="lal-ripple" aria-hidden="true">
+                      <span class="lal-ripple__line" />
+                      <span class="lal-ripple__wave" />
+                      <span class="lal-ripple__wave lal-ripple__wave--delay" />
+                      <span class="lal-ripple__core" />
+                    </div>
+                    <strong>{{ a.previewStateLabel.value }}</strong>
+                    <p v-if="a.streamPhase.value === 'connecting'" class="lal-preview__hint">正在拉取视频流</p>
+                    <p v-else class="lal-preview__hint">画面中断，正在尝试恢复</p>
                   </div>
-                  <strong>{{ a.previewStateLabel.value }}</strong>
-                  <em v-if="a.linkedSchedule.value && !a.live.value">已回填</em>
-                  <p v-if="a.liveMode.value === 'screen' && !a.live.value" class="lal-preview__hint">{{ a.GO_LIVE_SCREEN_HINT }}</p>
+                  <template v-else>
+                    <div class="lal-preview__icon" aria-hidden="true">
+                      {{ a.liveMode.value === 'screen' ? '📱' : '📺' }}
+                    </div>
+                    <strong>{{ a.previewStateLabel.value }}</strong>
+                    <em v-if="a.linkedSchedule.value && !a.live.value">已回填</em>
+                    <p v-else-if="a.liveMode.value === 'screen' && !a.live.value" class="lal-preview__hint">{{ a.GO_LIVE_SCREEN_HINT }}</p>
+                  </template>
                 </div>
               </template>
             </div>
@@ -507,7 +633,7 @@ function onCoverClick() {
                 class="lal-icon-btn"
                 title="刷新画面"
                 aria-label="刷新画面"
-                @click="a.toast('画面已刷新')"
+                @click="a.refreshPreview"
               >
                 <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
                   <path fill="currentColor" d="M13.2 8A5.2 5.2 0 1 1 8 2.8V1.2L11 3.4 8 5.6V4a4 4 0 1 0 4 4h1.2Z" />
@@ -517,22 +643,17 @@ function onCoverClick() {
           </div>
         </div>
         <div class="lal-bar">
-          <button type="button" class="lal-guide" :class="{ 'is-done': a.guideRead.value }" @click="a.openModal('guide')">
-            开播说明<span v-if="!a.guideRead.value"> *必读</span>
-          </button>
+          <button type="button" class="lal-guide" @click="a.openModal('guide')">开播说明</button>
           <div class="lal-bar__actions">
             <button type="button" class="wf-btn wf-btn--add" @click="a.openSettings">开播设置</button>
-            <button type="button" class="lal-time-btn" @click="a.openTimeSheet">
-              <span>预计开播</span>
-              <strong>{{ a.timeLabel.value }}</strong>
-            </button>
             <button
               v-if="!a.live.value"
               type="button"
               class="wf-btn wf-btn--primary"
+              :disabled="a.pushChecking.value"
               @click="a.tryStartLive"
             >
-              {{ a.ctaLabel.value }}
+              {{ a.pushChecking.value ? '检测推流中' : a.ctaLabel.value }}
             </button>
             <button
               v-else
@@ -540,7 +661,7 @@ function onCoverClick() {
               class="wf-btn wf-btn--danger"
               @click="a.tryStopLive"
             >
-              强制关播
+              结束直播
             </button>
           </div>
         </div>
@@ -550,14 +671,12 @@ function onCoverClick() {
         <div class="lal-pane">
           <div class="lal-right__top">
             <strong>在线列表</strong>
-            <span class="lal-right__count">{{ a.online.value }}</span>
-            <label class="lal-heat">
-              <input v-model="a.showGiftAmount.value" type="checkbox" />
-              打赏金额
-            </label>
+            <span class="lal-right__gift-sum">
+              礼物总额：{{ formatAssistantGiftAmount(a.giftTotal.value) }} {{ ASSISTANT_GIFT_CURRENCY }}
+            </span>
           </div>
           <div class="lal-search">
-            <input v-model="a.listKeyword.value" placeholder="搜索昵称或 ID" />
+            <input v-model="a.listKeyword.value" placeholder="搜索昵称或金刚号" />
             <button type="button" class="wf-btn wf-btn--primary">搜索</button>
           </div>
           <div ref="onlineListEl" class="lal-list">
@@ -577,39 +696,76 @@ function onCoverClick() {
               <span class="lal-user__rank" :class="`lal-user__rank--${a.onlineListRank(index)}`">{{
                 a.onlineListRank(index)
               }}</span>
-              <span class="lal-user__avatar" aria-hidden="true">{{ user.nickname.slice(0, 1) }}</span>
+              <button
+                type="button"
+                class="lal-user__avatar"
+                :title="`查看 ${user.nickname} 的头像`"
+                @click="openAudienceMenu($event, user)"
+              >
+                <img :src="user.avatar" :alt="`${user.nickname}的头像`" />
+              </button>
               <span class="lal-user__meta">
                 <button type="button" class="lal-user__name" @click="openAudienceMenu($event, user)">
                   {{ user.nickname }}
                 </button>
+                <em class="lal-user__kingkong">{{ user.kingkongId }}</em>
                 <em v-if="isUserMuted(user.id)" class="lal-user__status">已禁言</em>
                 <em v-if="isUserBlocked(user.id)" class="lal-user__status">已拉黑</em>
               </span>
-              <span v-if="a.showGiftAmount.value" class="lal-user__gift">
+              <span class="lal-user__gift">
                 <b>{{ formatAssistantGiftAmount(user.giftAmount) }}</b>
                 <em>{{ ASSISTANT_GIFT_CURRENCY }}</em>
               </span>
             </div>
           </div>
-          <div v-if="a.onlinePageCount.value > 1" class="lal-list-pager">
-            <button
-              type="button"
-              class="wf-btn wf-btn--default"
-              :disabled="a.listPage.value <= 1"
-              @click="goOnlinePage(a.listPage.value - 1)"
-            >
-              上一页
-            </button>
-            <span class="lal-list-pager__info">{{ a.listPage.value }}/{{ a.onlinePageCount.value }}</span>
-            <button
-              type="button"
-              class="wf-btn wf-btn--default"
-              :disabled="a.listPage.value >= a.onlinePageCount.value"
-              @click="goOnlinePage(a.listPage.value + 1)"
-            >
-              下一页
-            </button>
-          </div>
+          <nav v-if="a.onlinePageCount.value > 1" class="lal-list-pager" aria-label="在线列表分页">
+            <span class="lal-list-pager__total">共 {{ a.onlineUsers.value.length }} 人</span>
+            <div class="lal-list-pager__nav">
+              <button
+                type="button"
+                class="lal-list-pager__btn"
+                aria-label="上一页"
+                title="上一页"
+                :disabled="a.listPage.value <= 1"
+                @click="goOnlinePage(a.listPage.value - 1)"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.6"
+                    d="M10 3.2 5.2 8 10 12.8"
+                  />
+                </svg>
+              </button>
+              <span class="lal-list-pager__info">
+                <b>{{ a.listPage.value }}</b>
+                <i>/</i>
+                {{ a.onlinePageCount.value }}
+              </span>
+              <button
+                type="button"
+                class="lal-list-pager__btn"
+                aria-label="下一页"
+                title="下一页"
+                :disabled="a.listPage.value >= a.onlinePageCount.value"
+                @click="goOnlinePage(a.listPage.value + 1)"
+              >
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.6"
+                    d="M6 3.2 10.8 8 6 12.8"
+                  />
+                </svg>
+              </button>
+            </div>
+          </nav>
         </div>
         <div class="lal-pane lal-pane--chat">
           <div class="lal-right__top">
@@ -620,29 +776,40 @@ function onCoverClick() {
                 class="lal-chat-filter__btn"
                 :class="{ 'is-on': chatFilterOpen }"
                 :aria-expanded="chatFilterOpen"
+                aria-label="弹幕设置"
+                title="弹幕设置"
                 @click="toggleChatFilterPanel"
               >
-                弹幕显示设置
+                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M6.45 1.4h3.1l.38 1.52c.42.14.81.36 1.16.63l1.5-.48 1.55 2.68-1.22.9c.08.35.13.71.13 1.05s-.05.7-.13 1.05l1.22.9-1.55 2.68-1.5-.48a4.7 4.7 0 0 1-1.16.63l-.38 1.52h-3.1l-.38-1.52a4.7 4.7 0 0 1-1.16-.63l-1.5.48L1.86 10.25l1.22-.9A4.5 4.5 0 0 1 2.95 8c0-.34.05-.7.13-1.05l-1.22-.9 1.55-2.68 1.5.48c.35-.27.74-.49 1.16-.63l.38-1.52ZM8 6.15A1.85 1.85 0 1 0 8 9.85 1.85 1.85 0 0 0 8 6.15Z"
+                  />
+                </svg>
               </button>
-              <div
-                v-if="chatFilterOpen"
-                class="lal-chat-filter__panel"
-                :class="{ 'is-up': chatFilterPanelUp }"
-                role="group"
-                aria-label="弹幕显示设置"
-                @click.stop
-              >
-                <label v-for="item in ASSISTANT_CHAT_FILTERS" :key="item.key" class="lal-chat-filter__row">
-                  <span>
-                    {{ item.label }}
-                    <em v-if="item.hint">{{ item.hint }}</em>
-                  </span>
+            </div>
+            <div
+              v-if="chatFilterOpen"
+              class="lal-chat-filter__panel"
+              :class="{ 'is-up': chatFilterPanelUp }"
+              role="group"
+              aria-label="弹幕设置"
+              @click.stop
+            >
+              <label v-for="item in ASSISTANT_CHAT_FILTERS" :key="item.key" class="lal-chat-filter__row">
+                <span>
+                  {{ item.label }}
+                  <em v-if="item.hint">{{ item.hint }}</em>
+                </span>
+                <span class="lal-switch">
                   <input v-model="chatFilters[item.key]" type="checkbox" />
-                </label>
-              </div>
+                  <i />
+                </span>
+              </label>
             </div>
           </div>
-          <div class="lal-chat">
+          <div class="lal-chat-wrap">
+          <div ref="chatListEl" class="lal-chat" @scroll.passive="onChatScroll">
             <div v-if="!visibleChats.length" class="lal-empty">
               {{ a.chatMessages.value.length ? '当前筛选下暂无弹幕' : '暂无弹幕' }}
             </div>
@@ -656,57 +823,103 @@ function onCoverClick() {
                 'is-muted': isUserMuted(msg.userId) || (msg.targetUserId && isUserMuted(msg.targetUserId)),
               }"
             >
-              <em v-if="assistantChatKindLabel(msg.kind)" class="lal-chat__kind" :class="`lal-chat__kind--${msg.kind}`">
-                {{ assistantChatKindLabel(msg.kind) }}
-              </em>
-              <template v-if="msg.kind === 'voiceGift'">
-                <button
-                  type="button"
-                  class="lal-chat__name"
-                  :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
-                  @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
-                >
-                  {{ msg.nickname }}
-                </button>
-                <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
-                  {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
+              <button
+                type="button"
+                class="lal-chat__avatar"
+                :title="`查看 ${msg.nickname} 的头像`"
+                @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
+              >
+                <img :src="assistantAvatarOf(msg.userId)" :alt="`${msg.nickname}的头像`" />
+              </button>
+              <span class="lal-chat__body">
+                <em v-if="assistantChatKindLabel(msg.kind)" class="lal-chat__kind" :class="`lal-chat__kind--${msg.kind}`">
+                  {{ assistantChatKindLabel(msg.kind) }}
                 </em>
-                <i class="lal-chat__act">送给</i>
-                <button
-                  v-if="msg.targetUserId"
-                  type="button"
-                  class="lal-chat__name"
-                  @click="openUserMenu($event, msg.targetUserId, msg.target ?? '', msg)"
-                >
-                  {{ msg.target }}
-                </button>
-                <template v-else>{{ msg.target }}</template>
-                <img class="lal-chat__gift" :src="ASSISTANT_GIFT_ICON" alt="" />
-                <i class="lal-chat__act">{{ msg.giftName }} x{{ msg.giftCount }}</i>
-              </template>
-              <template v-else>
-                <button
-                  type="button"
-                  class="lal-chat__name"
-                  :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
-                  @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
-                >
-                  {{ msg.nickname }}
-                </button>
-                <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
-                  {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
-                </em>
-                ：
-                <i v-if="msg.kind === 'enter'" class="lal-chat__act">进入直播间</i>
-                <i v-else-if="msg.kind === 'follow'" class="lal-chat__act">关注了您～</i>
-                <i v-else-if="msg.kind === 'like'" class="lal-chat__act">已为您点赞～</i>
-                <i v-else-if="msg.kind === 'liveGift'" class="lal-chat__act">送出{{ msg.giftName }} x{{ msg.giftCount }}</i>
-                <template v-else>{{ msg.text }}</template>
-              </template>
-              <em v-if="isUserMuted(msg.userId)" class="lal-chat__muted">已禁言</em>
+                <template v-if="msg.kind === 'voiceGift'">
+                  <button
+                    type="button"
+                    class="lal-chat__name"
+                    :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
+                    @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
+                  >
+                    {{ msg.nickname }}
+                  </button>
+                  <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
+                    {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
+                  </em>
+                  <i class="lal-chat__act">送给</i>
+                  <button
+                    v-if="msg.targetUserId"
+                    type="button"
+                    class="lal-chat__avatar lal-chat__avatar--inline"
+                    :title="`查看 ${msg.target} 的头像`"
+                    @click="openUserMenu($event, msg.targetUserId, msg.target ?? '', msg)"
+                  >
+                    <img :src="assistantAvatarOf(msg.targetUserId)" :alt="`${msg.target}的头像`" />
+                  </button>
+                  <button
+                    v-if="msg.targetUserId"
+                    type="button"
+                    class="lal-chat__name"
+                    @click="openUserMenu($event, msg.targetUserId, msg.target ?? '', msg)"
+                  >
+                    {{ msg.target }}
+                  </button>
+                  <template v-else>{{ msg.target }}</template>
+                  <img class="lal-chat__gift" :src="assistantGiftIconOf(msg.giftName)" :alt="msg.giftName ?? '礼物'" />
+                  <i class="lal-chat__act">{{ msg.giftName }} x{{ msg.giftCount }}</i>
+                </template>
+                <template v-else>
+                  <button
+                    type="button"
+                    class="lal-chat__name"
+                    :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
+                    @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
+                  >
+                    {{ msg.nickname }}
+                  </button>
+                  <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
+                    {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
+                  </em>
+                  ：
+                  <i v-if="msg.kind === 'enter'" class="lal-chat__act">进入直播间</i>
+                  <i v-else-if="msg.kind === 'follow'" class="lal-chat__act">关注了您～</i>
+                  <i v-else-if="msg.kind === 'like'" class="lal-chat__act">已为您点赞～</i>
+                  <template v-else-if="msg.kind === 'liveGift'">
+                    <i class="lal-chat__act">送出</i>
+                    <img class="lal-chat__gift" :src="assistantGiftIconOf(msg.giftName)" :alt="msg.giftName ?? '礼物'" />
+                    <i class="lal-chat__act">{{ msg.giftName }} x{{ msg.giftCount }}</i>
+                  </template>
+                  <template v-else>{{ msg.text }}</template>
+                </template>
+                <em v-if="isUserMuted(msg.userId)" class="lal-chat__muted">已禁言</em>
+              </span>
             </p>
           </div>
-          <form class="lal-chat__composer" @submit.prevent="a.sendChat()">
+          <Transition name="lal-chat-jump">
+            <button
+              v-if="showChatJump"
+              type="button"
+              class="lal-chat-jump"
+              :aria-label="chatUnseenLabel ? `${chatUnseenLabel}条新消息，回到底部` : '回到底部'"
+              title="回到底部"
+              @click="jumpChatToBottom"
+            >
+              <span v-if="chatUnseenLabel" class="lal-chat-jump__badge">{{ chatUnseenLabel }}</span>
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.5 6.5 8 11l4.5-4.5"
+                />
+              </svg>
+            </button>
+          </Transition>
+          </div>
+          <form class="lal-chat__composer" @submit.prevent="sendChatFromComposer()">
             <input v-model="a.chatDraft.value" maxlength="80" placeholder="说点什么" />
             <div class="lal-chat__emoji-wrap">
               <button
@@ -742,9 +955,11 @@ function onCoverClick() {
     <Teleport to="body">
       <div v-if="a.modal.value" class="wf-modal-mask" @click.self="a.closeModal">
         <div
-          class="wf-modal wf-modal--scroll"
+          class="wf-modal"
           :class="{
-            'wf-modal--narrow': ['share', 'startConfirm', 'stopConfirm', 'deleteSchedule', 'ratio'].includes(a.modal.value),
+            'wf-modal--scroll': !['startConfirm', 'stopConfirm', 'deleteSchedule', 'share', 'ratio', 'pushCheckFail'].includes(a.modal.value),
+            'wf-modal--narrow': ['share', 'startConfirm', 'stopConfirm', 'deleteSchedule', 'ratio', 'pushCheckFail'].includes(a.modal.value),
+            'lal-modal--confirm': ['startConfirm', 'stopConfirm', 'deleteSchedule', 'pushCheckFail'].includes(a.modal.value),
             'lal-modal--games': a.modal.value === 'gameCenter',
             'lal-modal--guide': a.modal.value === 'guide',
             'lal-modal--time': a.modal.value === 'scheduleTime',
@@ -762,9 +977,7 @@ function onCoverClick() {
 
             <template v-if="a.modal.value === 'guide'">
               <div class="lal-guide-box">
-                <p class="lal-guide-box__lead">
-                  请按顺序完成以下 3 步，确认当前步骤成功后再进行下一步。
-                </p>
+                <p class="lal-guide-box__lead">{{ GO_LIVE_GUIDE_LEAD }}</p>
                 <ol class="lal-guide-steps">
                   <li v-for="(step, index) in GO_LIVE_GUIDE_STEPS" :key="step.title">
                     <span class="lal-guide-steps__no" aria-hidden="true">{{ index + 1 }}</span>
@@ -774,6 +987,12 @@ function onCoverClick() {
                     </div>
                   </li>
                 </ol>
+                <div class="lal-guide-tips">
+                  <strong>直播预告说明</strong>
+                  <ul>
+                    <li v-for="tip in GO_LIVE_GUIDE_TIPS" :key="tip">{{ tip }}</li>
+                  </ul>
+                </div>
               </div>
             </template>
 
@@ -796,11 +1015,11 @@ function onCoverClick() {
                 <span class="wf-form-row__label">封面</span>
                 <div>
                   <div class="lal-cover">
-                    <div class="lal-cover__img">
+                    <button type="button" class="lal-cover__img" @click="a.changeCover">
                       <img v-if="a.cover.value" :src="a.cover.value" alt="" />
                       <span v-else>封面</span>
-                    </div>
-                    <button type="button" class="wf-btn wf-btn--default" @click="onCoverClick">上传封面</button>
+                    </button>
+                    <button type="button" class="wf-btn wf-btn--default" @click="a.changeCover">更换封面</button>
                   </div>
                   <p class="wf-form-row__hint">为保证封面观看质量，请选择清晰图片</p>
                 </div>
@@ -809,11 +1028,98 @@ function onCoverClick() {
 
             <template v-else-if="a.modal.value === 'previewNotice'">
               <p class="wf-form-row__hint lal-sch-lead">
-                有效预告 {{ a.activeSchedules.value.length }}/5，与移动端直播中心共用场次。
+                有效预告 {{ a.activeSchedules.value.length }}/5，与移动端直播中心共用场次。新建后请点「发布」，未发布不会同步到直播中心。封面默认沿用基本信息，点缩略图可为本场单独更换。
               </p>
-              <div v-if="!a.activeSchedules.value.length" class="lal-sch-empty">
+              <div
+                v-if="!a.activeSchedules.value.length && !a.hasUnpublishedDraft.value"
+                class="lal-sch-empty"
+              >
                 <strong>暂无有效预告</strong>
-                <p>可新建一场，或先不使用预告直接开播</p>
+                <p>可新建一场，选好时间后点发布，或先不使用预告直接开播</p>
+              </div>
+              <div v-if="a.hasUnpublishedDraft.value" class="lal-sch lal-sch--draft">
+                <div class="lal-sch__main">
+                  <button
+                    type="button"
+                    class="lal-sch__cover"
+                    title="更换本场封面"
+                    @click="a.changeCover"
+                  >
+                    <img :src="a.cover.value" alt="" />
+                    <span>更换</span>
+                  </button>
+                  <div v-if="a.editingId.value !== 'draft'" class="lal-sch__meta">
+                    <strong>{{ a.roomTitle.value }}</strong>
+                    <p>{{ a.formatGoLiveScheduleTime(a.draftTime.value ?? 0, a.nowMs.value) }} · 未发布</p>
+                    <p class="wf-form-row__hint">{{ a.unpublishedMeta.value }}</p>
+                  </div>
+                  <div v-else class="lal-sch__edit">
+                    <label class="lal-sch__field">
+                      <span>标题</span>
+                      <input
+                        v-model="a.editTitle.value"
+                        class="wf-input wf-input--full"
+                        maxlength="200"
+                        placeholder="请输入直播标题"
+                      />
+                    </label>
+                    <label class="lal-sch__field">
+                      <span>分类</span>
+                      <select v-model="a.editCategory.value" class="wf-select wf-select--full">
+                        <option v-for="cat in a.GO_LIVE_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+                      </select>
+                    </label>
+                    <div class="lal-sch__field">
+                      <span>预计开播 {{ a.pickingTimeLabel.value }}</span>
+                      <div class="lal-time-sheet__chips" role="radiogroup" aria-label="日期">
+                        <button
+                          v-for="day in a.dayOptions.value"
+                          :key="`draft-d-${day.offset}`"
+                          type="button"
+                          class="lal-time-sheet__chip"
+                          :class="{ 'is-on': a.timeDay.value === day.offset }"
+                          @click="pickSchedulePart('day', day.offset)"
+                        >
+                          {{ day.label }}
+                        </button>
+                      </div>
+                      <div class="lal-time-sheet__clock">
+                        <label class="lal-time-sheet__hour">
+                          <span>时</span>
+                          <select class="wf-select" :value="a.timeHour.value" aria-label="时" @change="onScheduleHourChange">
+                            <option v-for="hour in a.GO_LIVE_SCHEDULE_HOURS" :key="`draft-h-${hour}`" :value="hour">
+                              {{ String(hour).padStart(2, '0') }}
+                            </option>
+                          </select>
+                        </label>
+                        <div class="lal-time-sheet__mins" role="radiogroup" aria-label="分">
+                          <button
+                            v-for="minute in a.GO_LIVE_SCHEDULE_MINUTES"
+                            :key="`draft-m-${minute}`"
+                            type="button"
+                            class="lal-time-sheet__chip"
+                            :class="{ 'is-on': a.timeMinute.value === minute }"
+                            @click="pickSchedulePart('minute', minute)"
+                          >
+                            {{ String(minute).padStart(2, '0') }} 分
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <span v-if="a.editingId.value !== 'draft'" class="lal-badge lal-badge--draft">待发布</span>
+                </div>
+                <div class="lal-sch__ops">
+                  <template v-if="a.editingId.value === 'draft'">
+                    <button type="button" class="wf-btn wf-btn--default" @click="a.cancelScheduleEdit">取消</button>
+                    <button type="button" class="wf-btn wf-btn--primary" @click="a.saveScheduleEdit">保存</button>
+                  </template>
+                  <template v-else>
+                    <button type="button" class="wf-btn wf-btn--default" @click="a.startScheduleEdit('draft')">编辑</button>
+                    <button type="button" class="wf-btn wf-btn--danger" @click="a.discardUnpublishedDraft">删除</button>
+                    <button type="button" class="wf-btn wf-btn--primary" @click="a.publishSchedule">发布</button>
+                  </template>
+                </div>
               </div>
               <div
                 v-for="item in a.activeSchedules.value"
@@ -822,14 +1128,76 @@ function onCoverClick() {
                 :class="{ 'lal-sch--on': a.linkedId.value === item.id }"
               >
                 <div class="lal-sch__main">
-                  <img :src="item.cover" alt="" />
-                  <div class="lal-sch__meta">
+                  <button
+                    type="button"
+                    class="lal-sch__cover"
+                    title="更换本场封面"
+                    @click="a.changeScheduleCover(item)"
+                  >
+                    <img :src="a.scheduleCoverOf(item)" alt="" />
+                    <span>更换</span>
+                  </button>
+                  <div v-if="a.editingId.value !== item.id" class="lal-sch__meta">
                     <strong>{{ item.title }}</strong>
                     <p>{{ a.formatGoLiveScheduleTime(item.startAt, a.nowMs.value) }} · {{ item.subscriberCount }}人已预约</p>
                     <p class="wf-form-row__hint">{{ a.scheduleMeta(item) }}</p>
                   </div>
+                  <div v-else class="lal-sch__edit">
+                    <label class="lal-sch__field">
+                      <span>标题</span>
+                      <input
+                        v-model="a.editTitle.value"
+                        class="wf-input wf-input--full"
+                        maxlength="200"
+                        placeholder="请输入直播标题"
+                      />
+                    </label>
+                    <label class="lal-sch__field">
+                      <span>分类</span>
+                      <select v-model="a.editCategory.value" class="wf-select wf-select--full">
+                        <option v-for="cat in a.GO_LIVE_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+                      </select>
+                    </label>
+                    <div class="lal-sch__field">
+                      <span>预计开播 {{ a.pickingTimeLabel.value }}</span>
+                      <div class="lal-time-sheet__chips" role="radiogroup" aria-label="日期">
+                        <button
+                          v-for="day in a.dayOptions.value"
+                          :key="`${item.id}-d-${day.offset}`"
+                          type="button"
+                          class="lal-time-sheet__chip"
+                          :class="{ 'is-on': a.timeDay.value === day.offset }"
+                          @click="pickSchedulePart('day', day.offset)"
+                        >
+                          {{ day.label }}
+                        </button>
+                      </div>
+                      <div class="lal-time-sheet__clock">
+                        <label class="lal-time-sheet__hour">
+                          <span>时</span>
+                          <select class="wf-select" :value="a.timeHour.value" aria-label="时" @change="onScheduleHourChange">
+                            <option v-for="hour in a.GO_LIVE_SCHEDULE_HOURS" :key="`${item.id}-h-${hour}`" :value="hour">
+                              {{ String(hour).padStart(2, '0') }}
+                            </option>
+                          </select>
+                        </label>
+                        <div class="lal-time-sheet__mins" role="radiogroup" aria-label="分">
+                          <button
+                            v-for="minute in a.GO_LIVE_SCHEDULE_MINUTES"
+                            :key="`${item.id}-m-${minute}`"
+                            type="button"
+                            class="lal-time-sheet__chip"
+                            :class="{ 'is-on': a.timeMinute.value === minute }"
+                            @click="pickSchedulePart('minute', minute)"
+                          >
+                            {{ String(minute).padStart(2, '0') }} 分
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <span
-                    v-if="a.scheduleBadgeMap.value[item.id]"
+                    v-if="a.editingId.value !== item.id && a.scheduleBadgeMap.value[item.id]"
                     class="lal-badge"
                     :class="`lal-badge--${a.scheduleBadgeMap.value[item.id]?.tone}`"
                   >
@@ -837,10 +1205,16 @@ function onCoverClick() {
                   </span>
                 </div>
                 <div class="lal-sch__ops">
-                  <button type="button" class="wf-btn wf-btn--default" @click="a.editSchedule(item)">编辑</button>
-                  <button type="button" class="wf-btn wf-btn--danger" @click="a.askDeleteSchedule(item)">删除</button>
-                  <span v-if="a.linkedId.value === item.id" class="lal-sch__cur">当前关联</span>
-                  <button v-else type="button" class="wf-btn wf-btn--add" @click="a.switchToSchedule(item)">切换以此开播</button>
+                  <template v-if="a.editingId.value === item.id">
+                    <button type="button" class="wf-btn wf-btn--default" @click="a.cancelScheduleEdit">取消</button>
+                    <button type="button" class="wf-btn wf-btn--primary" @click="a.saveScheduleEdit">保存</button>
+                  </template>
+                  <template v-else>
+                    <button type="button" class="wf-btn wf-btn--default" @click="a.startScheduleEdit(item)">编辑</button>
+                    <button type="button" class="wf-btn wf-btn--danger" @click="a.askDeleteSchedule(item)">删除</button>
+                    <span v-if="a.linkedId.value === item.id" class="lal-sch__cur">当前关联</span>
+                    <button v-else type="button" class="wf-btn wf-btn--add" @click="a.switchToSchedule(item)">切换以此开播</button>
+                  </template>
                 </div>
               </div>
             </template>
@@ -887,6 +1261,20 @@ function onCoverClick() {
                         </span>
                       </span>
                       <button type="button" class="wf-btn wf-btn--default" @click="a.openGoLiveGamePicker">选择</button>
+                    </div>
+                  </div>
+                  <div v-if="a.liveMode.value === 'voice'" class="wf-form-row lal-type__game-row">
+                    <span class="wf-form-row__label">房间背景设置</span>
+                    <div class="lal-type__game">
+                      <span class="lal-type__game-main">
+                        <img
+                          class="lal-type__bg-thumb"
+                          :src="a.selectedBackground.value.image"
+                          :alt="a.selectedBackground.value.name"
+                        />
+                        <span class="lal-type__game-name">{{ a.selectedBackground.value.name }}</span>
+                      </span>
+                      <button type="button" class="wf-btn wf-btn--default" @click="a.openBackground">选择</button>
                     </div>
                   </div>
                 </section>
@@ -965,9 +1353,32 @@ function onCoverClick() {
             </template>
 
             <template v-else-if="a.modal.value === 'pushUrl'">
-              <p>请将以下信息填入 OBS「推流」设置，确认推流成功后再点开始直播。</p>
-              <p>服务器：{{ a.PUSH_STREAM.server }}</p>
-              <p>推流密钥：{{ a.PUSH_STREAM.key }}</p>
+              <div class="lal-push">
+                <p class="lal-push__lead">请将以下信息填入 OBS「推流」设置，确认推流成功后再点开始直播。</p>
+                <p class="wf-form-row__hint">未结束直播前将沿用同一组地址，请勿重复申请，以免占用多余线路。</p>
+                <div class="lal-copy-row">
+                  <span class="lal-copy-row__label">服务器</span>
+                  <span class="lal-copy-row__value">{{ (a.pushStream.value ?? a.PUSH_STREAM).server }}</span>
+                  <button
+                    type="button"
+                    class="wf-btn wf-btn--add"
+                    @click="a.copyText((a.pushStream.value ?? a.PUSH_STREAM).server, '服务器')"
+                  >
+                    复制
+                  </button>
+                </div>
+                <div class="lal-copy-row">
+                  <span class="lal-copy-row__label">推流密钥</span>
+                  <span class="lal-copy-row__value">{{ (a.pushStream.value ?? a.PUSH_STREAM).key }}</span>
+                  <button
+                    type="button"
+                    class="wf-btn wf-btn--add"
+                    @click="a.copyText((a.pushStream.value ?? a.PUSH_STREAM).key, '推流密钥')"
+                  >
+                    复制
+                  </button>
+                </div>
+              </div>
             </template>
 
             <template v-else-if="a.modal.value === 'share'">
@@ -975,11 +1386,24 @@ function onCoverClick() {
             </template>
 
             <template v-else-if="a.modal.value === 'startConfirm'">
-              <p>{{ a.startConfirmText.value }}</p>
+              <div class="lal-confirm">
+                <p class="lal-confirm__lead">{{ a.startConfirmLead.value }}</p>
+                <p class="lal-confirm__hint">{{ a.startConfirmHint.value }}</p>
+              </div>
             </template>
 
             <template v-else-if="a.modal.value === 'stopConfirm'">
-              <p>确认强制结束本场直播？结束后预览恢复「暂未直播」。</p>
+              <div class="lal-confirm">
+                <p class="lal-confirm__lead">确认结束本场直播？</p>
+                <p class="lal-confirm__hint">结束后预览恢复「暂未直播」。</p>
+              </div>
+            </template>
+
+            <template v-else-if="a.modal.value === 'pushCheckFail'">
+              <div class="lal-confirm">
+                <p class="lal-confirm__lead">请检查推流是否成功</p>
+                <p class="lal-confirm__hint">服务端暂未检测到推流信号，此时开播前台会出现黑屏。请确认 OBS 已开始推流后再试。</p>
+              </div>
             </template>
 
             <template v-else-if="a.modal.value === 'scheduleTime'">
@@ -988,7 +1412,29 @@ function onCoverClick() {
                   <span>已选时间</span>
                   <strong>{{ a.pickingTimeLabel.value }}</strong>
                 </div>
-                <p class="lal-time-sheet__hint">须晚于现在至少 15 分钟、不超过 7 天，两场间隔至少 1 小时。</p>
+                <p class="lal-time-sheet__hint">
+                  须晚于现在至少 15 分钟、不超过 7 天，两场间隔至少 1 小时。
+                  确定后保存本场时间、分类和封面，需再点「发布」才会同步到直播中心。
+                </p>
+                <section class="lal-time-sheet__sec">
+                  <p class="lal-time-sheet__label">封面</p>
+                  <div class="lal-cover">
+                    <button type="button" class="lal-cover__img" title="更换本场封面" @click="a.changeCover">
+                      <img v-if="a.cover.value" :src="a.cover.value" alt="" />
+                      <span v-else>封面</span>
+                    </button>
+                    <div>
+                      <button type="button" class="wf-btn wf-btn--default" @click="a.changeCover">更换封面</button>
+                      <p class="wf-form-row__hint">默认沿用基本信息封面，可为本场单独更换</p>
+                    </div>
+                  </div>
+                </section>
+                <section class="lal-time-sheet__sec">
+                  <p class="lal-time-sheet__label">分类</p>
+                  <select v-model="a.kkCategory.value" class="wf-select wf-select--full" aria-label="直播分类">
+                    <option v-for="cat in a.GO_LIVE_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+                  </select>
+                </section>
                 <section class="lal-time-sheet__sec">
                   <p class="lal-time-sheet__label">日期</p>
                   <div class="lal-time-sheet__chips" role="radiogroup" aria-label="日期">
@@ -1079,14 +1525,18 @@ function onCoverClick() {
                   :key="item.id"
                   type="button"
                   class="lal-bg"
-                  :class="{ 'is-on': a.backgroundId.value === item.id }"
+                  :class="{ 'is-on': a.backgroundDraftId.value === item.id }"
                   @click="a.pickBackground(item.id)"
                 >
-                  <img :src="item.image" alt="" />
-                  <span>{{ item.name }}</span>
+                  <span class="lal-bg__frame">
+                    <img :src="item.image" alt="" />
+                  </span>
+                  <span class="lal-bg__name">{{ item.name }}</span>
                 </button>
               </div>
-              <button type="button" class="wf-btn wf-btn--default" @click="a.toast('打开相册（原型）')">相册</button>
+              <button type="button" class="wf-btn wf-btn--default lal-bg-album" @click="a.toast('打开相册（原型）')">
+                相册
+              </button>
             </template>
 
             <template v-else-if="a.modal.value === 'ratio'">
@@ -1215,8 +1665,8 @@ function onCoverClick() {
             >
               取消
             </button>
-            <button v-if="a.modal.value === 'guide'" type="button" class="wf-btn wf-btn--primary" @click="a.confirmGuide">
-              我已知悉
+            <button v-if="a.modal.value === 'guide'" type="button" class="wf-btn wf-btn--primary" @click="a.closeModal">
+              关闭
             </button>
             <button v-if="a.modal.value === 'basic'" type="button" class="wf-btn wf-btn--primary" @click="a.saveBasic">
               确定
@@ -1225,25 +1675,35 @@ function onCoverClick() {
               确定
             </button>
             <template v-if="a.modal.value === 'pushUrl'">
-              <button type="button" class="wf-btn wf-btn--add" @click="a.copyText(a.PUSH_STREAM.key)">复制密钥</button>
               <button type="button" class="wf-btn wf-btn--primary" @click="a.confirmPush">已确认推流</button>
             </template>
-            <button v-if="a.modal.value === 'share'" type="button" class="wf-btn wf-btn--primary" @click="a.copyText(a.SHARE_LINK)">
+            <button v-if="a.modal.value === 'share'" type="button" class="wf-btn wf-btn--primary" @click="a.copyText(a.SHARE_LINK, '链接')">
               复制链接
             </button>
-            <button v-if="a.modal.value === 'startConfirm'" type="button" class="wf-btn wf-btn--danger" @click="a.startLive">
-              确定
+            <button v-if="a.modal.value === 'startConfirm'" type="button" class="wf-btn wf-btn--primary" @click="a.startLive">
+              立即开播
             </button>
             <button v-if="a.modal.value === 'stopConfirm'" type="button" class="wf-btn wf-btn--danger" @click="a.stopLive">
-              确定
+              结束直播
             </button>
+            <template v-if="a.modal.value === 'pushCheckFail'">
+              <button type="button" class="wf-btn wf-btn--default" @click="a.openPushUrl">去检查推流</button>
+              <button
+                type="button"
+                class="wf-btn wf-btn--primary"
+                :disabled="a.pushChecking.value"
+                @click="a.retryPushCheck"
+              >
+                {{ a.pushChecking.value ? '检测中' : '重新检测' }}
+              </button>
+            </template>
             <template v-if="a.modal.value === 'previewNotice'">
               <button type="button" class="wf-btn wf-btn--default" @click="a.closeModal">关闭</button>
               <button type="button" class="wf-btn wf-btn--default" @click="a.goFreeLive">不使用预告，直接开播</button>
               <button
                 type="button"
                 class="wf-btn wf-btn--add"
-                :class="{ 'is-disabled': !a.canCreateSchedule.value }"
+                :class="{ 'is-disabled': !a.canCreateSchedule.value && !a.hasUnpublishedDraft.value }"
                 @click="a.startCreateSchedule"
               >
                 新建一场直播预告
@@ -1283,8 +1743,15 @@ function onCoverClick() {
         @click.stop
       >
         <p class="live-danmaku-action-menu__title">
-          {{ activeTarget.username }}
-          <span v-if="activeRoleLabel" class="live-danmaku-action-menu__tag">{{ activeRoleLabel }}</span>
+          <img
+            class="live-danmaku-action-menu__avatar"
+            :src="assistantAvatarOf(activeTarget.userId)"
+            :alt="`${activeTarget.username}的头像`"
+          />
+          <span>
+            {{ activeTarget.username }}
+            <span v-if="activeRoleLabel" class="live-danmaku-action-menu__tag">{{ activeRoleLabel }}</span>
+          </span>
         </p>
         <button
           type="button"

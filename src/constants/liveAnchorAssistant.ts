@@ -61,15 +61,47 @@ export const PLAY_RESOLUTIONS = [
 
 export type RankUser = {
   id: string
+  /** 对外展示的金刚号，供主播按号检索 */
+  kingkongId: string
   nickname: string
   giftAmount: number
   online: boolean
+  avatar: string
+}
+
+function assistantKingkongId(seq: number) {
+  return String(86000000 + seq)
+}
+
+const ASSISTANT_AVATAR_POOL = [
+  '/images/live-stream/avatar-1.jpg',
+  '/images/live-stream/avatar-2.jpg',
+  '/images/live-stream/avatar-3.jpg',
+  '/images/live-stream/avatar-4.jpg',
+  '/images/voice-room/avatar-a.jpg',
+  '/images/voice-room/avatar-b.jpg',
+  '/images/voice-room/avatar-c.jpg',
+  '/images/voice-room/avatar-d.jpg',
+  '/images/voice-room/avatar-e.jpg',
+  '/images/live-stream/share/friend-1.png',
+  '/images/live-stream/share/friend-2.png',
+  '/images/live-stream/share/friend-3.png',
+  '/images/live-stream/share/friend-4.png',
+] as const
+
+const ASSISTANT_HOST_AVATAR = '/images/live-stream/avatar-2.jpg'
+const ASSISTANT_ADMIN_AVATAR = '/images/voice-room/avatar-e.jpg'
+
+function hashAssistantAvatar(userId: string) {
+  let hash = 0
+  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0
+  return ASSISTANT_AVATAR_POOL[hash % ASSISTANT_AVATAR_POOL.length]
 }
 
 export const ASSISTANT_GIFT_CURRENCY = 'KKC'
 
-/** 在线列表最多展示 200 人，每页 20 条 */
-export const ONLINE_LIST_MAX = 200
+/** 在线列表按实际在线人数展示，每页 20 条 */
+export const ONLINE_LIST_MOCK_COUNT = 268
 export const ONLINE_LIST_PAGE_SIZE = 20
 
 /** 本场点赞展示底数（未满 1 万显示整数） */
@@ -96,16 +128,16 @@ export function formatAssistantMetric(value: number, locale = 'zh-CN') {
 }
 
 const RANK_HEAD: RankUser[] = [
-  { id: 'u_aud_01', nickname: '张敏', giftAmount: 3025, online: true },
-  { id: 'u_aud_02', nickname: '王刚', giftAmount: 2115, online: true },
-  { id: 'u_aud_03', nickname: '刘洋', giftAmount: 1869, online: true },
-  { id: 'u_aud_04', nickname: '陈婷', giftAmount: 1600, online: true },
-  { id: 'u_aud_05', nickname: '赵强', giftAmount: 1350, online: true },
-  { id: 'u_aud_06', nickname: '张磊', giftAmount: 1150, online: true },
-  { id: 'u_aud_07', nickname: '李娜', giftAmount: 900, online: true },
-  { id: 'u_aud_08', nickname: '孙伟', giftAmount: 450, online: true },
-  { id: 'u_aud_09', nickname: '周杰', giftAmount: 300, online: true },
-  { id: 'u_aud_10', nickname: '李宇春', giftAmount: 250, online: true },
+  { id: 'u_aud_01', kingkongId: assistantKingkongId(1), nickname: '张敏', giftAmount: 3025, online: true, avatar: hashAssistantAvatar('u_aud_01') },
+  { id: 'u_aud_02', kingkongId: assistantKingkongId(2), nickname: '王刚', giftAmount: 2115, online: true, avatar: hashAssistantAvatar('u_aud_02') },
+  { id: 'u_aud_03', kingkongId: assistantKingkongId(3), nickname: '刘洋', giftAmount: 1869, online: true, avatar: hashAssistantAvatar('u_aud_03') },
+  { id: 'u_aud_04', kingkongId: assistantKingkongId(4), nickname: '陈婷', giftAmount: 1600, online: true, avatar: hashAssistantAvatar('u_aud_04') },
+  { id: 'u_aud_05', kingkongId: assistantKingkongId(5), nickname: '赵强', giftAmount: 1350, online: true, avatar: hashAssistantAvatar('u_aud_05') },
+  { id: 'u_aud_06', kingkongId: assistantKingkongId(6), nickname: '张磊', giftAmount: 1150, online: true, avatar: hashAssistantAvatar('u_aud_06') },
+  { id: 'u_aud_07', kingkongId: assistantKingkongId(7), nickname: '李娜', giftAmount: 900, online: true, avatar: hashAssistantAvatar('u_aud_07') },
+  { id: 'u_aud_08', kingkongId: assistantKingkongId(8), nickname: '孙伟', giftAmount: 450, online: true, avatar: hashAssistantAvatar('u_aud_08') },
+  { id: 'u_aud_09', kingkongId: assistantKingkongId(9), nickname: '周杰', giftAmount: 300, online: true, avatar: hashAssistantAvatar('u_aud_09') },
+  { id: 'u_aud_10', kingkongId: assistantKingkongId(10), nickname: '李宇春', giftAmount: 250, online: true, avatar: hashAssistantAvatar('u_aud_10') },
 ]
 
 const RANK_SURNAMES = ['林', '黄', '吴', '郑', '冯', '何', '高', '罗', '宋', '唐', '韩', '曹', '许', '邓', '萧']
@@ -113,28 +145,52 @@ const RANK_GIVENS = ['晓晓', '浩然', '雨桐', '子轩', '思琪', '俊杰',
 
 function buildRankUsers(): RankUser[] {
   const extra: RankUser[] = []
-  for (let i = RANK_HEAD.length + 1; i <= ONLINE_LIST_MAX; i++) {
+  for (let i = RANK_HEAD.length + 1; i <= ONLINE_LIST_MOCK_COUNT; i++) {
     extra.push({
       id: `u_aud_${String(i).padStart(3, '0')}`,
+      kingkongId: assistantKingkongId(i),
       nickname: `${RANK_SURNAMES[i % RANK_SURNAMES.length]}${RANK_GIVENS[i % RANK_GIVENS.length]}${i}`,
       giftAmount: Math.max(0, 248 - i),
       online: true,
+      avatar: hashAssistantAvatar(`u_aud_${String(i).padStart(3, '0')}`),
     })
   }
   return [...RANK_HEAD, ...extra]
 }
 
-/** 对齐移动端观众列表 Mock：贡献榜 + 部分已禁言，上限 200 */
+/** 对齐移动端观众列表 Mock：贡献榜 + 在线观众，按实际人数展示 */
 export const RANK_USERS: RankUser[] = buildRankUsers()
 
 export function formatAssistantGiftAmount(value: number) {
   return value.toLocaleString('zh-CN')
 }
 
+export const GO_LIVE_GUIDE_LEAD =
+  '开播说明仅供阅读。可先发直播预告让粉丝预约，也可不设时间直接开播。下列步骤帮助了解流程，不强制完成后才能操作。'
+
 export const GO_LIVE_GUIDE_STEPS = [
-  { title: '完成开播设置', desc: '先点击「开播设置」，选择直播类型与画面规格。' },
-  { title: '确认 OBS 推流', desc: '获取推流地址后，在 OBS 中填入并确认推流成功。' },
-  { title: '开始直播', desc: '推流成功后再点击「开始直播」，观众即可进入房间。' },
+  {
+    title: '完成开播设置',
+    desc: '点「开播设置」，选择直播分类与画面。语聊房保存后即可创建房间，无需推流。',
+  },
+  {
+    title: '安排直播预告（可选）',
+    desc: '点「预计开播」选择未来时间，主按钮变为「发布直播预告」；不设时间则直接开播。最多同时保留 5 场未开播预告，右上角「预告」可切换、编辑或删除。',
+  },
+  {
+    title: '确认推流',
+    desc: '视频 / 投屏需将推流地址填入 OBS「推流」设置，确认成功后再开播。语聊房跳过本步。',
+  },
+  {
+    title: '开始直播',
+    desc: '点主按钮开播。已关联预告会通知预约粉丝；也可在预告列表点「不使用预告，直接开播」，不消耗该场次。',
+  },
+] as const
+
+export const GO_LIVE_GUIDE_TIPS = [
+  '预告发布后会出现在社区直播列表，观众可预约。',
+  '点「立即开播 (已关联预告)」会向预约粉丝推送开播通知。',
+  '超时未播会标「已超时」，请及时开播或删除，避免占满 5 场名额。',
 ] as const
 
 export const PUSH_STREAM = {
@@ -167,6 +223,14 @@ export type AssistantChatMsg = {
 
 export const ASSISTANT_SELF_ID = '3180664521199401'
 export const ASSISTANT_SUPER_ADMIN_ID = 'sa_10001'
+
+/** 同一用户在在线列表与弹幕中共用头像，方便主播核对合规 */
+export function assistantAvatarOf(userId: string) {
+  if (!userId) return ASSISTANT_AVATAR_POOL[0]
+  if (userId === ASSISTANT_SELF_ID) return ASSISTANT_HOST_AVATAR
+  if (userId === ASSISTANT_SUPER_ADMIN_ID) return ASSISTANT_ADMIN_AVATAR
+  return hashAssistantAvatar(userId)
+}
 
 export function assistantChatRoleOf(msg: Pick<AssistantChatMsg, 'role' | 'userId'>): AssistantChatRole {
   if (msg.role === 'superAdmin' || msg.userId === ASSISTANT_SUPER_ADMIN_ID) return 'superAdmin'
@@ -212,7 +276,17 @@ export function assistantChatFilterKey(kind: AssistantChatKind): AssistantChatFi
   return 'chat'
 }
 
-export const ASSISTANT_GIFT_ICON = '/images/live-stream/gift-thumb.svg'
+export const ASSISTANT_GIFT_ICON = '/images/live-stream/gift-icon.svg'
+
+const ASSISTANT_GIFT_ICONS: Record<string, string> = {
+  小心心: '/images/live-stream/gift-heart.svg',
+  小星星: '/images/live-stream/gift-star.svg',
+}
+
+export function assistantGiftIconOf(giftName?: string) {
+  if (giftName && ASSISTANT_GIFT_ICONS[giftName]) return ASSISTANT_GIFT_ICONS[giftName]
+  return ASSISTANT_GIFT_ICON
+}
 
 export const MOCK_ASSISTANT_CHATS: AssistantChatMsg[] = [
   { id: 'c1', nickname: '夜色观星', userId: 'u10086', kind: 'enter' },
