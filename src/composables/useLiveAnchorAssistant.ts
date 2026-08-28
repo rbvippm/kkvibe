@@ -1,5 +1,19 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { PLAY_RESOLUTIONS, PUSH_STREAM, RANK_USERS, SHARE_LINK, type LiveContentKind } from '../constants/liveAnchorAssistant'
+import { showPcToast } from './usePcToast'
+import {
+  ASSISTANT_SELF_ID,
+  ASSISTANT_SESSION_LIKES,
+  MOCK_ASSISTANT_CHATS,
+  PLAY_RESOLUTIONS,
+  PUSH_STREAM,
+  ONLINE_LIST_MAX,
+  ONLINE_LIST_PAGE_SIZE,
+  RANK_USERS,
+  SHARE_LINK,
+  formatAssistantMetric,
+  type AssistantChatMsg,
+  type LiveContentKind,
+} from '../constants/liveAnchorAssistant'
 import {
   GO_LIVE_BACKGROUNDS,
   GO_LIVE_CATEGORIES,
@@ -40,6 +54,12 @@ import {
   type GoLiveSchedule,
   type GoLiveTab,
 } from '../constants/goLive'
+import { filterVoiceGames, MOCK_VOICE_GAMES, VOICE_GAME_TABS, type VoiceGameTab } from '../constants/mobileVoiceRoom'
+import {
+  DEFAULT_HEAT_PREVIEW,
+  liveAnchorGlobalConfig,
+  previewHeat,
+} from '../constants/liveAnchorMetric'
 
 export type AssistantModal =
   | ''
@@ -56,13 +76,14 @@ export type AssistantModal =
   | 'background'
   | 'ratio'
   | 'mountGame'
+  | 'gameCenter'
   | 'deleteSchedule'
 
 export const ASSISTANT_MODAL_TITLES: Record<Exclude<AssistantModal, ''>, string> = {
   guide: '开播流程说明',
   basic: '基本信息',
   previewNotice: '直播预告',
-  liveType: '直播类型',
+  liveType: '开播设置',
   pushUrl: '推流地址',
   share: '分享',
   startConfirm: '开始直播',
@@ -72,6 +93,7 @@ export const ASSISTANT_MODAL_TITLES: Record<Exclude<AssistantModal, ''>, string>
   background: '房间背景',
   ratio: '画面比例',
   mountGame: '挂载游戏',
+  gameCenter: '游戏中心',
   deleteSchedule: '删除直播预告',
 }
 
@@ -79,11 +101,10 @@ export function useLiveAnchorAssistant() {
   const titles = ref<Record<string, string>>({
     cn: 'Lkpkupq与您一起探索直播的奇妙世界！',
   })
-  const titleLang = ref('cn')
   const roomTitle = computed({
-    get: () => titles.value[titleLang.value] ?? titles.value.cn ?? '',
+    get: () => titles.value.cn ?? '',
     set: (v) => {
-      titles.value = { ...titles.value, [titleLang.value]: v }
+      titles.value = { ...titles.value, cn: v }
     },
   })
   const categoryTag = ref('手游')
@@ -114,6 +135,7 @@ export function useLiveAnchorAssistant() {
   const timeHour = ref(20)
   const timeMinute = ref(0)
   const applyingSchedule = ref(false)
+  const creatingSchedule = ref(false)
   const restoreLinkedId = ref<string | null>(null)
   const deleteTarget = ref<GoLiveSchedule | null>(null)
 
@@ -124,7 +146,10 @@ export function useLiveAnchorAssistant() {
   const beautyStyle = ref<GoLiveBeautyStyle>('女士')
   const beautyContrast = ref<GoLiveContrast>('正常')
 
-  const online = computed(() => (live.value ? 128 : 0))
+  const online = computed(() =>
+    Math.min(ONLINE_LIST_MAX, RANK_USERS.filter((user) => user.online).length),
+  )
+  const sessionLikes = computed(() => ASSISTANT_SESSION_LIKES)
   const durationText = computed(() => {
     if (!live.value) return '00:00'
     const m = Math.floor(liveSeconds.value / 60)
@@ -146,7 +171,32 @@ export function useLiveAnchorAssistant() {
   const formError = ref('')
   const listKeyword = ref('')
   const showGiftAmount = ref(true)
+  const gameTab = ref<VoiceGameTab>('hot')
+  const commentingGameId = ref('')
+  const goLiveGameId = ref('')
+  const gameCenterMode = ref<'comment' | 'pick'>('comment')
+  const toolboxCollapsed = ref(true)
+  const toolboxNarrow = ref(true)
+  const toolboxTouched = ref(false)
+  const TOOLBOX_WIDE_MIN = 1100
+  let toolboxRo: ResizeObserver | null = null
+  const chatDraft = ref('')
+  const chatMessages = ref<AssistantChatMsg[]>([...MOCK_ASSISTANT_CHATS])
+  const sessionHeat = computed(() =>
+    Math.round(
+      previewHeat(liveAnchorGlobalConfig.value, {
+        people: online.value,
+        danmaku: chatMessages.value.length,
+        gift: DEFAULT_HEAT_PREVIEW.gift,
+        like: sessionLikes.value,
+      }),
+    ),
+  )
 
+  const centerGames = computed(() => filterVoiceGames(gameTab.value))
+  const selectedGoLiveGame = computed(
+    () => MOCK_VOICE_GAMES.find((item) => item.id === goLiveGameId.value) ?? null,
+  )
   const needsPush = computed(() => liveMode.value !== 'voice')
   const mountGames = computed(() => filterGoLiveGames(gameGroup.value))
   const selectedMountGame = computed(
@@ -189,6 +239,17 @@ export function useLiveAnchorAssistant() {
     if (liveMode.value === 'screen') return '投屏中'
     return '直播中'
   })
+  const liveModeLabel = computed(
+    () => GO_LIVE_TABS.find((item) => item.key === liveMode.value)?.label ?? '视频',
+  )
+  const previewHudDetail = computed(() => {
+    const parts = [currentTypeLabel.value]
+    if (liveMode.value !== 'voice') {
+      parts.push(orientation.value === 'landscape' ? '横屏' : '竖屏')
+      parts.push(`${previewSize.value.w}×${previewSize.value.h}`)
+    }
+    return parts.filter(Boolean).join(' · ')
+  })
   const startConfirmText = computed(() => {
     if (linkedSchedule.value) {
       return `确认立即开播「${linkedSchedule.value.title}」？将向 ${linkedSchedule.value.subscriberCount} 位预约粉丝推送开播通知。`
@@ -223,16 +284,91 @@ export function useLiveAnchorAssistant() {
     return String(beautyLevel.value)
   })
 
+  const listPage = ref(1)
+
   const onlineUsers = computed(() => {
-    if (!live.value) return []
     const kw = listKeyword.value.trim()
     return RANK_USERS.filter((u) => u.online)
       .filter((u) => !kw || u.nickname.includes(kw) || u.id.includes(kw))
       .slice()
       .sort((a, b) => b.giftAmount - a.giftAmount)
+      .slice(0, ONLINE_LIST_MAX)
   })
 
-  const currentRes = computed(() => PLAY_RESOLUTIONS[resolutionIndex.value])
+  const onlinePageCount = computed(() =>
+    Math.max(1, Math.ceil(onlineUsers.value.length / ONLINE_LIST_PAGE_SIZE)),
+  )
+
+  const currentOnlinePage = computed(() =>
+    Math.min(onlinePageCount.value, Math.max(1, listPage.value)),
+  )
+
+  const pagedOnlineUsers = computed(() => {
+    const start = (currentOnlinePage.value - 1) * ONLINE_LIST_PAGE_SIZE
+    return onlineUsers.value.slice(start, start + ONLINE_LIST_PAGE_SIZE)
+  })
+
+  watch(listKeyword, () => {
+    listPage.value = 1
+  })
+
+  watch(onlinePageCount, (pages) => {
+    if (listPage.value > pages) listPage.value = pages
+  })
+
+  function setOnlinePage(next: number) {
+    const page = Math.min(onlinePageCount.value, Math.max(1, next))
+    listPage.value = page
+  }
+
+  function onlineListRank(index: number) {
+    return (currentOnlinePage.value - 1) * ONLINE_LIST_PAGE_SIZE + index + 1
+  }
+
+  function orientedResolution(item: (typeof PLAY_RESOLUTIONS)[number]) {
+    const landscape = orientation.value === 'landscape'
+    if (item.label === '自定义') {
+      return { label: '自定义', w: customW.value, h: customH.value }
+    }
+    const w = landscape ? item.h : item.w
+    const h = landscape ? item.w : item.h
+    const suffix = item.label.includes('(') ? item.label.slice(item.label.indexOf('(')) : ''
+    return { label: `${w}x${h}${suffix ? ` ${suffix}` : ''}`, w, h }
+  }
+
+  const resolutionOptions = computed(() => PLAY_RESOLUTIONS.map((item) => orientedResolution(item)))
+  const currentRes = computed(
+    () => resolutionOptions.value[resolutionIndex.value] ?? resolutionOptions.value[0],
+  )
+
+  function setOrientation(next: 'portrait' | 'landscape') {
+    if (orientation.value === next) return
+    const preset = PLAY_RESOLUTIONS[resolutionIndex.value]
+    if (preset?.label === '自定义') {
+      const nextW = customH.value
+      customH.value = customW.value
+      customW.value = nextW
+    }
+    orientation.value = next
+  }
+  const previewSize = computed(() => {
+    if (liveMode.value === 'voice') return { w: 9, h: 16 }
+    const preset = currentRes.value ?? PLAY_RESOLUTIONS[0]
+    const rawW = preset.label === '自定义' ? customW.value : preset.w
+    const rawH = preset.label === '自定义' ? customH.value : preset.h
+    const w = Math.max(1, Number(rawW) || 1)
+    const h = Math.max(1, Number(rawH) || 1)
+    const landscape = orientation.value === 'landscape'
+    const portrait = w <= h
+    return {
+      w: landscape ? (portrait ? h : w) : portrait ? w : h,
+      h: landscape ? (portrait ? w : h) : portrait ? h : w,
+    }
+  })
+  const previewFrameStyle = computed(() => ({
+    '--lal-preview-w': String(previewSize.value.w),
+    '--lal-preview-h': String(previewSize.value.h),
+  }))
 
   function contrastToSlider(value: GoLiveContrast) {
     if (value === '低') return 0
@@ -259,10 +395,23 @@ export function useLiveAnchorAssistant() {
   }
 
   function closeModal() {
-    if (modal.value === 'scheduleTime' && restoreLinkedId.value) {
-      const previous = findGoLiveSchedule(restoreLinkedId.value)
-      restoreLinkedId.value = null
-      if (previous && previous.status === 'pending') applySchedule(previous)
+    if (modal.value === 'gameCenter' && gameCenterMode.value === 'pick') {
+      gameCenterMode.value = 'comment'
+      modal.value = 'liveType'
+      formError.value = ''
+      return
+    }
+    if (modal.value === 'scheduleTime') {
+      const backToList = creatingSchedule.value
+      creatingSchedule.value = false
+      if (restoreLinkedId.value) {
+        const previous = findGoLiveSchedule(restoreLinkedId.value)
+        restoreLinkedId.value = null
+        if (previous && previous.status === 'pending') applySchedule(previous)
+      }
+      modal.value = backToList ? 'previewNotice' : ''
+      formError.value = ''
+      return
     }
     if (modal.value === 'deleteSchedule') deleteTarget.value = null
     modal.value = ''
@@ -279,7 +428,7 @@ export function useLiveAnchorAssistant() {
       formError.value = '标题最多 200 字'
       return
     }
-    titles.value.cn = titleLang.value === 'cn' ? title : titles.value.cn
+    titles.value = { ...titles.value, cn: title }
     toast('基本信息已保存')
     closeModal()
   }
@@ -302,14 +451,6 @@ export function useLiveAnchorAssistant() {
       formError.value = '请选择直播分类'
       return
     }
-    if (contentKind.value === 'game' && !selectedGame.value.trim()) {
-      formError.value = '请选择直播游戏'
-      return
-    }
-    if (contentKind.value === 'match' && !selectedMatch.value.trim()) {
-      formError.value = '请选择赛事'
-      return
-    }
     if (liveMode.value !== 'voice' && currentRes.value.label === '自定义') {
       if (customW.value < 1 || customH.value < 1) {
         formError.value = '请填写有效分辨率'
@@ -317,12 +458,8 @@ export function useLiveAnchorAssistant() {
       }
     }
     typeConfigured.value = true
-    const content =
-      contentKind.value === 'game' ? selectedGame.value : contentKind.value === 'match' ? selectedMatch.value : '无'
-    currentTypeLabel.value = `${liveTag.value || liveCategory.value}-${content}`
-    if (kkCategory.value) categoryTag.value = kkCategory.value
-    else if (liveCategory.value === '游戏') categoryTag.value = '手游'
-    else categoryTag.value = liveCategory.value
+    currentTypeLabel.value = liveCategory.value
+    categoryTag.value = liveCategory.value === '游戏' ? '手游' : liveCategory.value
     if (!needsPush.value) {
       pushConfirmed.value = true
       closeModal()
@@ -363,7 +500,7 @@ export function useLiveAnchorAssistant() {
     nowMs.value = Date.now()
     const expired = expireOverdueGoLiveSchedules(nowMs.value)
     if (expired.length) {
-      toast(`「${expired[0].title}」已超时失效，已通知预约粉丝`)
+      showPcToast(`「${expired[0].title}」已超时失效，已通知预约粉丝`)
     }
     if (linkedId.value && !linkedSchedule.value) {
       const next = nearestPendingGoLiveSchedule(nowMs.value)
@@ -393,30 +530,52 @@ export function useLiveAnchorAssistant() {
       formError.value = error
       return
     }
+    const creating = creatingSchedule.value
     draftTime.value = ts
-    if (linkedSchedule.value) linkedSchedule.value.startAt = ts
+    if (linkedSchedule.value) {
+      linkedSchedule.value.startAt = ts
+      restoreLinkedId.value = null
+      creatingSchedule.value = false
+      modal.value = ''
+      formError.value = ''
+      showPcToast('预计开播时间已更新')
+      return
+    }
     restoreLinkedId.value = null
-    closeModal()
-    toast('预计开播时间已更新')
+    creatingSchedule.value = false
+    formError.value = ''
+    if (creating) {
+      if (!publishSchedule()) {
+        creatingSchedule.value = true
+        return
+      }
+      openModal('previewNotice')
+      return
+    }
+    modal.value = ''
+    showPcToast('预计开播时间已更新')
   }
 
   function clearTime() {
+    const backToList = creatingSchedule.value
+    creatingSchedule.value = false
     restoreLinkedId.value = null
     unlinkSchedule()
-    closeModal()
-    toast('已清除开播时间，将直接开播')
+    modal.value = backToList ? 'previewNotice' : ''
+    formError.value = ''
+    showPcToast('已清除开播时间，将直接开播')
   }
 
   function switchToSchedule(item: GoLiveSchedule) {
     applySchedule(item)
     closeModal()
-    toast('已切换为该场预告')
+    showPcToast('已切换为该场预告')
   }
 
   function editSchedule(item: GoLiveSchedule) {
     applySchedule(item)
     closeModal()
-    toast('已载入该场预告，可修改后开播')
+    showPcToast('已载入该场预告，可修改后开播')
   }
 
   function askDeleteSchedule(item: GoLiveSchedule) {
@@ -436,7 +595,7 @@ export function useLiveAnchorAssistant() {
     deleteTarget.value = null
     tickSchedules()
     openModal('previewNotice')
-    toast('预告已删除，已通知预约粉丝（原型）')
+    showPcToast('预告已删除，已通知预约粉丝（原型）')
   }
 
   function cancelDeleteSchedule() {
@@ -446,9 +605,10 @@ export function useLiveAnchorAssistant() {
 
   function startCreateSchedule() {
     if (!canCreateSchedule.value) {
-      toast(GO_LIVE_SCHEDULE_LIMIT_HINT)
+      showPcToast(GO_LIVE_SCHEDULE_LIMIT_HINT)
       return
     }
+    creatingSchedule.value = true
     restoreLinkedId.value = linkedId.value
     linkedId.value = null
     draftTime.value = null
@@ -459,6 +619,8 @@ export function useLiveAnchorAssistant() {
   }
 
   function goFreeLive() {
+    creatingSchedule.value = false
+    restoreLinkedId.value = null
     unlinkSchedule()
     closeModal()
     tryStartLive()
@@ -466,9 +628,9 @@ export function useLiveAnchorAssistant() {
 
   function publishSchedule() {
     if (!draftTime.value) {
-      toast('请先选择预计开播时间')
+      showPcToast('请先选择预计开播时间')
       openTimeSheet()
-      return
+      return false
     }
     const result = createGoLiveSchedule({
       title: roomTitle.value,
@@ -478,11 +640,14 @@ export function useLiveAnchorAssistant() {
       startAt: draftTime.value,
     })
     if (result.error || !result.item) {
-      toast(result.error || GO_LIVE_SCHEDULE_LIMIT_HINT)
-      return
+      const msg = result.error || GO_LIVE_SCHEDULE_LIMIT_HINT
+      formError.value = msg
+      showPcToast(msg)
+      return false
     }
     applySchedule(result.item)
-    toast('预告已发布，粉丝可预约本场直播')
+    showPcToast('预告已发布，粉丝可预约本场直播')
+    return true
   }
 
   function ensureReadyToGoLive() {
@@ -567,6 +732,77 @@ export function useLiveAnchorAssistant() {
     toast('已强制关播')
   }
 
+  function applyToolboxWidth(width: number) {
+    const narrow = width < TOOLBOX_WIDE_MIN
+    if (narrow !== toolboxNarrow.value) {
+      toolboxNarrow.value = narrow
+      toolboxCollapsed.value = narrow
+      toolboxTouched.value = false
+      return
+    }
+    if (!toolboxTouched.value) toolboxCollapsed.value = narrow
+  }
+
+  function bindToolboxShell(el: unknown) {
+    toolboxRo?.disconnect()
+    toolboxRo = null
+    const node = el instanceof HTMLElement ? el : null
+    if (!node || typeof ResizeObserver === 'undefined') return
+    toolboxRo = new ResizeObserver((entries) => {
+      applyToolboxWidth(entries[0]?.contentRect.width ?? 0)
+    })
+    toolboxRo.observe(node)
+    applyToolboxWidth(node.getBoundingClientRect().width)
+  }
+
+  function toggleToolbox() {
+    toolboxCollapsed.value = !toolboxCollapsed.value
+    toolboxTouched.value = true
+  }
+
+  function openGameCenter() {
+    gameCenterMode.value = 'comment'
+    openModal('gameCenter')
+  }
+
+  function openGoLiveGamePicker() {
+    gameCenterMode.value = 'pick'
+    openModal('gameCenter')
+  }
+
+  function pickGoLiveGame(id: string, name: string) {
+    goLiveGameId.value = id
+    showPcToast(`已选择「${name}」`)
+    gameCenterMode.value = 'comment'
+    openModal('liveType')
+  }
+
+  function toggleCommentGame(id: string, name: string) {
+    if (commentingGameId.value === id) {
+      commentingGameId.value = ''
+      showPcToast(`已取消讲解「${name}」`)
+      return
+    }
+    commentingGameId.value = id
+    showPcToast(`开始讲解「${name}」`)
+  }
+
+  function sendChat() {
+    const text = chatDraft.value.trim()
+    if (!text) return
+    chatMessages.value = [
+      ...chatMessages.value,
+      { id: `c-${Date.now()}`, nickname: '我', userId: ASSISTANT_SELF_ID, role: 'host', text, kind: 'chat' },
+    ]
+    chatDraft.value = ''
+  }
+
+  function insertChatEmoji(emoji: string) {
+    if (!emoji) return
+    const next = `${chatDraft.value}${emoji}`
+    chatDraft.value = next.slice(0, 80)
+  }
+
   async function copyText(text: string) {
     try {
       await navigator.clipboard.writeText(text)
@@ -578,11 +814,6 @@ export function useLiveAnchorAssistant() {
 
   function switchLiveMode(next: GoLiveTab) {
     liveMode.value = next
-    if (next === 'voice') {
-      toast('已切换为语音开播，无需 OBS 推流')
-    } else if (next === 'screen') {
-      toast(GO_LIVE_SCREEN_HINT)
-    }
   }
 
   function pickMountGame(id: string, name: string) {
@@ -673,11 +904,12 @@ export function useLiveAnchorAssistant() {
   onUnmounted(() => {
     if (tickTimer) window.clearInterval(tickTimer)
     if (liveTimer) window.clearInterval(liveTimer)
+    toolboxRo?.disconnect()
+    toolboxRo = null
   })
 
   return {
     titles,
-    titleLang,
     roomTitle,
     categoryTag,
     currentTypeLabel,
@@ -689,6 +921,9 @@ export function useLiveAnchorAssistant() {
     pushConfirmed,
     actionHint,
     online,
+    sessionLikes,
+    sessionHeat,
+    formatAssistantMetric,
     durationText,
     modal,
     liveCategory,
@@ -697,14 +932,32 @@ export function useLiveAnchorAssistant() {
     selectedGame,
     selectedMatch,
     orientation,
+    setOrientation,
+    resolutionOptions,
     resolutionIndex,
     customW,
     customH,
     formError,
     listKeyword,
     showGiftAmount,
+    toolboxCollapsed,
+    gameTab,
+    commentingGameId,
+    goLiveGameId,
+    gameCenterMode,
+    selectedGoLiveGame,
+    centerGames,
+    chatDraft,
+    chatMessages,
+    VOICE_GAME_TABS,
     onlineUsers,
+    pagedOnlineUsers,
+    listPage: currentOnlinePage,
+    onlinePageCount,
+    setOnlinePage,
+    onlineListRank,
     currentRes,
+    previewFrameStyle,
     PUSH_STREAM,
     SHARE_LINK,
     liveMode,
@@ -741,6 +994,8 @@ export function useLiveAnchorAssistant() {
     dayOptions,
     ctaLabel,
     previewStateLabel,
+    liveModeLabel,
+    previewHudDetail,
     startConfirmText,
     scheduleBadgeMap,
     deleteTarget,
@@ -766,6 +1021,14 @@ export function useLiveAnchorAssistant() {
     stopLive,
     copyText,
     switchLiveMode,
+    bindToolboxShell,
+    toggleToolbox,
+    openGameCenter,
+    openGoLiveGamePicker,
+    pickGoLiveGame,
+    toggleCommentGame,
+    sendChat,
+    insertChatEmoji,
     openScheduleSheet,
     openTimeSheet,
     confirmTime,

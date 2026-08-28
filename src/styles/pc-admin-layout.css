@@ -220,6 +220,56 @@ body:has(.pc-admin-layout) {
   color: var(--pc-text, #333);
 }
 
+.pc-admin-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.pc-admin-account__avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--pc-primary, #1890ff);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.pc-admin-account__name {
+  min-width: 0;
+  color: var(--pc-text, #333);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.pc-admin-account__logout {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--pc-border, #d9d9d9);
+  border-radius: 2px;
+  background: #fff;
+  color: var(--pc-text-secondary, #666);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.pc-admin-account__logout:hover {
+  border-color: var(--pc-danger, #ff4d4f);
+  color: var(--pc-danger, #ff4d4f);
+}
+
+.pc-admin-logout-modal {
+  width: 400px;
+  max-width: calc(100vw - 32px);
+}
+
 /* ---------- 标签栏 ---------- */
 .pc-admin-tags {
   display: flex;

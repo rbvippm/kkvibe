@@ -1,17 +1,257 @@
 <script setup lang="ts">
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import { useAssistantVoiceRoom } from '../../composables/useAssistantVoiceRoom'
 import { ASSISTANT_MODAL_TITLES, useLiveAnchorAssistant } from '../../composables/useLiveAnchorAssistant'
+import { useLiveDanmakuMute } from '../../composables/useLiveDanmakuMute'
+import { showPcToast } from '../../composables/usePcToast'
 import {
-  ANCHOR_TITLE_LANGS,
+  ASSISTANT_CHAT_EMOJIS,
+  ASSISTANT_CHAT_FILTERS,
+  ASSISTANT_GIFT_CURRENCY,
+  ASSISTANT_GIFT_ICON,
+  ASSISTANT_TOOLBOX,
+  assistantChatFilterKey,
+  formatAssistantGiftAmount,
+  assistantChatKindLabel,
+  assistantChatRoleLabel,
+  assistantChatRoleOf,
+  formatAssistantChatLine,
+  isAssistantChatMuteDisabled,
   GO_LIVE_GUIDE_STEPS,
   LIVE_CATEGORIES,
-  LIVE_TAGS,
-  PLAY_RESOLUTIONS,
+  type AssistantChatFilterKey,
+  type AssistantChatMsg,
+  type RankUser,
 } from '../../constants/liveAnchorAssistant'
 import '../../styles/pc-wireframe.css'
 import '../../styles/live-anchor-assistant.css'
 
 const a = useLiveAnchorAssistant()
+const voice = useAssistantVoiceRoom()
+const { muteUser, isUserMuted, blockUser, unblockUser, isUserBlocked } = useLiveDanmakuMute()
+const shellEl = ref<HTMLElement | null>(null)
+const onlineListEl = ref<HTMLElement | null>(null)
+
+function goOnlinePage(next: number) {
+  a.setOnlinePage(next)
+  void nextTick(() => {
+    onlineListEl.value?.scrollTo({ top: 0 })
+  })
+}
+
+watch(shellEl, (el) => a.bindToolboxShell(el), { flush: 'post' })
+
+type MuteTarget = {
+  userId: string
+  username: string
+  content: string
+  role?: AssistantChatMsg['role']
+  from?: 'chat' | 'list'
+}
+
+const actionMenuVisible = ref(false)
+const actionMenuPos = ref({ x: 0, y: 0 })
+const activeTarget = ref<MuteTarget | null>(null)
+const muteModalVisible = ref(false)
+const muteTarget = ref<MuteTarget | null>(null)
+const muteReason = ref('')
+const muteReasonHint = ref('')
+const blockModalVisible = ref(false)
+const blockTarget = ref<MuteTarget | null>(null)
+const emojiOpen = ref(false)
+const chatFilterOpen = ref(false)
+const chatFilterPanelUp = ref(false)
+const chatFilters = reactive<Record<AssistantChatFilterKey, boolean>>({
+  enter: true,
+  gift: true,
+  chat: true,
+  interact: true,
+})
+const visibleChats = computed(() =>
+  a.chatMessages.value.filter((msg) => chatFilters[assistantChatFilterKey(msg.kind)]),
+)
+let skipNextDocumentClose = false
+
+const activeRoleLabel = computed(() => {
+  const target = activeTarget.value
+  if (!target) return null
+  return assistantChatRoleLabel(assistantChatRoleOf({ userId: target.userId, role: target.role }))
+})
+const activeMuteDisabled = computed(
+  () =>
+    !activeTarget.value ||
+    isAssistantChatMuteDisabled(activeTarget.value.userId, activeTarget.value.role) ||
+    isUserMuted(activeTarget.value.userId),
+)
+const activeBlockDisabled = computed(
+  () => !activeTarget.value || isAssistantChatMuteDisabled(activeTarget.value.userId, activeTarget.value.role),
+)
+const activeBlocked = computed(() => !!activeTarget.value && isUserBlocked(activeTarget.value.userId))
+
+function placeActionMenu(event: MouseEvent) {
+  const menuW = 248
+  const menuH = 132
+  actionMenuPos.value = {
+    x: Math.min(Math.max(12, event.clientX), window.innerWidth - menuW),
+    y: Math.min(Math.max(12, event.clientY), window.innerHeight - menuH),
+  }
+}
+
+function openUserMenu(event: MouseEvent, userId: string, username: string, msg: AssistantChatMsg) {
+  if (!userId) return
+  event.preventDefault()
+  event.stopPropagation()
+  skipNextDocumentClose = true
+  activeTarget.value = {
+    userId,
+    username,
+    content: formatAssistantChatLine(msg),
+    role: userId === msg.userId ? assistantChatRoleOf(msg) : 'user',
+    from: 'chat',
+  }
+  placeActionMenu(event)
+  actionMenuVisible.value = true
+  requestAnimationFrame(() => {
+    skipNextDocumentClose = false
+  })
+}
+
+function openAudienceMenu(event: MouseEvent, user: RankUser) {
+  if (!user.id) return
+  event.preventDefault()
+  event.stopPropagation()
+  skipNextDocumentClose = true
+  activeTarget.value = {
+    userId: user.id,
+    username: user.nickname,
+    content: '在线列表',
+    role: 'user',
+    from: 'list',
+  }
+  placeActionMenu(event)
+  actionMenuVisible.value = true
+  requestAnimationFrame(() => {
+    skipNextDocumentClose = false
+  })
+}
+
+function closeActionMenu() {
+  actionMenuVisible.value = false
+  activeTarget.value = null
+}
+
+function onDocumentClick() {
+  if (skipNextDocumentClose) return
+  if (actionMenuVisible.value) closeActionMenu()
+  emojiOpen.value = false
+  chatFilterOpen.value = false
+}
+
+function toggleEmojiPanel(event: MouseEvent) {
+  event.stopPropagation()
+  chatFilterOpen.value = false
+  emojiOpen.value = !emojiOpen.value
+}
+
+function toggleChatFilterPanel(event: MouseEvent) {
+  event.stopPropagation()
+  emojiOpen.value = false
+  const next = !chatFilterOpen.value
+  if (next) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    chatFilterPanelUp.value = rect.bottom + 220 > window.innerHeight
+  }
+  chatFilterOpen.value = next
+}
+
+function pickEmoji(emoji: string) {
+  a.insertChatEmoji(emoji)
+}
+
+function openMuteModal() {
+  const target = activeTarget.value
+  if (!target || isAssistantChatMuteDisabled(target.userId, target.role)) return
+  muteTarget.value = target
+  muteReason.value = ''
+  muteReasonHint.value = ''
+  closeActionMenu()
+  muteModalVisible.value = true
+}
+
+function closeMuteModal() {
+  muteModalVisible.value = false
+  muteTarget.value = null
+  muteReason.value = ''
+  muteReasonHint.value = ''
+}
+
+function openBlockModal() {
+  const target = activeTarget.value
+  if (!target || isAssistantChatMuteDisabled(target.userId, target.role)) return
+  if (isUserBlocked(target.userId)) {
+    unblockUser(target.userId)
+    showPcToast(`已取消拉黑 ${target.username}`)
+    closeActionMenu()
+    return
+  }
+  blockTarget.value = target
+  closeActionMenu()
+  blockModalVisible.value = true
+}
+
+function closeBlockModal() {
+  blockModalVisible.value = false
+  blockTarget.value = null
+}
+
+function confirmBlock() {
+  const target = blockTarget.value
+  if (!target) return
+  blockUser(target.userId)
+  showPcToast(`已拉黑用户 ${target.username}`)
+  closeBlockModal()
+}
+
+function confirmMute() {
+  const target = muteTarget.value
+  if (!target) return
+  if (!muteReason.value.trim()) {
+    muteReasonHint.value = '请输入禁言原因'
+    return
+  }
+  muteUser({
+    userId: target.userId,
+    username: target.username,
+    muteSource: '主播',
+    muteType: '房间禁言',
+    reason: muteReason.value.trim(),
+    danmakuContent: target.content,
+    danmakuSentAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+  })
+  showPcToast(`已房间禁言用户 ${target.username}`)
+  closeMuteModal()
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocumentClick)
+})
+
+onUnmounted(() => {
+  a.bindToolboxShell(null)
+  document.removeEventListener('click', onDocumentClick)
+})
+
+function pickSchedulePart(part: 'day' | 'hour' | 'minute', value: number) {
+  if (part === 'day') a.timeDay.value = value
+  else if (part === 'hour') a.timeHour.value = value
+  else a.timeMinute.value = value
+  a.formError.value = ''
+}
+
+function onScheduleHourChange(event: Event) {
+  pickSchedulePart('hour', Number((event.target as HTMLSelectElement).value))
+}
 
 function onCoverClick() {
   a.toast('已选择示意图封面（原型）')
@@ -23,7 +263,57 @@ function onCoverClick() {
     <WfPagePathMenu />
     <p v-if="a.actionHint.value" class="lal-hint">{{ a.actionHint.value }}</p>
 
-    <div class="lal-shell">
+    <div
+      ref="shellEl"
+      class="lal-shell"
+      :class="{ 'is-box-collapsed': a.toolboxCollapsed.value }"
+    >
+      <aside class="lal-left" :class="{ 'is-collapsed': a.toolboxCollapsed.value }">
+        <div class="lal-box__head">
+          <strong>功能盒子</strong>
+          <button
+            type="button"
+            class="lal-box__fold"
+            :title="a.toolboxCollapsed.value ? '展开功能盒子' : '收起功能盒子'"
+            :aria-label="a.toolboxCollapsed.value ? '展开功能盒子' : '收起功能盒子'"
+            :aria-expanded="!a.toolboxCollapsed.value"
+            @click="a.toggleToolbox"
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+              <path fill="currentColor" d="M2 4h8v1.3H2V4Zm0 3.35h8v1.3H2v-1.3Zm0 3.35h8V12H2v-1.3Z" />
+              <path
+                fill="currentColor"
+                :d="a.toolboxCollapsed.value ? 'M11 5.2 15 8l-4 2.8V5.2Z' : 'M15 5.2 11 8l4 2.8V5.2Z'"
+              />
+            </svg>
+          </button>
+        </div>
+        <div class="lal-box__nav">
+          <button
+            v-for="item in ASSISTANT_TOOLBOX"
+            :key="item.key"
+            type="button"
+            class="lal-box__tile"
+            :class="{
+              'is-on': a.modal.value === 'gameCenter',
+              'is-talk': item.key === 'games' && a.commentingGameId.value,
+            }"
+            :title="item.label"
+            @click="a.openGameCenter"
+          >
+            <span class="lal-box__glyph" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <rect x="3" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <rect x="13" y="3" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <rect x="3" y="13" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" />
+                <path d="M14.5 16.5h5M17 14v5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+              </svg>
+            </span>
+            <em>{{ item.label }}</em>
+          </button>
+        </div>
+      </aside>
+
       <section class="lal-center">
         <div class="lal-head">
           <div class="lal-head__main">
@@ -36,20 +326,42 @@ function onCoverClick() {
           </button>
         </div>
         <div class="lal-stats" :class="{ 'is-live': a.live.value }">
-          <span>在线 <b>{{ a.online.value }}</b></span>
-          <span>时长 <b>{{ a.durationText.value }}</b></span>
-        </div>
-        <div class="lal-modes" role="tablist" aria-label="开播模式">
-          <button
-            v-for="item in a.GO_LIVE_TABS"
-            :key="item.key"
-            type="button"
-            class="lal-mode"
-            :class="{ 'is-on': a.liveMode.value === item.key }"
-            @click="a.switchLiveMode(item.key)"
-          >
-            {{ item.label }}
-          </button>
+          <span class="lal-stats__item lal-stats__item--online">
+            <em>
+              <svg class="lal-stats__ico" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M6.2 7.4a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Zm5.1.3a1.9 1.9 0 1 0-1.5-3.4 3.1 3.1 0 0 1 .2 3.4ZM2.2 13c0-2 2-3.2 4-3.2s4 1.2 4 3.2v.6H2.2V13Zm8.2.6V13c0-.7-.2-1.3-.6-1.8 1.5.2 3 .9 3 2.2v.2h-2.4Z"
+                />
+              </svg>
+              在线人数
+            </em>
+            <b>{{ a.formatAssistantMetric(a.online.value) }}</b>
+          </span>
+          <span class="lal-stats__item lal-stats__item--like">
+            <em>
+              <svg class="lal-stats__ico" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M6.1 14.2H3.4A1.4 1.4 0 0 1 2 12.8V8.3A1.4 1.4 0 0 1 3.4 6.9h1.2l2.2-3.5A1.6 1.6 0 0 1 8.2 2.6c.9.2 1.3 1.1 1.1 1.9l-.3 1.5h1.6c1.6 0 2.8 1.4 2.5 2.9l-.6 3.2c-.3 1.3-1.4 2.1-2.7 2.1H6.1Zm-2.7-1.4h1.3V8.3H3.4v4.5Zm2.7 0h3.7c.6 0 1-.4 1.1-.9l.6-3.2c.1-.6-.4-1.1-1-1.1H8.2l.5-2.4c0-.2-.1-.4-.3-.4l-2.3 3.7V12.8Z"
+                />
+              </svg>
+              本场点赞
+            </em>
+            <b>{{ a.formatAssistantMetric(a.sessionLikes.value) }}</b>
+          </span>
+          <span class="lal-stats__item lal-stats__item--heat">
+            <em>
+              <svg class="lal-stats__ico" viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M8.2 1.6c.2 1.6-.1 3-1 4.1-.5.6-.7 1.2-.6 1.8.1.7.6 1.3 1.3 1.6-.5-.1-.8-.6-.8-1.1 0-.4.2-.8.5-1.2C9.2 5.3 10 3.8 10 2.2c1.4 1.3 2.6 3.3 2.6 5.4 0 2.5-1.9 4.6-4.6 4.6S3.4 10.1 3.4 7.6c0-1.7 1-3.3 2.2-4.4-.2 1.1 0 2.2.7 3.1.2-.9.7-1.7 1.4-2.4.2-.2.4-.5.5-2.3Z"
+                />
+              </svg>
+              热度值
+            </em>
+            <b>{{ a.formatAssistantMetric(a.sessionHeat.value) }}</b>
+          </span>
         </div>
         <button v-if="a.linkedSchedule.value" type="button" class="lal-linkbar" @click="a.openScheduleSheet">
           <span>
@@ -57,20 +369,104 @@ function onCoverClick() {
           </span>
           <span>切换/管理 ›</span>
         </button>
-        <div class="lal-preview" :class="{ 'lal-preview--cover': !a.live.value && a.linkedSchedule.value, 'is-live': a.live.value }">
-          <img
-            v-if="!a.live.value && a.linkedSchedule.value"
-            class="lal-preview__cover"
-            :src="a.cover.value"
-            alt=""
-          />
-          <div class="lal-preview__state">
-            <div class="lal-preview__icon" aria-hidden="true">
-              {{ a.liveMode.value === 'voice' ? '🎙' : a.liveMode.value === 'screen' ? '📱' : '📺' }}
+        <div
+          class="lal-preview"
+          :class="{ 'lal-preview--cover': !a.live.value && a.linkedSchedule.value, 'is-live': a.live.value }"
+          :style="a.previewFrameStyle.value"
+        >
+          <div class="lal-preview__stage">
+            <div class="lal-preview__frame" :class="{ 'is-voice': a.liveMode.value === 'voice' }">
+              <template v-if="a.liveMode.value === 'voice'">
+                <img class="lal-voice__bg" :src="voice.VOICE_ROOM_ASSETS.bg" alt="" />
+                <div class="lal-voice__mics" aria-label="麦位">
+                  <button
+                    v-for="seat in voice.seats.value"
+                    :key="seat.id"
+                    type="button"
+                    class="lal-voice-seat"
+                    :class="[
+                      `lal-voice-seat--${seat.kind}`,
+                      { 'is-host': seat.kind === 'user' && seat.badge === 'host' },
+                    ]"
+                    :title="seat.kind === 'user' && seat.badge === 'host' ? '主播固定 1 号麦' : `${seat.index} 号麦`"
+                    @click="voice.openSeat(seat)"
+                  >
+                    <template v-if="seat.kind === 'user'">
+                      <span
+                        class="lal-voice-seat__avatar-wrap"
+                        :class="{ 'is-speak': seat.mic === 'speaking' }"
+                      >
+                        <img class="lal-voice-seat__avatar" :src="seat.avatar" :alt="seat.name" />
+                        <em
+                          v-if="seat.badge === 'host' || seat.badge === 'admin'"
+                          class="lal-voice-seat__role"
+                          :class="`lal-voice-seat__role--${seat.badge}`"
+                        >
+                          {{ seat.badge === 'host' ? '主' : '管' }}
+                        </em>
+                        <em v-if="seat.badge === 'god'" class="lal-voice-seat__god">神</em>
+                        <span
+                          class="lal-voice-seat__mic"
+                          :class="{
+                            'is-mute': seat.mic === 'mute',
+                            'is-wave': seat.mic === 'speaking',
+                          }"
+                        >
+                          <img
+                            :src="
+                              seat.mic === 'speaking'
+                                ? voice.VOICE_ROOM_ASSETS.wave
+                                : seat.mic === 'mute'
+                                  ? voice.VOICE_ROOM_ASSETS.mute
+                                  : voice.VOICE_ROOM_ASSETS.mic
+                            "
+                            alt=""
+                          />
+                        </span>
+                      </span>
+                      <span class="lal-voice-seat__name">{{ seat.name }}</span>
+                    </template>
+                    <template v-else>
+                      <span class="lal-voice-seat__hole">
+                        <img
+                          :src="seat.kind === 'locked' ? voice.VOICE_ROOM_ASSETS.lock : voice.VOICE_ROOM_ASSETS.chair"
+                          alt=""
+                          width="16"
+                          height="16"
+                        />
+                        <span v-if="seat.seatMuted" class="lal-voice-seat__mic is-mute">
+                          <img :src="voice.VOICE_ROOM_ASSETS.mute" alt="" />
+                        </span>
+                      </span>
+                      <span class="lal-voice-seat__name is-empty">
+                        {{ seat.kind === 'locked' ? '麦位关闭' : '麦位空闲' }}
+                      </span>
+                    </template>
+                  </button>
+                </div>
+                <p v-if="voice.allMuted.value" class="lal-voice__mute-banner">全部禁麦中</p>
+              </template>
+              <template v-else>
+                <img
+                  v-if="!a.live.value && a.linkedSchedule.value"
+                  class="lal-preview__cover"
+                  :src="a.cover.value"
+                  alt=""
+                />
+                <div class="lal-preview__state">
+                  <div class="lal-preview__icon" aria-hidden="true">
+                    {{ a.liveMode.value === 'screen' ? '📱' : '📺' }}
+                  </div>
+                  <strong>{{ a.previewStateLabel.value }}</strong>
+                  <em v-if="a.linkedSchedule.value && !a.live.value">已回填</em>
+                  <p v-if="a.liveMode.value === 'screen' && !a.live.value" class="lal-preview__hint">{{ a.GO_LIVE_SCREEN_HINT }}</p>
+                </div>
+              </template>
             </div>
-            <strong>{{ a.previewStateLabel.value }}</strong>
-            <em v-if="a.linkedSchedule.value && !a.live.value">已回填</em>
-            <p v-if="a.liveMode.value === 'screen' && !a.live.value" class="lal-preview__hint">{{ a.GO_LIVE_SCREEN_HINT }}</p>
+          </div>
+          <div class="lal-preview__hud">
+            <strong>{{ a.liveModeLabel.value }}</strong>
+            <span>{{ a.previewHudDetail.value }}</span>
           </div>
           <div class="lal-preview__dock">
             <div class="lal-preview__dock-left">
@@ -120,28 +516,6 @@ function onCoverClick() {
             </div>
           </div>
         </div>
-        <div class="lal-chips">
-          <button v-if="a.liveMode.value === 'video'" type="button" class="lal-chip" @click="a.openModal('beauty')">
-            美颜{{ a.beautyOn.value ? ' · 开' : '' }}
-          </button>
-          <button
-            v-if="a.liveMode.value !== 'voice'"
-            type="button"
-            class="lal-chip"
-            @click="a.openModal('ratio')"
-          >
-            画面 {{ a.ratio.value === 'original' ? '原始' : a.ratio.value }}
-          </button>
-          <button type="button" class="lal-chip" @click="a.openModal('mountGame')">
-            游戏{{ a.selectedMountGame.value ? ` · ${a.selectedMountGame.value.name}` : '' }}
-          </button>
-          <button v-if="a.liveMode.value === 'voice'" type="button" class="lal-chip" @click="a.openModal('background')">
-            房间背景
-          </button>
-          <button v-if="a.liveMode.value === 'screen'" type="button" class="lal-chip" @click="a.openMultiPhone">
-            多手机
-          </button>
-        </div>
         <div class="lal-bar">
           <button type="button" class="lal-guide" :class="{ 'is-done': a.guideRead.value }" @click="a.openModal('guide')">
             开播说明<span v-if="!a.guideRead.value"> *必读</span>
@@ -173,30 +547,194 @@ function onCoverClick() {
       </section>
 
       <aside class="lal-right">
-        <div class="lal-right__top">
-          <strong>在线列表</strong>
-          <span class="lal-right__count">{{ a.online.value }}</span>
-          <label class="lal-heat">
-            <input v-model="a.showGiftAmount.value" type="checkbox" />
-            打赏金额
-          </label>
-        </div>
-        <div class="lal-search">
-          <input v-model="a.listKeyword.value" placeholder="搜索昵称或 ID" />
-          <button type="button" class="wf-btn wf-btn--primary">搜索</button>
-        </div>
-        <div class="lal-list">
-          <div v-if="!a.onlineUsers.value.length" class="lal-empty">
-            {{ a.live.value ? '暂无在线用户' : '开播后将显示在线观众' }}
+        <div class="lal-pane">
+          <div class="lal-right__top">
+            <strong>在线列表</strong>
+            <span class="lal-right__count">{{ a.online.value }}</span>
+            <label class="lal-heat">
+              <input v-model="a.showGiftAmount.value" type="checkbox" />
+              打赏金额
+            </label>
           </div>
-          <div v-for="user in a.onlineUsers.value" :key="user.id" class="lal-user">
-            <span class="lal-user__avatar" aria-hidden="true">{{ user.nickname.slice(0, 1) }}</span>
-            <span class="lal-user__meta">
-              <b>{{ user.nickname }}</b>
-              <em>{{ user.id }}</em>
-            </span>
-            <span v-if="a.showGiftAmount.value" class="lal-user__gift">{{ user.giftAmount }}</span>
+          <div class="lal-search">
+            <input v-model="a.listKeyword.value" placeholder="搜索昵称或 ID" />
+            <button type="button" class="wf-btn wf-btn--primary">搜索</button>
           </div>
+          <div ref="onlineListEl" class="lal-list">
+            <div v-if="!a.onlineUsers.value.length" class="lal-empty">
+              {{ a.listKeyword.value.trim() ? '未找到匹配观众' : '暂无在线用户' }}
+            </div>
+            <div
+              v-for="(user, index) in a.pagedOnlineUsers.value"
+              :key="user.id"
+              class="lal-user"
+              :class="{
+                'is-top': a.onlineListRank(index) <= 3,
+                'is-muted': isUserMuted(user.id),
+                'is-blocked': isUserBlocked(user.id),
+              }"
+            >
+              <span class="lal-user__rank" :class="`lal-user__rank--${a.onlineListRank(index)}`">{{
+                a.onlineListRank(index)
+              }}</span>
+              <span class="lal-user__avatar" aria-hidden="true">{{ user.nickname.slice(0, 1) }}</span>
+              <span class="lal-user__meta">
+                <button type="button" class="lal-user__name" @click="openAudienceMenu($event, user)">
+                  {{ user.nickname }}
+                </button>
+                <em v-if="isUserMuted(user.id)" class="lal-user__status">已禁言</em>
+                <em v-if="isUserBlocked(user.id)" class="lal-user__status">已拉黑</em>
+              </span>
+              <span v-if="a.showGiftAmount.value" class="lal-user__gift">
+                <b>{{ formatAssistantGiftAmount(user.giftAmount) }}</b>
+                <em>{{ ASSISTANT_GIFT_CURRENCY }}</em>
+              </span>
+            </div>
+          </div>
+          <div v-if="a.onlinePageCount.value > 1" class="lal-list-pager">
+            <button
+              type="button"
+              class="wf-btn wf-btn--default"
+              :disabled="a.listPage.value <= 1"
+              @click="goOnlinePage(a.listPage.value - 1)"
+            >
+              上一页
+            </button>
+            <span class="lal-list-pager__info">{{ a.listPage.value }}/{{ a.onlinePageCount.value }}</span>
+            <button
+              type="button"
+              class="wf-btn wf-btn--default"
+              :disabled="a.listPage.value >= a.onlinePageCount.value"
+              @click="goOnlinePage(a.listPage.value + 1)"
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+        <div class="lal-pane lal-pane--chat">
+          <div class="lal-right__top">
+            <strong>聊天弹幕</strong>
+            <div class="lal-chat-filter">
+              <button
+                type="button"
+                class="lal-chat-filter__btn"
+                :class="{ 'is-on': chatFilterOpen }"
+                :aria-expanded="chatFilterOpen"
+                @click="toggleChatFilterPanel"
+              >
+                弹幕显示设置
+              </button>
+              <div
+                v-if="chatFilterOpen"
+                class="lal-chat-filter__panel"
+                :class="{ 'is-up': chatFilterPanelUp }"
+                role="group"
+                aria-label="弹幕显示设置"
+                @click.stop
+              >
+                <label v-for="item in ASSISTANT_CHAT_FILTERS" :key="item.key" class="lal-chat-filter__row">
+                  <span>
+                    {{ item.label }}
+                    <em v-if="item.hint">{{ item.hint }}</em>
+                  </span>
+                  <input v-model="chatFilters[item.key]" type="checkbox" />
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="lal-chat">
+            <div v-if="!visibleChats.length" class="lal-empty">
+              {{ a.chatMessages.value.length ? '当前筛选下暂无弹幕' : '暂无弹幕' }}
+            </div>
+            <p
+              v-for="msg in visibleChats"
+              :key="msg.id"
+              class="lal-chat__row"
+              :class="{
+                [`lal-chat__row--${msg.kind}`]: true,
+                [`lal-chat__row--${assistantChatRoleOf(msg)}`]: true,
+                'is-muted': isUserMuted(msg.userId) || (msg.targetUserId && isUserMuted(msg.targetUserId)),
+              }"
+            >
+              <em v-if="assistantChatKindLabel(msg.kind)" class="lal-chat__kind" :class="`lal-chat__kind--${msg.kind}`">
+                {{ assistantChatKindLabel(msg.kind) }}
+              </em>
+              <template v-if="msg.kind === 'voiceGift'">
+                <button
+                  type="button"
+                  class="lal-chat__name"
+                  :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
+                  @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
+                >
+                  {{ msg.nickname }}
+                </button>
+                <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
+                  {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
+                </em>
+                <i class="lal-chat__act">送给</i>
+                <button
+                  v-if="msg.targetUserId"
+                  type="button"
+                  class="lal-chat__name"
+                  @click="openUserMenu($event, msg.targetUserId, msg.target ?? '', msg)"
+                >
+                  {{ msg.target }}
+                </button>
+                <template v-else>{{ msg.target }}</template>
+                <img class="lal-chat__gift" :src="ASSISTANT_GIFT_ICON" alt="" />
+                <i class="lal-chat__act">{{ msg.giftName }} x{{ msg.giftCount }}</i>
+              </template>
+              <template v-else>
+                <button
+                  type="button"
+                  class="lal-chat__name"
+                  :class="`lal-chat__name--${assistantChatRoleOf(msg)}`"
+                  @click="openUserMenu($event, msg.userId, msg.nickname, msg)"
+                >
+                  {{ msg.nickname }}
+                </button>
+                <em v-if="assistantChatRoleLabel(assistantChatRoleOf(msg))" class="lal-chat__role" :class="`lal-chat__role--${assistantChatRoleOf(msg)}`">
+                  {{ assistantChatRoleLabel(assistantChatRoleOf(msg)) }}
+                </em>
+                ：
+                <i v-if="msg.kind === 'enter'" class="lal-chat__act">进入直播间</i>
+                <i v-else-if="msg.kind === 'follow'" class="lal-chat__act">关注了您～</i>
+                <i v-else-if="msg.kind === 'like'" class="lal-chat__act">已为您点赞～</i>
+                <i v-else-if="msg.kind === 'liveGift'" class="lal-chat__act">送出{{ msg.giftName }} x{{ msg.giftCount }}</i>
+                <template v-else>{{ msg.text }}</template>
+              </template>
+              <em v-if="isUserMuted(msg.userId)" class="lal-chat__muted">已禁言</em>
+            </p>
+          </div>
+          <form class="lal-chat__composer" @submit.prevent="a.sendChat()">
+            <input v-model="a.chatDraft.value" maxlength="80" placeholder="说点什么" />
+            <div class="lal-chat__emoji-wrap">
+              <button
+                type="button"
+                class="lal-chat__emoji"
+                :class="{ 'is-on': emojiOpen }"
+                title="表情"
+                aria-label="表情"
+                :aria-expanded="emojiOpen"
+                @click="toggleEmojiPanel"
+              >
+                ☺
+              </button>
+              <div v-if="emojiOpen" class="lal-emoji" role="listbox" aria-label="表情" @click.stop>
+                <button
+                  v-for="item in ASSISTANT_CHAT_EMOJIS"
+                  :key="item"
+                  type="button"
+                  class="lal-emoji__item"
+                  :aria-label="`插入${item}`"
+                  @click="pickEmoji(item)"
+                >
+                  {{ item }}
+                </button>
+              </div>
+            </div>
+            <button type="submit" class="wf-btn wf-btn--primary">发送</button>
+          </form>
         </div>
       </aside>
     </div>
@@ -206,7 +744,11 @@ function onCoverClick() {
         <div
           class="wf-modal wf-modal--scroll"
           :class="{
-            'wf-modal--narrow': ['guide', 'share', 'startConfirm', 'stopConfirm', 'deleteSchedule', 'ratio'].includes(a.modal.value),
+            'wf-modal--narrow': ['share', 'startConfirm', 'stopConfirm', 'deleteSchedule', 'ratio'].includes(a.modal.value),
+            'lal-modal--games': a.modal.value === 'gameCenter',
+            'lal-modal--guide': a.modal.value === 'guide',
+            'lal-modal--time': a.modal.value === 'scheduleTime',
+            'lal-modal--schedule': a.modal.value === 'previewNotice',
           }"
           role="dialog"
           aria-modal="true"
@@ -219,50 +761,60 @@ function onCoverClick() {
             <p v-if="a.formError.value" class="wf-modal__error">{{ a.formError.value }}</p>
 
             <template v-if="a.modal.value === 'guide'">
-              <p>PC 端主播开播流程请根据下述内容逐步进行，确认每一步成功后再进行下一步！</p>
-              <ol class="lal-steps">
-                <li v-for="(step, index) in GO_LIVE_GUIDE_STEPS" :key="step">step{{ index + 1 }}：{{ step }}</li>
-              </ol>
+              <div class="lal-guide-box">
+                <p class="lal-guide-box__lead">
+                  请按顺序完成以下 3 步，确认当前步骤成功后再进行下一步。
+                </p>
+                <ol class="lal-guide-steps">
+                  <li v-for="(step, index) in GO_LIVE_GUIDE_STEPS" :key="step.title">
+                    <span class="lal-guide-steps__no" aria-hidden="true">{{ index + 1 }}</span>
+                    <div>
+                      <strong>第 {{ index + 1 }} 步 · {{ step.title }}</strong>
+                      <p>{{ step.desc }}</p>
+                    </div>
+                  </li>
+                </ol>
+              </div>
             </template>
 
             <template v-else-if="a.modal.value === 'basic'">
-              <div class="lal-form-grid">
-                <div class="lal-lang">
-                  <button
-                    v-for="lang in ANCHOR_TITLE_LANGS"
-                    :key="lang.key"
-                    type="button"
-                    :class="{ 'is-on': a.titleLang.value === lang.key }"
-                    @click="a.titleLang.value = lang.key"
-                  >
-                    {{ lang.label }}
-                  </button>
+              <div class="wf-form-row">
+                <label class="wf-form-row__label wf-form-row__label--required" for="lal-basic-title">标题</label>
+                <div>
+                  <textarea
+                    id="lal-basic-title"
+                    v-model="a.roomTitle.value"
+                    class="wf-input wf-input--full lal-basic-title"
+                    rows="3"
+                    maxlength="200"
+                    placeholder="请输入直播标题"
+                  />
+                  <p class="wf-form-row__hint lal-basic-count">{{ a.roomTitle.value.length }}/200</p>
                 </div>
-                <label class="wf-field">
-                  <span>标题：</span>
-                  <textarea v-model="a.roomTitle.value" rows="3" maxlength="200" placeholder="请输入" />
-                  <span class="wf-muted">{{ a.roomTitle.value.length }}/200</span>
-                </label>
-                <div class="lal-cover">
-                  <div class="lal-cover__img lal-cover--tall">竖版封面</div>
-                  <div>
+              </div>
+              <div class="wf-form-row">
+                <span class="wf-form-row__label">封面</span>
+                <div>
+                  <div class="lal-cover">
+                    <div class="lal-cover__img">
+                      <img v-if="a.cover.value" :src="a.cover.value" alt="" />
+                      <span v-else>封面</span>
+                    </div>
                     <button type="button" class="wf-btn wf-btn--default" @click="onCoverClick">上传封面</button>
-                    <p class="wf-muted">为保证封面的观看质量请选择合适的 16：9 尺寸图片</p>
                   </div>
-                </div>
-                <div class="lal-cover">
-                  <div class="lal-cover__img">横版封面</div>
-                  <div>
-                    <button type="button" class="wf-btn wf-btn--default" @click="onCoverClick">上传封面</button>
-                    <p class="wf-muted">为保证封面的观看质量请选择合适的 525*444 尺寸的图片</p>
-                  </div>
+                  <p class="wf-form-row__hint">为保证封面观看质量，请选择清晰图片</p>
                 </div>
               </div>
             </template>
 
             <template v-else-if="a.modal.value === 'previewNotice'">
-              <p class="wf-muted">有效预告 {{ a.activeSchedules.value.length }}/5，与移动端直播中心共用场次。</p>
-              <div v-if="!a.activeSchedules.value.length" class="lal-empty">暂无有效预告，可新建一场或直接开播</div>
+              <p class="wf-form-row__hint lal-sch-lead">
+                有效预告 {{ a.activeSchedules.value.length }}/5，与移动端直播中心共用场次。
+              </p>
+              <div v-if="!a.activeSchedules.value.length" class="lal-sch-empty">
+                <strong>暂无有效预告</strong>
+                <p>可新建一场，或先不使用预告直接开播</p>
+              </div>
               <div
                 v-for="item in a.activeSchedules.value"
                 :key="item.id"
@@ -271,10 +823,10 @@ function onCoverClick() {
               >
                 <div class="lal-sch__main">
                   <img :src="item.cover" alt="" />
-                  <div>
+                  <div class="lal-sch__meta">
                     <strong>{{ item.title }}</strong>
                     <p>{{ a.formatGoLiveScheduleTime(item.startAt, a.nowMs.value) }} · {{ item.subscriberCount }}人已预约</p>
-                    <p class="wf-muted">{{ a.scheduleMeta(item) }}</p>
+                    <p class="wf-form-row__hint">{{ a.scheduleMeta(item) }}</p>
                   </div>
                   <span
                     v-if="a.scheduleBadgeMap.value[item.id]"
@@ -294,73 +846,122 @@ function onCoverClick() {
             </template>
 
             <template v-else-if="a.modal.value === 'liveType'">
-              <div class="lal-current">
-                <strong>当前</strong>
-                <span>{{ a.currentTypeLabel.value }} · {{ a.liveMode.value === 'video' ? '视频' : a.liveMode.value === 'voice' ? '语音' : '手机画面' }}</span>
+              <div class="lal-type">
+                <section class="lal-type__sec">
+                  <h4 class="lal-type__title">开播类型</h4>
+                  <div class="lal-seg" role="radiogroup" aria-label="开播类型">
+                    <button
+                      v-for="item in a.GO_LIVE_TABS"
+                      :key="item.key"
+                      type="button"
+                      class="lal-seg__btn"
+                      :class="{ 'is-on': a.liveMode.value === item.key }"
+                      @click="a.switchLiveMode(item.key)"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
+                  <p class="lal-type__echo">画面左上角将回显 {{ a.currentTypeLabel.value }} · {{ a.liveModeLabel.value }}</p>
+                </section>
+
+                <section class="lal-type__sec">
+                  <h4 class="lal-type__title">直播信息</h4>
+                  <div class="wf-form-row">
+                    <label class="wf-form-row__label" for="lal-live-category">直播分类</label>
+                    <select id="lal-live-category" v-model="a.liveCategory.value" class="wf-select wf-select--full">
+                      <option v-for="item in LIVE_CATEGORIES" :key="item" :value="item">{{ item }}</option>
+                    </select>
+                  </div>
+                  <div class="wf-form-row lal-type__game-row">
+                    <span class="wf-form-row__label">开播游戏选择</span>
+                    <div class="lal-type__game">
+                      <span class="lal-type__game-main">
+                        <img
+                          v-if="a.selectedGoLiveGame.value"
+                          class="lal-type__game-icon"
+                          :src="a.selectedGoLiveGame.value.icon"
+                          alt=""
+                        />
+                        <span class="lal-type__game-name" :class="{ 'is-empty': !a.selectedGoLiveGame.value }">
+                          {{ a.selectedGoLiveGame.value?.name ?? '未选择' }}
+                        </span>
+                      </span>
+                      <button type="button" class="wf-btn wf-btn--default" @click="a.openGoLiveGamePicker">选择</button>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="lal-type__sec">
+                  <h4 class="lal-type__title">播放格式</h4>
+                  <p v-if="a.liveMode.value === 'voice'" class="lal-type__note">
+                    语音开播无需推流分辨率，保存后可直接创建房间。
+                  </p>
+                  <template v-else>
+                    <div class="wf-form-row">
+                      <span class="wf-form-row__label">画面方向</span>
+                      <div class="lal-seg lal-seg--2" role="radiogroup" aria-label="画面方向">
+                        <button
+                          type="button"
+                          class="lal-seg__btn"
+                          :class="{ 'is-on': a.orientation.value === 'portrait' }"
+                          @click="a.setOrientation('portrait')"
+                        >
+                          竖屏
+                        </button>
+                        <button
+                          type="button"
+                          class="lal-seg__btn"
+                          :class="{ 'is-on': a.orientation.value === 'landscape' }"
+                          @click="a.setOrientation('landscape')"
+                        >
+                          横屏
+                        </button>
+                      </div>
+                    </div>
+                    <div class="wf-form-row">
+                      <label class="wf-form-row__label" for="lal-resolution">分辨率</label>
+                      <div>
+                        <select
+                          id="lal-resolution"
+                          v-model.number="a.resolutionIndex.value"
+                          class="wf-select wf-select--full"
+                        >
+                          <option v-for="(item, index) in a.resolutionOptions.value" :key="`${item.label}-${index}`" :value="index">
+                            {{ item.label }}
+                          </option>
+                        </select>
+                        <div class="lal-res">
+                          <label>
+                            W
+                            <input
+                              v-if="a.currentRes.value.label === '自定义'"
+                              v-model.number="a.customW.value"
+                              class="wf-input"
+                              type="number"
+                              min="1"
+                            />
+                            <input v-else class="wf-input" :value="a.currentRes.value.w" disabled />
+                          </label>
+                          <label>
+                            H
+                            <input
+                              v-if="a.currentRes.value.label === '自定义'"
+                              v-model.number="a.customH.value"
+                              class="wf-input"
+                              type="number"
+                              min="1"
+                            />
+                            <input v-else class="wf-input" :value="a.currentRes.value.h" disabled />
+                          </label>
+                        </div>
+                        <p class="wf-form-row__hint">
+                          此处为直播画面意图。请将 OBS 输出分辨率设为与上方相同的方向和宽高，效果最好，避免拉伸或黑边。
+                        </p>
+                      </div>
+                    </div>
+                  </template>
+                </section>
               </div>
-              <h4>最近开播</h4>
-              <label class="wf-field">
-                <span>客户端直播类型：</span>
-                <select v-model="a.kkCategory.value">
-                  <option v-for="item in a.GO_LIVE_CATEGORIES" :key="item" :value="item">{{ item }}</option>
-                </select>
-              </label>
-              <label class="wf-field">
-                <span>直播分类：</span>
-                <select v-model="a.liveCategory.value">
-                  <option v-for="item in LIVE_CATEGORIES" :key="item" :value="item">{{ item }}</option>
-                </select>
-              </label>
-              <label class="wf-field">
-                <span>直播标签：</span>
-                <select v-model="a.liveTag.value">
-                  <option value="">请选择</option>
-                  <option v-for="item in LIVE_TAGS" :key="item" :value="item">{{ item }}</option>
-                </select>
-              </label>
-              <p>直播内容：</p>
-              <label><input v-model="a.contentKind.value" type="radio" value="none" /> 无</label>
-              <label><input v-model="a.contentKind.value" type="radio" value="match" /> 赛事选择</label>
-              <label><input v-model="a.contentKind.value" type="radio" value="game" /> 游戏选择</label>
-              <p v-if="a.contentKind.value === 'game'" class="wf-muted">
-                {{ a.selectedGame.value }} · 提示：在客户端直播列表中会有直播游戏标识
-              </p>
-              <p v-if="a.contentKind.value === 'match'">{{ a.selectedMatch.value }}</p>
-              <template v-if="a.liveMode.value !== 'voice'">
-                <h4>播放格式</h4>
-                <div class="lal-orient">
-                  <button type="button" :class="{ 'is-on': a.orientation.value === 'portrait' }" @click="a.orientation.value = 'portrait'">
-                    竖屏
-                  </button>
-                  <button type="button" :class="{ 'is-on': a.orientation.value === 'landscape' }" @click="a.orientation.value = 'landscape'">
-                    横屏
-                  </button>
-                </div>
-                <p class="wf-muted">说明：客户端会根据选择的方向和分辨率宽高比进行展示</p>
-                <div class="lal-res">
-                  <span>分辨率：</span>
-                  <select v-model.number="a.resolutionIndex.value">
-                    <option v-for="(item, index) in PLAY_RESOLUTIONS" :key="item.label" :value="index">{{ item.label }}</option>
-                  </select>
-                  <span>W：</span>
-                  <input
-                    v-if="a.currentRes.value.label === '自定义'"
-                    v-model.number="a.customW.value"
-                    type="number"
-                    min="1"
-                  />
-                  <input v-else :value="a.currentRes.value.w" disabled />
-                  <span>H：</span>
-                  <input
-                    v-if="a.currentRes.value.label === '自定义'"
-                    v-model.number="a.customH.value"
-                    type="number"
-                    min="1"
-                  />
-                  <input v-else :value="a.currentRes.value.h" disabled />
-                </div>
-              </template>
-              <p v-else class="wf-muted">语音开播无需推流分辨率，保存后可直接创建房间。</p>
             </template>
 
             <template v-else-if="a.modal.value === 'pushUrl'">
@@ -382,31 +983,59 @@ function onCoverClick() {
             </template>
 
             <template v-else-if="a.modal.value === 'scheduleTime'">
-              <p>已选时间：{{ a.pickingTimeLabel.value }}</p>
-              <p class="wf-muted">须晚于现在至少 15 分钟、不超过 7 天，两场间隔至少 1 小时。</p>
-              <div class="lal-time-pick">
-                <label class="wf-field">
-                  日期
-                  <select v-model.number="a.timeDay.value">
-                    <option v-for="item in a.dayOptions.value" :key="item.offset" :value="item.offset">{{ item.label }}</option>
-                  </select>
-                </label>
-                <label class="wf-field">
-                  时
-                  <select v-model.number="a.timeHour.value">
-                    <option v-for="item in a.GO_LIVE_SCHEDULE_HOURS" :key="`h-${item}`" :value="item">
-                      {{ String(item).padStart(2, '0') }}
-                    </option>
-                  </select>
-                </label>
-                <label class="wf-field">
-                  分
-                  <select v-model.number="a.timeMinute.value">
-                    <option v-for="item in a.GO_LIVE_SCHEDULE_MINUTES" :key="`m-${item}`" :value="item">
-                      {{ String(item).padStart(2, '0') }}
-                    </option>
-                  </select>
-                </label>
+              <div class="lal-time-sheet">
+                <div class="lal-time-sheet__summary">
+                  <span>已选时间</span>
+                  <strong>{{ a.pickingTimeLabel.value }}</strong>
+                </div>
+                <p class="lal-time-sheet__hint">须晚于现在至少 15 分钟、不超过 7 天，两场间隔至少 1 小时。</p>
+                <section class="lal-time-sheet__sec">
+                  <p class="lal-time-sheet__label">日期</p>
+                  <div class="lal-time-sheet__chips" role="radiogroup" aria-label="日期">
+                    <button
+                      v-for="item in a.dayOptions.value"
+                      :key="item.offset"
+                      type="button"
+                      class="lal-time-sheet__chip"
+                      :class="{ 'is-on': a.timeDay.value === item.offset }"
+                      :aria-pressed="a.timeDay.value === item.offset"
+                      @click="pickSchedulePart('day', item.offset)"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
+                </section>
+                <section class="lal-time-sheet__sec">
+                  <p class="lal-time-sheet__label">时间</p>
+                  <div class="lal-time-sheet__clock">
+                    <label class="lal-time-sheet__hour">
+                      <span>时</span>
+                      <select
+                        class="wf-select"
+                        :value="a.timeHour.value"
+                        aria-label="时"
+                        @change="onScheduleHourChange"
+                      >
+                        <option v-for="item in a.GO_LIVE_SCHEDULE_HOURS" :key="`h-${item}`" :value="item">
+                          {{ String(item).padStart(2, '0') }}
+                        </option>
+                      </select>
+                    </label>
+                    <div class="lal-time-sheet__mins" role="radiogroup" aria-label="分">
+                      <button
+                        v-for="item in a.GO_LIVE_SCHEDULE_MINUTES"
+                        :key="`m-${item}`"
+                        type="button"
+                        class="lal-time-sheet__chip"
+                        :class="{ 'is-on': a.timeMinute.value === item }"
+                        :aria-pressed="a.timeMinute.value === item"
+                        @click="pickSchedulePart('minute', item)"
+                      >
+                        {{ String(item).padStart(2, '0') }} 分
+                      </button>
+                    </div>
+                  </div>
+                </section>
               </div>
             </template>
 
@@ -478,6 +1107,73 @@ function onCoverClick() {
               <p class="wf-muted">{{ a.ratioHint.value }}</p>
             </template>
 
+            <template v-else-if="a.modal.value === 'gameCenter'">
+              <div class="lal-gc-modal">
+                <div class="lal-tabs" role="tablist" aria-label="游戏分类">
+                  <button
+                    v-for="tab in a.VOICE_GAME_TABS"
+                    :key="tab.key"
+                    type="button"
+                    role="tab"
+                    :class="{ 'is-on': a.gameTab.value === tab.key }"
+                    :aria-selected="a.gameTab.value === tab.key"
+                    @click="a.gameTab.value = tab.key"
+                  >
+                    {{ tab.label }}
+                  </button>
+                </div>
+                <div class="lal-gc__list">
+                  <div v-if="!a.centerGames.value.length" class="lal-empty">该分类暂无游戏</div>
+                  <div
+                    v-for="game in a.centerGames.value"
+                    :key="game.id"
+                    class="lal-gc__row"
+                    :class="{
+                      'is-on': a.gameCenterMode.value === 'pick' && a.goLiveGameId.value === game.id,
+                    }"
+                  >
+                    <img class="lal-gc__icon" :src="game.icon" alt="" />
+                    <div class="lal-gc__meta">
+                      <b>{{ game.name }}</b>
+                      <span class="lal-gc__tags">
+                        <em v-if="game.live" class="lal-gc__tag lal-gc__tag--live">直播中</em>
+                        <em
+                          v-if="a.gameCenterMode.value === 'comment' && a.commentingGameId.value === game.id"
+                          class="lal-gc__tag lal-gc__tag--talk"
+                        >
+                          讲解中
+                        </em>
+                        <em
+                          v-if="a.gameCenterMode.value === 'pick' && a.goLiveGameId.value === game.id"
+                          class="lal-gc__tag lal-gc__tag--talk"
+                        >
+                          已选
+                        </em>
+                      </span>
+                    </div>
+                    <button
+                      v-if="a.gameCenterMode.value === 'pick'"
+                      type="button"
+                      class="wf-btn"
+                      :class="a.goLiveGameId.value === game.id ? 'wf-btn--default' : 'wf-btn--primary'"
+                      @click="a.pickGoLiveGame(game.id, game.name)"
+                    >
+                      选择
+                    </button>
+                    <button
+                      v-else
+                      type="button"
+                      class="wf-btn"
+                      :class="a.commentingGameId.value === game.id ? 'wf-btn--default' : 'wf-btn--primary'"
+                      @click="a.toggleCommentGame(game.id, game.name)"
+                    >
+                      {{ a.commentingGameId.value === game.id ? '取消' : '讲解' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
             <template v-else-if="a.modal.value === 'mountGame'">
               <div class="lal-orient">
                 <button
@@ -512,7 +1208,7 @@ function onCoverClick() {
           </div>
           <footer class="wf-modal__footer">
             <button
-              v-if="!['guide', 'share', 'pushUrl', 'deleteSchedule', 'previewNotice'].includes(a.modal.value)"
+              v-if="!['guide', 'share', 'pushUrl', 'deleteSchedule', 'previewNotice', 'gameCenter'].includes(a.modal.value)"
               type="button"
               class="wf-btn wf-btn--default"
               @click="a.closeModal"
@@ -547,7 +1243,7 @@ function onCoverClick() {
               <button
                 type="button"
                 class="wf-btn wf-btn--add"
-                :disabled="!a.canCreateSchedule.value"
+                :class="{ 'is-disabled': !a.canCreateSchedule.value }"
                 @click="a.startCreateSchedule"
               >
                 新建一场直播预告
@@ -566,11 +1262,194 @@ function onCoverClick() {
             <button v-if="a.modal.value === 'ratio'" type="button" class="wf-btn wf-btn--primary" @click="a.saveRatio">
               确定
             </button>
+            <button v-if="a.modal.value === 'gameCenter'" type="button" class="wf-btn wf-btn--default" @click="a.closeModal">
+              关闭
+            </button>
             <template v-if="a.modal.value === 'deleteSchedule'">
               <button type="button" class="wf-btn wf-btn--default" @click="a.cancelDeleteSchedule">再想想</button>
               <button type="button" class="wf-btn wf-btn--danger" @click="a.confirmDeleteSchedule">删除</button>
             </template>
           </footer>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="actionMenuVisible && activeTarget"
+        class="live-danmaku-action-menu"
+        :style="{ left: `${actionMenuPos.x}px`, top: `${actionMenuPos.y}px` }"
+        role="menu"
+        @click.stop
+      >
+        <p class="live-danmaku-action-menu__title">
+          {{ activeTarget.username }}
+          <span v-if="activeRoleLabel" class="live-danmaku-action-menu__tag">{{ activeRoleLabel }}</span>
+        </p>
+        <button
+          type="button"
+          class="live-danmaku-action-menu__item"
+          :disabled="activeMuteDisabled"
+          role="menuitem"
+          @click="openMuteModal"
+        >
+          {{ activeTarget && isUserMuted(activeTarget.userId) ? '已禁言' : '禁言' }}
+        </button>
+        <button
+          type="button"
+          class="live-danmaku-action-menu__item is-danger"
+          :disabled="activeBlockDisabled"
+          role="menuitem"
+          @click="openBlockModal"
+        >
+          {{ activeBlocked ? '取消拉黑' : '拉黑' }}
+        </button>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="muteModalVisible && muteTarget"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="closeMuteModal"
+      >
+        <div class="wf-modal" role="dialog" aria-labelledby="lal-mute-title" aria-modal="true">
+          <header class="wf-modal__header">
+            <h3 id="lal-mute-title" class="wf-modal__title">禁言用户</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeMuteModal">×</button>
+          </header>
+          <div class="wf-modal__body">
+            <p class="live-mute-modal__user">
+              用户：<strong>{{ muteTarget.username }}</strong>（{{ muteTarget.userId }}）
+            </p>
+            <p v-if="muteTarget.from !== 'list'" class="live-mute-modal__danmaku">触发弹幕：{{ muteTarget.content }}</p>
+            <div class="wf-form-row live-mute-modal__reason-row">
+              <label class="wf-form-row__label wf-form-row__label--required" for="lal-mute-reason">禁言原因</label>
+              <input
+                id="lal-mute-reason"
+                v-model="muteReason"
+                type="text"
+                class="wf-input wf-input--full"
+                placeholder="请输入禁言原因"
+                maxlength="50"
+                @keydown.enter.prevent="confirmMute"
+              />
+            </div>
+            <p v-if="muteReasonHint" class="wf-modal__hint">{{ muteReasonHint }}</p>
+          </div>
+          <footer class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeMuteModal">取消</button>
+            <button type="button" class="wf-btn wf-btn--primary" @click="confirmMute">确定禁言</button>
+          </footer>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="blockModalVisible && blockTarget"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="closeBlockModal"
+      >
+        <div class="wf-modal" role="dialog" aria-labelledby="lal-block-title" aria-modal="true">
+          <header class="wf-modal__header">
+            <h3 id="lal-block-title" class="wf-modal__title">拉黑用户</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeBlockModal">×</button>
+          </header>
+          <div class="wf-modal__body">
+            <p class="live-mute-modal__user">
+              确认拉黑 <strong>{{ blockTarget.username }}</strong>（{{ blockTarget.userId }}）？
+            </p>
+            <p class="wf-muted">拉黑后该用户无法再进入本直播间，可在列表中取消拉黑。</p>
+          </div>
+          <footer class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeBlockModal">取消</button>
+            <button type="button" class="wf-btn wf-btn--danger" @click="confirmBlock">确定拉黑</button>
+          </footer>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="voice.sheetOpen.value && voice.selectedSeat.value"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="voice.closeSeatSheet"
+      >
+        <div class="wf-modal lal-voice-sheet" role="dialog" aria-labelledby="lal-voice-sheet-title" aria-modal="true">
+          <header class="wf-modal__header">
+            <h3 id="lal-voice-sheet-title" class="wf-modal__title">麦位设置</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="voice.closeSeatSheet">×</button>
+          </header>
+          <div class="wf-modal__body">
+            <div v-if="voice.selectedUser.value" class="lal-voice-sheet__user">
+              <img :src="voice.selectedUser.value.avatar" :alt="voice.selectedUser.value.name" />
+              <strong>{{ voice.selectedUser.value.name }}</strong>
+              <div class="lal-voice-sheet__user-ops">
+                <button
+                  type="button"
+                  class="wf-btn"
+                  :class="voice.selectedUser.value.followed ? 'wf-btn--default' : 'wf-btn--primary'"
+                  @click="voice.toggleFollow"
+                >
+                  {{ voice.selectedUser.value.followed ? '已关注' : '关注' }}
+                </button>
+              </div>
+            </div>
+            <p v-else-if="voice.selectedSeat.value" class="lal-voice-sheet__seat">
+              {{ voice.selectedSeat.value.index }} 号麦 ·
+              {{ voice.selectedSeat.value.kind === 'locked' ? '麦位关闭' : '麦位空闲' }}
+            </p>
+            <div class="lal-voice-sheet__actions">
+              <button
+                v-if="voice.selectedUser.value"
+                type="button"
+                class="wf-btn"
+                :class="voice.selectedUser.value.badge === 'admin' ? 'wf-btn--danger' : 'wf-btn--add'"
+                @click="voice.toggleAdmin"
+              >
+                {{ voice.selectedUser.value.badge === 'admin' ? '取消房管' : '设为房管' }}
+              </button>
+              <button
+                v-if="voice.selectedUser.value"
+                type="button"
+                class="wf-btn wf-btn--danger"
+                @click="voice.kickOffMic"
+              >
+                踢下麦
+              </button>
+              <button
+                v-if="voice.selectedUser.value"
+                type="button"
+                class="wf-btn"
+                :class="voice.selectedUser.value.mic === 'mute' ? 'wf-btn--primary' : 'wf-btn--danger'"
+                @click="voice.toggleSeatMute"
+              >
+                {{ voice.selectedUser.value.mic === 'mute' ? '开麦' : '禁麦' }}
+              </button>
+              <button type="button" class="wf-btn wf-btn--danger" @click="voice.muteAllGuests">全麦禁麦</button>
+              <button type="button" class="wf-btn wf-btn--primary" @click="voice.unmuteAllGuests">全麦解除</button>
+              <button
+                v-if="voice.selectedSeat.value.kind !== 'locked'"
+                type="button"
+                class="wf-btn wf-btn--danger"
+                @click="voice.closeMicSeat"
+              >
+                关闭麦位
+              </button>
+              <button
+                v-else
+                type="button"
+                class="wf-btn wf-btn--add"
+                @click="voice.openMicSeat"
+              >
+                打开麦位
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </Teleport>

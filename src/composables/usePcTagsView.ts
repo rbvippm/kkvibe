@@ -10,7 +10,9 @@ export type PcTag = {
 }
 
 const adminTags = ref<PcTag[]>([{ path: '/pc', routeName: 'pc', title: '首页', affix: true }])
-const anchorTags = ref<PcTag[]>([{ path: '/pc-anchor', routeName: 'pca', title: '首页', affix: true }])
+const anchorTags = ref<PcTag[]>([
+  { path: '/pc-anchor/live-assistant', routeName: 'pca-live-assistant', title: '主播控制台', affix: true },
+])
 
 function isAnchorName(name: string) {
   return name === 'pca' || name.startsWith('pca-')
@@ -61,7 +63,7 @@ export function usePcTagsView() {
     if (route.name !== routeName) return
 
     const fallback = store.value[index] ?? store.value[index - 1]
-    router.push(fallback?.path ?? (isAnchorName(routeName) ? '/pc-anchor' : '/pc'))
+    router.push(fallback?.path ?? (isAnchorName(routeName) ? '/pc-anchor/live-assistant' : '/pc'))
   }
 
   function activateTag(tag: PcTag) {

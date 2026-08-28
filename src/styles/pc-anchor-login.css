@@ -1,24 +1,25 @@
 /**
  * PC 主播后台登录页
+ * 结构对齐金刚 PC 登录弹层：账号密码 / 验证码，无协议与找回密码
  */
 
 .pca-login {
-  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100svh;
   padding: 24px;
-  background: #f4f5f7;
+  background: #fffcf7;
   color: #333;
   font-size: 14px;
 }
 
 .pca-login__inner {
   display: grid;
-  grid-template-columns: minmax(280px, 420px) 420px;
-  gap: 48px;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 520px);
+  gap: 56px;
   align-items: center;
-  width: min(100%, 960px);
+  width: min(100%, 1080px);
 }
 
 .pca-login__hero {
@@ -26,199 +27,388 @@
 }
 
 .pca-login__art {
-  height: 220px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #eef1ff, #f7f8fb);
-  border: 1px solid #e8e8e8;
   display: grid;
   place-items: center;
-  color: #8b8fd9;
-  font-size: 64px;
+  overflow: hidden;
+  height: 320px;
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse 68% 58% at 50% 42%, rgb(255 140 0 / 20%), transparent 72%),
+    linear-gradient(180deg, #fff7ec, #fffcf7);
+}
+
+.pca-login__art img {
+  display: block;
+  width: min(78%, 240px);
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 18px 28px rgb(197 136 63 / 28%));
 }
 
 .pca-login__hero-title {
   margin: 20px 0 6px;
+  color: #000;
   font-size: 28px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .pca-login__hero-desc {
-  margin: 0 0 16px;
-  color: #999;
-}
-
-.pca-login__dots {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.pca-login__dot {
-  width: 28px;
-  height: 3px;
-  border: none;
-  border-radius: 2px;
-  background: #d9d9d9;
-  cursor: pointer;
-}
-
-.pca-login__dot--on {
-  background: #595959;
+  margin: 0;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .pca-login__card {
   position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 24px 24px 28px;
+  border-radius: 20px;
   background: #fff;
-  border-radius: 8px;
   box-shadow: 0 8px 28px rgb(0 0 0 / 8%);
-  padding: 28px 32px 20px;
 }
 
-.pca-login__qr-toggle {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 56px;
-  height: 56px;
-  border: none;
-  background: linear-gradient(135deg, transparent 50%, #7b79e8 50%);
-  color: #fff;
-  font-size: 12px;
-  cursor: pointer;
-  border-top-right-radius: 8px;
+@media (max-width: 860px) {
+  .pca-login__inner {
+    grid-template-columns: minmax(0, 520px);
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .pca-login__hero {
+    display: none;
+  }
 }
 
-.pca-login__welcome {
-  margin: 0 48px 16px 0;
-  font-size: 20px;
+.pca-login__title {
+  margin: 0 0 20px;
+  color: #000;
+  font-size: 24px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .pca-login__tabs {
   display: flex;
   gap: 24px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 16px;
 }
 
 .pca-login__tab {
-  padding: 0 0 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
   border: none;
   background: none;
-  color: #999;
+  color: #888;
   cursor: pointer;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
-.pca-login__tab--on {
-  color: #1890ff;
-  box-shadow: inset 0 -2px 0 #1890ff;
+.pca-login__tab::after {
+  content: '';
+  width: 84px;
+  height: 3px;
+  border-radius: 2px;
+  background: transparent;
 }
 
-.pca-login__row {
+.pca-login__tab.is-on {
+  color: #4f4f4f;
+}
+
+.pca-login__tab.is-on::after {
+  background: #ff8c00;
+}
+
+.pca-login__form {
   display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.pca-login__field,
-.pca-login select,
-.pca-login input {
-  height: 40px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  padding: 0 12px;
+.pca-login__field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pca-login__label {
+  color: #4f4f4f;
   font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.pca-login__control {
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-height: 48px;
+  padding: 0 12px 0 16px;
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
   background: #fff;
 }
 
-.pca-login select {
-  width: 108px;
-  flex-shrink: 0;
-}
-
-.pca-login__code {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.pca-login__send {
-  flex-shrink: 0;
-  height: 40px;
+.pca-login__control input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
   border: none;
-  background: none;
-  color: #1890ff;
-  cursor: pointer;
-  white-space: nowrap;
+  background: transparent;
+  color: #333;
+  font-size: 14px;
 }
 
-.pca-login__send:disabled {
+.pca-login__dial {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: 58px;
+  height: 28px;
+  padding: 0 2px 0 0;
+  border: none;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pca-login__dial::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-right: 1.5px solid #333;
+  border-bottom: 1.5px solid #333;
+  transform: rotate(45deg);
+}
+
+.pca-login__dial.is-open::after {
+  margin-top: 3px;
+  transform: rotate(-135deg);
+}
+
+.pca-login__dial-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: min(360px, 46vh);
+  overflow: hidden;
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 9px rgb(197 136 63 / 20%);
+}
+
+.pca-login__dial-search {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 20px 0;
+  padding: 10px 12px;
+  border: 1px solid #e7e7e7;
+  border-radius: 40px;
+}
+
+.pca-login__dial-search img {
+  display: block;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.pca-login__dial-search input {
+  flex: 1;
+  min-width: 0;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #333;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.pca-login__dial-search input::placeholder {
+  color: #888;
+  opacity: 0.8;
+}
+
+.pca-login__dial-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.pca-login__dial-letter {
+  margin: 0;
+  padding: 16px 20px 0;
+  color: #000;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  opacity: 0.4;
+}
+
+.pca-login__dial-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 16px 24px 16px 20px;
+  border: none;
+  border-bottom: 1px solid #e7e7e7;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pca-login__dial-item span {
+  color: #000;
+  font-size: 14px;
+  line-height: 1.35;
+  opacity: 0.8;
+}
+
+.pca-login__dial-item em {
+  flex-shrink: 0;
+  width: 48px;
+  color: #888;
+  font-size: 14px;
+  font-style: normal;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.pca-login__dial-item:hover,
+.pca-login__dial-item.is-on {
+  background: #f8f8f8;
+}
+
+.pca-login__dial-item:last-child {
+  border-bottom-color: transparent;
+}
+
+.pca-login__dial-empty {
+  margin: 0;
+  padding: 20px;
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pca-login__split {
+  flex-shrink: 0;
+  width: 1px;
+  height: 20px;
+  margin: 0 12px 0 8px;
+  background: #e7e7e7;
+}
+
+.pca-login__clear {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #d9d9d9;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.pca-login input::placeholder {
+  color: #888;
+  opacity: 0.8;
+}
+
+.pca-login input:focus {
+  outline: none;
+}
+
+.pca-login__field:focus-within .pca-login__control,
+.pca-login__field > input:focus {
+  border-color: #ff8c00;
+}
+
+.pca-login__extra,
+.pca-login__code-btn {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.pca-login__extra {
+  background: none;
+  color: #888;
+}
+
+.pca-login__code-btn {
+  background: #ffead6;
+  color: #ff8c00;
+}
+
+.pca-login__code-btn:disabled {
+  background: #f5f5f5;
   color: #999;
   cursor: not-allowed;
 }
 
 .pca-login__submit {
   width: 100%;
-  height: 40px;
-  margin-top: 8px;
+  height: 52px;
   border: none;
-  border-radius: 4px;
-  background: #7b79e8;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #ff8c00, #ff6d24);
+  box-shadow: 0 2px 9px rgb(197 136 63 / 20%);
   color: #fff;
-  font-size: 15px;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .pca-login__submit:disabled {
-  opacity: 0.7;
   cursor: not-allowed;
+  opacity: 0.3;
 }
 
 .pca-login__error {
-  min-height: 20px;
-  margin: 8px 0 0;
+  margin: 0;
   color: #ff4d4f;
   font-size: 12px;
-}
-
-.pca-login__hint {
-  margin: 8px 0 0;
-  color: #999;
-  font-size: 12px;
-}
-
-.pca-login__line {
-  margin: 16px 0 0;
-  color: #999;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pca-login__qr {
-  text-align: center;
-  padding: 12px 0 8px;
-}
-
-.pca-login__qr-box {
-  width: 180px;
-  height: 180px;
-  margin: 0 auto 12px;
-  border: 1px dashed #d9d9d9;
-  display: grid;
-  place-items: center;
-  color: #7b79e8;
-  font-size: 13px;
-}
-
-@media (max-width: 840px) {
-  .pca-login__inner {
-    grid-template-columns: 1fr;
-  }
-
-  .pca-login__hero {
-    display: none;
-  }
+  line-height: 1.4;
 }

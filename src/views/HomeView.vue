@@ -203,11 +203,11 @@ function submitLabPassword() {
           <div class="home-entry__card-body">
             <h2 class="home-entry__card-title">PC 主播后台</h2>
             <p class="home-entry__card-text">
-              主播登录与直播助手开播；侧栏、面包屑与多标签沿用 PC 管理后台结构。
+              主播登录后直接进入主播控制台开播；侧栏、面包屑与多标签沿用 PC 管理后台结构。
             </p>
             <div class="home-entry__card-tags">
               <span class="home-entry__tag home-entry__tag--pca">登录</span>
-              <span class="home-entry__tag home-entry__tag--pca">直播助手</span>
+              <span class="home-entry__tag home-entry__tag--pca">主播控制台</span>
               <span class="home-entry__tag home-entry__tag--pca">开播设置</span>
             </div>
           </div>

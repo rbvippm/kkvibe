@@ -822,14 +822,13 @@ export const router = createRouter({
         {
           path: '',
           name: 'pca',
-          component: () => import('../views/pc-anchor/PcAnchorHubView.vue'),
-          meta: { title: '首页' },
+          redirect: { name: 'pca-live-assistant' },
         },
         {
           path: 'live-assistant',
           name: 'pca-live-assistant',
           component: () => import('../views/pc-anchor/PcAnchorLiveAssistantView.vue'),
-          meta: { title: '直播助手' },
+          meta: { title: '主播控制台' },
         },
       ],
     },

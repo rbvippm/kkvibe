@@ -8,11 +8,6 @@ export type AnchorSession = {
   loginAt: string
 }
 
-const DEMO_ACCOUNT = 'anchoruat01'
-const DEMO_PASSWORD = '1234qwer'
-const DEMO_PHONE = '13800138001'
-const DEMO_SMS_CODE = '123456'
-
 const session = ref<AnchorSession | null>(readSession())
 
 function readSession(): AnchorSession | null {
@@ -36,25 +31,23 @@ export function useAnchorSession() {
 
   function loginByAccount(account: string, password: string): string | null {
     const name = account.trim()
-    if (!name) return '请输入账号/邮箱'
-    if (password.length < 6 || password.length > 20) return '密码需为 6~20 位英文字符或数字'
-    if (name !== DEMO_ACCOUNT || password !== DEMO_PASSWORD) return '账号或密码错误'
+    if (!name) return '请输入金刚号/手机号/邮箱'
+    if (!password) return '请输入密码'
     persist({
-      account: DEMO_ACCOUNT,
-      nickname: 'Lkpkupq',
+      account: name,
+      nickname: name,
       loginAt: new Date().toISOString(),
     })
     return null
   }
 
   function loginByPhone(phone: string, code: string): string | null {
-    const mobile = phone.trim()
-    if (!/^\d{6,15}$/.test(mobile)) return '请输入正确的手机号'
+    const identity = phone.trim()
+    if (!identity) return '请输入手机号/邮箱'
     if (!code.trim()) return '请输入验证码'
-    if (mobile !== DEMO_PHONE || code.trim() !== DEMO_SMS_CODE) return '手机号或验证码错误'
     persist({
-      account: DEMO_ACCOUNT,
-      nickname: 'Lkpkupq',
+      account: identity,
+      nickname: identity,
       loginAt: new Date().toISOString(),
     })
     return null
@@ -62,8 +55,8 @@ export function useAnchorSession() {
 
   function loginByQr(): void {
     persist({
-      account: DEMO_ACCOUNT,
-      nickname: 'Lkpkupq',
+      account: '主播',
+      nickname: '主播',
       loginAt: new Date().toISOString(),
     })
   }
@@ -79,9 +72,5 @@ export function useAnchorSession() {
     loginByPhone,
     loginByQr,
     logout,
-    DEMO_ACCOUNT,
-    DEMO_PASSWORD,
-    DEMO_PHONE,
-    DEMO_SMS_CODE,
   }
 }

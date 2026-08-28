@@ -128,6 +128,8 @@ const danmakuMessages = ref<DanmakuMessage[]>([
   },
 ])
 
+const blockedUserIds = ref<string[]>([])
+
 const muteRecords = ref<MuteRecord[]>([
   {
     id: 'mute1',
@@ -188,6 +190,46 @@ const muteRecords = ref<MuteRecord[]>([
     reason: '多次跨直播间违规',
     danmakuContent: '辱骂主播',
     danmakuSentAt: '2026-06-06 15:29:10',
+  },
+  {
+    id: 'mute_aud_02',
+    recordNo: 'MU20260828160002',
+    userId: 'u_aud_02',
+    username: '王刚',
+    roomId: CURRENT_ROOM.id,
+    hostName: CURRENT_ROOM.hostName,
+    hostId: CURRENT_ROOM.hostId,
+    sessionId: CURRENT_ROOM.sessionId,
+    muteSource: '主播',
+    muteType: '房间禁言',
+    mutedAt: '2026-08-28 16:00:12',
+    unmutedAt: '—',
+    operator: 'EZ',
+    operatorId: CURRENT_ROOM.hostId,
+    muted: true,
+    reason: '公屏刷屏',
+    danmakuContent: '在线列表',
+    danmakuSentAt: '2026-08-28 15:59:40',
+  },
+  {
+    id: 'mute_aud_06',
+    recordNo: 'MU20260828160106',
+    userId: 'u_aud_06',
+    username: '张磊',
+    roomId: CURRENT_ROOM.id,
+    hostName: CURRENT_ROOM.hostName,
+    hostId: CURRENT_ROOM.hostId,
+    sessionId: CURRENT_ROOM.sessionId,
+    muteSource: '主播',
+    muteType: '房间禁言',
+    mutedAt: '2026-08-28 16:01:08',
+    unmutedAt: '—',
+    operator: 'EZ',
+    operatorId: CURRENT_ROOM.hostId,
+    muted: true,
+    reason: '发布广告',
+    danmakuContent: '在线列表',
+    danmakuSentAt: '2026-08-28 16:00:51',
   },
 ])
 
@@ -321,6 +363,19 @@ export function useLiveDanmakuMute() {
     )
   }
 
+  function blockUser(userId: string) {
+    if (blockedUserIds.value.includes(userId)) return
+    blockedUserIds.value = [...blockedUserIds.value, userId]
+  }
+
+  function unblockUser(userId: string) {
+    blockedUserIds.value = blockedUserIds.value.filter((id) => id !== userId)
+  }
+
+  function isUserBlocked(userId: string) {
+    return blockedUserIds.value.includes(userId)
+  }
+
   function sendLiveReminder(content: string) {
     if (!content.trim()) return
     danmakuMessages.value.push({
@@ -348,6 +403,9 @@ export function useLiveDanmakuMute() {
     muteUser,
     unmuteUser,
     isUserMuted,
+    blockUser,
+    unblockUser,
+    isUserBlocked,
     sendLiveReminder,
   }
 }

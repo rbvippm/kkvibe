@@ -3,6 +3,7 @@
 export const VOICE_ROOM_ASSETS = {
   bg: '/images/voice-room/bg.png',
   plus: '/images/voice-room/icon-plus.svg',
+  chair: '/images/voice-room/icon-chair.svg',
   lock: '/images/voice-room/icon-lock.svg',
   mic: '/images/voice-room/icon-mic.svg',
   mute: '/images/voice-room/icon-mute.svg',

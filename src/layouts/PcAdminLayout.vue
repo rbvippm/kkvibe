@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import PcToastHost from '../components/wireframe/PcToastHost.vue'
 import { getPcBreadcrumb, pcAnchorMenuTree, pcMenuTree, type PcMenuItem } from '../config/pcMenu'
+import { useAnchorSession } from '../composables/useAnchorSession'
 import { usePcTagsView } from '../composables/usePcTagsView'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/pc-admin-layout.css'
+import '../styles/pc-wireframe.css'
 
 const route = useRoute()
+const router = useRouter()
 const sidebarCollapsed = ref(false)
+const logoutOpen = ref(false)
 const { isWorkspacePreview } = useWorkspaceInlinePreview()
 const { visitedTags, closeTag, activateTag } = usePcTagsView()
+const { session, logout } = useAnchorSession()
 
 const isAnchorLayout = computed(() => route.path.startsWith('/pc-anchor'))
 const menuTree = computed(() => (isAnchorLayout.value ? pcAnchorMenuTree : pcMenuTree))
@@ -18,7 +23,9 @@ const brandTitle = computed(() => (isAnchorLayout.value ? 'KK 主播后台' : 'K
 
 const breadcrumbs = computed(() => {
   const name = route.name
-  if (typeof name !== 'string') return [{ title: '首页', path: isAnchorLayout.value ? '/pc-anchor' : '/pc' }]
+  if (typeof name !== 'string') {
+    return [{ title: isAnchorLayout.value ? '主播控制台' : '首页', path: isAnchorLayout.value ? '/pc-anchor/live-assistant' : '/pc' }]
+  }
   return getPcBreadcrumb(name)
 })
 
@@ -30,6 +37,23 @@ function toggleSidebar() {
 
 function isMenuActive(item: PcMenuItem) {
   return item.routeName === activeRouteName.value
+}
+
+const anchorName = computed(() => session.value?.nickname || session.value?.account || '主播')
+const anchorInitial = computed(() => anchorName.value.slice(0, 1))
+
+function openLogout() {
+  logoutOpen.value = true
+}
+
+function closeLogout() {
+  logoutOpen.value = false
+}
+
+function confirmLogout() {
+  logout()
+  logoutOpen.value = false
+  router.replace({ name: 'pca-login' })
 }
 
 </script>
@@ -118,6 +142,12 @@ function isMenuActive(item: PcMenuItem) {
               </li>
             </ol>
           </nav>
+
+          <div v-if="isAnchorLayout" class="pc-admin-account">
+            <span class="pc-admin-account__avatar" aria-hidden="true">{{ anchorInitial }}</span>
+            <span class="pc-admin-account__name">{{ anchorName }}</span>
+            <button type="button" class="pc-admin-account__logout" @click="openLogout">登出</button>
+          </div>
         </div>
 
         <div class="pc-admin-tags" role="tablist" aria-label="已打开页面">
@@ -155,6 +185,24 @@ function isMenuActive(item: PcMenuItem) {
       </main>
     </div>
     <PcToastHost />
+
+    <Teleport to="body">
+      <div v-if="logoutOpen" class="wf-modal-mask" @click.self="closeLogout">
+        <div class="wf-modal pc-admin-logout-modal" role="dialog" aria-modal="true" aria-labelledby="pca-logout-title">
+          <header class="wf-modal__header">
+            <h3 id="pca-logout-title" class="wf-modal__title">退出登录</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeLogout">×</button>
+          </header>
+          <div class="wf-modal__body">
+            <p>确认退出当前主播账号？退出后需重新登录才能开播。</p>
+          </div>
+          <footer class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeLogout">取消</button>
+            <button type="button" class="wf-btn wf-btn--danger" @click="confirmLogout">退出登录</button>
+          </footer>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 

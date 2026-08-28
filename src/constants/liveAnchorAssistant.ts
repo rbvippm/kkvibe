@@ -1,37 +1,49 @@
 /** PC 主播后台 · 直播助手 Mock */
 
-export const ANCHOR_LOGIN_SLIDES = [
-  { title: '主播', desc: '开播、互动与房间经营，一站完成。' },
-  { title: '代理', desc: '团队与佣金协同，服务主播成长。' },
-  { title: '公会', desc: '公会运营与主播管理入口。' },
-] as const
+export type AnchorCountryCode = {
+  name: string
+  value: string
+  letter: string
+}
 
-export const ANCHOR_COUNTRY_CODES = [
-  { label: '中国 +86', value: '+86' },
-  { label: '香港 +852', value: '+852' },
-  { label: '澳门 +853', value: '+853' },
-  { label: '台湾 +886', value: '+886' },
-  { label: '新加坡 +65', value: '+65' },
-  { label: '马来西亚 +60', value: '+60' },
-  { label: '泰国 +66', value: '+66' },
-  { label: '越南 +84', value: '+84' },
-  { label: '日本 +81', value: '+81' },
-  { label: '韩国 +82', value: '+82' },
-  { label: '美国 +1', value: '+1' },
-] as const
-
-export const ANCHOR_TITLE_LANGS = [
-  { key: 'cn', label: '简体中文' },
-  { key: 'tw', label: '繁體中文' },
-  { key: 'en', label: 'English' },
-  { key: 'ja', label: '日本' },
-  { key: 'ko', label: '한국인' },
-  { key: 'es', label: 'español' },
-  { key: 'pt', label: 'Português' },
-  { key: 'th', label: 'ไทย' },
-  { key: 'vn', label: 'Tiếng Việt' },
-  { key: 'hi', label: 'हिंदी' },
-] as const
+/** 区号下拉：国名 + 区号，按拼音首字母分组（对齐金刚 PC 登录） */
+export const ANCHOR_COUNTRY_CODES: AnchorCountryCode[] = [
+  { name: '阿尔巴尼亚', value: '+355', letter: 'A' },
+  { name: '阿尔及利亚', value: '+213', letter: 'A' },
+  { name: '阿富汗', value: '+93', letter: 'A' },
+  { name: '阿根廷', value: '+54', letter: 'A' },
+  { name: '爱尔兰', value: '+353', letter: 'A' },
+  { name: '埃及', value: '+20', letter: 'A' },
+  { name: '埃塞俄比亚', value: '+251', letter: 'A' },
+  { name: '澳大利亚', value: '+61', letter: 'A' },
+  { name: '巴西', value: '+55', letter: 'B' },
+  { name: '德国', value: '+49', letter: 'D' },
+  { name: '俄罗斯', value: '+7', letter: 'E' },
+  { name: '法国', value: '+33', letter: 'F' },
+  { name: '菲律宾', value: '+63', letter: 'F' },
+  { name: '韩国', value: '+82', letter: 'H' },
+  { name: '加拿大', value: '+1', letter: 'J' },
+  { name: '柬埔寨', value: '+855', letter: 'J' },
+  { name: '老挝', value: '+856', letter: 'L' },
+  { name: '马来西亚', value: '+60', letter: 'M' },
+  { name: '美国', value: '+1', letter: 'M' },
+  { name: '墨西哥', value: '+52', letter: 'M' },
+  { name: '日本', value: '+81', letter: 'R' },
+  { name: '瑞士', value: '+41', letter: 'R' },
+  { name: '泰国', value: '+66', letter: 'T' },
+  { name: '土耳其', value: '+90', letter: 'T' },
+  { name: '新加坡', value: '+65', letter: 'X' },
+  { name: '印度', value: '+91', letter: 'Y' },
+  { name: '印度尼西亚', value: '+62', letter: 'Y' },
+  { name: '英国', value: '+44', letter: 'Y' },
+  { name: '意大利', value: '+39', letter: 'Y' },
+  { name: '越南', value: '+84', letter: 'Y' },
+  { name: '智利', value: '+56', letter: 'Z' },
+  { name: '中国', value: '+86', letter: 'Z' },
+  { name: '中国澳门', value: '+853', letter: 'Z' },
+  { name: '中国台湾', value: '+886', letter: 'Z' },
+  { name: '中国香港', value: '+852', letter: 'Z' },
+]
 
 export const LIVE_CATEGORIES = ['足球', '篮球', '高清', '赛集', '写真', '游戏', '棒球', '活动', '综合'] as const
 export const LIVE_TAGS = ['真人', '电竞', '电子', '棋牌', '老虎机'] as const
@@ -54,16 +66,75 @@ export type RankUser = {
   online: boolean
 }
 
-export const RANK_USERS: RankUser[] = [
-  { id: 'u10086', nickname: '夜色观星', giftAmount: 880, online: true },
-  { id: 'u10087', nickname: '小夜不困', giftAmount: 420, online: true },
-  { id: 'u10088', nickname: '阿凯开播', giftAmount: 80, online: false },
+export const ASSISTANT_GIFT_CURRENCY = 'KKC'
+
+/** 在线列表最多展示 200 人，每页 20 条 */
+export const ONLINE_LIST_MAX = 200
+export const ONLINE_LIST_PAGE_SIZE = 20
+
+/** 本场点赞展示底数（未满 1 万显示整数） */
+export const ASSISTANT_SESSION_LIKES = 2436
+
+function formatScaledMetric(value: number) {
+  if (value >= 10) return String(Math.round(value))
+  return value.toFixed(1).replace(/\.0$/, '')
+}
+
+/**
+ * 简体 / 繁体满 1 万显示「x.x万」；其他语言满 1000 显示「x.xk」。
+ * 原型默认简体中文，多语言接入后再传 locale。
+ */
+export function formatAssistantMetric(value: number, locale = 'zh-CN') {
+  const safe = Math.max(0, Math.round(value))
+  const useWan = locale === 'zh-CN' || locale === 'zh-TW'
+  if (useWan) {
+    if (safe >= 10000) return `${formatScaledMetric(safe / 10000)}万`
+    return String(safe)
+  }
+  if (safe >= 1000) return `${formatScaledMetric(safe / 1000)}k`
+  return String(safe)
+}
+
+const RANK_HEAD: RankUser[] = [
+  { id: 'u_aud_01', nickname: '张敏', giftAmount: 3025, online: true },
+  { id: 'u_aud_02', nickname: '王刚', giftAmount: 2115, online: true },
+  { id: 'u_aud_03', nickname: '刘洋', giftAmount: 1869, online: true },
+  { id: 'u_aud_04', nickname: '陈婷', giftAmount: 1600, online: true },
+  { id: 'u_aud_05', nickname: '赵强', giftAmount: 1350, online: true },
+  { id: 'u_aud_06', nickname: '张磊', giftAmount: 1150, online: true },
+  { id: 'u_aud_07', nickname: '李娜', giftAmount: 900, online: true },
+  { id: 'u_aud_08', nickname: '孙伟', giftAmount: 450, online: true },
+  { id: 'u_aud_09', nickname: '周杰', giftAmount: 300, online: true },
+  { id: 'u_aud_10', nickname: '李宇春', giftAmount: 250, online: true },
 ]
 
+const RANK_SURNAMES = ['林', '黄', '吴', '郑', '冯', '何', '高', '罗', '宋', '唐', '韩', '曹', '许', '邓', '萧']
+const RANK_GIVENS = ['晓晓', '浩然', '雨桐', '子轩', '思琪', '俊杰', '婉清', '志远', '梦瑶', '天佑']
+
+function buildRankUsers(): RankUser[] {
+  const extra: RankUser[] = []
+  for (let i = RANK_HEAD.length + 1; i <= ONLINE_LIST_MAX; i++) {
+    extra.push({
+      id: `u_aud_${String(i).padStart(3, '0')}`,
+      nickname: `${RANK_SURNAMES[i % RANK_SURNAMES.length]}${RANK_GIVENS[i % RANK_GIVENS.length]}${i}`,
+      giftAmount: Math.max(0, 248 - i),
+      online: true,
+    })
+  }
+  return [...RANK_HEAD, ...extra]
+}
+
+/** 对齐移动端观众列表 Mock：贡献榜 + 部分已禁言，上限 200 */
+export const RANK_USERS: RankUser[] = buildRankUsers()
+
+export function formatAssistantGiftAmount(value: number) {
+  return value.toLocaleString('zh-CN')
+}
+
 export const GO_LIVE_GUIDE_STEPS = [
-  '请先点击「开播设置」，选择您的直播类型。',
-  '获取推流地址后，使用 OBS 确定推流成功。',
-  '再点击「开始直播」。',
+  { title: '完成开播设置', desc: '先点击「开播设置」，选择直播类型与画面规格。' },
+  { title: '确认 OBS 推流', desc: '获取推流地址后，在 OBS 中填入并确认推流成功。' },
+  { title: '开始直播', desc: '推流成功后再点击「开始直播」，观众即可进入房间。' },
 ] as const
 
 export const PUSH_STREAM = {
@@ -74,3 +145,158 @@ export const PUSH_STREAM = {
 export const SHARE_LINK = 'https://m.kkvibe.demo/live/8829103'
 
 export type LiveContentKind = 'none' | 'match' | 'game'
+
+export const ASSISTANT_TOOLBOX = [{ key: 'games', label: '游戏中心' }] as const
+
+export type AssistantChatKind = 'enter' | 'follow' | 'like' | 'liveGift' | 'chat' | 'voiceGift'
+
+export type AssistantChatRole = 'user' | 'host' | 'superAdmin'
+
+export type AssistantChatMsg = {
+  id: string
+  nickname: string
+  userId: string
+  kind: AssistantChatKind
+  role?: AssistantChatRole
+  text?: string
+  target?: string
+  targetUserId?: string
+  giftName?: string
+  giftCount?: number
+}
+
+export const ASSISTANT_SELF_ID = '3180664521199401'
+export const ASSISTANT_SUPER_ADMIN_ID = 'sa_10001'
+
+export function assistantChatRoleOf(msg: Pick<AssistantChatMsg, 'role' | 'userId'>): AssistantChatRole {
+  if (msg.role === 'superAdmin' || msg.userId === ASSISTANT_SUPER_ADMIN_ID) return 'superAdmin'
+  if (msg.role === 'host' || msg.userId === ASSISTANT_SELF_ID) return 'host'
+  return 'user'
+}
+
+export function assistantChatRoleLabel(role: AssistantChatRole) {
+  if (role === 'superAdmin') return '超管'
+  if (role === 'host') return '主播'
+  return null
+}
+
+export function isAssistantChatMuteDisabled(userId: string, role?: AssistantChatRole) {
+  return assistantChatRoleOf({ userId, role }) !== 'user'
+}
+
+export function assistantChatKindLabel(kind: AssistantChatKind) {
+  if (kind === 'enter') return '进场'
+  if (kind === 'like') return '点赞'
+  if (kind === 'follow') return '关注'
+  if (kind === 'liveGift' || kind === 'voiceGift') return '礼物'
+  return null
+}
+
+export type AssistantChatFilterKey = 'enter' | 'gift' | 'chat' | 'interact'
+
+export const ASSISTANT_CHAT_FILTERS: {
+  key: AssistantChatFilterKey
+  label: string
+  hint?: string
+}[] = [
+  { key: 'enter', label: '进场消息' },
+  { key: 'gift', label: '礼物通知' },
+  { key: 'chat', label: '用户发言' },
+  { key: 'interact', label: '互动消息', hint: '用户点赞和关注' },
+]
+
+export function assistantChatFilterKey(kind: AssistantChatKind): AssistantChatFilterKey {
+  if (kind === 'enter') return 'enter'
+  if (kind === 'liveGift' || kind === 'voiceGift') return 'gift'
+  if (kind === 'like' || kind === 'follow') return 'interact'
+  return 'chat'
+}
+
+export const ASSISTANT_GIFT_ICON = '/images/live-stream/gift-thumb.svg'
+
+export const MOCK_ASSISTANT_CHATS: AssistantChatMsg[] = [
+  { id: 'c1', nickname: '夜色观星', userId: 'u10086', kind: 'enter' },
+  { id: 'c2', nickname: '阿凯开播', userId: 'u10088', kind: 'follow' },
+  { id: 'c3', nickname: '三1放', userId: 'u10089', kind: 'like' },
+  { id: 'c4', nickname: '艾米粒', userId: 'u10090', kind: 'liveGift', giftName: '小心心', giftCount: 1 },
+  { id: 'c5', nickname: '夜色观星', userId: 'u10086', kind: 'chat', text: '主播好，刚进来' },
+  {
+    id: 'c5b',
+    nickname: '官方巡管',
+    userId: ASSISTANT_SUPER_ADMIN_ID,
+    role: 'superAdmin',
+    kind: 'chat',
+    text: '本场已开启官方巡查，请文明互动',
+  },
+  {
+    id: 'c5c',
+    nickname: '我',
+    userId: ASSISTANT_SELF_ID,
+    role: 'host',
+    kind: 'chat',
+    text: '欢迎新来的宝宝，扣1看奔驰宝马讲解',
+  },
+  { id: 'c6', nickname: '三1放', userId: 'u10089', kind: 'chat', text: '去打PK，我们给你刷礼物，让你火起来' },
+  { id: 'c7', nickname: '阿凯开播', userId: 'u10088', kind: 'chat', text: '求讲解一波奔驰宝马' },
+  {
+    id: 'c8',
+    nickname: '艾米粒',
+    userId: 'u10090',
+    kind: 'voiceGift',
+    target: '小夜不困',
+    targetUserId: 'u10087',
+    giftName: '小星星',
+    giftCount: 15,
+  },
+  {
+    id: 'c9',
+    nickname: '艾米力',
+    userId: 'u10091',
+    kind: 'voiceGift',
+    target: '全部嘉宾',
+    giftName: '小星星',
+    giftCount: 15,
+  },
+]
+
+export const ASSISTANT_CHAT_EMOJIS = [
+  '😀',
+  '😁',
+  '😂',
+  '🤣',
+  '😊',
+  '😍',
+  '😘',
+  '😜',
+  '🤔',
+  '😅',
+  '😭',
+  '😤',
+  '😱',
+  '😴',
+  '👍',
+  '👎',
+  '👏',
+  '🙏',
+  '💪',
+  '🔥',
+  '❤️',
+  '💕',
+  '🎉',
+  '🎁',
+  '🌹',
+  '⭐',
+  '✨',
+  '💯',
+  '👌',
+  '🤝',
+] as const
+
+export function formatAssistantChatLine(msg: AssistantChatMsg) {
+  if (msg.kind === 'enter') return `${msg.nickname}：进入直播间`
+  if (msg.kind === 'follow') return `${msg.nickname}：关注了您～`
+  if (msg.kind === 'like') return `${msg.nickname}：已为您点赞～`
+  if (msg.kind === 'liveGift') return `${msg.nickname}：送出${msg.giftName} x${msg.giftCount}`
+  if (msg.kind === 'voiceGift') return `${msg.nickname} 送给 ${msg.target} ${msg.giftName} x${msg.giftCount}`
+  return `${msg.nickname}：${msg.text ?? ''}`
+}

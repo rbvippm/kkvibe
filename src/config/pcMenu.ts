@@ -435,26 +435,13 @@ export const pcMenuTree: PcMenuItem[] = [
 /** PC 主播后台侧栏（与管理后台同壳，独立菜单） */
 export const pcAnchorMenuTree: PcMenuItem[] = [
   {
-    key: 'pca-home',
-    title: '首页',
-    path: '/pc-anchor',
-    routeName: 'pca',
-    icon: '🏠',
-    affix: true,
-  },
-  {
-    key: 'pca-my-live',
-    title: '我的直播',
+    key: 'pca-live-assistant',
+    title: '主播控制台',
+    path: '/pc-anchor/live-assistant',
+    routeName: 'pca-live-assistant',
     icon: '📺',
-    children: [
-      {
-        key: 'pca-live-assistant',
-        title: '直播助手',
-        path: '/pc-anchor/live-assistant',
-        routeName: 'pca-live-assistant',
-        pagePath: ['主播后台', '我的直播', '直播助手'],
-      },
-    ],
+    affix: true,
+    pagePath: ['主播后台', '主播控制台'],
   },
 ]
 
@@ -504,10 +491,10 @@ export type BreadcrumbItem = {
 export function getPcBreadcrumb(routeName: string): BreadcrumbItem[] {
   const isAnchor = routeName === 'pca' || routeName.startsWith('pca-')
   const trail: BreadcrumbItem[] = isAnchor
-    ? [{ title: '首页', path: '/pc-anchor' }]
+    ? [{ title: '主播控制台', path: '/pc-anchor/live-assistant' }]
     : [{ title: '首页', path: '/pc' }]
 
-  if (routeName === 'pc' || routeName === 'pca') return trail
+  if (routeName === 'pc' || routeName === 'pca' || routeName === 'pca-live-assistant') return trail
 
   function walk(items: PcMenuItem[], ancestors: PcMenuItem[]): boolean {
     for (const item of items) {
