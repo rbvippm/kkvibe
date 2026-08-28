@@ -706,6 +706,7 @@ export function useLiveAnchorAssistant() {
       showPcToast('已保存，请点击发布')
       return
     }
+    if (!editingId.value) return
     const item = findGoLiveSchedule(editingId.value)
     if (!item) {
       editingId.value = null
