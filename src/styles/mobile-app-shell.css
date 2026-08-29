@@ -5778,7 +5778,6 @@
   background: rgb(0 0 0 / 42%);
 }
 
-.mh5-chat-file--gallery,
 .mh5-chat-file--scan,
 .mh5-chat-file--preview,
 .mh5-chat-file--preparing {
@@ -5788,10 +5787,6 @@
 .mh5-chat-file--files,
 .mh5-chat-file--look {
   justify-content: flex-end;
-}
-
-.mh5-chat-file--gallery {
-  background: #f2f2f7;
 }
 
 .mh5-chat-file--scan,
@@ -5810,7 +5805,7 @@
 
 .mh5-chat-file-sheet {
   width: 100%;
-  padding: 20px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  padding: 20px 16px calc(40px + env(safe-area-inset-bottom, 0px));
   border-radius: 20px 20px 0 0;
   background: #fff;
   box-shadow: 0 -12px 36px rgb(0 0 0 / 16%);
@@ -6406,6 +6401,10 @@
   background: #fff;
 }
 
+.mh5-chat-file-picker--gallery .mh5-chat-file-gallerybar {
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+}
+
 .mh5-chat-file-gallerybar {
   display: flex;
   align-items: center;
@@ -6833,9 +6832,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #fff;
+  color: #1c1c1e;
   font-size: 12px;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .mh5-chat-file-look__track {
@@ -6843,13 +6843,13 @@
   height: 3px;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(255 255 255 / 35%);
+  background: #d1d1d6;
 }
 
 .mh5-chat-file-look__track i {
   display: block;
   height: 100%;
-  background: #fff;
+  background: #1c1c1e;
 }
 
 .mh5-chat-file-preview {
@@ -7241,6 +7241,8 @@
 .mh5-chat-file-leave-active .mh5-chat-file-sheet,
 .mh5-chat-file-enter-active .mh5-chat-file-picker--sheet,
 .mh5-chat-file-leave-active .mh5-chat-file-picker--sheet,
+.mh5-chat-file-enter-active .mh5-chat-file-picker--gallery,
+.mh5-chat-file-leave-active .mh5-chat-file-picker--gallery,
 .mh5-chat-file-enter-active .mh5-chat-file-look,
 .mh5-chat-file-leave-active .mh5-chat-file-look {
   transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
@@ -7255,6 +7257,8 @@
 .mh5-chat-file-leave-to .mh5-chat-file-sheet,
 .mh5-chat-file-enter-from .mh5-chat-file-picker--sheet,
 .mh5-chat-file-leave-to .mh5-chat-file-picker--sheet,
+.mh5-chat-file-enter-from .mh5-chat-file-picker--gallery,
+.mh5-chat-file-leave-to .mh5-chat-file-picker--gallery,
 .mh5-chat-file-enter-from .mh5-chat-file-look,
 .mh5-chat-file-leave-to .mh5-chat-file-look {
   transform: translateY(100%);

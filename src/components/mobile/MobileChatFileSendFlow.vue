@@ -249,6 +249,14 @@ function closeAll() {
   emit('close')
 }
 
+function onOverlayClick() {
+  if (stage.value === 'source' || stage.value === 'files') {
+    closeAll()
+    return
+  }
+  if (stage.value === 'gallery') backToSource()
+}
+
 function onSource(key: string) {
   if (key === 'files') {
     pickerTab.value = 'recents'
@@ -527,7 +535,7 @@ function isDocPreview(file: ChatFileAttachment) {
       v-if="open"
       class="mh5-chat-file"
       :class="`mh5-chat-file--${stage}`"
-      @click.self="stage === 'source' || stage === 'files' ? closeAll() : undefined"
+      @click.self="onOverlayClick"
     >
       <!-- 选择文档 -->
       <div
@@ -684,8 +692,15 @@ function isDocPreview(file: ChatFileAttachment) {
         </nav>
       </section>
 
-      <!-- 照片或视频 · 对齐照片/相册 -->
-      <section v-else-if="stage === 'gallery'" class="mh5-chat-file-picker mh5-chat-file-picker--gallery" @click.stop>
+      <!-- 照片或视频 · 复用照片入口同一套选图弹层 -->
+      <section
+        v-else-if="stage === 'gallery'"
+        class="mh5-media-picker__sheet mh5-chat-file-picker--gallery"
+        role="dialog"
+        aria-label="选择照片或视频"
+        @click.stop
+      >
+        <div class="mh5-media-picker__handle" aria-hidden="true" />
         <header class="mh5-media-picker__header">
           <button type="button" class="mh5-media-picker__icon-btn" aria-label="关闭" @click="backToSource">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -714,7 +729,7 @@ function isDocPreview(file: ChatFileAttachment) {
               {{ $t('相册') }}
             </button>
           </div>
-          <span class="mh5-chat-file-picker__spacer" />
+          <span class="mh5-chat-file-picker__spacer" aria-hidden="true" />
         </header>
 
         <main v-if="galleryTab === 'photos'" class="mh5-media-picker__grid">
@@ -752,11 +767,10 @@ function isDocPreview(file: ChatFileAttachment) {
           </button>
         </main>
 
-        <footer class="mh5-chat-file-gallerybar">
+        <footer v-if="canOpenGallery" class="mh5-chat-file-gallerybar">
           <button
             type="button"
             class="mh5-chat-file-gallerybar__btn"
-            :disabled="!canOpenGallery"
             @click="reviewSelectedGallery()"
           >
             {{ $t('预览') }}
@@ -776,7 +790,6 @@ function isDocPreview(file: ChatFileAttachment) {
           <button
             type="button"
             class="mh5-chat-file-gallerybar__btn mh5-chat-file-gallerybar__next"
-            :disabled="!canOpenGallery"
             @click="openSelectedGallery"
           >
             {{ $t('下一步') }}
