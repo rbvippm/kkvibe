@@ -1,3 +1,8 @@
+import {
+  CHAT_FILE_MOCK_ITEMS,
+  type ChatFileAttachment,
+  type ChatFileDownloadStatus,
+} from './mobileChatFileSend'
 import { CHAT_ROOM_ASSETS } from './mobileChatRoomAssets'
 
 /** 「+」更多面板入口 · Figma 1290:17404 */
@@ -54,6 +59,12 @@ export type ChatRoomMessage = {
   sendStatus?: ChatMediaSendStatus
   /** 上传进度 0–100，仅 sending */
   uploadProgress?: number
+  /** WhatsApp 风格原始文件气泡 */
+  file?: ChatFileAttachment
+  /** 对方文件下载态：待下 / 下载中 / 已完成 / 失败 / 超限不可下 */
+  downloadStatus?: ChatFileDownloadStatus
+  /** 下载进度 0–100，仅 downloading */
+  downloadProgress?: number
 }
 
 /** 气泡内媒体总张数（含宫格溢出的 +N） */
@@ -242,6 +253,63 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       extraCount: 2,
       sendStatus: 'failed',
       caption: '多图 · 发送失败',
+    },
+    {
+      id: 'm-file',
+      direction: 'sent',
+      time: '17:25',
+      read: true,
+      layout: '1-square',
+      media: [],
+      text: 'ok',
+      sendStatus: 'sent',
+      file: CHAT_FILE_MOCK_ITEMS[2],
+    },
+    {
+      id: 'm-file-fail',
+      direction: 'sent',
+      time: '17:28',
+      read: false,
+      layout: '1-square',
+      media: [],
+      text: '请看这表',
+      sendStatus: 'failed',
+      file: CHAT_FILE_MOCK_ITEMS[4],
+    },
+    {
+      id: 'm-file-recv',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '17:30',
+      layout: '1-square',
+      media: [],
+      text: '方案在这里',
+      downloadStatus: 'done',
+      file: CHAT_FILE_MOCK_ITEMS[1],
+    },
+    {
+      id: 'm-file-recv-large',
+      direction: 'received',
+      senderName: '骄傲的鸭子',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '17:31',
+      layout: '1-square',
+      media: [],
+      downloadStatus: 'pending',
+      file: CHAT_FILE_MOCK_ITEMS[5],
+    },
+    {
+      id: 'm-file-recv-dlfail',
+      direction: 'received',
+      senderName: '肖虎',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '17:32',
+      layout: '1-square',
+      media: [],
+      text: '集锦有点大',
+      downloadStatus: 'failed',
+      file: CHAT_FILE_MOCK_ITEMS[6],
     },
   ],
 }

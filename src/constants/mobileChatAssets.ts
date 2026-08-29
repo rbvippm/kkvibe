@@ -7,6 +7,7 @@ export const CHAT_ASSETS = {
   checkSent: '/images/chat/icon-check-sent.svg',
   previewPhoto: '/images/chat/icon-preview-photo.svg',
   previewVideo: '/images/chat/icon-preview-video.svg',
+  previewFile: '/images/chat/icon-preview-file.svg',
   pin: '/images/chat/icon-pin.svg',
   avatarDirect: '/images/chat-room/avatar.png',
   avatarH5Article: '/images/chat/avatar-h5-article.svg',

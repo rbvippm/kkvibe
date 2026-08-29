@@ -34,6 +34,7 @@ function openRoom(item: ChatConversation) {
 function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
   if (kind === 'video') return CHAT_ASSETS.previewVideo
   if (kind === 'photo') return CHAT_ASSETS.previewPhoto
+  if (kind === 'file') return CHAT_ASSETS.previewFile
   return ''
 }
 </script>

@@ -12,7 +12,20 @@ import {
   type ChatMediaItem,
   type ChatRoomMessage,
 } from '../../constants/mobileChatRoom'
-import { getConversationUnreadByRoomId, syncConversationAfterMediaSend } from '../../constants/mobileChat'
+import {
+  getConversationUnreadByRoomId,
+  syncConversationAfterFileSend,
+  syncConversationAfterMediaSend,
+} from '../../constants/mobileChat'
+import {
+  chatFileKindTone,
+  fileReceiveMeta,
+  fileSendFailMeta,
+  fileUploadProgressText,
+  isChatFileOversize,
+  type ChatFileSendPayload,
+} from '../../constants/mobileChatFileSend'
+import { CHAT_FILE_SEND_SPEC } from '../../constants/mobileChatFileSendSpec'
 import { CHAT_UNREAD_JUMP_SPEC } from '../../constants/mobileChatUnreadSpec'
 import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC } from '../../constants/mobileChatMediaPickerSpec'
@@ -20,6 +33,7 @@ import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
 import { CHAT_TG_H5_MEDIA_SPEC } from '../../constants/mobileChatTelegramH5Spec'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
+import MobileChatFileSendFlow from './MobileChatFileSendFlow.vue'
 import MobileChatMediaPicker from './MobileChatMediaPicker.vue'
 import MobileChatTelegramH5MediaFlow from './MobileChatTelegramH5MediaFlow.vue'
 import '../../styles/mobile-app-shell.css'
@@ -38,10 +52,12 @@ const mediaPickerOpen = ref(false)
 const mediaPickerStartAt = ref<'gallery' | 'camera'>('gallery')
 const tgH5Open = ref(false)
 const tgH5StartAt = ref<'attach' | 'system' | 'camera'>('attach')
+const fileSendOpen = ref(false)
 const activeMsgId = ref<string | null>(null)
 const resendMsgId = ref<string | null>(null)
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const uploadTimers = new Map<string, number>()
+const downloadTimers = new Map<string, number>()
 const mainEl = ref<HTMLElement | null>(null)
 const showJumpBottom = ref(false)
 const newMsgCount = ref(0)
@@ -60,6 +76,8 @@ const unreadArriveAbort = ref<AbortController | null>(null)
 const canSend = computed(() => draft.value.trim().length > 0)
 const UPLOAD_RING_R = 28
 const UPLOAD_RING = 2 * Math.PI * UPLOAD_RING_R
+const FILE_XFER_RING_R = 14
+const FILE_XFER_RING = 2 * Math.PI * FILE_XFER_RING_R
 const JUMP_BOTTOM_GAP = 80
 const JUMP_BADGE_MAX = 999
 const INCOMING_DEMO_TEXTS = ['刚看到了', '这几张不错', '晚上再聊'] as const
@@ -74,6 +92,7 @@ const overlayOpen = computed(
     plusOpen.value ||
     mediaPickerOpen.value ||
     tgH5Open.value ||
+    fileSendOpen.value ||
     Boolean(activeMsgId.value) ||
     Boolean(resendMsgId.value),
 )
@@ -314,6 +333,43 @@ function stopUpload(id: string) {
 function clearAllUploads() {
   uploadTimers.forEach((timer) => window.clearTimeout(timer))
   uploadTimers.clear()
+  downloadTimers.forEach((timer) => window.clearTimeout(timer))
+  downloadTimers.clear()
+}
+
+function stopDownload(id: string) {
+  const timer = downloadTimers.get(id)
+  if (timer) window.clearTimeout(timer)
+  downloadTimers.delete(id)
+}
+
+function startDownload(msg: ChatRoomMessage) {
+  if (!msg.file) return
+  if (isChatFileOversize(msg.file) || msg.downloadStatus === 'blocked') {
+    showToast('文件超过 2 GB，无法下载')
+    return
+  }
+  stopDownload(msg.id)
+  patchMessage(msg.id, { downloadStatus: 'downloading', downloadProgress: 8 })
+  const tick = () => {
+    const current = messages.value.find((item) => item.id === msg.id)
+    if (!current || current.downloadStatus !== 'downloading') return
+    const next = Math.min(100, (current.downloadProgress ?? 0) + 9)
+    if (next >= 100) {
+      patchMessage(msg.id, { downloadStatus: 'done', downloadProgress: 100 })
+      stopDownload(msg.id)
+      showToast('下载完成')
+      return
+    }
+    patchMessage(msg.id, { downloadProgress: next })
+    downloadTimers.set(msg.id, window.setTimeout(tick, 180))
+  }
+  downloadTimers.set(msg.id, window.setTimeout(tick, 180))
+}
+
+function cancelDownload(msg: ChatRoomMessage) {
+  stopDownload(msg.id)
+  patchMessage(msg.id, { downloadStatus: 'failed', downloadProgress: 0 })
 }
 
 function startUpload(id: string) {
@@ -365,6 +421,10 @@ function uploadPercent(progress = 0) {
   return `${Math.round(Math.min(100, Math.max(0, progress)))}%`
 }
 
+function fileXferDashoffset(progress = 0) {
+  return FILE_XFER_RING * (1 - Math.min(100, Math.max(0, progress)) / 100)
+}
+
 function isSending(msg: ChatRoomMessage) {
   return msg.direction === 'sent' && msg.sendStatus === 'sending'
 }
@@ -373,8 +433,49 @@ function isFailed(msg: ChatRoomMessage) {
   return msg.direction === 'sent' && msg.sendStatus === 'failed'
 }
 
+function isDownloading(msg: ChatRoomMessage) {
+  return msg.direction === 'received' && msg.downloadStatus === 'downloading'
+}
+
+function isDownloadPending(msg: ChatRoomMessage) {
+  return msg.direction === 'received' && msg.downloadStatus === 'pending'
+}
+
+function isDownloadFailed(msg: ChatRoomMessage) {
+  return msg.direction === 'received' && msg.downloadStatus === 'failed'
+}
+
+function isDownloadBlocked(msg: ChatRoomMessage) {
+  return Boolean(
+    msg.file &&
+      msg.direction === 'received' &&
+      (msg.downloadStatus === 'blocked' || isChatFileOversize(msg.file)),
+  )
+}
+
+function onFileBubbleClick(msg: ChatRoomMessage) {
+  if (isSending(msg) || isDownloading(msg)) return
+  if (isFailed(msg)) {
+    openResend(msg)
+    return
+  }
+  if (msg.file && msg.direction === 'received') {
+    if (isDownloadBlocked(msg)) {
+      showToast('文件超过 2 GB，无法下载')
+      return
+    }
+    if (isDownloadPending(msg) || isDownloadFailed(msg)) {
+      startDownload(msg)
+      return
+    }
+    showToast('已打开文件预览（原型）')
+    return
+  }
+  openMenu(msg)
+}
+
 function openMenu(msg: ChatRoomMessage) {
-  if (isSending(msg)) return
+  if (isSending(msg) || isDownloading(msg)) return
   plusOpen.value = false
   activeMsgId.value = msg.id
 }
@@ -401,6 +502,11 @@ function onPlusAction(key: string, label: string) {
     // App：照片 → 相册选图；相机 → WhatsApp 全屏相机
     mediaPickerStartAt.value = key === 'camera' ? 'camera' : 'gallery'
     mediaPickerOpen.value = true
+    return
+  }
+  if (key === 'file') {
+    plusOpen.value = false
+    fileSendOpen.value = true
     return
   }
   showToast(`已选择「${label}」（原型演示）`)
@@ -487,6 +593,52 @@ function onMediaSend(payload: ChatMediaSendPayload) {
     payload.caption,
   )
   void scrollToBottom()
+}
+
+function onFileSend(payload: ChatFileSendPayload) {
+  const files = payload.files.filter((file) => !isChatFileOversize(file))
+  if (!files.length) {
+    showToast('文件超过 2 GB，无法发送')
+    return
+  }
+  const caption = (payload.caption ?? '').trim() || draft.value.trim()
+  const stamp = Date.now()
+  files.forEach((file, index) => {
+    messages.value = [
+      ...messages.value,
+      {
+        id: `local-file-${stamp}-${index}`,
+        direction: 'sent',
+        time: nowTimeLabel(),
+        read: false,
+        layout: '1-square',
+        media: [],
+        text: caption || undefined,
+        sendStatus: 'sending',
+        uploadProgress: 8,
+        file,
+      },
+    ]
+    startUpload(messages.value[messages.value.length - 1]!.id)
+  })
+
+  fileSendOpen.value = false
+  plusOpen.value = false
+  if (caption) draft.value = ''
+
+  const last = files[files.length - 1]
+  if (last) syncConversationAfterFileSend(room.value.id, last.name, caption)
+  void scrollToBottom()
+}
+
+function fileMetaText(msg: ChatRoomMessage) {
+  if (!msg.file) return ''
+  if (isSending(msg)) return fileUploadProgressText(msg.uploadProgress ?? 0, msg.file.sizeLabel)
+  if (isFailed(msg)) return fileSendFailMeta(msg.file)
+  if (msg.direction === 'received') {
+    return fileReceiveMeta(msg.file, msg.downloadStatus, msg.downloadProgress ?? 0)
+  }
+  return fileReceiveMeta(msg.file, 'done')
 }
 
 onBeforeUnmount(() => {
@@ -588,7 +740,7 @@ onBeforeUnmount(() => {
             type="button"
             class="mh5-chat-room-bubble"
             :class="`mh5-chat-room-bubble--${msg.direction}`"
-            @click="openMenu(msg)"
+            @click="msg.file ? onFileBubbleClick(msg) : openMenu(msg)"
           >
             <p
               v-if="msg.direction === 'received' && room.kind === 'group' && msg.senderName"
@@ -596,6 +748,82 @@ onBeforeUnmount(() => {
             >
               {{ msg.senderName }}
             </p>
+            <div
+              v-if="msg.file"
+              class="mh5-chat-room-file"
+              :class="{
+                'mh5-chat-room-file--uploading': isSending(msg) || isDownloading(msg),
+                'mh5-chat-room-file--failed': isFailed(msg) || isDownloadFailed(msg),
+                'mh5-chat-room-file--blocked': isDownloadBlocked(msg),
+              }"
+            >
+              <div class="mh5-chat-room-file__card">
+                <span
+                  class="mh5-chat-room-file__badge"
+                  :style="{ background: chatFileKindTone(msg.file.kind) }"
+                >
+                  {{ msg.file.ext }}
+                </span>
+                <div class="mh5-chat-room-file__body">
+                  <p class="mh5-chat-room-file__name">{{ msg.file.name }}</p>
+                  <p class="mh5-chat-room-file__meta">{{ fileMetaText(msg) }}</p>
+                </div>
+                <button
+                  v-if="isSending(msg)"
+                  type="button"
+                  class="mh5-chat-room-file__stop"
+                  aria-label="取消上传"
+                  @click.stop="cancelUpload(msg)"
+                >
+                  <span />
+                </button>
+                <button
+                  v-else-if="isDownloading(msg)"
+                  type="button"
+                  class="mh5-chat-room-file__stop mh5-chat-room-file__stop--ring"
+                  aria-label="取消下载"
+                  @click.stop="cancelDownload(msg)"
+                >
+                  <svg class="mh5-chat-room-file__ring" viewBox="0 0 32 32" aria-hidden="true">
+                    <circle cx="16" cy="16" r="14" class="mh5-chat-room-file__ring-disk" />
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="14"
+                      class="mh5-chat-room-file__ring-bar"
+                      :stroke-dasharray="FILE_XFER_RING"
+                      :stroke-dashoffset="fileXferDashoffset(msg.downloadProgress)"
+                    />
+                  </svg>
+                  <span />
+                </button>
+                <button
+                  v-else-if="isDownloadPending(msg)"
+                  type="button"
+                  class="mh5-chat-room-file__xfer"
+                  aria-label="下载文件"
+                  @click.stop="startDownload(msg)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M8 3v7.2M5.2 7.6 8 10.4l2.8-2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M4 13h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                </button>
+                <button
+                  v-else-if="isDownloadFailed(msg)"
+                  type="button"
+                  class="mh5-chat-room-file__xfer mh5-chat-room-file__xfer--retry"
+                  aria-label="重新下载"
+                  @click.stop="startDownload(msg)"
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                    <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </div>
+              <p v-if="msg.text" class="mh5-chat-room-file__caption">{{ msg.text }}</p>
+            </div>
             <div
               v-if="msg.media.length"
               class="mh5-chat-room-media"
@@ -659,8 +887,26 @@ onBeforeUnmount(() => {
                 />
               </div>
             </div>
-            <p v-if="msg.text" class="mh5-chat-room-bubble__text">{{ msg.text }}</p>
-            <div v-if="!msg.media.length" class="mh5-chat-room-bubble__time">{{ msg.time }}</div>
+            <p v-if="msg.text && !msg.file" class="mh5-chat-room-bubble__text">{{ msg.text }}</p>
+            <div v-if="!msg.media.length" class="mh5-chat-room-bubble__time">
+              <span>{{ msg.time }}</span>
+              <svg
+                v-if="msg.file && (isSending(msg) || isFailed(msg))"
+                class="mh5-chat-room-media__clock"
+                viewBox="0 0 14 14"
+                aria-label="发送中"
+              >
+                <circle cx="7" cy="7" r="5.4" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <path d="M7 4.2v3.1l2 1.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+              </svg>
+              <img
+                v-else-if="msg.file && msg.direction === 'sent' && msg.read"
+                :src="CHAT_ROOM_ASSETS.read"
+                alt="已读"
+                width="14"
+                height="14"
+              />
+            </div>
           </button>
         </div>
       </article>
@@ -749,6 +995,12 @@ onBeforeUnmount(() => {
                 v-if="action.key === 'photo'"
                 class="mh5-chat-room-plus__annot"
                 :spec="isTgH5Room ? CHAT_TG_H5_MEDIA_SPEC : CHAT_MEDIA_PICKER_SPEC"
+                placement="top"
+              />
+              <Mh5SpecAnnot
+                v-else-if="action.key === 'file'"
+                class="mh5-chat-room-plus__annot"
+                :spec="CHAT_FILE_SEND_SPEC"
                 placement="top"
               />
             </div>
@@ -870,12 +1122,25 @@ onBeforeUnmount(() => {
       @send="onMediaSend"
     />
 
+    <MobileChatFileSendFlow
+      :open="fileSendOpen"
+      :recipient-name="room.title"
+      :draft="draft"
+      @close="fileSendOpen = false"
+      @send="onFileSend"
+      @toast="showToast"
+    />
+
     <Transition name="mh5-chat-room-resend">
       <div v-if="resendMsg" class="mh5-chat-room-resend" @click="closeResend">
         <div class="mh5-chat-room-resend__sheet" role="dialog" aria-label="重新发送" @click.stop>
           <span class="mh5-chat-room-resend__handle" aria-hidden="true" />
-          <p class="mh5-chat-room-resend__hint">消息尚未送出</p>
-          <p class="mh5-chat-room-resend__desc">发送失败，是否重新发送？</p>
+          <p class="mh5-chat-room-resend__hint">
+            {{ resendMsg.file ? $t('文件尚未送出') : $t('消息尚未送出') }}
+          </p>
+          <p class="mh5-chat-room-resend__desc">
+            {{ resendMsg.file ? $t('发送失败，是否重新发送该文件？') : $t('发送失败，是否重新发送？') }}
+          </p>
           <div class="mh5-chat-room-resend__actions">
             <button type="button" class="mh5-chat-room-resend__action" @click="confirmResend">
               重新发送

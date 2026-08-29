@@ -8,6 +8,7 @@ import {
   type ChatMediaSendPayload,
   type GalleryMediaItem,
 } from '../../constants/mobileChatGallery'
+import { CHAT_PHOTO_VIDEO_LIMIT_ALERT, isPhotoEntryVideoOversize } from '../../constants/mobileChatFileSend'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 
 const props = withDefaults(
@@ -39,6 +40,7 @@ const selectedIds = ref<string[]>([])
 const capturedItems = ref<GalleryMediaItem[]>([])
 const previewIndex = ref(0)
 const toast = ref('')
+const limitAlert = ref('')
 const videoPlaying = ref(false)
 const videoMuted = ref(true)
 /** 从相机入口进入；预览关闭时回到相机 */
@@ -168,6 +170,7 @@ function resetState() {
   previewIndex.value = 0
   flash.value = 'auto'
   captureCount.value = 0
+  limitAlert.value = ''
   resetVideoUi()
 }
 
@@ -205,7 +208,16 @@ function captureShutter() {
   stage.value = 'preview'
 }
 
+function canSelectMedia(item: GalleryMediaItem) {
+  if (isPhotoEntryVideoOversize(item)) {
+    limitAlert.value = CHAT_PHOTO_VIDEO_LIMIT_ALERT
+    return false
+  }
+  return true
+}
+
 function pickFromCameraStrip(item: GalleryMediaItem) {
+  if (!canSelectMedia(item)) return
   if (!selectedIds.value.includes(item.id)) {
     if (selectedIds.value.length >= 9) {
       showTip('最多选择 9 张')
@@ -243,6 +255,7 @@ function toggleSelect(item: GalleryMediaItem) {
     }
     return
   }
+  if (!canSelectMedia(item)) return
   if (selectedIds.value.length >= 9) {
     showTip('最多选择 9 张')
     return
@@ -256,6 +269,7 @@ function openAlbum(id: string) {
 }
 
 function openPreview(fromItem?: GalleryMediaItem) {
+  if (fromItem && !canSelectMedia(fromItem)) return
   if (!selectedItems.value.length) {
     if (fromItem) {
       selectedIds.value = [fromItem.id]
@@ -689,6 +703,12 @@ function send() {
         </div>
 
       <div v-if="toast" class="mh5-media-picker__toast">{{ toast }}</div>
+      <div v-if="limitAlert" class="mh5-chat-limit" @click.stop>
+        <div class="mh5-chat-limit__card" role="alertdialog" aria-modal="true">
+          <p>{{ $t(limitAlert) }}</p>
+          <button type="button" @click="limitAlert = ''">{{ $t('确定') }}</button>
+        </div>
+      </div>
     </div>
   </Transition>
 </template>

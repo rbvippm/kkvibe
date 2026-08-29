@@ -4,7 +4,7 @@ import { CHAT_ASSETS } from './mobileChatAssets'
 export type ChatFilter = 'all' | 'direct' | 'group' | 'community'
 
 /** 会话列表末条预览 · 媒体图标 */
-export type ChatPreviewMediaIcon = 'photo' | 'video'
+export type ChatPreviewMediaIcon = 'photo' | 'video' | 'file'
 
 /** WhatsApp 风格末条摘要 */
 export type ChatPreviewLine = {
@@ -186,17 +186,24 @@ export function syncConversationAfterMediaSend(
   items: MediaPreviewItem[],
   caption: string,
 ) {
-  const index = chatConversationsState.findIndex((c) => c.roomId === roomId)
-  if (index < 0) return
-
-  const target = chatConversationsState[index]!
   const media = buildMediaListPreview(items, caption)
-  target.previewLine = {
+  bumpConversation(roomId, {
     fromSelf: true,
     delivery: 'sent',
     mediaIcon: media.mediaIcon,
     text: media.text,
-  }
+  })
+}
+
+function bumpConversation(
+  roomId: string,
+  previewLine: ChatPreviewLine,
+) {
+  const index = chatConversationsState.findIndex((c) => c.roomId === roomId)
+  if (index < 0) return
+
+  const target = chatConversationsState[index]!
+  target.previewLine = previewLine
   target.time = nowTimeLabel()
   target.unread = 0
   target.highlighted = false
@@ -209,4 +216,15 @@ export function syncConversationAfterMediaSend(
   const firstUnpinned = chatConversationsState.findIndex((c) => !c.pinned)
   if (firstUnpinned < 0) chatConversationsState.push(target)
   else chatConversationsState.splice(firstUnpinned, 0, target)
+}
+
+/** 聊天详情发送文件后，同步会话列表末条（文档图标 + 配文或文件名） */
+export function syncConversationAfterFileSend(roomId: string, fileName: string, caption: string) {
+  const text = caption.trim() || fileName
+  bumpConversation(roomId, {
+    fromSelf: true,
+    delivery: 'sent',
+    mediaIcon: 'file',
+    text,
+  })
 }
