@@ -2,26 +2,37 @@
 import { computed, ref, watch } from 'vue'
 import type { ChatMediaSendPayload, GalleryMediaItem } from '../../constants/mobileChatGallery'
 import {
+  CHAT_FILE_VIDEO_LIMIT_ALERT,
+  chatFileKindTone,
+  galleryItemToChatFile,
+  isFileEntryItemOversize,
+  type ChatFileAttachment,
+  type ChatFileSendPayload,
+} from '../../constants/mobileChatFileSend'
+import {
   TG_H5_ATTACH_ACTIONS,
   TG_H5_SEND_MORE_ACTIONS,
   TG_H5_SYSTEM_SOURCES,
   tgH5CameraCaptureItem,
+  tgH5FileSendTitle,
   tgH5PickerItems,
   tgH5SendTitle,
 } from '../../constants/mobileChatTelegramH5'
+import MobileChatFileSendFlow from './MobileChatFileSendFlow.vue'
 
 const props = defineProps<{
   open: boolean
-  /** attach：附件菜单；system：系统来源；camera：系统相机 */
-  startAt?: 'attach' | 'system' | 'camera'
+  /** attach：附件菜单；system：系统来源；picker：系统相册；camera：系统相机 */
+  startAt?: 'attach' | 'system' | 'picker' | 'camera'
 }>()
 
 const emit = defineEmits<{
   close: []
   send: [payload: ChatMediaSendPayload]
+  sendFiles: [payload: ChatFileSendPayload]
 }>()
 
-type Stage = 'attach' | 'system' | 'picker' | 'camera' | 'send'
+type Stage = 'attach' | 'system' | 'picker' | 'camera' | 'files' | 'send'
 
 const stage = ref<Stage>('attach')
 const selectedIds = ref<string[]>([])
@@ -44,12 +55,23 @@ const selectedItems = computed(() =>
     .filter((item): item is GalleryMediaItem => Boolean(item)),
 )
 const cameraBagups = ref<GalleryMediaItem[]>([])
+const sendFiles = ref<ChatFileAttachment[]>([])
+const sendKind = ref<'media' | 'file'>('media')
 const canConfirmPicker = computed(() => selectedIds.value.length > 0)
+const isFileSend = computed(() => sendKind.value === 'file')
+/** 「+」→「文件」→「选择照片或视频」：选完按文件卡回显 */
+const fileFromGallery = computed(() => props.startAt === 'picker')
+const canCaption = computed(() => !isFileSend.value || sendFiles.value.length === 1)
+const moreActions = computed(() =>
+  isFileSend.value ? TG_H5_SEND_MORE_ACTIONS.filter((action) => action.key === 'add') : TG_H5_SEND_MORE_ACTIONS,
+)
 const sendTitle = computed(() =>
-  tgH5SendTitle(
-    selectedItems.value.length,
-    selectedItems.value.some((item) => item.type === 'video'),
-  ),
+  isFileSend.value
+    ? tgH5FileSendTitle(sendFiles.value.length)
+    : tgH5SendTitle(
+        selectedItems.value.length,
+        selectedItems.value.some((item) => item.type === 'video'),
+      ),
 )
 
 watch(
@@ -60,7 +82,10 @@ watch(
       return
     }
     const next =
-      props.startAt === 'camera' || props.startAt === 'system' || props.startAt === 'attach'
+      props.startAt === 'camera' ||
+      props.startAt === 'system' ||
+      props.startAt === 'attach' ||
+      props.startAt === 'picker'
         ? props.startAt
         : 'attach'
     resetFlow(next)
@@ -71,6 +96,8 @@ function resetFlow(next: Stage) {
   stage.value = next
   selectedIds.value = []
   cameraBagups.value = []
+  sendFiles.value = []
+  sendKind.value = 'media'
   caption.value = ''
   hd.value = false
   moreOpen.value = false
@@ -100,14 +127,48 @@ function onAttach(key: string, label: string) {
 }
 
 function onSystemSource(key: string) {
-  if (key === 'library' || key === 'files') {
-          if (key === 'files') showTip('选择文件：原型进入系统相册多选')
+  if (key === 'library') {
+    sendKind.value = 'media'
     stage.value = 'picker'
     return
   }
+  if (key === 'files') {
+    sendKind.value = 'file'
+    stage.value = 'files'
+    return
+  }
   if (key === 'camera') {
+    sendKind.value = 'media'
     stage.value = 'camera'
   }
+}
+
+function onFilePickerClose() {
+  stage.value = sendFiles.value.length ? 'send' : 'system'
+}
+
+function onFilesPicked(files: ChatFileAttachment[]) {
+  const next = new Map(sendFiles.value.map((file) => [file.id, file]))
+  for (const file of files) next.set(file.id, file)
+  sendFiles.value = [...next.values()].slice(0, 9)
+  sendKind.value = 'file'
+  caption.value = sendFiles.value.length === 1 ? caption.value : ''
+  stage.value = 'send'
+}
+
+function removeSendFile(id: string) {
+  sendFiles.value = sendFiles.value.filter((file) => file.id !== id)
+  if (!sendFiles.value.length) {
+    caption.value = ''
+    stage.value = fileFromGallery.value ? 'picker' : 'system'
+  }
+}
+
+function filesFromGalleryItems(items: GalleryMediaItem[]) {
+  return items.map((item, index) => ({
+    ...galleryItemToChatFile(item, index),
+    id: `gal-file-${item.id}`,
+  }))
 }
 
 function selectionOn(id: string) {
@@ -115,6 +176,10 @@ function selectionOn(id: string) {
 }
 
 function togglePickerItem(item: GalleryMediaItem) {
+  if (fileFromGallery.value && isFileEntryItemOversize(item) && !selectionOn(item.id)) {
+    showTip(CHAT_FILE_VIDEO_LIMIT_ALERT)
+    return
+  }
   if (selectionOn(item.id)) {
     selectedIds.value = selectedIds.value.filter((id) => id !== item.id)
     return
@@ -128,6 +193,18 @@ function togglePickerItem(item: GalleryMediaItem) {
 
 function confirmPicker() {
   if (!canConfirmPicker.value) return
+  if (fileFromGallery.value) {
+    const incoming = filesFromGalleryItems(selectedItems.value)
+    const next = new Map(sendFiles.value.map((file) => [file.id, file]))
+    for (const file of incoming) next.set(file.id, file)
+    sendFiles.value = [...next.values()].slice(0, 9)
+    sendKind.value = 'file'
+    caption.value = sendFiles.value.length === 1 ? caption.value : ''
+    stage.value = 'send'
+    return
+  }
+  sendKind.value = 'media'
+  sendFiles.value = []
   stage.value = 'send'
 }
 
@@ -146,14 +223,33 @@ function removeSendItem(id: string) {
   selectedIds.value = selectedIds.value.filter((itemId) => itemId !== id)
   cameraBagups.value = cameraBagups.value.filter((item) => item.id !== id)
   if (!selectedIds.value.length) {
-    stage.value = 'system'
+    stage.value = props.startAt === 'picker' ? 'picker' : 'system'
   }
+}
+
+function backFromPicker() {
+  if (sendFiles.value.length) {
+    stage.value = 'send'
+    return
+  }
+  if (fileFromGallery.value) {
+    closeAll()
+    return
+  }
+  stage.value = 'system'
 }
 
 function onMoreAction(key: string) {
   moreOpen.value = false
   if (key === 'add') {
-    stage.value = 'picker'
+    if (fileFromGallery.value) {
+      selectedIds.value = sendFiles.value
+        .map((file) => file.id.replace(/^gal-file-/, ''))
+        .filter(Boolean)
+      stage.value = 'picker'
+      return
+    }
+    stage.value = isFileSend.value ? 'files' : 'picker'
     return
   }
   if (key === 'hd') {
@@ -163,6 +259,14 @@ function onMoreAction(key: string) {
 }
 
 function send() {
+  if (isFileSend.value) {
+    if (!sendFiles.value.length) return
+    emit('sendFiles', {
+      files: sendFiles.value,
+      caption: canCaption.value ? caption.value.trim() : '',
+    })
+    return
+  }
   if (!selectedItems.value.length) return
   emit('send', {
     items: selectedItems.value,
@@ -222,6 +326,15 @@ function send() {
         </div>
       </Transition>
 
+      <MobileChatFileSendFlow
+        :open="stage === 'files'"
+        start-at="files"
+        pick-only
+        @close="onFilePickerClose"
+        @picked="onFilesPicked"
+        @toast="showTip"
+      />
+
       <!-- 3. iOS 系统相册 -->
       <Transition name="mh5-tg-h5-sheet">
         <div
@@ -232,7 +345,7 @@ function send() {
           :aria-label="$t('照片图库')"
         >
           <header class="mh5-tg-h5-picker__header">
-            <button type="button" class="mh5-tg-h5-picker__round" :aria-label="$t('关闭')" @click="stage = 'system'">
+            <button type="button" class="mh5-tg-h5-picker__round" :aria-label="$t('关闭')" @click="backFromPicker">
               ✕
             </button>
             <div class="mh5-tg-h5-picker__seg" role="tablist">
@@ -358,7 +471,7 @@ function send() {
 
             <div v-if="moreOpen" class="mh5-tg-h5-send__menu" role="menu">
               <button
-                v-for="action in TG_H5_SEND_MORE_ACTIONS"
+                v-for="action in moreActions"
                 :key="action.key"
                 type="button"
                 role="menuitem"
@@ -378,7 +491,26 @@ function send() {
               </button>
             </div>
 
-            <div class="mh5-tg-h5-send__grid">
+            <div v-if="isFileSend" class="mh5-tg-h5-send__files">
+              <div v-for="file in sendFiles" :key="file.id" class="mh5-tg-h5-send__file">
+                <span class="mh5-tg-h5-send__file-badge" :style="{ background: chatFileKindTone(file.kind) }">
+                  {{ file.ext }}
+                </span>
+                <div class="mh5-tg-h5-send__file-meta">
+                  <strong>{{ file.name }}</strong>
+                  <small>{{ file.sizeLabel }}</small>
+                </div>
+                <button
+                  type="button"
+                  class="mh5-tg-h5-send__file-trash"
+                  :aria-label="$t('删除')"
+                  @click="removeSendFile(file.id)"
+                >
+                  🗑
+                </button>
+              </div>
+            </div>
+            <div v-else class="mh5-tg-h5-send__grid">
               <div v-for="item in selectedItems" :key="item.id" class="mh5-tg-h5-send__thumb">
                 <img :src="item.src" alt="" />
                 <span v-if="item.type === 'video'" class="mh5-tg-h5-send__dur">{{ item.duration }}</span>
@@ -394,7 +526,7 @@ function send() {
             </div>
 
             <footer class="mh5-tg-h5-send__footer">
-              <div class="mh5-tg-h5-send__caption">
+              <div v-if="canCaption" class="mh5-tg-h5-send__caption">
                 <span aria-hidden="true">☺</span>
                 <input v-model="caption" type="text" :placeholder="$t('添加说明…')" enterkeyhint="send" />
               </div>
@@ -934,6 +1066,73 @@ function send() {
   background: rgb(37 211 102 / 10%);
 }
 
+.mh5-tg-h5-send__files {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 12px 8px;
+  max-height: 280px;
+  overflow: auto;
+}
+
+.mh5-tg-h5-send__file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f7f8;
+}
+
+.mh5-tg-h5-send__file-badge {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mh5-tg-h5-send__file-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.mh5-tg-h5-send__file-meta strong,
+.mh5-tg-h5-send__file-meta small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-tg-h5-send__file-meta strong {
+  font-size: 15px;
+  color: #111;
+}
+
+.mh5-tg-h5-send__file-meta small {
+  margin-top: 2px;
+  color: #8e8e93;
+  font-size: 12px;
+}
+
+.mh5-tg-h5-send__file-trash {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 14px;
+}
+
 .mh5-tg-h5-send__grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -983,6 +1182,7 @@ function send() {
 .mh5-tg-h5-send__footer {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   padding: 12px;
 }

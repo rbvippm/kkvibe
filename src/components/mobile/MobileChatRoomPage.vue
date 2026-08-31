@@ -51,7 +51,7 @@ const plusOpen = ref(false)
 const mediaPickerOpen = ref(false)
 const mediaPickerStartAt = ref<'gallery' | 'camera'>('gallery')
 const tgH5Open = ref(false)
-const tgH5StartAt = ref<'attach' | 'system' | 'camera'>('attach')
+const tgH5StartAt = ref<'attach' | 'system' | 'picker' | 'camera'>('attach')
 const fileSendOpen = ref(false)
 const activeMsgId = ref<string | null>(null)
 const resendMsgId = ref<string | null>(null)
@@ -512,6 +512,12 @@ function onPlusAction(key: string, label: string) {
   showToast(`已选择「${label}」（原型演示）`)
 }
 
+function onH5FilePickGallery() {
+  fileSendOpen.value = false
+  tgH5StartAt.value = 'picker'
+  tgH5Open.value = true
+}
+
 function onMenuAction(key: string, label: string) {
   closeMenu()
   if (key === 'copy') showToast('已复制')
@@ -623,6 +629,7 @@ function onFileSend(payload: ChatFileSendPayload) {
   })
 
   fileSendOpen.value = false
+  tgH5Open.value = false
   plusOpen.value = false
   if (caption) draft.value = ''
 
@@ -1120,14 +1127,17 @@ onBeforeUnmount(() => {
       :start-at="tgH5StartAt"
       @close="tgH5Open = false"
       @send="onMediaSend"
+      @send-files="onFileSend"
     />
 
     <MobileChatFileSendFlow
       :open="fileSendOpen"
       :recipient-name="room.title"
       :draft="draft"
+      :use-h5-photo-picker="isTgH5Room"
       @close="fileSendOpen = false"
       @send="onFileSend"
+      @pick-gallery="onH5FilePickGallery"
       @toast="showToast"
     />
 

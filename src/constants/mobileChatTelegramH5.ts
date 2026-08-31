@@ -50,6 +50,12 @@ export function tgH5SendTitle(count: number, hasVideo = false) {
   return `发送 ${count} 张照片`
 }
 
+/** 从「选择文件」进入的发送预览标题 */
+export function tgH5FileSendTitle(count: number) {
+  if (count <= 0) return '发送文件'
+  return count === 1 ? '发送 1 个文件' : `发送 ${count} 个文件`
+}
+
 /** 相机快门后写入的演示照片 */
 export function tgH5CameraCaptureItem(index = 0): GalleryMediaItem {
   const pool = CHAT_GALLERY_ITEMS.filter((item) => item.type === 'image')

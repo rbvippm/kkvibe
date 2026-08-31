@@ -33,13 +33,21 @@ const props = withDefaults(
     open: boolean
     recipientName?: string
     draft?: string
+    /** source：选择文档；files：直接打开系统文件弹层 */
+    startAt?: 'source' | 'files'
+    /** 勾选后「打开」只回传文件，不进入配文/快览 */
+    pickOnly?: boolean
+    /** H5：选择照片或视频走照片入口（系统相册），不走 App 文件相册 */
+    useH5PhotoPicker?: boolean
   }>(),
-  { recipientName: '', draft: '' },
+  { recipientName: '', draft: '', startAt: 'source', pickOnly: false, useH5PhotoPicker: false },
 )
 
 const emit = defineEmits<{
   close: []
   send: [payload: ChatFileSendPayload]
+  picked: [files: ChatFileAttachment[]]
+  pickGallery: []
   toast: [text: string]
 }>()
 
@@ -217,7 +225,7 @@ function skipLookVideo(sec: number) {
 function resetFlow() {
   clearPrepare()
   resetLookVideo()
-  stage.value = 'source'
+  stage.value = props.startAt === 'files' ? 'files' : 'source'
   pickerTab.value = 'recents'
   fileView.value = 'grid'
   search.value = ''
@@ -267,6 +275,10 @@ function onSource(key: string) {
     return
   }
   if (key === 'gallery') {
+    if (props.useH5PhotoPicker) {
+      emit('pickGallery')
+      return
+    }
     galleryIds.value = []
     galleryTab.value = 'photos'
     galleryAlbumId.value = 'recents'
@@ -275,6 +287,10 @@ function onSource(key: string) {
 }
 
 function backToSource() {
+  if (props.pickOnly || props.startAt === 'files') {
+    closeAll()
+    return
+  }
   stage.value = 'source'
   search.value = ''
   browseLocation.value = null
@@ -339,6 +355,10 @@ function openSelectedFiles() {
     return
   }
   if (!files.length) return
+  if (props.pickOnly) {
+    emit('picked', files)
+    return
+  }
   if (files.length === 1) {
     enterPreview(files)
     return
