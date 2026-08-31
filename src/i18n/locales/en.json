@@ -501,6 +501,7 @@
   "文件超过 2 GB，无法发送": "File exceeds 2 GB and cannot be sent",
   "此文档太大，文档发送上限为 2 GB。": "This document is too large. The document limit is 2 GB.",
   "此视频太大，无法发送。最大为 2 GB。": "This video is too large to send. Maximum is 2 GB.",
+  "已过滤 {n} 个超过 2GB 的文件": "Filtered {n} files exceeding 2 GB",
   "视频超过 200MB 上限。建议改用「文件」方式发送，最高支持 2GB 且不损失画质。":
     "This video exceeds the 200 MB limit. Send it via Files instead — up to 2 GB with no quality loss.",
   "文件超过 2 GB，无法下载": "File exceeds 2 GB and cannot be downloaded",

@@ -3,8 +3,10 @@ import { computed, ref, watch } from 'vue'
 import type { ChatMediaSendPayload, GalleryMediaItem } from '../../constants/mobileChatGallery'
 import {
   CHAT_FILE_VIDEO_LIMIT_ALERT,
+  chatFileH5FilteredHint,
   chatFileKindTone,
   galleryItemToChatFile,
+  isChatFileOversize,
   isFileEntryItemOversize,
   type ChatFileAttachment,
   type ChatFileSendPayload,
@@ -57,6 +59,8 @@ const selectedItems = computed(() =>
 const cameraBagups = ref<GalleryMediaItem[]>([])
 const sendFiles = ref<ChatFileAttachment[]>([])
 const sendKind = ref<'media' | 'file'>('media')
+/** H5 关闭系统文件弹层后滤掉的超 2GB 项数，预览卡回显 */
+const filteredOversizeCount = ref(0)
 const canConfirmPicker = computed(() => selectedIds.value.length > 0)
 const isFileSend = computed(() => sendKind.value === 'file')
 /** 「+」→「文件」→「选择照片或视频」：选完按文件卡回显 */
@@ -104,6 +108,7 @@ function resetFlow(next: Stage) {
   cameraMode.value = 'photo'
   zoom.value = '1x'
   tip.value = ''
+  filteredOversizeCount.value = 0
 }
 
 function showTip(text: string) {
@@ -148,12 +153,19 @@ function onFilePickerClose() {
 }
 
 function onFilesPicked(files: ChatFileAttachment[]) {
+  const allowed = files.filter((file) => !isChatFileOversize(file))
+  const dropped = files.length - allowed.length
   const next = new Map(sendFiles.value.map((file) => [file.id, file]))
-  for (const file of files) next.set(file.id, file)
+  for (const file of allowed) next.set(file.id, file)
   sendFiles.value = [...next.values()].slice(0, 9)
   sendKind.value = 'file'
   caption.value = sendFiles.value.length === 1 ? caption.value : ''
-  stage.value = 'send'
+  filteredOversizeCount.value = dropped
+  if (sendFiles.value.length) {
+    stage.value = 'send'
+    return
+  }
+  if (dropped > 0) showTip(chatFileH5FilteredHint(dropped))
 }
 
 function removeSendFile(id: string) {
@@ -509,6 +521,13 @@ function send() {
                   🗑
                 </button>
               </div>
+              <p
+                v-if="filteredOversizeCount"
+                class="mh5-tg-h5-send__filter"
+                role="status"
+              >
+                {{ $t('已过滤 {n} 个超过 2GB 的文件', { n: filteredOversizeCount }) }}
+              </p>
             </div>
             <div v-else class="mh5-tg-h5-send__grid">
               <div v-for="item in selectedItems" :key="item.id" class="mh5-tg-h5-send__thumb">
@@ -1120,6 +1139,16 @@ function send() {
   margin-top: 2px;
   color: #8e8e93;
   font-size: 12px;
+}
+
+.mh5-tg-h5-send__filter {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff4e5;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9a5b00;
 }
 
 .mh5-tg-h5-send__file-trash {

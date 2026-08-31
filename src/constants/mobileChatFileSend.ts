@@ -204,6 +204,11 @@ export function isChatFileOversize(file: ChatFileAttachment) {
   return file.sizeBytes > CHAT_FILE_MAX_BYTES
 }
 
+/** H5 关闭系统文件弹层后才能读到体积，过滤超限项时的回显 */
+export function chatFileH5FilteredHint(n: number) {
+  return `已过滤 ${n} 个超过 2GB 的文件`
+}
+
 export function galleryItemSizeBytes(item: GalleryMediaItem) {
   if (typeof item.sizeBytes === 'number') return item.sizeBytes
   return item.type === 'video' ? 13_421_772 : 1_677_721

@@ -501,6 +501,7 @@
   "文件超过 2 GB，无法发送": "Tệp vượt quá 2 GB, không gửi được",
   "此文档太大，文档发送上限为 2 GB。": "Tài liệu quá lớn. Giới hạn gửi tài liệu là 2 GB.",
   "此视频太大，无法发送。最大为 2 GB。": "Video quá lớn, không gửi được. Tối đa 2 GB.",
+  "已过滤 {n} 个超过 2GB 的文件": "Đã lọc {n} tệp vượt quá 2GB",
   "视频超过 200MB 上限。建议改用「文件」方式发送，最高支持 2GB 且不损失画质。":
     "Video vượt quá 200MB. Hãy gửi bằng「Tệp」, tối đa 2GB và không mất chất lượng.",
   "文件超过 2 GB，无法下载": "Tệp vượt quá 2 GB, không tải được",

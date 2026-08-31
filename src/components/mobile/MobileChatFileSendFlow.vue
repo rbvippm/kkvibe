@@ -90,7 +90,10 @@ const fileList = computed(() =>
     : filterChatFiles(search.value, pickerTab.value === 'browse' ? browseLocation.value : null),
 )
 
-const selectableFiles = computed(() => fileList.value.filter((file) => !isChatFileOversize(file)))
+/** H5 系统弹层点选时读不到体积，pickOnly 允许先勾上超限项，关闭后再过滤 */
+const selectableFiles = computed(() =>
+  props.pickOnly ? fileList.value : fileList.value.filter((file) => !isChatFileOversize(file)),
+)
 const selectedCount = computed(() => selectedIds.value.length)
 const allSelectableOn = computed(
   () => selectableFiles.value.length > 0 && selectableFiles.value.every((file) => selectedIds.value.includes(file.id)),
@@ -315,7 +318,7 @@ function showLimitAlert(text: string) {
 }
 
 function toggleFile(file: ChatFileAttachment) {
-  if (isChatFileOversize(file)) {
+  if (!props.pickOnly && isChatFileOversize(file)) {
     showLimitAlert(file.kind === 'video' ? CHAT_FILE_VIDEO_LIMIT_ALERT : CHAT_FILE_DOC_LIMIT_ALERT)
     return
   }
@@ -344,6 +347,11 @@ function openSelectedFiles() {
   const picked = selectedIds.value
     .map((id) => fileList.value.find((item) => item.id === id))
     .filter((item): item is ChatFileAttachment => Boolean(item))
+  if (props.pickOnly) {
+    if (!picked.length) return
+    emit('picked', picked)
+    return
+  }
   const files = picked.filter((file) => !isChatFileOversize(file))
   if (picked.some((file) => isChatFileOversize(file))) {
     selectedIds.value = files.map((file) => file.id)
@@ -355,10 +363,6 @@ function openSelectedFiles() {
     return
   }
   if (!files.length) return
-  if (props.pickOnly) {
-    emit('picked', files)
-    return
-  }
   if (files.length === 1) {
     enterPreview(files)
     return
