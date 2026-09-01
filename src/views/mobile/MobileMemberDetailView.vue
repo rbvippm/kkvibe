@@ -28,7 +28,6 @@ import {
 import {
   MEMBER_GAME_PROFIT_FORMULA,
   MEMBER_PROFIT_CATEGORY_TABS,
-  MEMBER_PROFIT_FORMULA,
   MEMBER_PROFIT_VENDORS,
   getMemberProfitCostSection,
   getMemberProfitDetail,
@@ -38,6 +37,7 @@ import {
   getMemberProfitSummaryRows,
   getMemberTotalProfit,
   memberProfitDialogTitle,
+  memberProfitFormulaText,
   memberRebateGameNetProfitFormula,
   profitTotalClass,
   profitValueClass,
@@ -128,21 +128,32 @@ const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
 const cashWalletGroups = computed(() => formatMemberCashWalletGroups(member.value?.wallets))
 const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
+/** 返佣会员盈亏不含会员退水，仅 VIP 退水 */
+const memberProfitOptions = computed(() => ({
+  includeMemberRebate: !isRebateAgent.value,
+}))
 const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, profitVendor.value))
-const profitSummaryRows = computed(() => getMemberProfitSummaryRows(currency.value))
-const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value))
+const profitSummaryRows = computed(() =>
+  getMemberProfitSummaryRows(currency.value, memberProfitOptions.value),
+)
+const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value, memberProfitOptions.value))
+const profitFormulaText = computed(() =>
+  memberProfitFormulaText(memberProfitOptions.value.includeMemberRebate),
+)
 const useProfitSections = computed(() => profitLayoutMode.value === 'sections')
-const profitGameSection = computed(() => getMemberProfitGameSection(currency.value))
+const profitGameSection = computed(() =>
+  getMemberProfitGameSection(currency.value, memberProfitOptions.value),
+)
 const profitCostSection = computed(() => getMemberProfitCostSection(currency.value))
-const profitFormula = computed(() => getMemberProfitFormula(currency.value))
+const profitFormula = computed(() => getMemberProfitFormula(currency.value, memberProfitOptions.value))
 const profitDialogTitle = computed(() =>
   profitDialogKind.value
-    ? memberProfitDialogTitle(profitDialogKind.value, currency.value)
+    ? memberProfitDialogTitle(profitDialogKind.value, currency.value, memberProfitOptions.value)
     : '',
 )
 const profitDialogRows = computed(() =>
   profitDialogKind.value
-    ? getMemberProfitDialogDetail(profitDialogKind.value, currency.value)
+    ? getMemberProfitDialogDetail(profitDialogKind.value, currency.value, memberProfitOptions.value)
     : [],
 )
 const profitDialogFormulaText = computed(
@@ -700,7 +711,7 @@ function toggleCreditCurrencyMenu() {
                   class="mh5-agent-detail-profit-summary__tip-bubble"
                   role="tooltip"
                 >
-                  {{ MEMBER_PROFIT_FORMULA }}
+                  {{ profitFormulaText }}
                 </span>
               </span>
               <span
