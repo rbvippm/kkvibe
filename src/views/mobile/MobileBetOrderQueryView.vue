@@ -9,7 +9,11 @@ import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import { AGENT_SETTLE_TODAY } from '../../constants/agentSettle'
-import { AGENT_BET_ORDER_QUERY_SPEC, MEMBER_BET_RECORDS_SPEC } from '../../constants/betOrderQuerySpec'
+import {
+  AGENT_BET_ORDER_QUERY_SPEC,
+  FLAGSHIP_BET_RECORDS_SPEC,
+  VIP_BET_RECORDS_SPEC,
+} from '../../constants/betOrderQuerySpec'
 import {
   DATE_RANGE_SHEET_PRESETS,
   addMonthsYmd,
@@ -69,7 +73,7 @@ const props = withDefaults(
     seedKeyword?: string
     /** 独立页标题；默认「注单查询」 */
     title?: string
-    /** 会员入口不展示代理端注1，改挂投注记录注5 */
+    /** 会员入口不展示代理端注1，改按厅馆挂旗舰厅注1 / 贵宾厅注5 */
     hideSpec?: boolean
   }>(),
   { embedded: false, seedKeyword: '', title: '', hideSpec: false },
@@ -625,7 +629,11 @@ function summaryWinLoseClass(value: number) {
           />
           <button type="button" class="mh5-sub-header__action" @click="openFilter">{{ $t('筛选') }}</button>
         </div>
-        <Mh5SpecAnnot v-else :spec="MEMBER_BET_RECORDS_SPEC" placement="bottom" />
+        <Mh5SpecAnnot
+          v-else
+          :spec="isVipClubRecords ? VIP_BET_RECORDS_SPEC : FLAGSHIP_BET_RECORDS_SPEC"
+          placement="bottom"
+        />
       </template>
     </Mh5SubPageHeader>
 
