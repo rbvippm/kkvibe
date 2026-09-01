@@ -370,11 +370,11 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
               <div class="mh5-agent-commission-cell">
                 <p class="mh5-agent-commission-cell__label">
                   <span class="mh5-agent-commission-tip-wrap">
-                    负佣金累计
+                    负盈利累计
                     <button
                       type="button"
                       class="mh5-agent-commission-q"
-                      aria-label="查看负佣金累计说明"
+                      aria-label="查看负盈利累计说明"
                       :aria-expanded="tipKey === 'negative'"
                       @click.stop="toggleTip('negative')"
                     >
@@ -405,7 +405,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
 
           <section class="mh5-agent-commission-card">
             <h2 class="mh5-agent-commission-card__title">佣金计算</h2>
-            <div class="mh5-agent-commission-formula" aria-label="净输赢减去负佣金累计再乘佣金比例等于佣金">
+            <div class="mh5-agent-commission-formula" aria-label="净输赢减去负盈利累计再乘佣金比例等于佣金">
               <div class="mh5-agent-commission-cell">
                 <p class="mh5-agent-commission-cell__label">
                   <span class="mh5-agent-commission-tip-wrap">
@@ -437,7 +437,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
               </div>
               <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
               <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">负佣金累计</p>
+                <p class="mh5-agent-commission-cell__label">负盈利累计</p>
                 <p
                   class="mh5-agent-commission-cell__value"
                   :class="toneClass(currentBill.negativeAccum === 0 ? 0 : -1)"

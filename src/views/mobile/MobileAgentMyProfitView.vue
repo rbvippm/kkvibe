@@ -160,7 +160,7 @@ const rebateCommissionBill = computed(() =>
   isRebateNotJoined.value ? null : findCommissionBill(rebateMonthKey.value),
 )
 const rebateHeroTitle = computed(() => commissionHeroTitle(rebateMonthKey.value))
-/** 已入驻月份均展示负佣金累计（待派发 / 历史月）；未入驻不展示 */
+/** 已入驻月份均展示负盈利累计（待派发 / 历史月）；未入驻不展示 */
 const showRebateNegativeAccum = computed(
   () => !isRebateNotJoined.value && shouldShowCommissionNegativeAccum(rebateMonthKey.value),
 )
@@ -212,9 +212,9 @@ const levelSummaryRow = computed(() => rebateLevelFormula.value.levelRow)
 /** 公式卡结果列统一为「佣金」 */
 const rebateFormulaResultLabel = '佣金'
 const rebateL1Formula = computed(() => rebateLevelFormula.value)
-/** 当月佣金 = （净输赢 - 负佣金累计）× 佣金比例 */
+/** 当月佣金 = （净输赢 - 负盈利累计）× 佣金比例 */
 const rebateMonthCommission = computed(() => rebateL1Formula.value.monthCommission)
-/** 总佣金 = 佣金（负佣金累计已在佣金公式中冲减） */
+/** 总佣金 = 佣金（负盈利累计已在佣金公式中冲减） */
 const rebateTotalCommission = computed(() => rebateMonthCommission.value)
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
 /** 占成公式：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
@@ -548,10 +548,10 @@ onBeforeUnmount(() => {
             class="mh5-agent-my-profit-hero-metric mh5-agent-my-profit-hero-metric--neg"
           >
             <p class="mh5-agent-commission-hero__unit">
-              <span class="mh5-agent-commission-tip-wrap">{{ $t('负佣金累计') }}<button
+              <span class="mh5-agent-commission-tip-wrap">{{ $t('负盈利累计') }}<button
                   type="button"
                   class="mh5-agent-commission-q"
-                  :aria-label="$t('查看负佣金累计说明')"
+                  :aria-label="$t('查看负盈利累计说明')"
                   :aria-expanded="negativeTipOpen"
                   @click.stop="onNegativeTipClick"
                 >
@@ -959,11 +959,11 @@ onBeforeUnmount(() => {
         </Transition>
       </section>
 
-      <!-- 返佣：(净输赢 − 负佣金累计) × 佣金比例 = 佣金 -->
+      <!-- 返佣：(净输赢 − 负盈利累计) × 佣金比例 = 佣金 -->
       <section
         v-if="isRebateAgent"
         class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
-        :aria-label="$t('净输赢减去负佣金累计再乘佣金比例等于佣金')"
+        :aria-label="$t('净输赢减去负盈利累计再乘佣金比例等于佣金')"
         @click.stop
       >
         <div
@@ -1000,7 +1000,7 @@ onBeforeUnmount(() => {
           </div>
           <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
           <div class="mh5-agent-commission-cell">
-            <p class="mh5-agent-commission-cell__label">{{ $t('负佣金累计') }}</p>
+            <p class="mh5-agent-commission-cell__label">{{ $t('负盈利累计') }}</p>
             <p
               class="mh5-agent-commission-cell__value"
               :class="commissionToneClass(rebateNegativeAccum === 0 ? 0 : -1)"

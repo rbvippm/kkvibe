@@ -13,7 +13,7 @@ export type CommissionMonthBill = {
   commissionRate: string
   venueFee: number
   totalCost: number
-  /** 负佣金累计：仅 0 或负数 */
+  /** 负盈利累计：仅 0 或负数 */
   negativeAccum: number
   monthCommission: number
 }
@@ -42,12 +42,12 @@ export function getCommissionTotalCostTip() {
 }
 
 export const COMMISSION_NEGATIVE_TIP =
-  '负佣金累计值：若历史仍有待冲抵的累计负佣金；则冲抵完毕后再发放正佣金。'
+  '负盈利累计值：若历史仍有待冲抵的累计负盈利；则冲抵完毕后再发放正佣金。'
 
 export const COMMISSION_NET_WIN_TIP = '净输赢 = 游戏输赢 - 总成本'
 
 export const COMMISSION_TOTAL_TIP =
-  '总佣金 = 佣金\n佣金 = （净输赢 - 负佣金累计） × 佣金比例'
+  '总佣金 = 佣金\n佣金 = （净输赢 - 负盈利累计） × 佣金比例'
 
 export function getDefaultCommissionMonth(date = new Date()) {
   const y = date.getFullYear()
@@ -81,7 +81,7 @@ type CommissionBillTemplate = Omit<CommissionMonthBill, 'month'>
 
 /**
  * 近 12 个月模板（新→旧，相对当前月偏移 0…-11）
- * 本月待派发与历史已派发均展示负佣金累计；佣金 = (净输赢 - 负佣金累计) × 佣金比例
+ * 本月待派发与历史已派发均展示负盈利累计；佣金 = (净输赢 - 负盈利累计) × 佣金比例
  */
 const COMMISSION_BILL_TEMPLATES: CommissionBillTemplate[] = [
   {
@@ -322,7 +322,7 @@ export function findCommissionBill(month: string) {
 }
 
 /**
- * 待派发月展示「预计佣金」（含负佣金累计）；
+ * 待派发月展示「预计佣金」（含负盈利累计）；
  * 已派发 / 无佣金历史月展示「发放佣金」
  */
 export function commissionHeroTitle(month: string, date = new Date()) {
@@ -332,7 +332,7 @@ export function commissionHeroTitle(month: string, date = new Date()) {
   return '发放佣金'
 }
 
-/** 已入驻结算月均展示负佣金累计（待派发 / 已派发 / 无佣金） */
+/** 已入驻结算月均展示负盈利累计（待派发 / 已派发 / 无佣金） */
 export function shouldShowCommissionNegativeAccum(month: string) {
   return Boolean(findCommissionBill(month))
 }
@@ -342,14 +342,14 @@ function parseCommissionRate(rate: string) {
   return Number.isFinite(n) ? n / 100 : 0
 }
 
-/** 佣金 = max(净输赢 + 负佣金累计, 0) × 佣金比例（负佣金累计为 0 或负数） */
+/** 佣金 = max(净输赢 + 负盈利累计, 0) × 佣金比例（负盈利累计为 0 或负数） */
 export function getCommissionMonthAmount(bill: CommissionMonthBill) {
   const netWin = getCommissionNetWin(bill)
   const rate = parseCommissionRate(bill.commissionRate)
   return Number((Math.max(netWin + bill.negativeAccum, 0) * rate).toFixed(2))
 }
 
-/** 总佣金 = 佣金（已按净输赢冲减负佣金累计，不再二次扣减） */
+/** 总佣金 = 佣金（已按净输赢冲减负盈利累计，不再二次扣减） */
 export function getCommissionTotal(bill: CommissionMonthBill) {
   return getCommissionMonthAmount(bill)
 }
