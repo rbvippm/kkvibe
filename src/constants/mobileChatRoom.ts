@@ -61,7 +61,7 @@ export type ChatRoomMessage = {
   uploadProgress?: number
   /** WhatsApp 风格原始文件气泡 */
   file?: ChatFileAttachment
-  /** 对方文件下载态：待下 / 下载中 / 已完成 / 失败 / 超限不可下 */
+  /** 对方文件 / 多图下载态：待下 / 下载中 / 已完成 / 失败 / 超限不可下 */
   downloadStatus?: ChatFileDownloadStatus
   /** 下载进度 0–100，仅 downloading */
   downloadProgress?: number
@@ -253,6 +253,18 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       extraCount: 2,
       sendStatus: 'failed',
       caption: '多图 · 发送失败',
+    },
+    {
+      id: 'm-dlfail',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:05',
+      layout: '5-plus',
+      media: pick(4, 3),
+      extraCount: 2,
+      downloadStatus: 'failed',
+      caption: '多图 · 下载失败',
     },
     {
       id: 'm-file',

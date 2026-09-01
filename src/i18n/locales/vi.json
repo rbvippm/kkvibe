@@ -514,7 +514,9 @@
   "视频超过 200MB 上限。建议改用「文件」方式发送，最高支持 2GB 且不损失画质。":
     "Video vượt quá 200MB. Hãy gửi bằng「Tệp」, tối đa 2GB và không mất chất lượng.",
   "文件超过 2 GB，无法下载": "Tệp vượt quá 2 GB, không tải được",
+  "下载失败": "Tải thất bại",
   "下载失败，点击重试": "Tải thất bại, nhấn để thử lại",
+  "重新下载": "Tải lại",
   "点击下载": "Nhấn để tải",
   "超过上限，无法下载": "Vượt giới hạn, không tải được",
   "已打开文件预览（原型）": "Đã mở xem trước tệp (nguyên mẫu)",

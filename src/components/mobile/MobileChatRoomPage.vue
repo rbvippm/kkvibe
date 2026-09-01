@@ -344,9 +344,12 @@ function stopDownload(id: string) {
 }
 
 function startDownload(msg: ChatRoomMessage) {
-  if (!msg.file) return
-  if (isChatFileOversize(msg.file) || msg.downloadStatus === 'blocked') {
-    showToast('文件超过 2 GB，无法下载')
+  if (msg.file) {
+    if (isChatFileOversize(msg.file) || msg.downloadStatus === 'blocked') {
+      showToast('文件超过 2 GB，无法下载')
+      return
+    }
+  } else if (!msg.media.length) {
     return
   }
   stopDownload(msg.id)
@@ -358,7 +361,7 @@ function startDownload(msg: ChatRoomMessage) {
     if (next >= 100) {
       patchMessage(msg.id, { downloadStatus: 'done', downloadProgress: 100 })
       stopDownload(msg.id)
-      showToast('下载完成')
+      if (msg.file) showToast('下载完成')
       return
     }
     patchMessage(msg.id, { downloadProgress: next })
@@ -421,6 +424,10 @@ function uploadPercent(progress = 0) {
   return `${Math.round(Math.min(100, Math.max(0, progress)))}%`
 }
 
+function mediaXferProgress(msg: ChatRoomMessage) {
+  return isDownloading(msg) ? msg.downloadProgress : msg.uploadProgress
+}
+
 function fileXferDashoffset(progress = 0) {
   return FILE_XFER_RING * (1 - Math.min(100, Math.max(0, progress)) / 100)
 }
@@ -469,6 +476,23 @@ function onFileBubbleClick(msg: ChatRoomMessage) {
       return
     }
     showToast('已打开文件预览（原型）')
+    return
+  }
+  openMenu(msg)
+}
+
+function onBubbleClick(msg: ChatRoomMessage) {
+  if (msg.file) {
+    onFileBubbleClick(msg)
+    return
+  }
+  if (isSending(msg) || isDownloading(msg)) return
+  if (isFailed(msg)) {
+    openResend(msg)
+    return
+  }
+  if (isDownloadFailed(msg) || isDownloadPending(msg)) {
+    startDownload(msg)
     return
   }
   openMenu(msg)
@@ -747,7 +771,7 @@ onBeforeUnmount(() => {
             type="button"
             class="mh5-chat-room-bubble"
             :class="`mh5-chat-room-bubble--${msg.direction}`"
-            @click="msg.file ? onFileBubbleClick(msg) : openMenu(msg)"
+            @click="onBubbleClick(msg)"
           >
             <p
               v-if="msg.direction === 'received' && room.kind === 'group' && msg.senderName"
@@ -836,7 +860,10 @@ onBeforeUnmount(() => {
               class="mh5-chat-room-media"
               :class="[
                 `mh5-chat-room-media--${msg.layout}`,
-                { 'mh5-chat-room-media--uploading': isSending(msg), 'mh5-chat-room-media--failed': isFailed(msg) },
+                {
+                  'mh5-chat-room-media--uploading': isSending(msg) || isDownloading(msg),
+                  'mh5-chat-room-media--failed': isFailed(msg) || isDownloadFailed(msg),
+                },
               ]"
             >
               <div
@@ -849,16 +876,19 @@ onBeforeUnmount(() => {
                   <img class="mh5-chat-room-media__play" :src="CHAT_ROOM_ASSETS.play" alt="" width="30" height="30" />
                   <span v-if="item.duration" class="mh5-chat-room-media__duration">{{ item.duration }}</span>
                 </div>
-                <div v-if="showPlus(msg, index)" class="mh5-chat-room-media__plus">
+                <div
+                  v-if="showPlus(msg, index) && !isDownloadFailed(msg) && !isDownloading(msg)"
+                  class="mh5-chat-room-media__plus"
+                >
                   +{{ msg.extraCount }}
                 </div>
               </div>
-              <div v-if="isSending(msg)" class="mh5-chat-room-media__upload">
+              <div v-if="isSending(msg) || isDownloading(msg)" class="mh5-chat-room-media__upload">
                 <button
                   type="button"
                   class="mh5-chat-room-media__upload-btn"
-                  aria-label="取消上传"
-                  @click.stop="cancelUpload(msg)"
+                  :aria-label="isDownloading(msg) ? '取消下载' : '取消上传'"
+                  @click.stop="isDownloading(msg) ? cancelDownload(msg) : cancelUpload(msg)"
                 >
                   <svg class="mh5-chat-room-media__upload-ring" viewBox="0 0 72 72" aria-hidden="true">
                     <circle cx="36" cy="36" r="34" class="mh5-chat-room-media__upload-disk" />
@@ -868,10 +898,26 @@ onBeforeUnmount(() => {
                       :r="UPLOAD_RING_R"
                       class="mh5-chat-room-media__upload-bar"
                       :stroke-dasharray="UPLOAD_RING"
-                      :stroke-dashoffset="uploadDashoffset(msg.uploadProgress)"
+                      :stroke-dashoffset="uploadDashoffset(mediaXferProgress(msg))"
                     />
                   </svg>
-                  <span class="mh5-chat-room-media__upload-pct">{{ uploadPercent(msg.uploadProgress) }}</span>
+                  <span class="mh5-chat-room-media__upload-pct">{{ uploadPercent(mediaXferProgress(msg)) }}</span>
+                </button>
+              </div>
+              <div v-else-if="isDownloadFailed(msg)" class="mh5-chat-room-media__download">
+                <button
+                  type="button"
+                  class="mh5-chat-room-media__download-btn"
+                  :aria-label="$t('重新下载')"
+                  @click.stop="startDownload(msg)"
+                >
+                  <span class="mh5-chat-room-media__download-icon">
+                    <svg width="28" height="28" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span class="mh5-chat-room-media__download-label">{{ $t('下载失败') }}</span>
                 </button>
               </div>
               <div class="mh5-chat-room-media__meta">

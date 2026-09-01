@@ -514,7 +514,9 @@
   "视频超过 200MB 上限。建议改用「文件」方式发送，最高支持 2GB 且不损失画质。":
     "This video exceeds the 200 MB limit. Send it via Files instead — up to 2 GB with no quality loss.",
   "文件超过 2 GB，无法下载": "File exceeds 2 GB and cannot be downloaded",
+  "下载失败": "Download failed",
   "下载失败，点击重试": "Download failed. Tap to retry",
+  "重新下载": "Retry download",
   "点击下载": "Tap to download",
   "超过上限，无法下载": "Over the limit, cannot download",
   "已打开文件预览（原型）": "Opened file preview (prototype)",
