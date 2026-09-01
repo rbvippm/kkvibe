@@ -145,7 +145,7 @@ const presetOptions = [
   ['lastMonth', '上月'],
 ] as const
 
-const directStats = computed(() => getDirectStats(props.agentType))
+const directStats = computed(() => getDirectStats(props.agentType, props.currency))
 const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
 const profitRankRows = computed(() => {
   const tabs = profitRankTabs.value
@@ -376,8 +376,11 @@ function pickWalletCurrency(value: string) {
             <AgentOverviewStatMask
               v-for="item in directStats"
               :key="item.key"
-              :label="item.label"
+              :label="$t(item.label)"
               :value="item.value"
+              :hint="item.hint ? $t(item.hint) : undefined"
+              :clickable="item.clickable"
+              @click="item.clickable ? openShareRatioDialog() : undefined"
             />
           </div>
         </div>

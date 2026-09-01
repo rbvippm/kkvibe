@@ -39,8 +39,8 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 2,
         name: '活跃人数',
-        biz: '我的直属会员在某个日期段充值过并且投注过',
-        dimension: '汇总：我的直属会员+日期',
+        biz: '档位条件按自然月累计：直属会员当月同时满足充值与有效投注阈值计 1 人；概况「我的直属」不展示该卡片，仅返佣比例弹层「本月进度」展示',
+        dimension: '汇总：我的直属会员+自然月+币种',
         method: '10分钟',
         handler: '现金',
       },

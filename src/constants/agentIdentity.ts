@@ -59,6 +59,47 @@ export function getRebateCommissionTiers(overviewCurrency: string): MonthlyCommi
   return MOCK_COMMISSION_BY_CURRENCY[key].monthlyTiers.map((t) => ({ ...t }))
 }
 
+/** 概况 / 返佣比例：档位进度一律取本月累计，不随日期筛选 */
+export function getRebateTierProgress(overviewCurrency: string): RebateTierProgress {
+  const key = overviewCurrencyToCommissionCurrency(overviewCurrency)
+  return { ...MOCK_REBATE_TIER_PROGRESS[key] }
+}
+
+export type RebateTierChase = {
+  progress: RebateTierProgress
+  matched: MonthlyCommissionTier | null
+  next: MonthlyCommissionTier | null
+  profitGap: number
+  activeGap: number
+}
+
+/** 当前命中档 + 下一档缺口（用于进度条与冲击文案） */
+export function getRebateTierChase(overviewCurrency: string): RebateTierChase {
+  const key = overviewCurrencyToCommissionCurrency(overviewCurrency)
+  const progress = getRebateTierProgress(overviewCurrency)
+  const tiers = [...MOCK_COMMISSION_BY_CURRENCY[key].monthlyTiers].sort(
+    (a, b) => a.monthlyProfit - b.monthlyProfit,
+  )
+  let matched: MonthlyCommissionTier | null = null
+  let next: MonthlyCommissionTier | null = null
+  for (const tier of tiers) {
+    if (isRebateTierMet(tier, progress)) matched = tier
+    else if (!next) next = tier
+  }
+  return {
+    progress,
+    matched,
+    next,
+    profitGap: next ? Math.max(0, next.monthlyProfit - progress.teamGameProfit) : 0,
+    activeGap: next ? Math.max(0, next.minActiveMembers - progress.activeMembers) : 0,
+  }
+}
+
+export function rebateProgressRatio(current: number, target: number) {
+  if (target <= 0) return 1
+  return Math.min(1, current / target)
+}
+
 /** 原型：代理当月团队表现（用于判断命中哪一档） */
 export type RebateTierProgress = {
   /** 当月团队净输赢 */

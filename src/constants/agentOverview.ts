@@ -6,6 +6,10 @@ export type AgentOverviewStat = {
   key: string
   label: string
   value: string
+  /** 卡片角标，如「本月累计」 */
+  hint?: string
+  /** 可点开说明 / 档位进度 */
+  clickable?: boolean
 }
 
 export type ProfitRankTab = 'member_win' | 'member_lose' | 'agent_win'
@@ -110,12 +114,13 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
 ]
 
-/** 返佣代理无「投注退水」指标 */
-export function getDirectStats(identity: 'share' | 'rebate' = 'share'): AgentOverviewStat[] {
-  if (identity === 'rebate') {
-    return MOCK_DIRECT_STATS.filter((item) => item.key !== 'rebate')
-  }
-  return MOCK_DIRECT_STATS
+/** 返佣代理无「投注退水」、无概况「活跃人数」（档位进度只在返佣比例弹层） */
+export function getDirectStats(
+  identity: 'share' | 'rebate' = 'share',
+  _overviewCurrency = 'KKC',
+): AgentOverviewStat[] {
+  if (identity !== 'rebate') return MOCK_DIRECT_STATS
+  return MOCK_DIRECT_STATS.filter((item) => item.key !== 'rebate' && item.key !== 'active')
 }
 
 /** 占成 / 返佣均按三列顺序铺满，避免中间空一格 */

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { AGENT_MY_SHARE_RATIO_ROWS } from '../../constants/agentMyShareRatio'
+import { t } from '../../i18n'
 import {
   getMatchedRebateTierId,
   getRebateCommissionTiers,
+  getRebateTierChase,
+  rebateProgressRatio,
   type AgentIdentityType,
 } from '../../constants/agentIdentity'
 import { formatPct, formatProfit } from '../../constants/agentCommissionSetting'
@@ -33,7 +36,34 @@ const rebateTiers = computed(() => getRebateCommissionTiers(props.currency))
 const matchedTierId = computed(() =>
   isRebate.value ? getMatchedRebateTierId(props.currency) : null,
 )
+const chase = computed(() => (isRebate.value ? getRebateTierChase(props.currency) : null))
 const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
+
+const profitBarPct = computed(() => {
+  const next = chase.value?.next
+  const current = chase.value?.progress.teamGameProfit ?? 0
+  const target = next?.monthlyProfit ?? current
+  return Math.round(rebateProgressRatio(current, target || 1) * 100)
+})
+
+const activeBarPct = computed(() => {
+  const next = chase.value?.next
+  const current = chase.value?.progress.activeMembers ?? 0
+  const target = next?.minActiveMembers ?? current
+  return Math.round(rebateProgressRatio(current, target || 1) * 100)
+})
+
+const currentRateText = computed(() => {
+  const pct = chase.value?.matched?.commissionPct
+  return pct == null ? '—' : `${Number(pct)}%`
+})
+
+const chaseLine = computed(() => {
+  const info = chase.value
+  if (!info || rebateTiers.value.length === 0) return ''
+  if (!info.next) return t('已达最高档')
+  return t('再加把劲，冲击下一档{rate}', { rate: `${Number(info.next.commissionPct)}%` })
+})
 </script>
 
 <template>
@@ -69,67 +99,135 @@ const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比
         </div>
 
         <div class="mh5-agent-my-share-dialog__body">
-          <!-- 返佣：对齐 BI「返佣金设置」当月档位 -->
-          <div
-            v-if="isRebate"
-            class="mh5-agent-my-share-dialog__table mh5-agent-my-share-dialog__table--tiers"
-            role="table"
-            :aria-label="$t('当月佣金档位')"
-          >
-            <div class="mh5-agent-my-share-dialog__head" role="row">
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
-                role="columnheader"
-              >{{ $t('团队净输赢') }}</div>
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
-                role="columnheader"
-              >{{ $t('活跃人数') }}</div>
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
-                role="columnheader"
-              >{{ $t('比例') }}</div>
-            </div>
-            <div
-              v-if="rebateTiers.length === 0"
-              class="mh5-agent-my-share-dialog__row mh5-agent-my-share-dialog__row--empty"
-              role="row"
+          <!-- 返佣：本月进度 + 档位表 -->
+          <template v-if="isRebate">
+            <section
+              v-if="chase && rebateTiers.length > 0"
+              class="mh5-agent-my-share-dialog__progress"
+              :aria-label="$t('本月进度')"
             >
-              <div class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--empty" role="cell">{{ $t('暂无返佣比例') }}</div>
-            </div>
+              <p class="mh5-agent-my-share-dialog__progress-title">
+                <span>{{ $t('本月进度') }}</span>
+                <span class="mh5-agent-my-share-dialog__progress-rate">
+                  {{ $t('当前比例：{rate}', { rate: currentRateText }) }}
+                </span>
+              </p>
+              <div class="mh5-agent-my-share-dialog__progress-grid">
+                <div class="mh5-agent-my-share-dialog__progress-item">
+                  <div class="mh5-agent-my-share-dialog__progress-meta">
+                    <span>{{ $t('当月总盈利') }}</span>
+                    <strong>{{ formatProfit(chase.progress.teamGameProfit) }}</strong>
+                  </div>
+                  <div
+                    class="mh5-agent-my-share-dialog__bar"
+                    role="progressbar"
+                    :aria-valuenow="profitBarPct"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    <i :style="{ width: `${chase.next ? profitBarPct : 100}%` }" />
+                  </div>
+                  <p class="mh5-agent-my-share-dialog__progress-target">
+                    {{
+                      chase.next
+                        ? `${$t('下一档')} ${formatProfit(chase.next.monthlyProfit)}`
+                        : $t('已达最高档')
+                    }}
+                  </p>
+                </div>
+                <div class="mh5-agent-my-share-dialog__progress-item">
+                  <div class="mh5-agent-my-share-dialog__progress-meta">
+                    <span>{{ $t('活跃人数') }}</span>
+                    <strong>{{ chase.progress.activeMembers }}</strong>
+                  </div>
+                  <div
+                    class="mh5-agent-my-share-dialog__bar"
+                    role="progressbar"
+                    :aria-valuenow="activeBarPct"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    <i :style="{ width: `${chase.next ? activeBarPct : 100}%` }" />
+                  </div>
+                  <p class="mh5-agent-my-share-dialog__progress-target">
+                    {{
+                      chase.next
+                        ? `${$t('下一档')} ${chase.next.minActiveMembers}`
+                        : $t('已达最高档')
+                    }}
+                  </p>
+                </div>
+              </div>
+              <p
+                class="mh5-agent-my-share-dialog__progress-chase"
+                :class="{
+                  'mh5-agent-my-share-dialog__progress-chase--max': !chase.next,
+                }"
+              >
+                {{ chaseLine }}
+              </p>
+            </section>
+
             <div
-              v-for="tier in rebateTiers"
-              :key="tier.id"
-              class="mh5-agent-my-share-dialog__row"
-              :class="{ 'mh5-agent-my-share-dialog__row--matched': tier.id === matchedTierId }"
-              role="row"
-              :aria-current="tier.id === matchedTierId ? 'true' : undefined"
+              class="mh5-agent-my-share-dialog__table mh5-agent-my-share-dialog__table--tiers"
+              role="table"
+              :aria-label="$t('当月佣金档位')"
             >
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
-                role="cell"
-              >
-                {{ formatProfit(tier.monthlyProfit) }}
+              <div class="mh5-agent-my-share-dialog__head" role="row">
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
+                  role="columnheader"
+                >{{ $t('当月总盈利') }}</div>
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
+                  role="columnheader"
+                >{{ $t('活跃人数') }}</div>
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
+                  role="columnheader"
+                >{{ $t('比例') }}</div>
               </div>
               <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
-                role="cell"
+                v-if="rebateTiers.length === 0"
+                class="mh5-agent-my-share-dialog__row mh5-agent-my-share-dialog__row--empty"
+                role="row"
               >
-                {{ tier.minActiveMembers }}
+                <div class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--empty" role="cell">{{ $t('暂无返佣比例') }}</div>
               </div>
               <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
-                role="cell"
+                v-for="tier in rebateTiers"
+                :key="tier.id"
+                class="mh5-agent-my-share-dialog__row"
+                :class="{ 'mh5-agent-my-share-dialog__row--matched': tier.id === matchedTierId }"
+                role="row"
+                :aria-current="tier.id === matchedTierId ? 'true' : undefined"
               >
-                <span>{{ formatPct(tier.commissionPct) }}</span>
-                <span
-                  v-if="tier.id === matchedTierId"
-                  class="mh5-agent-my-share-dialog__matched-mark"
-                  :aria-label="$t('当前满足档位')"
-                >✅</span>
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-profit"
+                  role="cell"
+                >
+                  {{ formatProfit(tier.monthlyProfit) }}
+                </div>
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-active"
+                  role="cell"
+                >
+                  {{ tier.minActiveMembers }}
+                </div>
+                <div
+                  class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--tier-ratio"
+                  role="cell"
+                >
+                  <span>{{ formatPct(tier.commissionPct) }}</span>
+                  <span
+                    v-if="tier.id === matchedTierId"
+                    class="mh5-agent-my-share-dialog__matched-mark"
+                    :aria-label="$t('当前满足档位')"
+                  >✅</span>
+                </div>
               </div>
             </div>
-          </div>
+          </template>
 
           <!-- 占成：各游戏类型比例 -->
           <div
