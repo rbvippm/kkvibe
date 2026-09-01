@@ -23101,6 +23101,11 @@ div.agent-home__profit-tab--ratio {
   font-size: 13px !important;
 }
 
+.mh5-agent-my-profit-formula__paren {
+  font-weight: 600;
+  color: #c4b8a8;
+}
+
 .mh5-agent-my-profit-formula__rate {
   color: #333 !important;
   font-weight: 700 !important;

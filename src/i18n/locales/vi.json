@@ -59,6 +59,7 @@
   "净输赢": "Lãi/lỗ ròng",
   "净输赢 = 游戏净输赢 - 其他成本": "Lãi/lỗ ròng = Lãi/lỗ game ròng − Chi phí khác",
   "净输赢乘以佣金比例等于佣金": "Hoa hồng = Lãi/lỗ ròng × tỷ lệ hoa hồng",
+  "净输赢减去负佣金累计再乘佣金比例等于佣金": "Hoa hồng = (Lãi/lỗ ròng − hoa hồng âm lũy kế) × tỷ lệ",
   "净盈亏": "Lãi/lỗ ròng",
   "净盈亏加上代理赚水等于总盈亏": "Lãi/lỗ ròng cộng hoa hồng nước bằng tổng lãi/lỗ",
   "实占净输赢": "Lãi/lỗ ròng thực chiếm",

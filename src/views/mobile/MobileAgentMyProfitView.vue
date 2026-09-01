@@ -160,14 +160,11 @@ const rebateCommissionBill = computed(() =>
   isRebateNotJoined.value ? null : findCommissionBill(rebateMonthKey.value),
 )
 const rebateHeroTitle = computed(() => commissionHeroTitle(rebateMonthKey.value))
-/** 待派发（预计佣金）展示并计入负佣金累计；已派发历史月、未入驻不展示 */
+/** 已入驻月份均展示负佣金累计（待派发 / 历史月）；未入驻不展示 */
 const showRebateNegativeAccum = computed(
   () => !isRebateNotJoined.value && shouldShowCommissionNegativeAccum(rebateMonthKey.value),
 )
 const rebateNegativeAccum = computed(() => rebateCommissionBill.value?.negativeAccum ?? 0)
-const rebateNegativeForTotal = computed(() =>
-  showRebateNegativeAccum.value ? rebateNegativeAccum.value : 0,
-)
 const rebateSectionScale = computed<RebateSectionScale>(() => {
   const bill = rebateCommissionBill.value
   if (!bill) return REBATE_DEFAULT_SECTION_SCALE
@@ -208,22 +205,17 @@ const rebateLevelFormula = computed(() =>
     'l1',
     rebateCommissionRate.value,
     rebateSectionScale.value,
+    rebateNegativeAccum.value,
   ),
 )
 const levelSummaryRow = computed(() => rebateLevelFormula.value.levelRow)
 /** 公式卡结果列统一为「佣金」 */
 const rebateFormulaResultLabel = '佣金'
-const rebateL1Formula = computed(() =>
-  agentMyProfitRebateLevelFormula('l1', rebateCommissionRate.value, rebateSectionScale.value),
-)
-/** 当月佣金 = 佣金 */
+const rebateL1Formula = computed(() => rebateLevelFormula.value)
+/** 当月佣金 = （净输赢 - 负佣金累计）× 佣金比例 */
 const rebateMonthCommission = computed(() => rebateL1Formula.value.monthCommission)
-/** 总佣金 = 当月佣金 - 本月预计时的负佣金累计（若有）。 */
-const rebateTotalCommission = computed(() =>
-  Number(
-    (rebateMonthCommission.value + rebateNegativeForTotal.value).toFixed(2),
-  ),
-)
+/** 总佣金 = 佣金（负佣金累计已在佣金公式中冲减） */
+const rebateTotalCommission = computed(() => rebateMonthCommission.value)
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
 /** 占成公式：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
 const shareFormula = computed(() => agentMyProfitShareFormula(preset.value))
@@ -231,7 +223,7 @@ const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
   monthCommission: rebateMonthCommission.value,
   negativeAccum: rebateNegativeAccum.value,
-  includeNegativeAccum: showRebateNegativeAccum.value,
+  includeNegativeAccum: true,
   gameTotal: rebateSectionScale.value.gameTotal,
 }))
 const footnoteLines = computed(() =>
@@ -967,14 +959,20 @@ onBeforeUnmount(() => {
         </Transition>
       </section>
 
-      <!-- 返佣：净输赢 × 佣金比例 = 佣金 -->
+      <!-- 返佣：(净输赢 − 负佣金累计) × 佣金比例 = 佣金 -->
       <section
         v-if="isRebateAgent"
-        class="mh5-agent-my-profit-formula-card"
-        :aria-label="$t('净输赢乘以佣金比例等于佣金')"
+        class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
+        :aria-label="$t('净输赢减去负佣金累计再乘佣金比例等于佣金')"
         @click.stop
       >
-        <div class="mh5-agent-commission-formula mh5-agent-my-profit-formula">
+        <div
+          class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
+        >
+          <span
+            class="mh5-agent-commission-formula__op mh5-agent-my-profit-formula__paren"
+            aria-hidden="true"
+          >(</span>
           <div class="mh5-agent-commission-cell">
             <p class="mh5-agent-commission-cell__label">
               <span class="mh5-agent-commission-tip-wrap">{{ $t('净输赢') }}<button
@@ -1000,6 +998,24 @@ onBeforeUnmount(() => {
               {{ formatCommissionAmount(rebateLevelFormula.netWin) }}
             </p>
           </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
+          <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">{{ $t('负佣金累计') }}</p>
+            <p
+              class="mh5-agent-commission-cell__value"
+              :class="commissionToneClass(rebateNegativeAccum === 0 ? 0 : -1)"
+            >
+              {{
+                formatCommissionAmount(Math.abs(rebateNegativeAccum), {
+                  signed: false,
+                })
+              }}
+            </p>
+          </div>
+          <span
+            class="mh5-agent-commission-formula__op mh5-agent-my-profit-formula__paren"
+            aria-hidden="true"
+          >)</span>
           <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
           <div class="mh5-agent-commission-cell">
             <p class="mh5-agent-commission-cell__label">{{ $t('佣金比例') }}</p>

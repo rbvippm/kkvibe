@@ -179,7 +179,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 20,
         name: '负佣金累计',
-        biz: '历史负佣金累计；待派发月用于冲减当月佣金后得到总佣金',
+        biz: '历史负佣金累计；待派发与历史月均展示；佣金 = （净输赢 - 负佣金累计） × 佣金比例',
         dimension: '代理账号 + 币种',
         method: '10分钟',
         handler: '现金',
@@ -203,7 +203,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 23,
         name: '净输赢',
-        biz: '净输赢 = 游戏净输赢 - 其他成本；当月佣金 = max(净输赢, 0) × 佣金比例',
+        biz: '净输赢 = 游戏净输赢 - 其他成本；佣金 = max(净输赢 - 负佣金累计绝对值, 0) × 佣金比例',
         dimension: '代理账号 + 月份 + 币种',
         method: '10分钟',
         handler: '现金',
@@ -211,7 +211,7 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
       {
         no: 24,
         name: '总佣金',
-        biz: '总佣金 = 当月佣金 - 负佣金累计（待派发月）；已派发月按账单展示总佣金',
+        biz: '总佣金 = 佣金（负佣金累计已在佣金公式中冲减净输赢，待派发与历史月口径一致）',
         dimension: '代理账号 + 月份 + 币种',
         method: '10分钟',
         handler: '现金',
@@ -267,8 +267,8 @@ export const AGENT_REBATE_FIELD_DEF_MODULES: AgentRebateFieldDefModule[] = [
 export const AGENT_REBATE_FIELD_DEF_FORMULAS = [
   '概况「我的直属」不展示游戏净输赢、净输赢，账号卡无取款入口；游戏净输赢 / 净输赢仅出现在我的报表与我的佣金。',
   '游戏净输赢 = 团队游戏输赢 - 团队VIP退水 - 场馆费（无投注退水、无代理赚水；不加「实占」）',
-  '佣金 = （输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费） × 佣金比例',
-  '总佣金 = 当月佣金 - 负佣金累计（待派发月）；净输赢 = 游戏净输赢 - 其他成本',
+  '佣金 = （净输赢 - 负佣金累计） × 佣金比例；净输赢 = 游戏净输赢 - 其他成本',
+  '总佣金 = 佣金（负佣金累计已计入佣金公式，不再二次扣减）',
   '会员详情游戏统计 / 会员盈亏：游戏净输赢 = 游戏输赢 + VIP退水（会员视角，无会员退水）；代理佣金侧仍为 −VIP退水 −场馆费',
   '现金更新时间：10分钟左右',
 ]

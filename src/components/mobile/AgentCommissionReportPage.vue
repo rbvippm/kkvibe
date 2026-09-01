@@ -28,6 +28,7 @@ import {
   formatCommissionMonthLabel,
   getCommissionListMonthOptions,
   getCommissionListUpdatedAt,
+  getCommissionMonthAmount,
   getCommissionNetWin,
   getCommissionTotal,
   getCommissionTotalCostTip,
@@ -404,7 +405,7 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
 
           <section class="mh5-agent-commission-card">
             <h2 class="mh5-agent-commission-card__title">佣金计算</h2>
-            <div class="mh5-agent-commission-formula" aria-label="净输赢乘以佣金比例等于当月佣金">
+            <div class="mh5-agent-commission-formula" aria-label="净输赢减去负佣金累计再乘佣金比例等于佣金">
               <div class="mh5-agent-commission-cell">
                 <p class="mh5-agent-commission-cell__label">
                   <span class="mh5-agent-commission-tip-wrap">
@@ -434,6 +435,16 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
                   {{ formatCommissionAmount(getCommissionNetWin(currentBill)) }}
                 </p>
               </div>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">−</span>
+              <div class="mh5-agent-commission-cell">
+                <p class="mh5-agent-commission-cell__label">负佣金累计</p>
+                <p
+                  class="mh5-agent-commission-cell__value"
+                  :class="toneClass(currentBill.negativeAccum === 0 ? 0 : -1)"
+                >
+                  {{ formatCommissionAmount(Math.abs(currentBill.negativeAccum)) }}
+                </p>
+              </div>
               <span class="mh5-agent-commission-formula__op" aria-hidden="true">×</span>
               <div class="mh5-agent-commission-cell">
                 <p class="mh5-agent-commission-cell__label">佣金比例</p>
@@ -441,12 +452,12 @@ function statusBadgeClass(status: keyof typeof COMMISSION_STATUS_META) {
               </div>
               <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
               <div class="mh5-agent-commission-cell">
-                <p class="mh5-agent-commission-cell__label">当月佣金</p>
+                <p class="mh5-agent-commission-cell__label">佣金</p>
                 <p
                   class="mh5-agent-commission-cell__value"
-                  :class="toneClass(currentBill.monthCommission)"
+                  :class="toneClass(getCommissionMonthAmount(currentBill))"
                 >
-                  {{ formatCommissionAmount(currentBill.monthCommission) }}
+                  {{ formatCommissionAmount(getCommissionMonthAmount(currentBill)) }}
                 </p>
               </div>
             </div>

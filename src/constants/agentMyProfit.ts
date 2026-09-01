@@ -43,22 +43,20 @@ export function rebateGameNetProfitFormula(_isLevel1Agent?: boolean) {
 
 /** 返佣 · 总佣金（与顶部 tip 一致） */
 export const REBATE_AGENT_PROFIT_FORMULA =
-  '总佣金 = 当月佣金 - 负佣金累计'
+  '总佣金 = 佣金'
 
-/** 总佣金公式 tip：仅一行；负佣金仅本月预计佣金计入 */
+/** 总佣金公式 tip：佣金已冲减负佣金累计 */
 export function rebateTotalCommissionFormulaTip(
   _monthCommission: number,
   _negativeAccum: number,
-  includeNegative = true,
+  _includeNegative = true,
 ) {
-  return includeNegative
-    ? '总佣金 = 当月佣金 - 负佣金累计'
-    : '总佣金 = 当月佣金'
+  return '总佣金 = 佣金'
 }
 
-/** 返佣 · 佣金（原平台佣金 / 一级；场馆费与游戏净输赢口径一致） */
+/** 返佣 · 佣金明细 tip（与明细行一一对应，含负佣金累计） */
 export const REBATE_L1_PROFIT_FORMULA =
-  '佣金 = （输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费） × 佣金比例'
+  '佣金 = （输赢 - VIP退水 - 场馆费 - VIP晋级礼金 - VIP额外奖金 - 活动金 - 充提手续费 - 负佣金累计） × 佣金比例'
 
 export type AgentMyProfitTone = 'neutral' | 'positive' | 'negative'
 
@@ -239,7 +237,7 @@ export type RebateSectionScale = {
   costTotal: number
 }
 
-/** 默认对齐 2026-07 账单：游戏 2500、成本 120.5、净输赢 2379.5、×5%=118.98 */
+/** 默认对齐 2026-07 账单：游戏 2500、成本 120.5、净输赢 2379.5、负佣金累计 −100、×5%=113.98 */
 export const REBATE_DEFAULT_SECTION_SCALE: RebateSectionScale = {
   gameTotal: 2500,
   costTotal: 120.5,
@@ -248,7 +246,7 @@ export const REBATE_DEFAULT_SECTION_SCALE: RebateSectionScale = {
 /** 顶部总佣金（示意；由当月平台佣金与负佣金累计动态汇总） */
 export const AGENT_MY_PROFIT_REBATE_TOTAL = {
   label: '总佣金',
-  valueText: '18.98',
+  valueText: '113.98',
   tone: 'positive' as const,
 }
 
@@ -259,7 +257,7 @@ export const AGENT_MY_PROFIT_REBATE_LEVEL_TABS: {
   subtotalText: string
   tone: AgentMyProfitTone
 }[] = [
-  { key: 'l1', label: '佣金', subtotalText: '+118.98', tone: 'positive' },
+  { key: 'l1', label: '佣金', subtotalText: '+113.98', tone: 'positive' },
 ]
 
 /** 兼容既有调用；返佣单层化后代理层级不影响可见佣金项。 */
@@ -790,15 +788,17 @@ export function agentMyProfitRebateLevelSummary(
   level: RebateProfitLevel,
   commissionRate = '5.00%',
   scale: RebateSectionScale = REBATE_DEFAULT_SECTION_SCALE,
+  negativeAccum = 0,
 ): AgentMyProfitProductRow {
-  return agentMyProfitRebateLevelFormula(level, commissionRate, scale).levelRow
+  return agentMyProfitRebateLevelFormula(level, commissionRate, scale, negativeAccum).levelRow
 }
 
-/** 平台佣金 = max(净输赢, 0) × 佣金比例。 */
+/** 佣金 = max(净输赢 - |负佣金累计|, 0) × 佣金比例。负佣金累计为 0 或负数。 */
 export function agentMyProfitRebateLevelFormula(
   level: RebateProfitLevel,
   commissionRate = '5.00%',
   scale: RebateSectionScale = REBATE_DEFAULT_SECTION_SCALE,
+  negativeAccum = 0,
 ) {
   const game = agentMyProfitRebateGameSection(level, scale)
   const cost = agentMyProfitRebateCostSection(level, scale)
@@ -806,10 +806,11 @@ export function agentMyProfitRebateLevelFormula(
     parseProfitAmountText(game.total.amountText) -
     Math.abs(parseProfitAmountText(cost.total.amountText))
   const rateNum = parseCommissionRatePercent(commissionRate)
-  const monthCommission = Number((Math.max(netWin, 0) * rateNum).toFixed(2))
+  const monthCommission = Number((Math.max(netWin + negativeAccum, 0) * rateNum).toFixed(2))
   const monthCell = formatProfitAmountText(monthCommission)
   return {
     netWin,
+    negativeAccum,
     commissionRate,
     monthCommission,
     levelRow: {
@@ -863,7 +864,7 @@ export const AGENT_MY_PROFIT_REBATE_GAME_DETAIL: AgentMyProfitDetailRow[] = [
   },
 ]
 
-/** 佣金明细（末行对齐公式当月佣金；输赢/VIP退水/场馆费与游戏明细一致） */
+/** 佣金明细（含负佣金累计；末行对齐公式佣金） */
 export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
   { label: '输赢', amountText: '+2,766.50', tone: 'positive' },
   { label: 'VIP退水', amountText: '186.50', tone: 'negative' },
@@ -872,10 +873,11 @@ export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
   { label: 'VIP额外奖金', amountText: '22.50', tone: 'negative' },
   { label: '活动金', amountText: '43.00', tone: 'negative' },
   { label: '充提手续费', amountText: '15.00', tone: 'negative' },
+  { label: '负佣金累计', amountText: '100.00', tone: 'negative' },
   { label: '佣金比例', amountText: '5%', tone: 'neutral' },
   {
     label: '佣金',
-    amountText: '+118.98',
+    amountText: '+113.98',
     tone: 'positive',
     emphasize: true,
     formulaTip: REBATE_L1_PROFIT_FORMULA,
@@ -885,13 +887,13 @@ export const AGENT_MY_PROFIT_REBATE_L1_DETAIL: AgentMyProfitDetailRow[] = [
 export const AGENT_MY_PROFIT_REBATE_TOTAL_DETAIL: AgentMyProfitDetailRow[] = [
   {
     label: '佣金',
-    amountText: '+118.98',
+    amountText: '+113.98',
     tone: 'positive',
   },
-  { label: '负佣金累计', amountText: '-100.00', tone: 'negative' },
+  { label: '负佣金累计', amountText: '100.00', tone: 'negative' },
   {
     label: '总佣金',
-    amountText: '+18.98',
+    amountText: '+113.98',
     tone: 'positive',
     emphasize: true,
     formulaTip: REBATE_AGENT_PROFIT_FORMULA,
@@ -938,7 +940,7 @@ export function agentMyProfitRebateDetailRowsWithContext(
       },
     ]
     if (ctx.includeNegativeAccum) {
-      const negCell = formatProfitAmountText(ctx.negativeAccum)
+      const negCell = formatCostAmountText(ctx.negativeAccum)
       rows.push({
         label: '负佣金累计',
         amountText: negCell.amountText,
@@ -959,7 +961,13 @@ export function agentMyProfitRebateDetailRowsWithContext(
     return rows
   }
   if (rowKey === 'level_l1') {
-    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L1_DETAIL, '佣金', ctx.l1Commission)
+    const negCell = formatCostAmountText(ctx.negativeAccum)
+    return patchDetailResult(AGENT_MY_PROFIT_REBATE_L1_DETAIL, '佣金', ctx.l1Commission).map(
+      (row) =>
+        row.label === '负佣金累计'
+          ? { ...row, amountText: negCell.amountText, tone: negCell.tone }
+          : row,
+    )
   }
   const gameCell = formatProfitAmountText(ctx.gameTotal)
   return AGENT_MY_PROFIT_REBATE_GAME_DETAIL.map((row) =>
