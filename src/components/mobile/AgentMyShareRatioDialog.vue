@@ -62,7 +62,7 @@ const chaseLine = computed(() => {
   const info = chase.value
   if (!info || rebateTiers.value.length === 0) return ''
   if (!info.next) return t('已达最高档')
-  return t('再加把劲，冲击下一档{rate}', { rate: `${Number(info.next.commissionPct)}%` })
+  return t('再加把劲，冲击下一档返佣：{rate}', { rate: `${Number(info.next.commissionPct)}%` })
 })
 </script>
 
@@ -109,13 +109,13 @@ const chaseLine = computed(() => {
               <p class="mh5-agent-my-share-dialog__progress-title">
                 <span>{{ $t('本月进度') }}</span>
                 <span class="mh5-agent-my-share-dialog__progress-rate">
-                  {{ $t('当前比例：{rate}', { rate: currentRateText }) }}
+                  {{ $t('当前返佣：{rate}', { rate: currentRateText }) }}
                 </span>
               </p>
               <div class="mh5-agent-my-share-dialog__progress-grid">
                 <div class="mh5-agent-my-share-dialog__progress-item">
                   <div class="mh5-agent-my-share-dialog__progress-meta">
-                    <span>{{ $t('当月总盈利') }}</span>
+                    <span>{{ $t('总盈利') }}</span>
                     <strong>{{ formatProfit(chase.progress.teamGameProfit) }}</strong>
                   </div>
                   <div

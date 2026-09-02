@@ -65,7 +65,10 @@ export function formatPct(value: number) {
 }
 
 export function formatProfit(value: number) {
-  return value.toLocaleString('zh-CN')
+  return value.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 /** 当月总盈利列感叹号说明（与佣金公式分子一致） */

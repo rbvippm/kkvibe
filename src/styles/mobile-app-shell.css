@@ -23775,10 +23775,11 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-agent-my-share-dialog__progress-meta strong {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: #ff6d24;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .mh5-agent-my-share-dialog__bar {
