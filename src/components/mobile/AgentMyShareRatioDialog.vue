@@ -37,7 +37,7 @@ const matchedTierId = computed(() =>
   isRebate.value ? getMatchedRebateTierId(props.currency) : null,
 )
 const chase = computed(() => (isRebate.value ? getRebateTierChase(props.currency) : null))
-const dialogLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
+const dialogLabel = computed(() => (isRebate.value ? t('返佣条件') : t('占成比例')))
 
 const profitBarPct = computed(() => {
   const next = chase.value?.next
