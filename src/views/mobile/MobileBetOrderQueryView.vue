@@ -31,7 +31,10 @@ import {
   BET_ORDER_PAGE_SIZE,
   BET_ORDER_STATUS_LABEL,
   BET_ORDER_STATUS_OPTIONS,
+  BET_ORDER_DONE_STATUSES,
+  BET_ORDER_OPEN_STATUSES,
   BET_ORDER_STATUS_TABS,
+  betOrderStatusTabKey,
   BET_ORDER_VALID_BET_TIP,
   BET_TIME_PRESETS,
   MOCK_BET_ORDER_RECORDS,
@@ -176,15 +179,13 @@ const scopedRecords = computed(() => {
 })
 
 const statusTabCounts = computed(() => ({
-  unsettled: scopedRecords.value.filter((row) => row.status === 'unsettled').length,
-  settled: scopedRecords.value.filter((row) => row.status === 'settled').length,
+  open: scopedRecords.value.filter((row) => BET_ORDER_OPEN_STATUSES.includes(row.status)).length,
+  done: scopedRecords.value.filter((row) => BET_ORDER_DONE_STATUSES.includes(row.status)).length,
 }))
 
-const activeStatusTab = computed<BetOrderStatusTabKey | null>(() => {
-  const status = appliedFilter.value.status
-  if (status === '' || status === 'unsettled' || status === 'settled') return status
-  return null
-})
+const activeStatusTab = computed<BetOrderStatusTabKey | null>(() =>
+  betOrderStatusTabKey(appliedFilter.value.status),
+)
 
 const validBetTipOpen = ref(false)
 
@@ -199,8 +200,8 @@ function toggleValidBetTip() {
 }
 
 function statusTabCount(key: BetOrderStatusTabKey) {
-  if (key === 'unsettled') return statusTabCounts.value.unsettled
-  if (key === 'settled') return statusTabCounts.value.settled
+  if (key === 'open') return statusTabCounts.value.open
+  if (key === 'done') return statusTabCounts.value.done
   return 0
 }
 

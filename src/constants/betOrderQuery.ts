@@ -76,14 +76,41 @@ export const BET_ORDER_STATUS_OPTIONS = [
   { value: 'partial_settled', label: '部分结算' },
 ] as const
 
-/** 会员投注记录顶栏快捷状态：全部 / 未结 / 已结 */
+/** 会员投注记录顶栏快捷状态：全部 / 未结 / 已结（未结、已结为状态分组，不与漏斗精确状态共用 key） */
 export const BET_ORDER_STATUS_TABS = [
   { key: '' as const, label: '全部', tone: 'all' },
-  { key: 'unsettled' as const, label: '未结', tone: 'open' },
-  { key: 'settled' as const, label: '已结', tone: 'done' },
+  { key: 'open' as const, label: '未结', tone: 'open' },
+  { key: 'done' as const, label: '已结', tone: 'done' },
 ] as const
 
 export type BetOrderStatusTabKey = (typeof BET_ORDER_STATUS_TABS)[number]['key']
+
+/** 顶栏「未结」：未结算 + 部分结算 */
+export const BET_ORDER_OPEN_STATUSES: readonly BetOrderStatus[] = ['unsettled', 'partial_settled']
+
+/** 顶栏「已结」：已结算 + 已取消 + 重新结算 + 兑现 */
+export const BET_ORDER_DONE_STATUSES: readonly BetOrderStatus[] = [
+  'settled',
+  'cancelled',
+  'resettled',
+  'cashout',
+]
+
+export type BetOrderStatusFilter = '' | BetOrderStatus | Exclude<BetOrderStatusTabKey, ''>
+
+export function matchBetOrderStatus(rowStatus: BetOrderStatus, filterStatus: BetOrderStatusFilter) {
+  if (!filterStatus) return true
+  if (filterStatus === 'open') return BET_ORDER_OPEN_STATUSES.includes(rowStatus)
+  if (filterStatus === 'done') return BET_ORDER_DONE_STATUSES.includes(rowStatus)
+  return rowStatus === filterStatus
+}
+
+export function betOrderStatusTabKey(status: BetOrderStatusFilter): BetOrderStatusTabKey | null {
+  if (status === '' || status === 'open' || status === 'done') return status
+  if (BET_ORDER_OPEN_STATUSES.includes(status)) return 'open'
+  if (BET_ORDER_DONE_STATUSES.includes(status)) return 'done'
+  return null
+}
 
 /** 汇总卡「总有效投注」感叹号气泡 */
 export const BET_ORDER_VALID_BET_TIP =
@@ -761,7 +788,7 @@ export type BetOrderFilter = {
   timePreset: BetTimePreset
   customStart: string
   customEnd: string
-  status: '' | BetOrderStatus
+  status: BetOrderStatusFilter
   category: string
   gameName: string
   gameCurrency: BetOrderCurrencyFilter
@@ -869,7 +896,7 @@ export function filterBetOrders(
   return rows.filter((row) => {
     const betTime = parseDateTime(row.betAt)
     if (betTime < start || betTime > end) return false
-    if (filter.status && row.status !== filter.status) return false
+    if (!matchBetOrderStatus(row.status, filter.status)) return false
     if (filter.category && row.gameCategory !== filter.category) return false
     if (filter.gameName && row.gameName !== filter.gameName) return false
     if (filter.gameCurrency && row.currency !== filter.gameCurrency) return false
