@@ -482,7 +482,7 @@ function joinLabels(items: string[]) {
             <div class="wf-form-row gm-form-row">
               <span class="wf-form-row__label wf-form-row__label--required">渠道</span>
               <div class="gm-auth">
-                <button type="button" class="wf-link-action" @click="openChannelAuth">点击授权</button>
+                <button type="button" class="wf-link-action" @click="openChannelAuth()">点击授权</button>
                 <p v-if="formAuthLabels.length" class="gm-auth__names">
                   已授权 {{ formAuthLabels.length }} 个渠道：{{ joinLabels(formAuthLabels) }}
                 </p>
