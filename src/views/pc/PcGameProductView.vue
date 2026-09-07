@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import {
   GAME_PRODUCT_CATALOG,
@@ -346,12 +347,11 @@ function joinLabels(items: string[]) {
 
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">渠道：</label>
-        <select v-model="filter.channel" class="wf-input wf-input--select">
-          <option value="">全部</option>
-          <option v-for="opt in GAME_PRODUCT_CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <WfSearchSelect
+          v-model="filter.channel"
+          :options="GAME_PRODUCT_CHANNEL_OPTIONS"
+          empty-label="全部"
+        />
 
         <label class="wf-label">小程序：</label>
         <select v-model="filter.miniProgram" class="wf-input wf-input--select">

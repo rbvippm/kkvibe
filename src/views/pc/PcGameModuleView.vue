@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import {
   GAME_MODULE_CHANNEL_OPTIONS,
@@ -285,12 +286,12 @@ function joinLabels(items: string[]) {
 
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label" for="gm-filter-channel">渠道：</label>
-        <select id="gm-filter-channel" v-model="filter.channel" class="wf-input wf-input--select">
-          <option value="">全部</option>
-          <option v-for="opt in GAME_MODULE_CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <WfSearchSelect
+          id="gm-filter-channel"
+          v-model="filter.channel"
+          :options="GAME_MODULE_CHANNEL_OPTIONS"
+          empty-label="全部"
+        />
 
         <label class="wf-label" for="gm-filter-currency">币种：</label>
         <select id="gm-filter-currency" v-model="filter.currency" class="wf-input wf-input--select">

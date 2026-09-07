@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import {
   channelLabel,
   maskPhone,
@@ -37,7 +38,7 @@ type ListFilter = {
   startDate: string
   endDate: string
   source: '' | UserSource
-  channel: '' | UserChannel
+  channel: string
   registerPlatform: '' | UserRegisterPlatform
 }
 
@@ -369,11 +370,7 @@ function deleteUser(row: UserListRow) {
 
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">渠道：</label>
-        <select v-model="filter.channel" class="wf-input wf-input--select">
-          <option v-for="opt in USER_CHANNEL_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <WfSearchSelect v-model="filter.channel" :options="USER_CHANNEL_OPTIONS" />
 
         <label class="wf-label">注册平台：</label>
         <select v-model="filter.registerPlatform" class="wf-input wf-input--select">

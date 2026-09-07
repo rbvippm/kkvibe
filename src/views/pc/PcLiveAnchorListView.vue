@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import WfGamePickerBox from '../../components/wireframe/WfGamePickerBox.vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import { LIVE_ANCHOR_LIST_ANNOT_MAP } from '../../constants/liveAnchorListSpec'
@@ -502,12 +503,11 @@ function saveModal() {
         </select>
 
         <label class="wf-label">渠道：</label>
-        <select v-model="filter.channelId" class="wf-input wf-input--select">
-          <option value="">请选择渠道</option>
-          <option v-for="item in ANCHOR_CHANNELS" :key="item.id" :value="item.id">
-            {{ item.name }}
-          </option>
-        </select>
+        <WfSearchSelect
+          v-model="filter.channelId"
+          :options="ANCHOR_CHANNELS.map((item) => ({ value: item.id, label: item.name }))"
+          empty-label="请选择渠道"
+        />
       </div>
 
       <div class="wf-toolbar">

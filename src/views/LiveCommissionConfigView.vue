@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import WfSearchSelect from '../components/wireframe/WfSearchSelect.vue'
 import '../styles/pc-wireframe.css'
 
 type TabKey = 'anchor' | 'specificUser' | 'platform'
@@ -571,11 +572,7 @@ function confirmAddPlatformChannel() {
       <section class="wf-block">
         <div class="wf-toolbar wf-toolbar--platform">
           <label class="wf-label">渠道：</label>
-          <select v-model="platformFilter.channel" class="wf-input wf-input--select">
-            <option v-for="opt in platformChannelOptions" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
+          <WfSearchSelect v-model="platformFilter.channel" :options="platformChannelOptions" />
           <button type="button" class="wf-btn wf-btn--primary">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="clearPlatformFilter">清除</button>
           <button type="button" class="wf-btn wf-btn--add" @click="openAddPlatformModal">新增渠道配置</button>
@@ -821,18 +818,11 @@ function confirmAddPlatformChannel() {
           <div class="wf-modal__body">
             <div class="wf-modal__query">
               <label class="wf-label">渠道：</label>
-              <select
+              <WfSearchSelect
                 v-model="addPlatformSelectedChannelId"
-                class="wf-input wf-input--select wf-input--channel"
-              >
-                <option
-                  v-for="opt in addPlatformChannelDropdownOptions"
-                  :key="opt.value || 'empty'"
-                  :value="opt.value"
-                >
-                  {{ opt.label }}
-                </option>
-              </select>
+                :options="addPlatformChannelDropdownOptions"
+                wide
+              />
             </div>
             <p v-if="addPlatformQueryHint" class="wf-modal__hint">{{ addPlatformQueryHint }}</p>
 

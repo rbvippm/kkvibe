@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import {
   VIP_HALL_CHANNEL_OPTIONS,
@@ -247,12 +248,11 @@ function removeRow(row: VipHallProductRow) {
             placement="bottom"
           />
         </label>
-        <select v-model="filter.channel" class="wf-input wf-input--select">
-          <option value="">全部</option>
-          <option v-for="opt in VIP_HALL_CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <WfSearchSelect
+          v-model="filter.channel"
+          :options="VIP_HALL_CHANNEL_OPTIONS"
+          empty-label="全部"
+        />
 
         <label class="wf-label">小程序：</label>
         <select v-model="filter.miniProgram" class="wf-input wf-input--select">
@@ -380,12 +380,13 @@ function removeRow(row: VipHallProductRow) {
           <div class="wf-modal__body">
             <div class="wf-form-row vhp-form-row">
               <label class="wf-form-row__label wf-form-row__label--required">所属渠道</label>
-              <select v-model="form.channel" class="wf-select wf-select--full" :disabled="readonly">
-                <option value="">请选择</option>
-                <option v-for="opt in VIP_HALL_CHANNEL_OPTIONS" :key="opt.value" :value="opt.value">
-                  {{ opt.label }}
-                </option>
-              </select>
+              <WfSearchSelect
+                v-model="form.channel"
+                :options="VIP_HALL_CHANNEL_OPTIONS"
+                empty-label="请选择"
+                :disabled="readonly"
+                full
+              />
             </div>
 
             <div class="wf-form-row vhp-form-row">

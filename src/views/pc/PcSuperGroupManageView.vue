@@ -2,6 +2,8 @@
 import { computed, ref, watch } from 'vue'
 import WfGamePickerBox from '../../components/wireframe/WfGamePickerBox.vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import { showPcToast } from '../../composables/usePcToast'
+import { anchorGameName } from '../../constants/gameProduct'
 import '../../styles/pc-wireframe.css'
 
 type SuperGroupStatus = 'normal' | 'frozen' | 'dissolved'
@@ -10,6 +12,11 @@ type ConfigItemKey = 'floating_link' | 'pinned_game' | 'floating_game'
 
 type ConfigPanelFields = {
   gameIds: string[]
+}
+
+type PinnedGameFields = ConfigPanelFields & {
+  /** 产品 ID → 群置顶简介，原文存储，不区分语言 */
+  intros: Record<string, string>
 }
 
 type FloatingLinkFields = {
@@ -24,7 +31,7 @@ type FloatingLinkFields = {
 
 type SuperGroupEditConfig = {
   configItems: ConfigItemKey[]
-  pinnedGame: ConfigPanelFields
+  pinnedGame: PinnedGameFields
   floatingLink: FloatingLinkFields
   floatingGame: ConfigPanelFields
 }
@@ -56,6 +63,18 @@ function createDefaultPanel(overrides: Partial<ConfigPanelFields> = {}): ConfigP
   }
 }
 
+function syncPinnedIntros(gameIds: string[], intros: Record<string, string> = {}): Record<string, string> {
+  return Object.fromEntries(gameIds.map((id) => [id, intros[id] ?? '']))
+}
+
+function createDefaultPinnedPanel(overrides: Partial<PinnedGameFields> = {}): PinnedGameFields {
+  const gameIds = overrides.gameIds ? [...overrides.gameIds] : []
+  return {
+    gameIds,
+    intros: syncPinnedIntros(gameIds, overrides.intros),
+  }
+}
+
 function createDefaultFloatingLink(overrides: Partial<FloatingLinkFields> = {}): FloatingLinkFields {
   return {
     titleZhCn: '',
@@ -72,7 +91,7 @@ function createDefaultFloatingLink(overrides: Partial<FloatingLinkFields> = {}):
 function createDefaultEditConfig(overrides: Partial<SuperGroupEditConfig> = {}): SuperGroupEditConfig {
   return {
     configItems: [],
-    pinnedGame: createDefaultPanel(),
+    pinnedGame: createDefaultPinnedPanel(),
     floatingLink: createDefaultFloatingLink(),
     floatingGame: createDefaultPanel(),
     ...overrides,
@@ -85,10 +104,17 @@ function clonePanel(panel: ConfigPanelFields): ConfigPanelFields {
   }
 }
 
+function clonePinnedPanel(panel: PinnedGameFields): PinnedGameFields {
+  return {
+    gameIds: [...panel.gameIds],
+    intros: syncPinnedIntros(panel.gameIds, panel.intros),
+  }
+}
+
 function cloneEditConfig(config: SuperGroupEditConfig): SuperGroupEditConfig {
   return {
     configItems: [...config.configItems],
-    pinnedGame: clonePanel(config.pinnedGame),
+    pinnedGame: clonePinnedPanel(config.pinnedGame),
     floatingLink: { ...config.floatingLink },
     floatingGame: clonePanel(config.floatingGame),
   }
@@ -129,8 +155,12 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-28 14:22:10',
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10001', 'P10002'],
+        intros: {
+          P10001: '经典真人桌台，上庄下庄随到随玩',
+          P10002: '群简介群简介群简介群简介群简介群简介',
+        },
       }),
     }),
   },
@@ -147,8 +177,12 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-27 09:15:33',
     edit: createDefaultEditConfig({
       configItems: ['floating_link', 'pinned_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10003', 'P10006'],
+        intros: {
+          P10003: '星舰起飞，跟一局试试手气',
+          P10006: '今晚飞艇连开，群友都在跟',
+        },
       }),
       floatingLink: createDefaultFloatingLink({
         titleZhCn: "I'll 客服",
@@ -174,8 +208,11 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-26 18:40:02',
     edit: createDefaultEditConfig({
       configItems: ['pinned_game', 'floating_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10005'],
+        intros: {
+          P10005: '刮一张碰碰运气，中了群里报喜',
+        },
       }),
       floatingGame: createDefaultPanel({
         gameIds: ['P10002', 'P10003', 'P10004'],
@@ -195,8 +232,11 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-25 11:08:47',
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10004'],
+        intros: {
+          P10004: '老虎机连转不停，今晚看谁先爆分',
+        },
       }),
     }),
   },
@@ -213,8 +253,12 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-20 20:05:15',
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10001', 'P10007'],
+        intros: {
+          P10001: '经典真人桌台，群友都在看',
+          P10007: 'KK 专属真人桌，进房就能玩',
+        },
       }),
     }),
   },
@@ -231,8 +275,11 @@ const sourceRows = ref<SuperGroupRow[]>([
     createdAt: '2026-05-18 16:30:44',
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
-      pinnedGame: createDefaultPanel({
+      pinnedGame: createDefaultPinnedPanel({
         gameIds: ['P10005'],
+        intros: {
+          P10005: '活动专场刮刮乐，中奖群里报喜',
+        },
       }),
     }),
   },
@@ -305,8 +352,18 @@ const gameDraftIds = computed({
   get: () => activePanel.value.gameIds,
   set: (ids) => {
     activePanel.value.gameIds = ids
+    if (editConfigTab.value === 'pinned_game') {
+      editForm.value.pinnedGame.intros = syncPinnedIntros(ids, editForm.value.pinnedGame.intros)
+    }
   },
 })
+
+const pinnedIntroRows = computed(() =>
+  editForm.value.pinnedGame.gameIds.map((id) => ({
+    id,
+    name: anchorGameName(id),
+  })),
+)
 const gamePickerResetKey = computed(
   () => `${editVisible.value}:${editingRow.value?.groupId ?? ''}:${editConfigTab.value}`,
 )
@@ -402,6 +459,14 @@ function validatePanel(panel: ConfigPanelFields, label: string): string | null {
   return null
 }
 
+function validatePinnedGame(panel: PinnedGameFields): string | null {
+  const gameError = validatePanel(panel, '置顶游戏')
+  if (gameError) return gameError
+  const missing = panel.gameIds.find((id) => !panel.intros[id]?.trim())
+  if (missing) return `置顶游戏：请填写「${anchorGameName(missing)}」的群置顶简介`
+  return null
+}
+
 function validateFloatingLink(link: FloatingLinkFields): string | null {
   if (!link.titleZhCn.trim()) return '悬浮链接：请输入标题中文'
   if (!link.titleZhTw.trim()) return '悬浮链接：请输入标题繁体'
@@ -421,7 +486,9 @@ function confirmEdit() {
     const error =
       key === 'floating_link'
         ? validateFloatingLink(editForm.value.floatingLink)
-        : validatePanel(gamePanelConfig(key, editForm.value), label)
+        : key === 'pinned_game'
+          ? validatePinnedGame(editForm.value.pinnedGame)
+          : validatePanel(gamePanelConfig(key, editForm.value), label)
     if (error) {
       editHint.value = error
       editConfigTab.value = key
@@ -431,6 +498,7 @@ function confirmEdit() {
 
   editingRow.value.edit = cloneEditConfig(editForm.value)
   closeEdit()
+  showPcToast('保存成功')
 }
 </script>
 
@@ -687,6 +755,32 @@ function confirmEdit() {
                       :keyword="gameAppliedKeyword"
                       :reset-key="gamePickerResetKey"
                     />
+
+                    <div v-if="editConfigTab === 'pinned_game'" class="sg-pin-intro">
+                      <p class="sg-pin-intro__title">群置顶简介</p>
+                      <template v-if="pinnedIntroRows.length">
+                        <div
+                          v-for="item in pinnedIntroRows"
+                          :key="item.id"
+                          class="wf-form-row"
+                        >
+                          <label
+                            class="wf-form-row__label wf-form-row__label--required"
+                            :for="`sg-pin-intro-${item.id}`"
+                          >
+                            {{ item.name }}
+                          </label>
+                          <input
+                            :id="`sg-pin-intro-${item.id}`"
+                            v-model="editForm.pinnedGame.intros[item.id]"
+                            type="text"
+                            class="wf-input wf-input--full"
+                            placeholder="请输入群置顶简介，原文展示"
+                          />
+                        </div>
+                      </template>
+                      <p v-else class="wf-muted sg-pin-intro__empty">勾选产品后填写对应群置顶简介</p>
+                    </div>
                   </template>
                 </div>
               </div>
@@ -848,6 +942,29 @@ function confirmEdit() {
 .wf-btn--sm {
   padding: 4px 12px;
   font-size: 13px;
+}
+
+.sg-pin-intro {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--pc-border-light);
+}
+
+.sg-pin-intro__title {
+  margin: 0 0 12px;
+  color: var(--pc-text);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.sg-pin-intro__empty {
+  margin: 0 0 8px;
+}
+
+.sg-pin-intro .wf-form-row__label {
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 </style>

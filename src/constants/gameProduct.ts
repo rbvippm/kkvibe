@@ -157,6 +157,14 @@ export function listAnchorGameOptions(): AnchorGameOption[] {
     }))
 }
 
+export function findAnchorGame(id: string) {
+  return listAnchorGameOptions().find((item) => item.id === id) ?? null
+}
+
+export function anchorGameName(id: string) {
+  return findAnchorGame(id)?.name ?? id
+}
+
 export function filterAnchorGames(keyword: string, moduleId = ''): AnchorGameOption[] {
   const query = keyword.trim()
   return listAnchorGameOptions().filter((item) => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { ACTIVITY_CENTER_ANNOT_MAP } from '../../constants/activityCenterSpec'
 import {
@@ -416,11 +417,7 @@ function setShowInList(value: boolean) {
 
       <div class="wf-toolbar wf-toolbar--filters">
         <label class="wf-label">所属渠道：</label>
-        <select v-model="filter.channel" class="wf-input wf-input--select">
-          <option v-for="opt in ACTIVITY_CHANNEL_OPTIONS" :key="opt.value || 'all'" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </select>
+        <WfSearchSelect v-model="filter.channel" :options="ACTIVITY_CHANNEL_OPTIONS" />
 
         <label class="wf-label">活动主标题：</label>
         <input
