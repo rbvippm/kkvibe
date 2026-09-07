@@ -31,11 +31,29 @@ import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC } from '../../constants/mobileChatMediaPickerSpec'
 import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
 import { CHAT_TG_H5_MEDIA_SPEC } from '../../constants/mobileChatTelegramH5Spec'
+import {
+  CHAT_GAME_DOCK,
+  CHAT_GAME_MENU_ACTIONS,
+  CHAT_GAME_MENU_CATEGORIES,
+  CHAT_GAME_PIP,
+  CHAT_GROUP_FLOATS,
+  CHAT_GROUP_GAME_ASSETS,
+  CHAT_GROUP_PINNED_GAMES,
+  CHAT_GROUP_WEBVIEW,
+  type ChatGameMenuActionId,
+  type ChatGamePlayMode,
+  type ChatGroupFloatKind,
+} from '../../constants/mobileChatGroupGame'
+import { resolveVoiceGameDisplay, resolveVoiceGameIcon } from '../../constants/mobileVoiceRoom'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
+import { VIP_CLUB_SPORTS_ASSETS } from '../../constants/vipClub'
+import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileChatFileSendFlow from './MobileChatFileSendFlow.vue'
 import MobileChatMediaPicker from './MobileChatMediaPicker.vue'
 import MobileChatTelegramH5MediaFlow from './MobileChatTelegramH5MediaFlow.vue'
+import MobileRoomGameCenter from './MobileRoomGameCenter.vue'
+import Mh5VipSportsDesk from './Mh5VipSportsDesk.vue'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -87,15 +105,485 @@ const jumpBadgeText = computed(() => {
   return count > JUMP_BADGE_MAX ? `${JUMP_BADGE_MAX}+` : String(count)
 })
 const unreadJumpLabel = computed(() => formatUnreadJumpLabel(historyUnreadCount.value))
+const showGameCenter = ref(false)
+const showWebview = ref(false)
+const lastGameName = ref('奔驰宝马')
+const playAnchor = ref<ChatGroupFloatKind>('play')
+const flyChipIcon = ref(CHAT_GROUP_GAME_ASSETS.playFloat)
+const gamePlayName = ref('')
+const gamePlayExpanded = ref(false)
+const gamePlayMode = ref<ChatGamePlayMode>('sheet')
+const showGameMenu = ref(false)
+const miniGame = useMiniAppGame()
+const gamePlayBlocking = computed(
+  () =>
+    miniGame.blocking.value ||
+    (Boolean(gamePlayName.value) &&
+      gamePlayMode.value !== 'pip' &&
+      gamePlayMode.value !== 'dock' &&
+      !gameHomeDismiss.value),
+)
+const roomEl = ref<HTMLElement | null>(null)
+const pipPos = ref<{ x: number; y: number } | null>(null)
+const gameStageDrag = ref<{
+  pointerId: number
+  startX: number
+  startY: number
+  originX: number
+  originY: number
+  dx: number
+  dy: number
+  moved: boolean
+} | null>(null)
+const gameStageShift = ref<{ x: number; y: number; scale: number; radius: number } | null>(null)
+const gameHomeDismiss = ref<{ t: number; roomH: number } | null>(null)
+const gameDockOpen = computed(
+  () =>
+    miniGame.dockOpen.value ||
+    gamePlayMode.value === 'dock' ||
+    Boolean(gameHomeDismiss.value),
+)
+const flyChip = ref<{ x: number; y: number; scale: number; opacity: number } | null>(null)
+const floatPulse = ref(false)
+let flyRaf = 0
+let homeDismissRaf = 0
+let pulseTimer: ReturnType<typeof setTimeout> | null = null
+
+function stopFlyChip() {
+  if (flyRaf) {
+    cancelAnimationFrame(flyRaf)
+    flyRaf = 0
+  }
+  flyChip.value = null
+}
+
+function stopHomeDismiss() {
+  if (homeDismissRaf) {
+    cancelAnimationFrame(homeDismissRaf)
+    homeDismissRaf = 0
+  }
+  gameHomeDismiss.value = null
+}
+
+function quadPoint(t: number, a: number, b: number, c: number) {
+  const u = 1 - t
+  return u * u * a + 2 * u * t * b + t * t * c
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+}
 const overlayOpen = computed(
   () =>
     plusOpen.value ||
     mediaPickerOpen.value ||
     tgH5Open.value ||
     fileSendOpen.value ||
+    showGameCenter.value ||
+    showWebview.value ||
+    gamePlayBlocking.value ||
     Boolean(activeMsgId.value) ||
     Boolean(resendMsgId.value),
 )
+const isGroupRoom = computed(() => room.value.kind === 'group')
+const showPinnedGame = computed(() => isGroupRoom.value && CHAT_GROUP_PINNED_GAMES.length > 0)
+const dismissedFloats = ref<ChatGroupFloatKind[]>([])
+const visibleFloats = computed(() =>
+  isGroupRoom.value ? CHAT_GROUP_FLOATS.filter((item) => !dismissedFloats.value.includes(item.id)) : [],
+)
+const pinnedIndex = ref(0)
+const pinnedSlideName = ref('mh5-chat-pinned-slide-up')
+const pinnedGames = CHAT_GROUP_PINNED_GAMES
+const currentPinned = computed(
+  () => pinnedGames[pinnedIndex.value] ?? pinnedGames[0],
+)
+const showPinnedRails = computed(() => pinnedGames.length > 1)
+let pinnedSwipe: { x: number; y: number } | null = null
+
+function wrapPinnedIndex(next: number) {
+  const total = pinnedGames.length
+  return ((next % total) + total) % total
+}
+
+function goToPinned(index: number, dir?: 'up' | 'down') {
+  if (!showPinnedRails.value || index === pinnedIndex.value) return
+  const next = wrapPinnedIndex(index)
+  pinnedSlideName.value = dir === 'down' ? 'mh5-chat-pinned-slide-down' : 'mh5-chat-pinned-slide-up'
+  pinnedIndex.value = next
+}
+
+function cyclePinned(delta: 1 | -1) {
+  if (!showPinnedRails.value) return
+  goToPinned(pinnedIndex.value + delta, delta > 0 ? 'up' : 'down')
+}
+
+function onPinnedPointerDown(ev: PointerEvent) {
+  if ((ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__enter')) {
+    pinnedSwipe = null
+    return
+  }
+  pinnedSwipe = { x: ev.clientX, y: ev.clientY }
+}
+
+function onPinnedPointerUp(ev: PointerEvent) {
+  const start = pinnedSwipe
+  pinnedSwipe = null
+  if (!start || !showPinnedRails.value) return
+  const dy = ev.clientY - start.y
+  const dx = ev.clientX - start.x
+  if (Math.abs(dy) >= 24 && Math.abs(dy) > Math.abs(dx)) {
+    cyclePinned(dy < 0 ? 1 : -1)
+    return
+  }
+  if (Math.abs(dy) < 8 && Math.abs(dx) < 8 && !(ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__rail')) {
+    cyclePinned(1)
+  }
+}
+
+function onPinnedPointerCancel() {
+  pinnedSwipe = null
+}
+
+function dismissFloat(id: ChatGroupFloatKind) {
+  if (dismissedFloats.value.includes(id)) return
+  dismissedFloats.value = [...dismissedFloats.value, id]
+}
+
+function gameIconOf(name: string) {
+  return name === '奔驰宝马' ? CHAT_GROUP_GAME_ASSETS.playFloat : resolveVoiceGameIcon(name)
+}
+
+function openGamePlay(name: string, mode: ChatGamePlayMode = 'sheet', anchor: ChatGroupFloatKind = 'game') {
+  stopHomeDismiss()
+  showGameCenter.value = false
+  showGameMenu.value = false
+  gameStageDrag.value = null
+  gameStageShift.value = null
+  lastGameName.value = name
+  playAnchor.value = anchor
+  gamePlayMode.value = mode
+  gamePlayName.value = name
+  if (mode === 'full') {
+    gamePlayExpanded.value = true
+    return
+  }
+  gamePlayExpanded.value = mode === 'sheet' && resolveVoiceGameDisplay(name) === 'portrait'
+}
+
+function roomBox() {
+  return { w: roomEl.value?.clientWidth || 375, h: roomEl.value?.clientHeight || 812 }
+}
+
+function clampPipPos(x: number, y: number) {
+  const { w, h } = roomBox()
+  return {
+    x: Math.min(Math.max(CHAT_GAME_PIP.margin, w - CHAT_GAME_PIP.width - CHAT_GAME_PIP.margin), Math.max(CHAT_GAME_PIP.margin, x)),
+    y: Math.min(Math.max(56, h - CHAT_GAME_PIP.height - CHAT_GAME_PIP.margin), Math.max(56, y)),
+  }
+}
+
+function defaultPipPos() {
+  const { w } = roomBox()
+  return clampPipPos(w - CHAT_GAME_PIP.defaultRight - CHAT_GAME_PIP.width, CHAT_GAME_PIP.defaultTop)
+}
+
+function ensurePipPos() {
+  pipPos.value = clampPipPos(
+    pipPos.value?.x ?? defaultPipPos().x,
+    pipPos.value?.y ?? defaultPipPos().y,
+  )
+  return pipPos.value
+}
+
+const gameStageStyle = computed(() => {
+  const dismiss = gameHomeDismiss.value
+  if (dismiss && gamePlayMode.value === 'full') {
+    const t = easeInOutCubic(dismiss.t)
+    const endH = CHAT_GAME_DOCK.height
+    const h = dismiss.roomH * (1 - t) + endH * t
+    const inset = CHAT_GAME_DOCK.inset * t
+    return {
+      top: `${dismiss.roomH - h}px`,
+      height: `${h}px`,
+      left: `${inset}px`,
+      right: `${inset}px`,
+      width: 'auto',
+      borderRadius: `${28 * t}px`,
+    }
+  }
+  const shift = gameStageShift.value
+  if (gamePlayMode.value === 'full') {
+    if (!shift) return undefined
+    return {
+      transform: `translate(${shift.x}px, ${shift.y}px) scale(${shift.scale})`,
+      borderRadius: `${shift.radius}px`,
+    }
+  }
+  if (gamePlayMode.value !== 'pip') return undefined
+  const pos = pipPos.value ?? defaultPipPos()
+  const drag = gameStageDrag.value
+  return {
+    left: `${pos.x + (drag ? drag.dx : 0)}px`,
+    top: `${pos.y + (drag ? drag.dy : 0)}px`,
+  }
+})
+
+function isGameStageControl(target: EventTarget | null) {
+  return Boolean(
+    (target as HTMLElement | null)?.closest?.(
+      '.mh5-vip-sports-header__drop, .mh5-chat-game-menu, .mh5-chat-game-full__msg, .mh5-chat-game-stage__close, .mh5-vip-sports-page',
+    ),
+  )
+}
+
+function onGameStagePointerDown(ev: PointerEvent) {
+  if (ev.button !== 0) return
+  if (isGameStageControl(ev.target)) return
+  if (gamePlayMode.value !== 'full' && gamePlayMode.value !== 'pip') return
+  const pos = ensurePipPos()
+  gameStageDrag.value = {
+    pointerId: ev.pointerId,
+    startX: ev.clientX,
+    startY: ev.clientY,
+    originX: pos.x,
+    originY: pos.y,
+    dx: 0,
+    dy: 0,
+    moved: false,
+  }
+  gameStageShift.value = null
+  ;(ev.currentTarget as HTMLElement | null)?.setPointerCapture?.(ev.pointerId)
+}
+
+function onGameStagePointerMove(ev: PointerEvent) {
+  const drag = gameStageDrag.value
+  if (!drag || drag.pointerId !== ev.pointerId) return
+  const dx = ev.clientX - drag.startX
+  const dy = ev.clientY - drag.startY
+  drag.dx = dx
+  drag.dy = dy
+  drag.moved = drag.moved || Math.abs(dx) > CHAT_GAME_PIP.clickSlop || Math.abs(dy) > CHAT_GAME_PIP.clickSlop
+  if (gamePlayMode.value === 'full') {
+    const pull = Math.max(0, dy)
+    const p = Math.min(1, pull / 260)
+    gameStageShift.value = {
+      x: dx * 0.06,
+      y: pull * 0.38,
+      scale: 1 - p * 0.14,
+      radius: 8 + p * 16,
+    }
+    return
+  }
+  gameStageShift.value = null
+}
+
+function onGameStagePointerUp(ev: PointerEvent) {
+  const drag = gameStageDrag.value
+  if (!drag || drag.pointerId !== ev.pointerId) return
+  const { dx, dy, moved, originX, originY } = drag
+  gameStageDrag.value = null
+  gameStageShift.value = null
+  try {
+    ;(ev.currentTarget as HTMLElement | null)?.releasePointerCapture?.(ev.pointerId)
+  } catch {
+    /* already released */
+  }
+  if (gamePlayMode.value === 'full') {
+    if (dy >= CHAT_GAME_PIP.collapseDy) collapseGameToPip()
+    return
+  }
+  if (gamePlayMode.value !== 'pip') return
+  if (!moved) {
+    expandGameFromPip()
+    return
+  }
+  if (dy <= CHAT_GAME_PIP.expandDy && Math.abs(dx) < 90) {
+    expandGameFromPip()
+    return
+  }
+  pipPos.value = clampPipPos(originX + dx, originY + dy)
+}
+
+function closeGamePlay() {
+  stopHomeDismiss()
+  gamePlayName.value = ''
+  gamePlayExpanded.value = false
+  gamePlayMode.value = 'sheet'
+  showGameMenu.value = false
+  pipPos.value = null
+  gameStageDrag.value = null
+  gameStageShift.value = null
+}
+
+function dismissGameToHome() {
+  const name = gamePlayName.value || lastGameName.value
+  if (!name) return
+  closeGamePlay()
+  miniGame.open(name, 'sports')
+  const shell = document.getElementById('mh5-app-shell')
+  miniGame.dismissToHome(shell?.clientHeight || 812)
+}
+
+function expandGameFromDock() {
+  if (miniGame.dockOpen.value && miniGame.gameName.value) {
+    miniGame.expandFromDock()
+    return
+  }
+  if (!gamePlayName.value) return
+  stopHomeDismiss()
+  gameStageShift.value = null
+  gameStageDrag.value = null
+  gamePlayMode.value = 'full'
+  gamePlayExpanded.value = true
+}
+
+function collapseGameToPip() {
+  if (!gamePlayName.value) return
+  showGameMenu.value = false
+  gameStageShift.value = null
+  gameStageDrag.value = null
+  ensurePipPos()
+  gamePlayMode.value = 'pip'
+  gamePlayExpanded.value = false
+}
+
+function expandGameFromPip() {
+  if (!gamePlayName.value) return
+  showGameMenu.value = false
+  gameStageShift.value = null
+  gameStageDrag.value = null
+  gamePlayMode.value = 'full'
+  gamePlayExpanded.value = true
+}
+
+function openGameMenu() {
+  showGameMenu.value = true
+}
+
+function closeGameMenu() {
+  showGameMenu.value = false
+}
+
+function onGameMenuAction(id: ChatGameMenuActionId) {
+  closeGameMenu()
+  if (id === 'home') {
+    dismissGameToHome()
+    return
+  }
+  if (id === 'recharge') {
+    closeGamePlay()
+    void router.push({ name: 'mobile-wallet-transfer' })
+    return
+  }
+  if (id === 'activity') {
+    showToast('活动中心即将开放')
+    return
+  }
+  showToast('已为你接通专属客服')
+}
+
+function onGameMenuCategory(label: string) {
+  showGameMenu.value = false
+  closeGamePlay()
+  showGameCenter.value = true
+  showToast(`已切换到「${label}」`)
+}
+
+function toggleGamePlaySize() {
+  gamePlayExpanded.value = !gamePlayExpanded.value
+}
+
+function minimizeGamePlay(ev?: MouseEvent) {
+  const room = roomEl.value
+  const startEl =
+    room?.querySelector<HTMLElement>('.mh5-chat-game-play__icon') ??
+    room?.querySelector<HTMLElement>('.mh5-chat-game-play') ??
+    (ev?.currentTarget as HTMLElement | null)
+  if (!room || !startEl || flyChip.value) {
+    closeGamePlay()
+    return
+  }
+
+  const startBox = startEl.getBoundingClientRect()
+  const roomBox = room.getBoundingClientRect()
+  const start = {
+    x: startBox.left + startBox.width / 2 - roomBox.left,
+    y: startBox.top + startBox.height / 2 - roomBox.top,
+  }
+  const startScale = Math.max(0.4, startBox.width / 56)
+  const anchor = 'game'
+  flyChipIcon.value = gameIconOf(gamePlayName.value || lastGameName.value)
+  dismissedFloats.value = dismissedFloats.value.filter((id) => id !== anchor)
+  flyChip.value = { x: start.x, y: start.y, scale: startScale, opacity: 1 }
+  closeGamePlay()
+
+  void nextTick(() => {
+    const latestRoom = roomEl.value?.getBoundingClientRect() ?? roomBox
+    const targetEl = roomEl.value?.querySelector<HTMLElement>(`[data-chat-float="${anchor}"]`)
+    const targetBox = targetEl?.getBoundingClientRect()
+    const end = targetBox
+      ? {
+          x: targetBox.left + targetBox.width / 2 - latestRoom.left,
+          y: targetBox.top + targetBox.height / 2 - latestRoom.top,
+        }
+      : { x: latestRoom.width - 41, y: latestRoom.height - 150 }
+    const endScale = targetBox ? Math.max(0.55, targetBox.width / 56) : 1
+    const ctrl = {
+      x: start.x + (end.x - start.x) * 0.42 - 28,
+      y: Math.min(start.y, end.y) - 180,
+    }
+    const duration = 680
+    const t0 = performance.now()
+
+    const tick = (now: number) => {
+      const raw = Math.min(1, (now - t0) / duration)
+      const t = easeInOutCubic(raw)
+      flyChip.value = {
+        x: quadPoint(t, start.x, ctrl.x, end.x),
+        y: quadPoint(t, start.y, ctrl.y, end.y),
+        scale: startScale + (endScale - startScale) * t,
+        opacity: 1 - 0.08 * t,
+      }
+      if (raw < 1) {
+        flyRaf = requestAnimationFrame(tick)
+        return
+      }
+      flyRaf = 0
+      flyChip.value = null
+      floatPulse.value = true
+      if (pulseTimer) clearTimeout(pulseTimer)
+      pulseTimer = setTimeout(() => {
+        floatPulse.value = false
+        pulseTimer = null
+      }, 460)
+    }
+    flyRaf = requestAnimationFrame(tick)
+  })
+}
+
+function openPinnedGame() {
+  miniGame.open(currentPinned.value.gameName, 'sports')
+}
+
+function openFloat(item: (typeof CHAT_GROUP_FLOATS)[number]) {
+  if (item.kind === 'link') {
+    showWebview.value = true
+    return
+  }
+  if (item.kind === 'play') {
+    if (miniGame.dockOpen.value && miniGame.gameName.value) {
+      miniGame.expandFromDock()
+      return
+    }
+    if (gamePlayMode.value === 'dock' && gamePlayName.value) {
+      expandGameFromDock()
+      return
+    }
+    openGamePlay(lastGameName.value, 'sheet', 'play')
+    return
+  }
+  showGameCenter.value = true
+}
 
 function clearIncomingDemo() {
   incomingTimers.forEach((id) => window.clearTimeout(id))
@@ -292,6 +780,10 @@ watch(
     mediaPickerOpen.value = false
     mediaPickerStartAt.value = 'gallery'
     tgH5Open.value = false
+    dismissedFloats.value = []
+    pinnedIndex.value = 0
+    pinnedSwipe = null
+    closeGamePlay()
     resetJumpState()
     await scrollToBottom()
     await nextTick()
@@ -674,6 +1166,9 @@ function fileMetaText(msg: ChatRoomMessage) {
 
 onBeforeUnmount(() => {
   if (toastTimer.value) clearTimeout(toastTimer.value)
+  if (pulseTimer) clearTimeout(pulseTimer)
+  stopFlyChip()
+  stopHomeDismiss()
   clearAllUploads()
   clearIncomingDemo()
   clearNewMsgFlash()
@@ -681,7 +1176,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="mh5-chat-room mh5-route-view" :class="{ 'mh5-chat-room--tg-h5': isTgH5Room }">
+  <div
+    ref="roomEl"
+    class="mh5-chat-room mh5-route-view"
+    :class="{
+      'mh5-chat-room--tg-h5': isTgH5Room,
+      'mh5-chat-room--has-pinned-game': showPinnedGame,
+      'mh5-chat-room--has-game-floats': visibleFloats.length > 0,
+      'mh5-chat-room--has-game-dock': gameDockOpen,
+    }"
+  >
     <header class="mh5-chat-room-header">
       <button type="button" class="mh5-chat-room-header__back" :aria-label="$t('返回')" @click="goBack">
         <img :src="CHAT_ROOM_ASSETS.back" alt="" width="24" height="24" />
@@ -712,6 +1216,45 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </header>
+
+    <div
+      v-if="showPinnedGame"
+      class="mh5-chat-pinned-game"
+      :class="{ 'mh5-chat-pinned-game--multi': showPinnedRails }"
+      @pointerdown="onPinnedPointerDown"
+      @pointerup="onPinnedPointerUp"
+      @pointercancel="onPinnedPointerCancel"
+    >
+      <div
+        v-if="showPinnedRails"
+        class="mh5-chat-pinned-game__rails"
+        role="tablist"
+        :aria-label="$t('切换置顶')"
+      >
+        <button
+          v-for="(item, index) in pinnedGames"
+          :key="item.id"
+          type="button"
+          class="mh5-chat-pinned-game__rail"
+          :class="{ 'mh5-chat-pinned-game__rail--on': index === pinnedIndex }"
+          role="tab"
+          :aria-selected="index === pinnedIndex"
+          :aria-label="`${$t('切换置顶')} ${index + 1}`"
+          @click.stop="goToPinned(index, index > pinnedIndex ? 'up' : 'down')"
+        />
+      </div>
+      <div class="mh5-chat-pinned-game__viewport">
+        <Transition :name="pinnedSlideName">
+          <div :key="currentPinned.id" class="mh5-chat-pinned-game__copy">
+            <p class="mh5-chat-pinned-game__intro">{{ $t(currentPinned.intro) }}</p>
+            <span class="mh5-chat-pinned-game__tag">{{ $t(currentPinned.category) }}丨{{ $t(currentPinned.gameName) }}</span>
+          </div>
+        </Transition>
+      </div>
+      <button type="button" class="mh5-chat-pinned-game__enter" @click.stop="openPinnedGame">
+        {{ $t('进入游戏') }}
+      </button>
+    </div>
 
     <main ref="mainEl" class="mh5-chat-room-main" @scroll.passive="updateJumpBottom">
       <div class="mh5-chat-room-hint mh5-chat-room-hint--lock">
@@ -1062,6 +1605,47 @@ onBeforeUnmount(() => {
       </Transition>
     </footer>
 
+    <div v-if="visibleFloats.length && (!overlayOpen || flyChip)" class="mh5-chat-game-floats">
+      <div
+        v-for="item in visibleFloats"
+        :key="item.id"
+        class="mh5-voice-float"
+        :class="{ 'mh5-voice-float--pulse': floatPulse && item.id === playAnchor }"
+        :data-chat-float="item.id"
+      >
+        <button
+          type="button"
+          class="mh5-voice-float__x"
+          :aria-label="$t('关闭')"
+          @click.stop="dismissFloat(item.id)"
+        >
+          <img :src="CHAT_GROUP_GAME_ASSETS.close" alt="" width="16" height="16" />
+        </button>
+        <button
+          type="button"
+          class="mh5-voice-float__hit"
+          :aria-label="$t(item.kind === 'play' ? lastGameName : item.label)"
+          @click="openFloat(item)"
+        >
+          <img
+            class="mh5-voice-float__img"
+            :class="{ 'mh5-voice-float__img--game': item.kind !== 'game' }"
+            :src="
+              item.kind === 'link'
+                ? CHAT_GROUP_GAME_ASSETS.linkIcon
+                : item.kind === 'play'
+                  ? gameIconOf(lastGameName)
+                  : CHAT_GROUP_GAME_ASSETS.gameIcon
+            "
+            alt=""
+            width="60"
+            height="60"
+          />
+          <span class="mh5-voice-float__label">{{ $t(item.kind === 'play' ? lastGameName : item.caption) }}</span>
+        </button>
+      </div>
+    </div>
+
     <Transition name="mh5-chat-room-unread">
       <div
         v-if="showUnreadJump && unreadJumpLabel && !overlayOpen"
@@ -1210,5 +1794,226 @@ onBeforeUnmount(() => {
     <Transition name="mh5-chat-room-toast">
       <div v-if="toast" class="mh5-chat-room-toast">{{ toast }}</div>
     </Transition>
+
+    <MobileRoomGameCenter
+      v-if="isGroupRoom"
+      v-model:open="showGameCenter"
+      :show-floats="false"
+      intercept-open
+      @open-game="openGamePlay"
+    />
+
+    <Transition name="mh5-chat-webview">
+      <div
+        v-if="showWebview"
+        class="mh5-chat-webview"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="$t('悬浮链接')"
+      >
+        <header class="mh5-chat-webview__bar">
+          <button
+            type="button"
+            class="mh5-chat-room-header__back"
+            :aria-label="$t('返回')"
+            @click="showWebview = false"
+          >
+            <img :src="CHAT_ROOM_ASSETS.back" alt="" width="24" height="24" />
+          </button>
+          <p class="mh5-chat-webview__host">{{ CHAT_GROUP_WEBVIEW.host }}</p>
+          <button
+            type="button"
+            class="mh5-chat-room-header__icon"
+            :aria-label="$t('更多')"
+            @click="showToast('更多（原型演示）')"
+          >
+            <img :src="CHAT_ROOM_ASSETS.more" alt="" width="24" height="24" />
+          </button>
+        </header>
+        <div class="mh5-chat-webview__page">
+          <img class="mh5-chat-webview__logo" :src="CHAT_GROUP_GAME_ASSETS.webLogo" alt="Google" />
+          <div class="mh5-chat-webview__search" role="search">
+            <span class="mh5-chat-webview__search-dot" aria-hidden="true" />
+            <span class="mh5-chat-webview__search-ph">{{ $t('搜索') }}</span>
+          </div>
+          <div class="mh5-chat-webview__tabs">
+            <span class="mh5-chat-webview__tab mh5-chat-webview__tab--on">{{ $t('全部') }}</span>
+            <span class="mh5-chat-webview__tab">{{ $t('图片') }}</span>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <div
+      v-if="flyChip"
+      class="mh5-chat-game-fly"
+      :style="{
+        transform: `translate(${flyChip.x}px, ${flyChip.y}px) scale(${flyChip.scale})`,
+        opacity: flyChip.opacity,
+      }"
+      aria-hidden="true"
+    >
+      <img :src="flyChipIcon" alt="" width="56" height="56" />
+    </div>
+
+    <button
+      v-if="gamePlayName && gamePlayMode === 'sheet' && !gamePlayExpanded"
+      type="button"
+      class="mh5-chat-game-play-mask"
+      :aria-label="$t('收起')"
+      @click="minimizeGamePlay"
+    />
+
+    <Transition :name="flyChip ? '' : 'mh5-chat-game-play'">
+      <section
+        v-if="gamePlayName && gamePlayMode === 'sheet'"
+        class="mh5-chat-game-play"
+        :class="{ 'mh5-chat-game-play--expanded': gamePlayExpanded }"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="gamePlayName"
+      >
+        <header class="mh5-chat-game-play__head">
+          <div class="mh5-chat-game-play__title">
+            <img
+              class="mh5-chat-game-play__icon"
+              :src="gameIconOf(gamePlayName)"
+              alt=""
+              width="28"
+              height="28"
+            />
+            <h2 class="mh5-chat-game-play__name">{{ $t(gamePlayName) }}</h2>
+          </div>
+          <div class="mh5-chat-game-play__actions">
+            <button
+              type="button"
+              class="mh5-chat-game-play__btn"
+              :aria-label="gamePlayExpanded ? $t('收起') : $t('放大')"
+              @click="toggleGamePlaySize"
+            >
+              <img :src="CHAT_GROUP_GAME_ASSETS.expand" alt="" width="24" height="24" />
+            </button>
+            <button
+              type="button"
+              class="mh5-chat-game-play__btn"
+              :aria-label="$t('收起')"
+              @click="minimizeGamePlay"
+            >
+              <span class="mh5-chat-game-play__min" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              class="mh5-chat-game-play__btn"
+              :aria-label="$t('关闭')"
+              @click="closeGamePlay"
+            >
+              <img :src="CHAT_GROUP_GAME_ASSETS.playClose" alt="" width="24" height="24" />
+            </button>
+          </div>
+        </header>
+        <div class="mh5-chat-game-play__body">
+          <Mh5VipSportsDesk embedded />
+        </div>
+      </section>
+    </Transition>
+
+    <section
+      v-if="gamePlayName && (gamePlayMode === 'full' || gamePlayMode === 'pip')"
+      class="mh5-chat-game-stage"
+      :class="{
+        'mh5-chat-game-stage--full': gamePlayMode === 'full',
+        'mh5-chat-game-stage--pip': gamePlayMode === 'pip',
+        'mh5-chat-game-stage--dragging': Boolean(gameStageDrag),
+        'mh5-chat-game-stage--leaving': Boolean(gameHomeDismiss),
+      }"
+      :style="gameStageStyle"
+      role="dialog"
+      :aria-modal="gamePlayMode === 'full'"
+      :aria-label="gamePlayName"
+      @pointerdown="onGameStagePointerDown"
+      @pointermove="onGameStagePointerMove"
+      @pointerup="onGameStagePointerUp"
+      @pointercancel="onGameStagePointerUp"
+    >
+      <Mh5VipSportsDesk
+        v-if="gamePlayMode === 'full'"
+        embedded
+        :show-collapse-handle="!showGameMenu && !gameHomeDismiss"
+        @menu="openGameMenu"
+      />
+      <img
+        v-else
+        class="mh5-chat-game-stage__desk"
+        :src="VIP_CLUB_SPORTS_ASSETS.matchCard"
+        alt="金刚体育"
+      />
+      <template v-if="gamePlayMode === 'full' && !gameHomeDismiss">
+        <Transition name="mh5-chat-game-menu">
+          <div v-if="showGameMenu" class="mh5-chat-game-menu">
+            <button
+              type="button"
+              class="mh5-chat-game-menu__mask"
+              :aria-label="$t('收起游戏菜单')"
+              @click="closeGameMenu"
+            />
+            <section class="mh5-chat-game-menu__panel" :aria-label="$t('切换游戏')">
+              <div class="mh5-chat-game-menu__actions">
+                <button
+                  v-for="item in CHAT_GAME_MENU_ACTIONS"
+                  :key="item.id"
+                  type="button"
+                  class="mh5-chat-game-menu__quick"
+                  @click="onGameMenuAction(item.id)"
+                >
+                  <span class="mh5-chat-game-menu__quick-ico" v-html="item.icon" />
+                  <span class="mh5-chat-game-menu__quick-txt">{{ $t(item.label) }}</span>
+                </button>
+              </div>
+              <div class="mh5-chat-game-menu__switch">
+                <h3 class="mh5-chat-game-menu__title">{{ $t('切换游戏') }}</h3>
+                <div class="mh5-chat-game-menu__cats">
+                  <button
+                    v-for="item in CHAT_GAME_MENU_CATEGORIES"
+                    :key="item.id"
+                    type="button"
+                    class="mh5-chat-game-menu__cat"
+                    @click="onGameMenuCategory(item.label)"
+                  >
+                    <span class="mh5-chat-game-menu__cat-ico" v-html="item.icon" />
+                    <span class="mh5-chat-game-menu__cat-txt">{{ $t(item.label) }}</span>
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="mh5-chat-game-menu__handle"
+                :aria-label="$t('收起游戏菜单')"
+                @click="closeGameMenu"
+              >
+                <img :src="CHAT_GROUP_GAME_ASSETS.menuHandle" alt="" width="90" height="19" />
+              </button>
+            </section>
+          </div>
+        </Transition>
+        <button
+          type="button"
+          class="mh5-chat-game-full__msg"
+          :aria-label="$t('查看消息')"
+          @click.stop="collapseGameToPip"
+        >
+          <img :src="CHAT_GROUP_GAME_ASSETS.msgBubble" alt="" width="28" height="28" />
+        </button>
+      </template>
+      <button
+        v-if="gamePlayMode === 'pip'"
+        type="button"
+        class="mh5-chat-game-stage__close"
+        :aria-label="$t('关闭')"
+        @pointerdown.stop
+        @click.stop="closeGamePlay"
+      >
+        <img :src="CHAT_GROUP_GAME_ASSETS.close" alt="" width="16" height="16" />
+      </button>
+    </section>
   </div>
 </template>

@@ -57,13 +57,7 @@ const emit = defineEmits<{
       <img :src="LIVE_STREAM_ASSETS.giftIcon" alt="" width="20" height="20" />
     </button>
     <button type="button" class="mh5-room-bar__btn" :aria-label="$t('分享')" @click="emit('share')">
-      <img
-        class="mh5-room-bar__share-icon"
-        :src="LIVE_STREAM_ASSETS.share"
-        alt=""
-        width="22"
-        height="22"
-      />
+      <img :src="LIVE_STREAM_ASSETS.more" alt="" width="22" height="22" />
     </button>
   </div>
 </template>

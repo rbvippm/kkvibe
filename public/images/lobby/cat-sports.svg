@@ -1,0 +1,12 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sp-a" x1="10" y1="8" x2="38" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE082"/>
+      <stop offset="1" stop-color="#FF8A1F"/>
+    </linearGradient>
+  </defs>
+  <circle cx="24" cy="23" r="14" fill="url(#sp-a)"/>
+  <path d="M24 9a14 14 0 100 28 14 14 0 000-28Zm0 2.2c2.4 2.2 4 5.4 4.4 9.3H19.6c.4-3.9 2-7.1 4.4-9.3Zm-6.6 11.7h13.2c-.4 3.9-2 7.1-4.4 9.3-2.4-2.2-4-5.4-4.4-9.3H17.4Zm-2.6 0c.5-4.6 2.5-8.6 5.4-11.2A11.8 11.8 0 0012.2 23h2.6Zm18.4 0h2.6A11.8 11.8 0 0027.8 14.2c2.9 2.6 4.9 6.6 5.4 11.2ZM17.6 34.8A11.8 11.8 0 0112.2 25h2.7c.5 3.7 2.1 7 4.4 9.2l-1.7.6Zm12.8 0 1.7-.6c2.3-2.2 3.9-5.5 4.4-9.2h2.7a11.8 11.8 0 01-5.4 9.8h-3.4Z" fill="#8A4A12" fill-opacity=".28"/>
+  <path d="M24 11c2.2 2.4 3.6 5.8 4 10h-8c.4-4.2 1.8-7.6 4-10Z" fill="#fff" fill-opacity=".35"/>
+  <ellipse cx="24" cy="39" rx="10" ry="2.2" fill="#FF8A1F" fill-opacity=".22"/>
+</svg>

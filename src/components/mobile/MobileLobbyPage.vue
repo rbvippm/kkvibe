@@ -4,10 +4,10 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   LOBBY_ANNOUNCEMENT,
   LOBBY_CASH_CURRENCY_OPTIONS,
-  LOBBY_CATEGORIES,
-  LOBBY_CATEGORY_EMPTY,
   LOBBY_FEATURED_BANNER,
   LOBBY_MODES,
+  categoriesForMode,
+  emptyForCategory,
   formatLobbyCurrencyBalance,
   gamesForCategory,
   hasSeenLobbyHallSwitchHint,
@@ -15,6 +15,7 @@ import {
   memberHasCreditLimit,
   type LobbyCategory,
   type LobbyCurrencyId,
+  type LobbyGame,
   type LobbyMode,
 } from '../../constants/mobileLobby'
 import { LOBBY_ASSETS } from '../../constants/mobileLobbyAssets'
@@ -25,6 +26,7 @@ import {
   pickLobbyCurrency,
   sortByLocaleCashOrder,
 } from '../../i18n'
+import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 
 const router = useRouter()
@@ -44,9 +46,12 @@ const lobbyCurrencyOptions = computed(() =>
   sortByLocaleCashOrder(LOBBY_CASH_CURRENCY_OPTIONS, (item) => item.id),
 )
 
-const filteredGames = computed(() => gamesForCategory(activeCategory.value))
-const categoryEmpty = computed(() => LOBBY_CATEGORY_EMPTY[activeCategory.value])
-const showBanner = computed(() => activeCategory.value === 'hot')
+const lobbyCategories = computed(() => categoriesForMode(activeMode.value))
+const filteredGames = computed(() => gamesForCategory(activeCategory.value, activeMode.value))
+const categoryEmpty = computed(() => emptyForCategory(activeCategory.value, activeMode.value))
+const showBanner = computed(() => activeMode.value === 'social' && activeCategory.value === 'hot')
+const isTraditional = computed(() => activeMode.value === 'traditional')
+const miniGame = useMiniAppGame()
 
 const selectedCurrency = computed(
   () =>
@@ -70,6 +75,23 @@ function goBetRecords() {
 
 function goDeposit() {
   router.push(walletTransferRoute('deposit'))
+}
+
+function switchMode(mode: LobbyMode) {
+  activeMode.value = mode
+  activeCategory.value = 'hot'
+}
+
+function openLobbyGame(game: LobbyGame) {
+  if (!game.play) return
+  if (isTraditional.value) {
+    miniGame.open(game.title, game.play.kind)
+    return
+  }
+  router.push({
+    name: 'mobile-vip-club-play',
+    params: game.play.id ? { kind: game.play.kind, id: game.play.id } : { kind: game.play.kind },
+  })
 }
 
 function dismissHallSwitchHint() {
@@ -130,6 +152,14 @@ watch(
       return
     }
     if (!force) hallSwitchHintOpen.value = false
+  },
+  { immediate: true },
+)
+
+watch(
+  () => route.query.mode,
+  (mode) => {
+    if (mode === 'traditional') switchMode('traditional')
   },
   { immediate: true },
 )
@@ -241,7 +271,7 @@ watch(
             class="mh5-lobby-mode__btn"
             :class="{ 'mh5-lobby-mode__btn--active': activeMode === mode.key }"
             :aria-selected="activeMode === mode.key"
-            @click="activeMode = mode.key"
+            @click="switchMode(mode.key)"
           >
             <img :src="mode.icon" alt="" width="28" height="28" />
             <span>{{ $t(mode.label) }}</span>
@@ -250,7 +280,7 @@ watch(
 
         <div class="mh5-lobby-cats" role="tablist" :aria-label="$t('分类导航')">
           <button
-            v-for="cat in LOBBY_CATEGORIES"
+            v-for="cat in lobbyCategories"
             :key="cat.key"
             type="button"
             role="tab"
@@ -287,17 +317,38 @@ watch(
             <p class="mh5-lobby-empty__desc">{{ categoryEmpty.desc }}</p>
           </div>
 
-          <article v-for="game in filteredGames" :key="game.id" class="mh5-lobby-game">
-            <div class="mh5-lobby-game__cover-wrap">
+          <article
+            v-for="game in filteredGames"
+            :key="game.id"
+            class="mh5-lobby-game"
+            :class="{ 'mh5-lobby-game--classic': isTraditional }"
+          >
+            <div
+              class="mh5-lobby-game__cover-wrap"
+              :role="game.play ? 'button' : undefined"
+              :tabindex="game.play ? 0 : undefined"
+              :aria-label="game.play ? game.title : undefined"
+              @click="openLobbyGame(game)"
+            >
               <img class="mh5-lobby-game__cover" :src="game.cover" :alt="game.title" width="166" height="166" loading="lazy" />
-              <span class="mh5-lobby-game__tag" :class="`mh5-lobby-game__tag--${game.tag.type}`">
+              <span
+                v-if="game.brand"
+                class="mh5-lobby-game__brand"
+              >
+                <img :src="game.brand" alt="" width="20" height="20" />
+              </span>
+              <span
+                v-else-if="game.tag"
+                class="mh5-lobby-game__tag"
+                :class="`mh5-lobby-game__tag--${game.tag.type}`"
+              >
                 {{ $t(game.tag.label) }}
               </span>
               <button
                 type="button"
                 class="mh5-lobby-game__fav"
                 :aria-label="favorites.has(game.id) ? '取消收藏' : '收藏'"
-                @click="toggleFavorite(game.id)"
+                @click.stop="toggleFavorite(game.id)"
               >
                 <img
                   :src="favorites.has(game.id) ? LOBBY_ASSETS.heartFilled : LOBBY_ASSETS.heart"

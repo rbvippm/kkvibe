@@ -1,14 +1,24 @@
 import { LOBBY_ASSETS } from './mobileLobbyAssets'
 
 export type LobbyMode = 'social' | 'traditional'
-export type LobbyCategory = 'hot' | 'live' | 'community' | 'card'
+export type LobbySocialCategory = 'hot' | 'live' | 'community' | 'card'
+export type LobbyTraditionalCategory = 'hot' | 'sports' | 'casino' | 'lottery'
+export type LobbyCategory = LobbySocialCategory | LobbyTraditionalCategory
 export type GameTagType = 'group' | 'live' | 'pk'
+
+export type LobbyGamePlay = {
+  kind: 'sports' | 'live' | 'slot' | 'lottery'
+  id?: string
+}
 
 export type LobbyGame = {
   id: string
   title: string
   cover: string
-  tag: { label: string; type: GameTagType }
+  brand?: string
+  tag?: { label: string; type: GameTagType }
+  play?: LobbyGamePlay
+  featured?: boolean
   favorited?: boolean
 }
 
@@ -21,7 +31,7 @@ export const LOBBY_MODES: { key: LobbyMode; label: string; icon: string }[] = [
 ]
 
 export const LOBBY_CATEGORIES: {
-  key: LobbyCategory
+  key: LobbySocialCategory
   label: string
   icon: string
 }[] = [
@@ -31,18 +41,57 @@ export const LOBBY_CATEGORIES: {
   { key: 'card', label: '牌局', icon: LOBBY_ASSETS.catCard },
 ]
 
-export const LOBBY_CATEGORY_EMPTY: Record<LobbyCategory, { emoji: string; title: string; desc: string }> = {
+export const LOBBY_TRADITIONAL_CATEGORIES: {
+  key: LobbyTraditionalCategory
+  label: string
+  icon: string
+}[] = [
+  { key: 'hot', label: '热门', icon: LOBBY_ASSETS.catHot },
+  { key: 'sports', label: '体育', icon: LOBBY_ASSETS.catSports },
+  { key: 'casino', label: '真人', icon: LOBBY_ASSETS.catCasino },
+  { key: 'lottery', label: '彩票', icon: LOBBY_ASSETS.catLottery },
+]
+
+export const LOBBY_CATEGORY_EMPTY: Record<LobbySocialCategory, { emoji: string; title: string; desc: string }> = {
   hot: { emoji: '🔥', title: '暂无热门内容', desc: '精彩游戏即将上线，敬请期待。' },
   live: { emoji: '📺', title: '暂无游戏直播', desc: '当前没有进行中的游戏直播。' },
   community: { emoji: '👥', title: '暂无游戏群聊', desc: '还没有可加入的游戏社群。' },
   card: { emoji: '🃏', title: '暂无牌局', desc: '牌局房间筹备中，稍后再来看看。' },
 }
 
-export function gamesForCategory(category: LobbyCategory): LobbyGame[] {
+export const LOBBY_TRADITIONAL_EMPTY: Record<
+  LobbyTraditionalCategory,
+  { emoji: string; title: string; desc: string }
+> = {
+  hot: { emoji: '🎮', title: '暂无热门游戏', desc: '热门场馆即将上线，敬请期待。' },
+  sports: { emoji: '⚽', title: '暂无体育场馆', desc: '体育赛事筹备中，稍后再来看看。' },
+  casino: { emoji: '🃏', title: '暂无真人游戏', desc: '真人场馆维护中，稍后再来看看。' },
+  lottery: { emoji: '🎰', title: '暂无彩票玩法', desc: '彩票玩法即将上线，敬请期待。' },
+}
+
+export function categoriesForMode(mode: LobbyMode) {
+  return mode === 'traditional' ? LOBBY_TRADITIONAL_CATEGORIES : LOBBY_CATEGORIES
+}
+
+export function gamesForCategory(category: LobbyCategory, mode: LobbyMode = 'social'): LobbyGame[] {
+  if (mode === 'traditional') {
+    if (category === 'hot') return LOBBY_TRADITIONAL_GAMES.filter((g) => g.featured)
+    if (category === 'sports') return LOBBY_TRADITIONAL_GAMES.filter((g) => g.play?.kind === 'sports')
+    if (category === 'casino') return LOBBY_TRADITIONAL_GAMES.filter((g) => g.play?.kind === 'live')
+    if (category === 'lottery') return LOBBY_TRADITIONAL_GAMES.filter((g) => g.play?.kind === 'lottery')
+    return []
+  }
   if (category === 'hot') return LOBBY_GAMES
-  if (category === 'live') return LOBBY_GAMES.filter((g) => g.tag.type === 'live')
-  if (category === 'community') return LOBBY_GAMES.filter((g) => g.tag.type === 'group')
+  if (category === 'live') return LOBBY_GAMES.filter((g) => g.tag?.type === 'live')
+  if (category === 'community') return LOBBY_GAMES.filter((g) => g.tag?.type === 'group')
   return []
+}
+
+export function emptyForCategory(category: LobbyCategory, mode: LobbyMode) {
+  if (mode === 'traditional') {
+    return LOBBY_TRADITIONAL_EMPTY[category as LobbyTraditionalCategory] ?? LOBBY_TRADITIONAL_EMPTY.hot
+  }
+  return LOBBY_CATEGORY_EMPTY[category as LobbySocialCategory] ?? LOBBY_CATEGORY_EMPTY.hot
 }
 
 export const LOBBY_FEATURED_BANNER = {
@@ -88,6 +137,78 @@ export const LOBBY_GAMES: LobbyGame[] = [
     title: '百家乐 PK',
     cover: '/images/lobby/game-pk-2.svg',
     tag: { label: '游戏PK', type: 'pk' },
+  },
+]
+
+export const LOBBY_TRADITIONAL_GAMES: LobbyGame[] = [
+  {
+    id: 't-kk-sports',
+    title: '金刚P2P体育',
+    cover: '/images/vip-club/game-sports.png',
+    brand: LOBBY_ASSETS.logoMark,
+    play: { kind: 'sports' },
+    featured: true,
+  },
+  {
+    id: 't-im-sports',
+    title: 'IM 体育',
+    cover: '/images/lobby/game-im-sports.svg',
+    brand: '/images/vip-club/sports/logo.png',
+    play: { kind: 'sports' },
+    featured: true,
+  },
+  {
+    id: 't-ag-live',
+    title: 'CHOICE(AG)真人',
+    cover: '/images/vip-club/game-live.png',
+    brand: '/images/vip-club/vendors/huali-logo.png',
+    play: { kind: 'live', id: 'huali-live' },
+    featured: true,
+  },
+  {
+    id: 't-evo-live',
+    title: 'EVO 真人',
+    cover: '/images/vip-club/game-live.png',
+    brand: '/images/vip-club/vendors/db-logo.png',
+    play: { kind: 'live', id: 'db-live' },
+    featured: true,
+  },
+  {
+    id: 't-mahjong',
+    title: '麻将胡了',
+    cover: '/images/vip-club/game-slot.png',
+    brand: '/images/vip-club/vendors/pg-logo.png',
+    play: { kind: 'slot', id: 'pg' },
+    featured: true,
+  },
+  {
+    id: 't-mahjong-2',
+    title: '麻将胡了2',
+    cover: '/images/vip-club/game-slot.png',
+    brand: '/images/vip-club/vendors/pp-logo.png',
+    play: { kind: 'slot', id: 'pp' },
+    featured: true,
+  },
+  {
+    id: 't-db-live',
+    title: 'DB 真人',
+    cover: '/images/vip-club/game-live.png',
+    brand: '/images/vip-club/vendors/db-logo.png',
+    play: { kind: 'live', id: 'db-live' },
+  },
+  {
+    id: 't-pa-live',
+    title: 'PA 真人',
+    cover: '/images/vip-club/game-live.png',
+    brand: '/images/vip-club/vendors/pa-logo.png',
+    play: { kind: 'live', id: 'pa-live' },
+  },
+  {
+    id: 't-lottery',
+    title: '皇者彩票',
+    cover: '/images/vip-club/game-lottery.png',
+    brand: '/images/vip-club/lottery/logo.svg',
+    play: { kind: 'lottery', id: 'ssc' },
   },
 ]
 

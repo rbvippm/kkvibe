@@ -1,4 +1,12 @@
+import { reactive } from 'vue'
+
 /** 发现页 · 语聊房房间 Mock（Figma 515:63984） */
+
+/** 当前用户在语聊房的上麦态，退出小窗与房内共用 */
+export const voiceSelfMicState = reactive({
+  onMic: true,
+  micOn: true,
+})
 
 export const VOICE_ROOM_ASSETS = {
   bg: '/images/voice-room/bg.png',
@@ -131,12 +139,14 @@ export const VOICE_GAME_TABS: { key: VoiceGameTab; label: string }[] = [
   { key: 'scratch', label: '刮刮乐' },
 ]
 
+export type VoiceGameDisplay = 'portrait' | 'half'
+
 export type VoiceGameItem = {
   id: string
   name: string
   icon: string
-  live?: boolean
   tabs: VoiceGameTab[]
+  display: VoiceGameDisplay
 }
 
 export const MOCK_VOICE_GAMES: VoiceGameItem[] = [
@@ -144,52 +154,72 @@ export const MOCK_VOICE_GAMES: VoiceGameItem[] = [
     id: 'g1',
     name: '奔驰宝马',
     icon: VOICE_ROOM_ASSETS.gameIcon,
-    live: true,
     tabs: ['hot', 'fun'],
+    display: 'portrait',
   },
   {
     id: 'g2',
     name: '幸运飞艇',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'fun'],
+    display: 'portrait',
   },
   {
     id: 'g3',
     name: '游戏名称游戏名称游戏名称游戏名称游戏名称游戏名称',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'marble'],
+    display: 'half',
   },
   {
     id: 'g4',
     name: '游戏名称游戏名称',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'scratch'],
+    display: 'half',
   },
   {
     id: 'g5',
     name: '欢乐弹珠',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'marble'],
+    display: 'portrait',
   },
   {
     id: 'g6',
     name: '刮刮乐达人',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'scratch'],
+    display: 'half',
   },
   {
     id: 'g7',
     name: '趣味竞猜',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'fun'],
+    display: 'half',
   },
   {
     id: 'g8',
     name: '金牌弹珠',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'marble'],
+    display: 'portrait',
   },
 ]
+
+export function resolveVoiceGameDisplay(name: string): VoiceGameDisplay {
+  return MOCK_VOICE_GAMES.find((game) => game.name === name)?.display ?? 'portrait'
+}
+
+export function resolveVoiceGameIcon(name: string) {
+  if (name === '奔驰宝马') return VOICE_ROOM_ASSETS.gameFloat
+  return MOCK_VOICE_GAMES.find((game) => game.name === name)?.icon ?? VOICE_ROOM_ASSETS.gameIcon
+}
+
+export function voiceGameDisplayLabel(display: VoiceGameDisplay) {
+  return display === 'half' ? '半屏' : '竖屏'
+}
 
 export function filterVoiceGames(tab: VoiceGameTab): VoiceGameItem[] {
   return MOCK_VOICE_GAMES.filter((game) => game.tabs.includes(tab))

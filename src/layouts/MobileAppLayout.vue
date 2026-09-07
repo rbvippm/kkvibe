@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
+import { useMiniAppGame } from '../composables/useMiniAppGame'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Mh5ConfirmDialog from '../components/mobile/Mh5ConfirmDialog.vue'
+import Mh5LivePipLayer from '../components/mobile/Mh5LivePipLayer.vue'
+import Mh5MiniAppGameLayer from '../components/mobile/Mh5MiniAppGameLayer.vue'
 import { useGoLiveReservedStartNotice } from '../composables/useGoLiveReservedStartNotice'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
 import '../styles/mobile-app-shell.css'
@@ -94,11 +97,13 @@ const vipTabs: AppTab[] = [
   },
 ]
 
+const miniGame = useMiniAppGame()
 const hideTabBar = computed(
   () =>
     Boolean(route.meta.hideTabBar) ||
     route.path.startsWith('/mobile/agent') ||
-    isWorkspacePreview.value,
+    isWorkspacePreview.value ||
+    miniGame.blocking.value,
 )
 
 const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
@@ -111,7 +116,16 @@ function isActive(tab: AppTab) {
 
 <template>
   <div class="mh5-viewport-canvas">
-    <div class="mh5-app-shell" :class="{ 'mh5-app-shell--vip-club': isVipClub }">
+    <div
+      id="mh5-app-shell"
+      class="mh5-app-shell"
+      :class="{
+        'mh5-app-shell--vip-club': isVipClub,
+        'mh5-app-shell--game-full': miniGame.blocking.value,
+        'mh5-app-shell--game-dock': miniGame.dockOpen.value,
+      }"
+      :style="miniGame.dockOpen.value ? { '--mh5-chat-game-dock-h': `${miniGame.dockSlotH.value}px` } : undefined"
+    >
       <div class="mh5-app-body" :class="{ 'mh5-app-body--immersive': hideTabBar }">
         <slot v-if="$slots.default" />
         <!-- 不用 mode=out-in：离开动画未完成时会卡死 RouterView，表现为返回后白屏 -->
@@ -234,6 +248,8 @@ function isActive(tab: AppTab) {
         <span>{{ $t(tab.label) }}</span>
       </RouterLink>
     </nav>
+      <Mh5MiniAppGameLayer />
+      <Mh5LivePipLayer />
     </div>
     <Mh5ConfirmDialog />
   </div>

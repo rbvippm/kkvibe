@@ -1,0 +1,14 @@
+<svg width="332" height="332" viewBox="0 0 332 332" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="332" height="332" rx="24" fill="url(#im-bg)"/>
+  <defs>
+    <linearGradient id="im-bg" x1="40" y1="20" x2="300" y2="320" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE7C2"/>
+      <stop offset="1" stop-color="#FFB15A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="166" cy="150" r="78" fill="#FFF6E8"/>
+  <circle cx="166" cy="150" r="70" fill="#FF9A32"/>
+  <path d="M166 80c18 16 30 40 33 70h-66c3-30 15-54 33-70Z" fill="#FFE082"/>
+  <path d="M96 150c4-38 22-70 46-88C118 86 100 116 96 150Zm140 0c-4-34-22-64-46-88 24 18 42 50 46 88ZM112 222c-16-20-26-46-28-72h28c2 28 12 52 28 70-10 1-20 2-28 2Zm108 0c8 0 18-1 28-2 16-18 26-42 28-70h-28c-2 26-12 52-28 72Z" fill="#8A4A12" fill-opacity=".18"/>
+  <text x="166" y="268" text-anchor="middle" font-size="28" font-weight="800" fill="#8A4A12">IM</text>
+</svg>
