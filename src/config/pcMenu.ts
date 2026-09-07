@@ -312,12 +312,40 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/live-commission',
         routeName: 'pc-live-commission',
       },
+    ],
+  },
+  {
+    key: 'group',
+    title: '群组管理',
+    icon: '👥',
+    children: [
       {
         key: 'live-super-group-manage',
         title: '超级群管理',
         path: '/pc/live-super-group-manage',
         routeName: 'pc-live-super-group-manage',
-        pagePath: ['群组管理', '超级群列表'],
+        pagePath: ['管理后台', '群组管理', '超级群管理'],
+      },
+    ],
+  },
+  {
+    key: 'game',
+    title: '小程序管理',
+    icon: '🎮',
+    children: [
+      {
+        key: 'game-module',
+        title: '通用模块管理',
+        path: '/pc/game-module',
+        routeName: 'pc-game-module',
+        pagePath: ['管理后台', '小程序管理', '通用模块管理'],
+      },
+      {
+        key: 'game-product',
+        title: '通用产品管理',
+        path: '/pc/game-product',
+        routeName: 'pc-game-product',
+        pagePath: ['管理后台', '小程序管理', '通用产品管理'],
       },
     ],
   },

@@ -57,6 +57,50 @@ export type LiveAnchorRow = {
   banStatus: AnchorBanStatus
   source: AnchorMetricSource
   custom: AnchorMetricConfig | null
+  /** 已授权渠道 id */
+  channelIds: string[]
+  /** 已授权游戏 id，对应小程序管理 · 通用产品管理 gameProductStore.id */
+  gameIds: string[]
+}
+
+export type AnchorChannel = {
+  id: string
+  name: string
+}
+
+export const ANCHOR_CHANNELS: AnchorChannel[] = [
+  { id: 'self', name: '平台自营' },
+  { id: 'goodworld', name: '好世界' },
+  { id: 'kk', name: 'KK' },
+  { id: 'test1', name: '测试渠道1' },
+  { id: 'sea', name: '东南亚渠道' },
+  { id: 'eu', name: '欧洲渠道' },
+  { id: 'br', name: '巴西渠道' },
+  { id: 'in', name: '印度渠道' },
+  { id: 'vn', name: '越南渠道' },
+  { id: 'th', name: '泰国渠道' },
+  { id: 'ph', name: '菲律宾渠道' },
+  { id: 'id', name: '印尼渠道' },
+  { id: 'mena', name: '中东渠道' },
+  { id: 'na', name: '北美渠道' },
+  { id: 'jpkr', name: '日韩渠道' },
+  { id: 'test2', name: '测试渠道2' },
+  { id: 'agent-a', name: '代理渠道A' },
+  { id: 'agent-b', name: '代理渠道B' },
+  { id: 'white', name: '包网渠道' },
+  { id: 'official', name: '官方直营' },
+]
+
+export const ANCHOR_CHANNEL_PAGE_SIZE = 8
+
+export function findAnchorChannel(id: string) {
+  return ANCHOR_CHANNELS.find((item) => item.id === id) ?? null
+}
+
+export function filterAnchorChannels(keyword: string) {
+  const query = keyword.trim()
+  if (!query) return ANCHOR_CHANNELS
+  return ANCHOR_CHANNELS.filter((item) => item.name.includes(query) || item.id.includes(query))
 }
 
 export type HeatPreviewInput = {
@@ -290,6 +334,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'live',
     banStatus: 'normal',
     source: 'custom',
+    channelIds: ['self', 'goodworld', 'kk'],
+    gameIds: ['P10001', 'P10002', 'P10003'],
     custom: {
       preset: 'custom',
       peopleBase: 280,
@@ -326,6 +372,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'live',
     banStatus: 'normal',
     source: 'global',
+    channelIds: ['self', 'kk'],
+    gameIds: ['P10001', 'P10004'],
     custom: null,
   },
   {
@@ -339,6 +387,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'offline',
     banStatus: 'normal',
     source: 'custom',
+    channelIds: ['self'],
+    gameIds: ['P10002'],
     custom: {
       preset: 'custom',
       peopleBase: 60,
@@ -375,6 +425,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'offline',
     banStatus: 'banned',
     source: 'global',
+    channelIds: [],
+    gameIds: [],
     custom: null,
   },
   {
@@ -388,6 +440,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'live',
     banStatus: 'normal',
     source: 'global',
+    channelIds: ['self', 'goodworld', 'sea', 'vn'],
+    gameIds: ['P10001', 'P10003', 'P10005', 'P10006'],
     custom: null,
   },
   {
@@ -401,6 +455,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
     liveStatus: 'offline',
     banStatus: 'normal',
     source: 'custom',
+    channelIds: ['kk', 'test1'],
+    gameIds: ['P10007'],
     custom: {
       preset: 'custom',
       peopleBase: 160,

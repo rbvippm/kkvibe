@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import WfGamePickerBox from '../../components/wireframe/WfGamePickerBox.vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import '../../styles/pc-wireframe.css'
 
@@ -8,16 +9,7 @@ type SuperGroupStatus = 'normal' | 'frozen' | 'dissolved'
 type ConfigItemKey = 'floating_link' | 'pinned_game' | 'floating_game'
 
 type ConfigPanelFields = {
-  currencies: string[]
-  languages: string[]
-  nameZhCn: string
-  nameZhTw: string
-  miniProgram: string
-  product: string
-  sortOrder: string
-  enabled: boolean
-  suffixAddress: string
-  icon: string
+  gameIds: string[]
 }
 
 type FloatingLinkFields = {
@@ -51,41 +43,15 @@ type SuperGroupRow = {
   edit: SuperGroupEditConfig
 }
 
-const CURRENCY_OPTIONS = ['KKC', 'KKV', 'USDT-TRON', 'X币'] as const
-const LANGUAGE_OPTIONS = ['中文', '繁体', '英文', '越南文', '泰文'] as const
-
 const CONFIG_ITEM_OPTIONS: { value: ConfigItemKey; label: string }[] = [
   { value: 'pinned_game', label: '置顶游戏' },
   { value: 'floating_link', label: '悬浮链接' },
   { value: 'floating_game', label: '悬浮游戏' },
 ]
 
-const MINI_PROGRAM_OPTIONS = [
-  { value: '', label: '请选择小程序' },
-  { value: 'kk_live', label: 'KK直播小程序' },
-  { value: 'community_helper', label: '社群助手' },
-  { value: 'activity_square', label: '活动广场' },
-] as const
-
-const PRODUCT_OPTIONS = [
-  { value: '', label: '请选择产品' },
-  { value: 'kk_live', label: 'KK直播' },
-  { value: 'kk_wallet', label: 'KK钱包' },
-  { value: 'activity_center', label: '活动中心' },
-] as const
-
 function createDefaultPanel(overrides: Partial<ConfigPanelFields> = {}): ConfigPanelFields {
   return {
-    currencies: [],
-    languages: ['中文', '繁体'],
-    nameZhCn: '',
-    nameZhTw: '',
-    miniProgram: '',
-    product: '',
-    sortOrder: '1',
-    enabled: true,
-    suffixAddress: '',
-    icon: '',
+    gameIds: [],
     ...overrides,
   }
 }
@@ -115,9 +81,7 @@ function createDefaultEditConfig(overrides: Partial<SuperGroupEditConfig> = {}):
 
 function clonePanel(panel: ConfigPanelFields): ConfigPanelFields {
   return {
-    ...panel,
-    currencies: [...panel.currencies],
-    languages: [...panel.languages],
+    gameIds: [...panel.gameIds],
   }
 }
 
@@ -166,13 +130,7 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
       pinnedGame: createDefaultPanel({
-        currencies: ['KKC', 'USDT-TRON'],
-        nameZhCn: 'You 社群',
-        nameZhTw: 'You 社群',
-        miniProgram: 'kk_live',
-        product: 'kk_live',
-        sortOrder: '2',
-        suffixAddress: 'you-group',
+        gameIds: ['P10001', 'P10002'],
       }),
     }),
   },
@@ -190,9 +148,7 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['floating_link', 'pinned_game'],
       pinnedGame: createDefaultPanel({
-        languages: ['中文', '英文'],
-        nameZhCn: "I'll 社群",
-        sortOrder: '3',
+        gameIds: ['P10003', 'P10006'],
       }),
       floatingLink: createDefaultFloatingLink({
         titleZhCn: "I'll 客服",
@@ -219,21 +175,10 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['pinned_game', 'floating_game'],
       pinnedGame: createDefaultPanel({
-        nameZhCn: '超级群测试06',
-        nameZhTw: '超級群測試06',
-        miniProgram: 'community_helper',
-        product: 'activity_center',
-        sortOrder: '1',
-        suffixAddress: 'h5-test-06',
+        gameIds: ['P10005'],
       }),
       floatingGame: createDefaultPanel({
-        nameZhCn: '超级群测试06',
-        nameZhTw: '超級群測試06',
-        miniProgram: 'community_helper',
-        product: 'activity_center',
-        sortOrder: '2',
-        suffixAddress: 'h5-float-game',
-        icon: 'https://cdn.kk.example/icon/float-game.png',
+        gameIds: ['P10002', 'P10003', 'P10004'],
       }),
     }),
   },
@@ -251,10 +196,7 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
       pinnedGame: createDefaultPanel({
-        currencies: ['KKV'],
-        languages: ['中文'],
-        enabled: false,
-        sortOrder: '4',
+        gameIds: ['P10004'],
       }),
     }),
   },
@@ -272,14 +214,7 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
       pinnedGame: createDefaultPanel({
-        currencies: ['KKC', 'KKV', 'USDT-TRON'],
-        languages: ['中文', '繁体', '英文'],
-        nameZhCn: '直播粉丝群',
-        nameZhTw: '直播粉絲群',
-        miniProgram: 'kk_live',
-        product: 'kk_live',
-        sortOrder: '1',
-        suffixAddress: 'live-fans',
+        gameIds: ['P10001', 'P10007'],
       }),
     }),
   },
@@ -297,8 +232,7 @@ const sourceRows = ref<SuperGroupRow[]>([
     edit: createDefaultEditConfig({
       configItems: ['pinned_game'],
       pinnedGame: createDefaultPanel({
-        enabled: false,
-        sortOrder: '5',
+        gameIds: ['P10005'],
       }),
     }),
   },
@@ -349,7 +283,8 @@ const editForm = ref<SuperGroupEditConfig>(createDefaultEditConfig())
 const editHint = ref('')
 const editConfigTab = ref<ConfigItemKey>('pinned_game')
 const floatingLinkIconInputRef = ref<HTMLInputElement | null>(null)
-const gamePanelIconInputRef = ref<HTMLInputElement | null>(null)
+const gameKeyword = ref('')
+const gameAppliedKeyword = ref('')
 
 function revokeIconIfBlob(icon: string) {
   if (icon.startsWith('blob:')) {
@@ -366,6 +301,16 @@ const activePanel = computed(() => {
   return editForm.value.pinnedGame
 })
 
+const gameDraftIds = computed({
+  get: () => activePanel.value.gameIds,
+  set: (ids) => {
+    activePanel.value.gameIds = ids
+  },
+})
+const gamePickerResetKey = computed(
+  () => `${editVisible.value}:${editingRow.value?.groupId ?? ''}:${editConfigTab.value}`,
+)
+
 watch(
   () => editForm.value.configItems,
   (items) => {
@@ -377,21 +322,34 @@ watch(
   { deep: true },
 )
 
+watch(editConfigTab, () => {
+  resetGameFilter()
+})
+
+function resetGameFilter() {
+  gameKeyword.value = ''
+  gameAppliedKeyword.value = ''
+}
+
 function openEdit(row: SuperGroupRow) {
   editingRow.value = row
   editForm.value = cloneEditConfig(row.edit)
   editConfigTab.value = row.edit.configItems[0] ?? 'pinned_game'
   editHint.value = ''
+  resetGameFilter()
   editVisible.value = true
 }
 
 function closeEdit() {
   revokeIconIfBlob(editForm.value.floatingLink.icon)
-  revokeIconIfBlob(editForm.value.pinnedGame.icon)
-  revokeIconIfBlob(editForm.value.floatingGame.icon)
+  resetGameFilter()
   editVisible.value = false
   editingRow.value = null
   editHint.value = ''
+}
+
+function searchGames() {
+  gameAppliedKeyword.value = gameKeyword.value
 }
 
 function hasFloatingLinkIcon() {
@@ -424,64 +382,6 @@ function removeFloatingLinkIcon() {
   editForm.value.floatingLink.icon = ''
 }
 
-function hasActivePanelIcon() {
-  return !!activePanel.value.icon.trim()
-}
-
-function triggerActivePanelIconUpload() {
-  gamePanelIconInputRef.value?.click()
-}
-
-function onActivePanelIconChange(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-
-  if (!file.type.startsWith('image/')) {
-    editHint.value = '请上传图片格式的 icon'
-    input.value = ''
-    return
-  }
-
-  revokeIconIfBlob(activePanel.value.icon)
-  activePanel.value.icon = URL.createObjectURL(file)
-  editHint.value = ''
-  input.value = ''
-}
-
-function removeActivePanelIcon() {
-  revokeIconIfBlob(activePanel.value.icon)
-  activePanel.value.icon = ''
-}
-
-function togglePanelCurrency(currency: string) {
-  const list = activePanel.value.currencies
-  const index = list.indexOf(currency)
-  if (index >= 0) {
-    list.splice(index, 1)
-  } else {
-    list.push(currency)
-  }
-}
-
-function isPanelCurrencyChecked(currency: string) {
-  return activePanel.value.currencies.includes(currency)
-}
-
-function togglePanelLanguage(language: string) {
-  const list = activePanel.value.languages
-  const index = list.indexOf(language)
-  if (index >= 0) {
-    list.splice(index, 1)
-  } else {
-    list.push(language)
-  }
-}
-
-function isPanelLanguageChecked(language: string) {
-  return activePanel.value.languages.includes(language)
-}
-
 function isConfigItemChecked(key: ConfigItemKey) {
   return editForm.value.configItems.includes(key)
 }
@@ -497,9 +397,8 @@ function toggleConfigItem(key: ConfigItemKey) {
   }
 }
 
-function validatePanel(panel: ConfigPanelFields, label: string, requireIcon = false): string | null {
-  if (!panel.languages.length) return `${label}：请至少选择一种支持语种`
-  if (requireIcon && !panel.icon.trim()) return `${label}：请上传 icon`
+function validatePanel(panel: ConfigPanelFields, label: string): string | null {
+  if (!panel.gameIds.length) return `${label}：请至少选择 1 个游戏`
   return null
 }
 
@@ -522,7 +421,7 @@ function confirmEdit() {
     const error =
       key === 'floating_link'
         ? validateFloatingLink(editForm.value.floatingLink)
-        : validatePanel(gamePanelConfig(key, editForm.value), label, key === 'floating_game')
+        : validatePanel(gamePanelConfig(key, editForm.value), label)
     if (error) {
       editHint.value = error
       editConfigTab.value = key
@@ -622,7 +521,7 @@ function confirmEdit() {
         @click.self="closeEdit"
       >
         <div
-          class="wf-modal wf-modal--super-group-edit"
+          class="wf-modal wf-modal--scroll wf-modal--super-group-edit"
           role="dialog"
           aria-labelledby="super-group-edit-title"
           aria-modal="true"
@@ -770,138 +669,24 @@ function confirmEdit() {
                   </template>
 
                   <template v-else-if="editConfigTab === 'pinned_game' || editConfigTab === 'floating_game'">
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">支持币种</label>
-                    <div class="super-group-check-group">
-                      <label
-                        v-for="currency in CURRENCY_OPTIONS"
-                        :key="currency"
-                        class="super-group-check"
-                      >
-                        <input
-                          type="checkbox"
-                          :checked="isPanelCurrencyChecked(currency)"
-                          @change="togglePanelCurrency(currency)"
-                        />
-                        <span>{{ currency }}</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label wf-form-row__label--required">支持语种</label>
-                    <div class="super-group-check-group">
-                      <label
-                        v-for="language in LANGUAGE_OPTIONS"
-                        :key="language"
-                        class="super-group-check"
-                      >
-                        <input
-                          type="checkbox"
-                          :checked="isPanelLanguageChecked(language)"
-                          @change="togglePanelLanguage(language)"
-                        />
-                        <span>{{ language }}</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">名称（简体中文）</label>
-                    <input
-                      v-model="activePanel.nameZhCn"
-                      type="text"
-                      class="wf-input wf-input--full"
-                      placeholder="请输入"
-                    />
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">名称（繁体中文）</label>
-                    <input
-                      v-model="activePanel.nameZhTw"
-                      type="text"
-                      class="wf-input wf-input--full"
-                      placeholder="请输入"
-                    />
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">小程序</label>
-                    <select v-model="activePanel.miniProgram" class="wf-select wf-select--full">
-                      <option
-                        v-for="opt in MINI_PROGRAM_OPTIONS"
-                        :key="opt.value || 'empty'"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">产品</label>
-                    <select v-model="activePanel.product" class="wf-select wf-select--full">
-                      <option
-                        v-for="opt in PRODUCT_OPTIONS"
-                        :key="opt.value || 'empty'"
-                        :value="opt.value"
-                      >
-                        {{ opt.label }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <div class="wf-form-row">
-                    <label class="wf-form-row__label">后缀地址</label>
-                    <input
-                      v-model="activePanel.suffixAddress"
-                      type="text"
-                      class="wf-input wf-input--full"
-                      placeholder="请输入后缀地址"
-                    />
-                  </div>
-
-                  <div v-if="editConfigTab === 'floating_game'" class="wf-form-row">
-                    <label class="wf-form-row__label wf-form-row__label--required">icon</label>
-                    <div class="super-group-icon-upload">
+                    <div class="wf-modal__query">
+                      <label class="wf-label" for="sg-game-keyword">游戏选择：</label>
                       <input
-                        ref="gamePanelIconInputRef"
-                        type="file"
-                        accept="image/*"
-                        class="super-group-icon-upload__input"
-                        @change="onActivePanelIconChange"
+                        id="sg-game-keyword"
+                        v-model="gameKeyword"
+                        type="text"
+                        class="wf-input"
+                        placeholder="请输入关键词"
+                        @keyup.enter="searchGames"
                       />
-                      <div v-if="hasActivePanelIcon()" class="super-group-icon-upload__preview">
-                        <img
-                          :src="activePanel.icon"
-                          alt="icon 预览"
-                          class="super-group-icon-upload__image"
-                        />
-                        <div class="super-group-icon-upload__actions">
-                          <button
-                            type="button"
-                            class="wf-btn wf-btn--default wf-btn--sm"
-                            @click="triggerActivePanelIconUpload"
-                          >
-                            重新上传
-                          </button>
-                          <button type="button" class="wf-link-del" @click="removeActivePanelIcon">
-                            移除
-                          </button>
-                        </div>
-                      </div>
-                      <button
-                        v-else
-                        type="button"
-                        class="super-group-icon-upload__trigger"
-                        @click="triggerActivePanelIconUpload"
-                      >
-                        <span class="super-group-icon-upload__plus" aria-hidden="true">+</span>
-                        <span>点击上传</span>
-                      </button>
+                      <button type="button" class="wf-btn wf-btn--primary" @click="searchGames">搜索</button>
                     </div>
-                  </div>
+
+                    <WfGamePickerBox
+                      v-model="gameDraftIds"
+                      :keyword="gameAppliedKeyword"
+                      :reset-key="gamePickerResetKey"
+                    />
                   </template>
                 </div>
               </div>
@@ -943,7 +728,8 @@ function confirmEdit() {
 }
 
 .wf-modal--super-group-edit {
-  max-width: 560px;
+  width: 640px;
+  max-width: calc(100vw - 48px);
 }
 
 .super-group-config-tabs {
@@ -1063,4 +849,5 @@ function confirmEdit() {
   padding: 4px 12px;
   font-size: 13px;
 }
+
 </style>

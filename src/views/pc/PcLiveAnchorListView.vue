@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
+import WfGamePickerBox from '../../components/wireframe/WfGamePickerBox.vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import { LIVE_ANCHOR_LIST_ANNOT_MAP } from '../../constants/liveAnchorListSpec'
 import {
   ANCHOR_BAN_STATUS_OPTIONS,
+  ANCHOR_CHANNELS,
+  ANCHOR_CHANNEL_PAGE_SIZE,
   ANCHOR_LIVE_STATUS_OPTIONS,
   ANCHOR_METRIC_SOURCE_OPTIONS,
   DEFAULT_HEAT_PREVIEW,
@@ -18,6 +21,7 @@ import {
   cloneMetricConfig,
   createDefaultMetricConfig,
   effectiveMetricConfig,
+  filterAnchorChannels,
   formatAnchorTag,
   formatGiftShare,
   formatRange,
@@ -43,6 +47,7 @@ type ListFilter = {
   liveStatus: '' | AnchorLiveStatus
   banStatus: '' | AnchorBanStatus
   source: '' | AnchorMetricSource
+  channelId: string
 }
 
 type ModalKind = 'global' | 'anchor'
@@ -54,6 +59,7 @@ const defaultFilter = (): ListFilter => ({
   liveStatus: '',
   banStatus: '',
   source: '',
+  channelId: '',
 })
 
 const filter = ref<ListFilter>(defaultFilter())
@@ -69,11 +75,24 @@ const globalBaseAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.globalBase
 const globalAdvancedAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.globalAdvanced
 const filterAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.filter
 const listAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.list
-const configActionAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.configAction
+const metricDisplayAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.metricDisplay
 const sourceAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.sourceAndBase
 const anchorAdvancedAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.anchorAdvanced
 const presetAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.preset
+const channelAuthAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.channelAuth
+const gameAuthAnnot = LIVE_ANCHOR_LIST_ANNOT_MAP.gameAuth
 const applyingPreset = ref(false)
+const channelRowId = ref<string | null>(null)
+const channelKeyword = ref('')
+const channelAppliedKeyword = ref('')
+const channelDraftIds = ref<string[]>([])
+const channelPage = ref(1)
+const channelHint = ref('')
+const gameRowId = ref<string | null>(null)
+const gameKeyword = ref('')
+const gameAppliedKeyword = ref('')
+const gameDraftIds = ref<string[]>([])
+const gameHint = ref('')
 
 const modalVisible = computed(() => modalKind.value !== null)
 const isGlobalModal = computed(() => modalKind.value === 'global')
@@ -97,12 +116,43 @@ function matchRow(row: LiveAnchorRow) {
   if (f.liveStatus && row.liveStatus !== f.liveStatus) return false
   if (f.banStatus && row.banStatus !== f.banStatus) return false
   if (f.source && row.source !== f.source) return false
+  if (f.channelId && !row.channelIds.includes(f.channelId)) return false
   return true
 }
 
 function rowConfig(row: LiveAnchorRow) {
   return effectiveMetricConfig(row, liveAnchorGlobalConfig.value)
 }
+
+const channelEditingRow = computed(
+  () => liveAnchorStore.value.find((item) => item.id === channelRowId.value) ?? null,
+)
+const channelModalVisible = computed(() => channelRowId.value !== null)
+const channelFilteredList = computed(() => filterAnchorChannels(channelAppliedKeyword.value))
+const channelTotalPages = computed(() =>
+  Math.max(1, Math.ceil(channelFilteredList.value.length / ANCHOR_CHANNEL_PAGE_SIZE)),
+)
+const channelPageItems = computed(() => {
+  const start = (channelPage.value - 1) * ANCHOR_CHANNEL_PAGE_SIZE
+  return channelFilteredList.value.slice(start, start + ANCHOR_CHANNEL_PAGE_SIZE)
+})
+const channelPageIds = computed(() => channelPageItems.value.map((item) => item.id))
+const channelSelectedCount = computed(() => channelDraftIds.value.length)
+const channelPageAllSelected = computed(
+  () => channelPageIds.value.length > 0 && channelPageIds.value.every((id) => channelDraftIds.value.includes(id)),
+)
+const channelPagePartialSelected = computed(
+  () =>
+    !channelPageAllSelected.value && channelPageIds.value.some((id) => channelDraftIds.value.includes(id)),
+)
+const channelPageNumbers = computed(() =>
+  Array.from({ length: channelTotalPages.value }, (_, index) => index + 1),
+)
+
+const gameEditingRow = computed(
+  () => liveAnchorStore.value.find((item) => item.id === gameRowId.value) ?? null,
+)
+const gameModalVisible = computed(() => gameRowId.value !== null)
 
 function applyFilter() {
   appliedFilter.value = { ...filter.value }
@@ -141,6 +191,100 @@ function closeModal() {
   modalKind.value = null
   editingId.value = null
   formHint.value = ''
+}
+
+function openChannelAuth(row: LiveAnchorRow) {
+  channelRowId.value = row.id
+  channelKeyword.value = ''
+  channelAppliedKeyword.value = ''
+  channelDraftIds.value = [...row.channelIds]
+  channelPage.value = 1
+  channelHint.value = ''
+}
+
+function closeChannelAuth() {
+  channelRowId.value = null
+  channelKeyword.value = ''
+  channelAppliedKeyword.value = ''
+  channelDraftIds.value = []
+  channelPage.value = 1
+  channelHint.value = ''
+}
+
+function searchChannels() {
+  channelAppliedKeyword.value = channelKeyword.value
+  channelPage.value = 1
+}
+
+function isChannelChecked(id: string) {
+  return channelDraftIds.value.includes(id)
+}
+
+function toggleChannel(id: string) {
+  const index = channelDraftIds.value.indexOf(id)
+  if (index >= 0) {
+    channelDraftIds.value = channelDraftIds.value.filter((item) => item !== id)
+    return
+  }
+  channelDraftIds.value = [...channelDraftIds.value, id]
+}
+
+function toggleChannelPageAll() {
+  if (!channelPageIds.value.length) return
+  if (channelPageAllSelected.value) {
+    channelDraftIds.value = channelDraftIds.value.filter((id) => !channelPageIds.value.includes(id))
+    return
+  }
+  const next = new Set(channelDraftIds.value)
+  channelPageIds.value.forEach((id) => next.add(id))
+  channelDraftIds.value = [...next]
+}
+
+function goChannelPage(page: number) {
+  if (page < 1 || page > channelTotalPages.value) return
+  channelPage.value = page
+}
+
+function confirmChannelAuth() {
+  const idx = liveAnchorStore.value.findIndex((item) => item.id === channelRowId.value)
+  if (idx < 0) {
+    channelHint.value = '未找到该主播'
+    return
+  }
+  liveAnchorStore.value[idx].channelIds = [...channelDraftIds.value]
+  showPcToast(`已更新「${liveAnchorStore.value[idx].nickname}」的授权渠道`)
+  closeChannelAuth()
+}
+
+function openGameAuth(row: LiveAnchorRow) {
+  gameRowId.value = row.id
+  gameKeyword.value = ''
+  gameAppliedKeyword.value = ''
+  gameDraftIds.value = [...row.gameIds]
+  gameHint.value = ''
+}
+
+function closeGameAuth() {
+  gameRowId.value = null
+  gameKeyword.value = ''
+  gameAppliedKeyword.value = ''
+  gameDraftIds.value = []
+  gameHint.value = ''
+}
+
+function searchGames() {
+  gameAppliedKeyword.value = gameKeyword.value
+}
+
+function confirmGameAuth() {
+  const idx = liveAnchorStore.value.findIndex((item) => item.id === gameRowId.value)
+  if (idx < 0) {
+    gameHint.value = '未找到该主播'
+    return
+  }
+  liveAnchorStore.value[idx].gameIds = [...gameDraftIds.value]
+  showPcToast(`已更新「${liveAnchorStore.value[idx].nickname}」的授权游戏`)
+  closeGameAuth()
 }
 
 function onSourceChange(source: AnchorMetricSource) {
@@ -356,6 +500,14 @@ function saveModal() {
             {{ opt.label }}
           </option>
         </select>
+
+        <label class="wf-label">渠道：</label>
+        <select v-model="filter.channelId" class="wf-input wf-input--select">
+          <option value="">请选择渠道</option>
+          <option v-for="item in ANCHOR_CHANNELS" :key="item.id" :value="item.id">
+            {{ item.name }}
+          </option>
+        </select>
       </div>
 
       <div class="wf-toolbar">
@@ -389,26 +541,48 @@ function saveModal() {
               <th class="wf-th">直播状态</th>
               <th class="wf-th">封禁状态</th>
               <th class="wf-th">配置来源</th>
-              <th class="wf-th">基准人数</th>
-              <th class="wf-th">基础预约</th>
-              <th class="wf-th">基础热度</th>
-              <th class="wf-th">本场点赞</th>
-              <th class="wf-th wf-th--op">
+              <th class="wf-th">
                 <span class="lal-op-head">
-                  操作
+                  基准人数
                   <WfSpecAnnot
-                    :no="configActionAnnot.no"
-                    :title="configActionAnnot.title"
-                    :items="[...configActionAnnot.items]"
+                    :no="metricDisplayAnnot.no"
+                    :title="metricDisplayAnnot.title"
+                    :items="[...metricDisplayAnnot.items]"
                     placement="top"
                   />
                 </span>
               </th>
+              <th class="wf-th">基础预约</th>
+              <th class="wf-th">基础热度</th>
+              <th class="wf-th">本场点赞</th>
+              <th class="wf-th">
+                <span class="lal-op-head">
+                  渠道
+                  <WfSpecAnnot
+                    :no="channelAuthAnnot.no"
+                    :title="channelAuthAnnot.title"
+                    :items="[...channelAuthAnnot.items]"
+                    placement="top"
+                  />
+                </span>
+              </th>
+              <th class="wf-th">
+                <span class="lal-op-head">
+                  游戏
+                  <WfSpecAnnot
+                    :no="gameAuthAnnot.no"
+                    :title="gameAuthAnnot.title"
+                    :items="[...gameAuthAnnot.items]"
+                    placement="top"
+                  />
+                </span>
+              </th>
+              <th class="wf-th wf-th--op">操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="!filteredRows.length">
-              <td colspan="16" class="wf-td wf-td--empty">暂无主播数据</td>
+              <td colspan="18" class="wf-td wf-td--empty">暂无主播数据</td>
             </tr>
             <tr v-for="(row, index) in filteredRows" :key="row.id">
               <td class="wf-td wf-td--center">{{ index + 1 }}</td>
@@ -436,7 +610,10 @@ function saveModal() {
                 </span>
               </td>
               <td class="wf-td">
-                <span :class="row.source === 'custom' ? 'lal-badge lal-badge--custom' : 'lal-badge'">
+                <span
+                  class="wf-status-badge"
+                  :class="row.source === 'custom' ? 'lal-source-badge--custom' : 'lal-source-badge--global'"
+                >
                   {{ anchorMetricSourceLabel(row.source) }}
                 </span>
               </td>
@@ -444,6 +621,16 @@ function saveModal() {
               <td class="wf-td wf-td--center">{{ rowConfig(row).appointmentBase }}</td>
               <td class="wf-td wf-td--center">{{ rowConfig(row).heatBase }}</td>
               <td class="wf-td wf-td--center">{{ rowConfig(row).likeBase }}</td>
+              <td class="wf-td wf-td--center">
+                <button type="button" class="wf-link-action" @click="openChannelAuth(row)">
+                  {{ row.channelIds.length }}
+                </button>
+              </td>
+              <td class="wf-td wf-td--center">
+                <button type="button" class="wf-link-action" @click="openGameAuth(row)">
+                  {{ row.gameIds.length }}
+                </button>
+              </td>
               <td class="wf-td wf-td--actions">
                 <button type="button" class="wf-link-action" @click="openAnchor(row)">配置指标</button>
               </td>
@@ -827,6 +1014,139 @@ function saveModal() {
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div v-if="channelModalVisible" class="wf-modal-mask" @click.self="closeChannelAuth">
+        <div class="wf-modal wf-modal--scroll lal-channel-modal" role="dialog" aria-modal="true">
+          <header class="wf-modal__header">
+            <h3 class="wf-modal__title">主播授权渠道</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeChannelAuth">×</button>
+          </header>
+
+          <div class="wf-modal__body">
+            <p class="lal-lead">
+              {{ channelEditingRow ? `${channelEditingRow.nickname} (${channelEditingRow.id})` : '—' }}
+            </p>
+
+            <div class="wf-modal__query">
+              <label class="wf-label" for="lal-channel-keyword">渠道选择：</label>
+              <input
+                id="lal-channel-keyword"
+                v-model="channelKeyword"
+                type="text"
+                class="wf-input"
+                placeholder="请输入关键词"
+                @keyup.enter="searchChannels"
+              />
+              <button type="button" class="wf-btn wf-btn--primary" @click="searchChannels">搜索</button>
+            </div>
+
+            <div class="lal-channel-box">
+              <div class="lal-channel-box__bar">
+                <label class="lal-channel-check">
+                  <input
+                    type="checkbox"
+                    :checked="channelPageAllSelected"
+                    :indeterminate="channelPagePartialSelected"
+                    :disabled="!channelPageIds.length"
+                    @change="toggleChannelPageAll"
+                  />
+                  全选
+                </label>
+                <span class="wf-muted">已选：{{ channelSelectedCount }}</span>
+              </div>
+
+              <div v-if="channelPageItems.length" class="lal-channel-grid">
+                <label v-for="item in channelPageItems" :key="item.id" class="lal-channel-check">
+                  <input type="checkbox" :checked="isChannelChecked(item.id)" @change="toggleChannel(item.id)" />
+                  {{ item.name }}
+                </label>
+              </div>
+              <p v-else class="wf-td--empty lal-channel-empty">暂无匹配渠道</p>
+            </div>
+
+            <div v-if="channelFilteredList.length" class="wf-pagination lal-channel-pages">
+              <button
+                type="button"
+                class="wf-btn wf-btn--default"
+                :disabled="channelPage <= 1"
+                @click="goChannelPage(channelPage - 1)"
+              >
+                上一页
+              </button>
+              <button
+                v-for="page in channelPageNumbers"
+                :key="page"
+                type="button"
+                class="wf-btn"
+                :class="page === channelPage ? 'wf-btn--primary' : 'wf-btn--default'"
+                @click="goChannelPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button
+                type="button"
+                class="wf-btn wf-btn--default"
+                :disabled="channelPage >= channelTotalPages"
+                @click="goChannelPage(channelPage + 1)"
+              >
+                下一页
+              </button>
+            </div>
+
+            <p v-if="channelHint" class="wf-modal__hint">{{ channelHint }}</p>
+          </div>
+
+          <footer class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeChannelAuth">取消</button>
+            <button type="button" class="wf-btn wf-btn--primary" @click="confirmChannelAuth">确定</button>
+          </footer>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="gameModalVisible" class="wf-modal-mask" @click.self="closeGameAuth">
+        <div class="wf-modal wf-modal--scroll lal-channel-modal" role="dialog" aria-modal="true">
+          <header class="wf-modal__header">
+            <h3 class="wf-modal__title">主播授权游戏</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeGameAuth">×</button>
+          </header>
+
+          <div class="wf-modal__body">
+            <p class="lal-lead">
+              {{ gameEditingRow ? `${gameEditingRow.nickname} (${gameEditingRow.id})` : '—' }}
+            </p>
+
+            <div class="wf-modal__query">
+              <label class="wf-label" for="lal-game-keyword">游戏选择：</label>
+              <input
+                id="lal-game-keyword"
+                v-model="gameKeyword"
+                type="text"
+                class="wf-input"
+                placeholder="请输入关键词"
+                @keyup.enter="searchGames"
+              />
+              <button type="button" class="wf-btn wf-btn--primary" @click="searchGames">搜索</button>
+            </div>
+
+            <WfGamePickerBox
+              v-model="gameDraftIds"
+              :keyword="gameAppliedKeyword"
+              :reset-key="gameRowId ?? ''"
+            />
+
+            <p v-if="gameHint" class="wf-modal__hint">{{ gameHint }}</p>
+          </div>
+
+          <footer class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="closeGameAuth">取消</button>
+            <button type="button" class="wf-btn wf-btn--primary" @click="confirmGameAuth">确定</button>
+          </footer>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -852,15 +1172,64 @@ function saveModal() {
 }
 
 .lal-table {
-  min-width: 2280px;
+  min-width: 2550px;
 }
 
-.lal-badge {
-  color: var(--pc-text-muted);
+.lal-channel-modal {
+  width: 640px;
 }
 
-.lal-badge--custom {
-  color: var(--pc-primary);
+.lal-channel-box {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--pc-border-light);
+}
+
+.lal-channel-box__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lal-channel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.lal-channel-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--pc-text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.lal-channel-empty {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.lal-channel-pages {
+  height: auto;
+  min-height: 56px;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px;
+}
+
+.lal-source-badge--global {
+  color: #8c8c8c;
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+}
+
+.lal-source-badge--custom {
+  color: #d46b08;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
 }
 
 .lal-modal {

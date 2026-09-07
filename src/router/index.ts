@@ -571,6 +571,18 @@ export const router = createRouter({
           meta: { title: '超级群管理' },
         },
         {
+          path: 'game-module',
+          name: 'pc-game-module',
+          component: () => import('../views/pc/PcGameModuleView.vue'),
+          meta: { title: '通用模块管理' },
+        },
+        {
+          path: 'game-product',
+          name: 'pc-game-product',
+          component: () => import('../views/pc/PcGameProductView.vue'),
+          meta: { title: '通用产品管理' },
+        },
+        {
           path: 'activity-center',
           name: 'pc-activity-center',
           component: () => import('../views/pc/PcActivityCenterView.vue'),
