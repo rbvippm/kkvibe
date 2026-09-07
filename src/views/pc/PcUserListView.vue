@@ -19,7 +19,6 @@ import {
   type ThirdPartyIdMap,
   type ThirdPartyQueryType,
   type UserAccountStatus,
-  type UserChannel,
   type UserGender,
   type UserListRow,
   type UserRegisterPlatform,
