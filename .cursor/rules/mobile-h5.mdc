@@ -20,7 +20,7 @@ alwaysApply: false
 - 使用 `mobile-app-shell.css` 的现有 `mh5-*` / `agent-*` class，优先复用 `components/mobile/*`；不要新增一套主样式体系。
 - 触控热区建议 ≥44px；固定底部按钮、弹层和筛选面板必须处理 safe-area 与内容遮挡。
 - 列表、表单、详情、底部弹层、高级筛选都要有中文 Mock，并覆盖空态 / 禁用态 / 异常态。
-- 页面文案、Mock 数据、路由跳转和 PRD 标注必须一致；页面有「注N」时同步维护 `MobilePrdSpec`，原型和 PRD 双向一致。
+- 页面文案、Mock 数据、路由跳转和 PRD 标注必须一致；页面有「标注」时同步维护 `MobilePrdSpec`，原型和 PRD 双向一致。移动端触发器默认叫「标注」，放到对应功能旁，不要递增「注N」。
 - 禁止在 `/mobile` 使用 PC 线框 `wf-*`、`WfSpecAnnot`、PC 的 `items[]` 简版标注结构。
 - 禁止把旧演示页、直播沉浸页或 PC 后台布局作为新移动端业务页基准。
 

@@ -10,7 +10,7 @@ const props = withDefaults(
   { placement: 'bottom' },
 )
 
-const triggerLabel = computed(() => `注${props.spec.no}`)
+const triggerLabel = computed(() => '标注')
 
 const open = ref(false)
 const triggerRef = ref<HTMLButtonElement | null>(null)
@@ -94,8 +94,8 @@ onUnmounted(() => {
     <button
       ref="triggerRef"
       type="button"
-      class="mh5-spec-annot__trigger mh5-spec-annot__trigger--numbered"
-      :aria-label="`【${spec.no}】${spec.title}，查看移动端需求说明`"
+      class="mh5-spec-annot__trigger"
+      :aria-label="`标注：${spec.title}，查看移动端需求说明`"
       aria-haspopup="dialog"
       :aria-expanded="open"
       @click="togglePanel"
@@ -114,10 +114,8 @@ onUnmounted(() => {
       >
         <div class="mh5-spec-annot__panel-body">
           <div class="mh5-spec-annot__panel-head">
-            <span class="mh5-spec-annot__panel-tag">移动端 PRD · #{{ spec.no }}</span>
-            <strong class="mh5-spec-annot__panel-title">
-              <span class="mh5-spec-annot__panel-no">【{{ spec.no }}】</span>{{ $t(spec.title) }}
-            </strong>
+            <span class="mh5-spec-annot__panel-tag">移动端 PRD</span>
+            <strong class="mh5-spec-annot__panel-title">{{ $t(spec.title) }}</strong>
           </div>
 
           <section

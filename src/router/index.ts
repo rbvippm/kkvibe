@@ -349,10 +349,22 @@ export const router = createRouter({
           meta: { title: '设置', hideTabBar: true },
         },
         {
+          path: 'mine/settings/account-security',
+          name: 'mobile-mine-account-security',
+          component: () => import('../views/mobile/MobileAccountSecurityView.vue'),
+          meta: { title: '账号与安全', hideTabBar: true },
+        },
+        {
           path: 'mine/settings/language',
           name: 'mobile-mine-language',
           component: () => import('../views/mobile/MobileLanguageSettingsView.vue'),
           meta: { title: '语言设置', hideTabBar: true },
+        },
+        {
+          path: 'mine/settings/pip',
+          name: 'mobile-mine-pip-settings',
+          component: () => import('../views/mobile/MobilePipSettingsView.vue'),
+          meta: { title: '小窗设置', hideTabBar: true },
         },
         {
           path: 'mine/more',
@@ -545,6 +557,36 @@ export const router = createRouter({
           name: 'pc-live-anchor-list-doc',
           component: () => import('../views/pc/PcLiveAnchorListDocView.vue'),
           meta: { title: '主播列表-文档说明' },
+        },
+        {
+          path: 'live-anchor-audit',
+          name: 'pc-live-anchor-audit',
+          component: () => import('../views/pc/PcLiveAnchorAuditListView.vue'),
+          meta: { title: '主播审核列表' },
+        },
+        {
+          path: 'live-anchor-audit/doc',
+          name: 'pc-live-anchor-audit-doc',
+          component: () => import('../views/pc/PcLiveAnchorAuditListDocView.vue'),
+          meta: { title: '主播审核列表-文档说明' },
+        },
+        {
+          path: 'live-product-config',
+          name: 'pc-live-product-config',
+          component: () => import('../views/pc/PcLiveProductConfigView.vue'),
+          meta: { title: '产品配置' },
+        },
+        {
+          path: 'live-broadcast-list',
+          name: 'pc-live-broadcast-list',
+          component: () => import('../views/pc/PcLiveBroadcastListView.vue'),
+          meta: { title: '直播列表' },
+        },
+        {
+          path: 'live-broadcast-list/doc',
+          name: 'pc-live-broadcast-list-doc',
+          component: () => import('../views/pc/PcLiveBroadcastListDocView.vue'),
+          meta: { title: '直播列表-文档说明' },
         },
         {
           path: 'live-danmaku-mute-list',

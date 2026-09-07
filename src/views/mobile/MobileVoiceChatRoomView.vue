@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
 import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
@@ -9,6 +9,8 @@ import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.v
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { useLivePip } from '../../composables/useLivePip'
+import { buildLivePipSession } from '../../constants/livePip'
 import { liveListRouteName } from '../../constants/mobileDiscover'
 import { type LiveShareActionKey } from '../../constants/mobileLiveStream'
 import {
@@ -16,10 +18,12 @@ import {
   MOCK_VOICE_MESSAGES,
   MOCK_VOICE_MIC_SEATS,
   VOICE_ROOM_ASSETS,
+  voiceSelfMicState,
 } from '../../constants/mobileVoiceRoom'
 
 const route = useRoute()
 const router = useRouter()
+const pip = useLivePip()
 const followed = ref(false)
 const muted = ref(false)
 const showGameCenter = ref(false)
@@ -31,9 +35,50 @@ const shareLink = computed(
   () => `https://kkvibe.app/voice/${encodeURIComponent(hostName.value)}`,
 )
 
+function currentPipSession() {
+  const from = String(route.query.from || '')
+  const query: Record<string, string> = {}
+  for (const [key, value] of Object.entries(route.query)) {
+    if (typeof value === 'string' && value) query[key] = value
+  }
+  if (!query.id) query.id = roomId.value
+  if (!query.host) query.host = hostName.value
+  return buildLivePipSession({
+    roomId: roomId.value,
+    hostName: hostName.value,
+    stage: VOICE_ROOM_ASSETS.avatars[1],
+    kind: 'voice',
+    muted: muted.value,
+    onMic: voiceSelfMicState.onMic,
+    micOn: voiceSelfMicState.micOn,
+    from,
+    query,
+  })
+}
+
+function leaveVoiceRoom() {
+  pip.armLeave('exit')
+  void router.replace({ name: liveListRouteName(String(route.query.from || '')) })
+}
+
 function goBack() {
-  // 关闭房间：replace 回社区直播列表，避免 history 残留导致列表再「返回」又进房
-  router.replace({ name: liveListRouteName(String(route.query.from || '')) })
+  leaveVoiceRoom()
+}
+
+onBeforeRouteLeave((to) => {
+  if (to.name === 'mobile-voice-room') return
+  if (pip.state.leaveArmed) return
+  pip.openIfAllowed(pip.takePendingReason(), currentPipSession())
+})
+
+onMounted(() => {
+  pip.resetLeaveArmed()
+  pip.hideIfWatchingLive()
+})
+
+function joinMic() {
+  voiceSelfMicState.onMic = true
+  voiceSelfMicState.micOn = true
 }
 
 function toggleFollow() {
@@ -174,9 +219,9 @@ async function handleForwarded(names: string[]) {
         </template>
 
         <template v-else-if="seat.kind === 'empty'">
-          <div class="mh5-voice-seat__empty">
+          <button type="button" class="mh5-voice-seat__empty" :aria-label="$t('上麦')" @click="joinMic">
             <img :src="VOICE_ROOM_ASSETS.plus" alt="" width="20" height="20" />
-          </div>
+          </button>
           <p class="mh5-voice-seat__empty-text">加入{{ seat.micIndex }}麦</p>
         </template>
 

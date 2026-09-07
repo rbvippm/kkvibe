@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>账号体系与安全设置 · Figma 安全审计报告</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --text: #182230;
+      --muted: #64748b;
+      --line: #dce3ea;
+      --brand: #ea580c;
+      --brand-soft: #fff7ed;
+      --critical: #991b1b;
+      --critical-soft: #fef2f2;
+      --high: #c2410c;
+      --high-soft: #fff7ed;
+      --medium: #a16207;
+      --medium-soft: #fefce8;
+      --low: #475569;
+      --low-soft: #f1f5f9;
+      --good: #047857;
+      --good-soft: #ecfdf5;
+      --info: #1d4ed8;
+      --info-soft: #eff6ff;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    a { color: var(--info); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 26px 20px;
+      background: #111827;
+      color: #e5e7eb;
+    }
+    .sidebar__brand {
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #334155;
+    }
+    .sidebar__brand strong {
+      display: block;
+      color: #fff;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+    .sidebar__brand span { color: #94a3b8; font-size: 12px; }
+    .nav-title {
+      margin: 18px 8px 7px;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+    .nav a {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #cbd5e1;
+    }
+    .nav a:hover { background: #1f2937; color: #fff; text-decoration: none; }
+    .sidebar__foot {
+      margin-top: 24px;
+      padding: 14px;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    main {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 42px 42px 80px;
+    }
+    .hero {
+      padding: 36px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: var(--surface);
+    }
+    .eyebrow {
+      margin-bottom: 10px;
+      color: var(--brand);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, h4 { margin: 0; line-height: 1.35; }
+    h1 { max-width: 780px; font-size: clamp(28px, 4vw, 44px); letter-spacing: -.03em; }
+    h2 { margin: 58px 0 18px; font-size: 26px; }
+    h3 { font-size: 18px; }
+    h4 { font-size: 15px; }
+    .hero__desc { max-width: 850px; margin: 18px 0; color: var(--muted); font-size: 16px; }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .verdict {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-top: 26px;
+      padding: 18px 20px;
+      border-left: 4px solid var(--high);
+      border-radius: 10px;
+      background: var(--high-soft);
+    }
+    .verdict strong { display: block; margin-bottom: 4px; color: var(--high); font-size: 17px; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .stat__value { font-size: 30px; font-weight: 800; line-height: 1; }
+    .stat__label { margin-top: 8px; color: var(--muted); }
+    .stat--high .stat__value { color: var(--high); }
+    .stat--medium .stat__value { color: var(--medium); }
+    .stat--low .stat__value { color: var(--low); }
+    .stat--good .stat__value { color: var(--good); }
+
+    .callout {
+      margin: 18px 0;
+      padding: 16px 18px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: var(--info-soft);
+      color: #1e3a8a;
+    }
+    .callout--warn {
+      border-color: #fed7aa;
+      background: var(--brand-soft);
+      color: #9a3412;
+    }
+    .callout strong { color: inherit; }
+
+    .scope-card, .good-card, .module, .control-card, .phase {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .scope-card { padding: 20px; }
+    .scope-card ul, .module ul, .control-card ul, .phase ul { margin: 10px 0 0; padding-left: 20px; }
+    .scope-card li, .module li, .control-card li, .phase li { margin: 5px 0; }
+
+    .good-card {
+      padding: 18px;
+      border-color: #a7f3d0;
+      background: var(--good-soft);
+    }
+    .good-card h3 { color: var(--good); }
+    .good-card p { margin: 8px 0 0; color: #365e52; }
+
+    .finding {
+      margin-bottom: 14px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .finding__head {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .finding__id {
+      min-width: 54px;
+      color: var(--muted);
+      font: 700 12px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 54px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .badge--high { background: var(--high-soft); color: var(--high); }
+    .badge--medium { background: var(--medium-soft); color: var(--medium); }
+    .badge--low { background: var(--low-soft); color: var(--low); }
+    .badge--good { background: var(--good-soft); color: var(--good); }
+    .badge--visible { background: #ede9fe; color: #6d28d9; }
+    .badge--gap { background: var(--info-soft); color: var(--info); }
+    .finding__body {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0;
+    }
+    .finding__cell { padding: 16px 18px; }
+    .finding__cell + .finding__cell { border-left: 1px solid var(--line); }
+    .finding__cell b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .finding__cell p { margin: 0; }
+
+    .module { margin-bottom: 14px; overflow: hidden; }
+    .module__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--line);
+    }
+    .module__body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .module__body > div { padding: 16px 18px; }
+    .module__body > div + div { border-left: 1px solid var(--line); }
+    .module__body h4.good { color: var(--good); }
+    .module__body h4.risk { color: var(--high); }
+
+    .matrix-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; }
+    th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; background: #eef2f6; color: #334155; font-size: 12px; }
+    tr:last-child td { border-bottom: 0; }
+    .status-no { color: var(--high); font-weight: 700; }
+    .status-part { color: var(--medium); font-weight: 700; }
+    .status-yes { color: var(--good); font-weight: 700; }
+
+    .phase { padding: 20px; }
+    .phase__time { color: var(--brand); font-size: 12px; font-weight: 800; }
+    .phase h3 { margin-top: 4px; }
+
+    .test-list {
+      counter-reset: test;
+      display: grid;
+      gap: 10px;
+      padding: 0;
+      list-style: none;
+    }
+    .test-list li {
+      counter-increment: test;
+      position: relative;
+      min-height: 48px;
+      padding: 13px 16px 13px 54px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+    }
+    .test-list li::before {
+      content: counter(test);
+      position: absolute;
+      left: 14px;
+      top: 12px;
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 800;
+      line-height: 26px;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 58px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .print-btn {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 20;
+      padding: 11px 16px;
+      border: 0;
+      border-radius: 999px;
+      background: #111827;
+      color: #fff;
+      cursor: pointer;
+    }
+    .print-btn:hover { background: #374151; }
+
+    @media (max-width: 980px) {
+      .layout { display: block; }
+      .sidebar { position: static; width: 100%; height: auto; }
+      .nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .nav-title, .sidebar__foot { display: none; }
+      main { padding: 28px 20px 70px; }
+      .grid--4, .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .finding__body { grid-template-columns: 1fr; }
+      .finding__cell + .finding__cell { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 640px) {
+      .hero { padding: 24px 20px; }
+      .grid--4, .grid--3, .grid--2, .module__body { grid-template-columns: 1fr; }
+      .module__body > div + div { border-left: 0; border-top: 1px solid var(--line); }
+      .finding__head { grid-template-columns: auto 1fr; }
+      .finding__head .badge:last-child { grid-column: 2; justify-self: start; }
+      .print-btn { display: none; }
+    }
+    @media print {
+      body { background: #fff; font-size: 11px; }
+      .layout { display: block; }
+      .sidebar, .print-btn { display: none; }
+      main { width: 100%; padding: 0; }
+      .hero, .stat, .finding, .module, .good-card, .phase { break-inside: avoid; }
+      h2 { margin-top: 34px; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <strong>账号体系安全审计</strong>
+        <span>Figma 交互与业务流程审查</span>
+      </div>
+      <nav class="nav" aria-label="报告目录">
+        <div class="nav-title">报告</div>
+        <a href="#summary">执行摘要</a>
+        <a href="#scope">范围与方法</a>
+        <a href="#strengths">做得好的地方</a>
+        <a href="#findings">重点风险</a>
+        <div class="nav-title">逐模块审计</div>
+        <a href="#modules-auth">注册与登录</a>
+        <a href="#modules-recovery">找回与重置</a>
+        <a href="#modules-security">账号与安全</a>
+        <a href="#matrix">控制矩阵</a>
+        <a href="#roadmap">整改路线</a>
+        <a href="#tests">上线验收</a>
+      </nav>
+      <div class="sidebar__foot">
+        本报告是设计级安全评审，不等同于代码审计、渗透测试或后端配置审计。
+      </div>
+    </aside>
+
+    <main>
+      <header class="hero" id="summary">
+        <div class="eyebrow">Security Design Review · 2026-08-28</div>
+        <h1>APP 账号注册、登录、找回与安全设置流程审计报告</h1>
+        <p class="hero__desc">
+          对两组 Figma 画布进行逐区、逐状态检查，覆盖手机号／邮箱／账号注册、验证码与密码登录、
+          H5、密码重置、联系方式绑定、安全密码、账号标识、注销与登出等流程。
+        </p>
+        <div class="meta">
+          <span>审计对象：KING KONG（金刚）APP / H5</span>
+          <span>审计类型：业务逻辑 + 认证安全 + 隐私设计</span>
+          <span>结论可信度：设计层高、后端实现层待验证</span>
+        </div>
+        <div class="verdict">
+          <div>
+            <strong>总体评级：较高风险，完成 P0/P1 整改后再上线</strong>
+            界面状态覆盖完整，绑定与修改敏感信息时已有“验证身份”的正确方向；但验证码生命周期、
+            账号枚举、六位安全密码、无绑定账号的升权绑定、重置后的会话撤销、注销账号等关键控制
+            未在设计中闭环。这里的“未体现”不代表后端一定没有，但上线前必须以接口、配置和测试证据证明。
+          </div>
+        </div>
+      </header>
+
+      <section aria-label="风险统计">
+        <h2>审计概览</h2>
+        <div class="grid grid--4">
+          <div class="stat stat--high"><div class="stat__value">8</div><div class="stat__label">高风险 / 必须闭环</div></div>
+          <div class="stat stat--medium"><div class="stat__value">12</div><div class="stat__label">中风险 / 上线前确认</div></div>
+          <div class="stat stat--low"><div class="stat__value">6</div><div class="stat__label">低风险与隐私细节</div></div>
+          <div class="stat stat--good"><div class="stat__value">11</div><div class="stat__label">值得保留的设计</div></div>
+        </div>
+        <div class="callout">
+          <strong>最重要的判断：</strong>Figma 能证明“用户看见什么、能走哪些分支”，不能证明服务端是否做了
+          限流、验证码绑定、密码哈希、会话轮换、风控、日志脱敏和权限校验。本报告将设计直接可见的问题标记为
+          “已观察”，将实现层缺口标记为“待证明”。
+        </div>
+      </section>
+
+      <section id="scope">
+        <h2>范围、证据与限制</h2>
+        <div class="grid grid--2">
+          <article class="scope-card">
+            <h3>审计证据</h3>
+            <ul>
+              <li><a href="https://www.figma.com/design/78AJm4Aa5EM0kJnPwrhcJ5/2.21.1-%E9%82%AE%E7%AE%B1%E5%92%8C%E8%B4%A6%E5%8F%B7%E6%B3%A8%E5%86%8C?node-id=1227-13309" target="_blank" rel="noreferrer">APP 登录／注册／重置密码画布</a></li>
+              <li><a href="https://www.figma.com/design/78AJm4Aa5EM0kJnPwrhcJ5/2.21.1-%E9%82%AE%E7%AE%B1%E5%92%8C%E8%B4%A6%E5%8F%B7%E6%B3%A8%E5%86%8C?node-id=1227-21274" target="_blank" rel="noreferrer">账号与安全画布</a></li>
+              <li>检查了画布中的正常态、输入态、禁用态、错误态、成功态、弹窗与分支连接。</li>
+              <li>对关键单屏放大核对：登录、验证码、安全密码、绑定联系方式、找回密码及安全总览。</li>
+            </ul>
+          </article>
+          <article class="scope-card">
+            <h3>本次不能由 Figma 证明</h3>
+            <ul>
+              <li>服务端鉴权、越权校验、数据库唯一约束和并发竞争处理。</li>
+              <li>密码哈希算法、密钥管理、TLS、证书锁定与敏感数据加密。</li>
+              <li>验证码真实有效期、尝试次数、重发冷却、日限额及是否单次有效。</li>
+              <li>Cookie / Token 存储、刷新令牌轮换、会话撤销、风控和审计日志。</li>
+              <li>第三方短信、WhatsApp、邮件供应商及在线客服的安全运营流程。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="strengths">
+        <h2>做得好的地方</h2>
+        <div class="grid grid--3">
+          <article class="good-card"><h3>敏感操作有身份验证意识</h3><p>绑定手机、绑定邮箱、修改安全密码均设计了验证码或先绑定恢复因子的路径，方向正确。</p></article>
+          <article class="good-card"><h3>安全密码与登录密码分离</h3><p>明确提示安全密码用于转账、交易等敏感操作，并要求不要与登录密码相同。</p></article>
+          <article class="good-card"><h3>联系方式做了部分脱敏</h3><p>账号与安全页以 +60 123****5678、1***@gmail.com 形式展示，降低旁观泄露。</p></article>
+          <article class="good-card"><h3>密码要求二次确认</h3><p>设置和重置登录密码、安全密码均有确认输入，能减少误输入导致的锁号。</p></article>
+          <article class="good-card"><h3>多通道分支覆盖较完整</h3><p>手机号、邮箱、账号以及短信、WhatsApp、邮件渠道均有对应流程和异常提示。</p></article>
+          <article class="good-card"><h3>输入与提交状态明确</h3><p>画布包含空态、已填、按钮禁用、验证码错误、密码格式错误和成功页，便于实现一致校验。</p></article>
+          <article class="good-card"><h3>验证码独立分格输入</h3><p>六位输入、清空、重新获取与渠道提示都清晰，能减少误操作和客服量。</p></article>
+          <article class="good-card"><h3>绑定状态可见</h3><p>“已绑定／未绑定／未设置”状态直接显示，用户能快速识别账号保护缺口。</p></article>
+          <article class="good-card"><h3>账号标识限制修改</h3><p>注册账号不可修改、金刚号仅允许有限修改，可降低身份混淆、诈骗与审计追溯困难。</p></article>
+          <article class="good-card"><h3>条款与隐私入口清楚</h3><p>注册和登录均展示用户服务条款及隐私政策，且与提交按钮联动。</p></article>
+          <article class="good-card"><h3>恢复失败提供人工入口</h3><p>未绑定联系方式时提供在线客服，避免用户永久丢号；但客服身份核验必须另行加固。</p></article>
+        </div>
+      </section>
+
+      <section id="findings">
+        <h2>重点风险清单</h2>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-01</span><h3>六位纯数字“安全密码”用于转账、交易，熵过低</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>页面明确要求 6 位数字。总空间仅 100 万，若接口、设备或客服流程可反复尝试，容易被撞库或暴力猜测。</p></div>
+            <div class="finding__cell"><b>影响</b><p>攻击者在已劫持登录会话后，可能进一步完成转账、交易或资金类操作；复用生日、连续数字的概率也较高。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>保留 6 位 PIN 时必须限制 5 次失败、渐进延迟、设备绑定、风险交易二次 OTP/生物识别，并对弱 PIN（123456、生日等）禁用。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-02</span><h3>无已绑定因子时，用“新填写的邮箱/手机号”完成绑定不能证明原账号身份</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>绑定手机号流程提示“尚未绑定邮箱，请先填写邮箱，验证码将发送到该邮箱完成绑定”。该邮箱是新因子，不是历史信任因子。</p></div>
+            <div class="finding__cell"><b>影响</b><p>盗取到一次登录会话的人，可把自己的邮箱和手机号绑定为恢复因子，继而改密码、设安全密码并长期接管账号。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>无历史因子时必须验证当前登录密码 + 可信设备/生物识别；高价值账号走人工增强核验，并在绑定后设置 24–48 小时敏感操作冷静期。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-03</span><h3>验证码生命周期与限流规则未定义</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>界面有“重新获取验证码”，但未显示倒计时、有效期、错误次数、当日上限或触发人机验证的状态。</p></div>
+            <div class="finding__cell"><b>影响</b><p>可导致 6 位 OTP 暴力破解、短信/邮件轰炸、供应商费用攻击、验证码重放及多个验证码同时有效。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>OTP 5 分钟内有效、单次使用、最新一枚生效；单验证码最多 5 次，重发间隔 ≥60 秒，并按账号/目标/IP/设备/ASN 联合限流。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-04</span><h3>注册、登录、找回流程可能形成账号枚举</h3><span class="badge badge--visible">部分已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>画布存在“手机号已注册”“邮箱已注册”“当前账号已存在”等明确提示；若登录/找回也返回差异文案或时延，可批量确认账号。</p></div>
+            <div class="finding__cell"><b>影响</b><p>攻击者可建立有效用户库，再进行撞库、钓鱼、骚扰和针对性 SIM Swap。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>找回和验证码发送统一返回“如账号存在将发送”；错误码、HTTP 状态与响应时延保持近似。注册场景可提示冲突，但必须强限流。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-05</span><h3>“账号注册”无需验证联系方式，存在批量账号与无法自助恢复风险</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>账号注册只需账号和可选邀请人 ID，随后设置密码；未要求手机、邮箱或其他抗自动化证明。</p></div>
+            <div class="finding__cell"><b>影响</b><p>可被脚本用于注册奖励、邀请返利、刷活动、养号；丢失密码后只能走客服，放大社工接管风险。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>至少加入设备信誉、人机验证、IP/设备/支付工具限额；未绑定恢复因子前限制奖励提现、交易和敏感功能，并持续提醒补绑。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-06</span><h3>重置登录密码后，旧会话和令牌撤销未闭环</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>流程以“密码重置成功—返回登录”结束，未询问“退出其他设备”，也未体现刷新令牌轮换或安全通知。</p></div>
+            <div class="finding__cell"><b>影响</b><p>如果攻击者已持有长期令牌，用户改密后攻击者仍可在线，导致“改密无效”的持续接管。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>成功重置后撤销该账号全部会话和刷新令牌，仅保留经过重新认证的当前设备；向原绑定渠道发送改密通知和非本人操作入口。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-07</span><h3>账号注销只有入口，没有安全与资金闭环</h3><span class="badge badge--gap">设计缺口</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>账号与安全页展示“注销账号”，但给定画布未包含二次认证、资产处理、冷静期、撤销方式和数据保留说明。</p></div>
+            <div class="finding__cell"><b>影响</b><p>会话被盗后可能被恶意销户；或因余额、订单、风控案件未结清造成资产与合规争议。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>强制近期重认证 + 已绑定因子；检查余额/订单/申诉；7–30 天冷静期；即时撤销令牌；明确匿名化、法定保留及恢复规则。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">H-08</span><h3>未绑定联系方式时依赖在线客服，社工恢复标准未定义</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>证据与攻击面</b><p>找回密码页提示未绑定手机号或邮箱时联系在线客服。设计未体现客服需要哪些证据、审批或冷静期。</p></div>
+            <div class="finding__cell"><b>影响</b><p>客服成为绕过 OTP、密码和设备校验的“万能后门”，高价值账号尤其易遭针对性社工。</p></div>
+            <div class="finding__cell"><b>整改要求</b><p>制定分级恢复 SOP、双人审批、证据评分、设备/历史行为交叉验证、全程留痕；客服不得读取或重置安全密码，只能触发受控恢复流程。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-01</span><h3>登录密码“8–20 位且必须字母+数字”策略偏弱且限制口令长度</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>问题</b><p>强制组合会诱导 Password123 等可预测模式；最大 20 位阻止长密码短语和密码管理器生成的高熵口令。</p></div>
+            <div class="finding__cell"><b>建议</b><p>允许 12–64/128 位、Unicode 与粘贴；不强制周期改密，不截断；检查常见/泄露密码并提供强度反馈。</p></div>
+            <div class="finding__cell"><b>实现</b><p>服务端使用 Argon2id（或合规的 scrypt/bcrypt）独立盐哈希；日志、埋点、崩溃报告禁止记录密码。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-02</span><h3>短信、WhatsApp、邮件均属于可被接管的弱恢复渠道</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>问题</b><p>SIM Swap、短信转发、邮箱盗号、WhatsApp 多设备登录都可能让攻击者截获 OTP。</p></div>
+            <div class="finding__cell"><b>建议</b><p>异常设备、改绑、改安全密码、资金操作不能只依赖单一 OTP；增加 Passkey/TOTP、生物识别和风险分层。</p></div>
+            <div class="finding__cell"><b>监控</b><p>新设备 + 新网络 + OTP 恢复 + 敏感操作组合应触发延迟、二次验证和用户通知。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-03</span><h3>验证码页展示完整手机号/邮箱，存在旁观与截图泄露</h3><span class="badge badge--visible">已观察</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>问题</b><p>示例页面显示完整 +60 98765432 或完整邮箱；与安全总览的脱敏策略不一致。</p></div>
+            <div class="finding__cell"><b>建议</b><p>验证码页显示 +60 98****32、d***@gmail.com；客服和错误日志同样脱敏。</p></div>
+            <div class="finding__cell"><b>客户端</b><p>敏感页考虑 Android FLAG_SECURE / iOS 截屏检测提示，但不要依赖其作为主要安全措施。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-04</span><h3>登录、注册、验证码发送未体现抗自动化与风险分级</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>统一账号输入支持手机/邮箱/金刚号，攻击者可高效撞库；注册奖励进一步提高脚本攻击收益。</p></div>
+            <div class="finding__cell"><b>建议</b><p>按账号、IP、设备、网络信誉、失败速度联合限流；只在风险升高时触发无感或交互式人机验证。</p></div>
+            <div class="finding__cell"><b>验收</b><p>限流必须在网关/服务端执行，不能仅禁用按钮；并发请求、切换 User-Agent 和多节点代理均不能绕过。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-05</span><h3>缺少设备与会话管理、异常登录记录和一键下线</h3><span class="badge badge--gap">设计缺口</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>用户无法发现陌生设备或撤销单个会话；“登出”看起来仅覆盖当前端。</p></div>
+            <div class="finding__cell"><b>建议</b><p>增加最近登录时间、设备、粗粒度地点、当前设备标识、单设备退出和“退出全部设备”。</p></div>
+            <div class="finding__cell"><b>通知</b><p>新设备登录、恢复因子变更、密码变更、安全密码失败锁定均向历史可信渠道告警。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-06</span><h3>未提供 Passkey / TOTP 等抗钓鱼或独立强因子</h3><span class="badge badge--gap">设计缺口</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>账号保护高度依赖可转移的密码和通信 OTP，不能有效抵抗实时钓鱼和渠道接管。</p></div>
+            <div class="finding__cell"><b>建议</b><p>优先增加 Passkey；对高价值用户提供 TOTP 与恢复码，并允许管理可信设备。</p></div>
+            <div class="finding__cell"><b>原则</b><p>恢复流程不得比日常强认证更容易，否则攻击者会绕过 Passkey 直接走客服或短信找回。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-07</span><h3>手机号和邮箱都已绑定时，敏感修改似乎仍可任选一个因子</h3><span class="badge badge--gap">需产品确认</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>若任一因子被盗即可修改安全密码，会把“双绑定”降级为单点安全。</p></div>
+            <div class="finding__cell"><b>建议</b><p>普通场景可任选其一；新设备、近期改绑、高价值资产或异常网络必须叠加登录密码/Passkey/另一因子。</p></div>
+            <div class="finding__cell"><b>体验</b><p>不要机械要求每次双 OTP，应由风险引擎决定，避免用户疲劳和渠道成本。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-08</span><h3>H5 登录注册需单独定义 Web 安全基线</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>H5 更易受 XSS、CSRF、点击劫持、恶意浏览器插件、开放重定向和 Token 窃取影响。</p></div>
+            <div class="finding__cell"><b>建议</b><p>优先用 HttpOnly + Secure + SameSite Cookie；严格 CSP、frame-ancestors、CSRF Token、Referrer-Policy 和来源校验。</p></div>
+            <div class="finding__cell"><b>禁止</b><p>密码、OTP、刷新令牌不得写入 localStorage、URL、埋点、Referer 或前端错误上报。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-09</span><h3>头像相册/拍照上传缺少文件安全与隐私说明</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>伪造扩展名、图片解析漏洞、超大图消耗、SVG/HTML 主动内容、EXIF 定位信息和公开对象地址泄露。</p></div>
+            <div class="finding__cell"><b>建议</b><p>服务端按魔数识别、重编码为安全格式、限制像素/大小、剥离 EXIF、病毒扫描，存储使用私有桶和签名 URL。</p></div>
+            <div class="finding__cell"><b>权限</b><p>相册与相机按需授权，拒绝后可继续使用系统头像；不要把通讯录或全相册权限作为注册前置条件。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-10</span><h3>邀请人 ID 与注册奖励需要防刷和归属一致性保护</h3><span class="badge badge--gap">业务风控</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>账号注册无需联系方式，邀请人 ID 可选，容易形成设备农场、自邀、批量奖励和渠道劫持。</p></div>
+            <div class="finding__cell"><b>建议</b><p>邀请关系服务端落库且幂等；限制同设备/网络/支付工具关联账号；奖励延迟到完成风险校验后发放。</p></div>
+            <div class="finding__cell"><b>隐私</b><p>输入邀请 ID 后不要回显过多邀请人资料，避免利用该接口枚举用户。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-11</span><h3>账号、邮箱、手机号规范化与同形字符策略未定义</h3><span class="badge badge--gap">待证明</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>风险</b><p>大小写、空白、Unicode 同形字符、邮箱点号/别名、不同电话格式可能绕过唯一性或造成登录歧义。</p></div>
+            <div class="finding__cell"><b>建议</b><p>手机号统一 E.164；账号做 Unicode NFC 与保留字符策略；邮箱谨慎小写域名并按产品规则处理本地部分。</p></div>
+            <div class="finding__cell"><b>实现</b><p>唯一约束必须建立在服务端规范化字段上，并对并发注册使用数据库约束而非“先查再写”。</p></div>
+          </div>
+        </article>
+
+        <article class="finding">
+          <div class="finding__head"><span class="finding__id">M-12</span><h3>服务条款/隐私同意状态疑似默认勾选，需确认真实交互</h3><span class="badge badge--visible">条件风险</span></div>
+          <div class="finding__body">
+            <div class="finding__cell"><b>问题</b><p>多张注册状态稿中勾选图标为橙色。若进入页面即默认勾选，可能不满足有效同意和审计要求。</p></div>
+            <div class="finding__cell"><b>建议</b><p>默认不勾选；记录条款版本、时间、地区、客户端版本和同意动作；更新重大条款时重新确认。</p></div>
+            <div class="finding__cell"><b>安全关联</b><p>隐私同意记录不得由客户端自行声明，服务端应校验版本并防止请求绕过。</p></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="modules-auth">
+        <h2>逐模块审计（一）：注册、资料完善与登录</h2>
+
+        <article class="module">
+          <div class="module__head"><h3>1. 手机号注册</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>国家/地区选择、号码输入、OTP、设置密码分步呈现。</li><li>有手机号已注册提示和按钮禁用态。</li><li>OTP 渠道提示包含 WhatsApp 或短信。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>手机统一 E.164，区号必须由可信列表产生。</li><li>已注册提示需限流，找回场景必须使用统一文案。</li><li>OTP 与注册会话、目标号码、用途绑定；注册完成即失效。</li><li>防止换号重放、并发注册和同设备批量领取奖励。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>2. 邮箱注册</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>邮箱 OTP 独立流程，有“检查垃圾邮件”提示。</li><li>包含邮箱被注册错误态及成功后的密码设置。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>邮件链接/验证码均需一次性、短有效期并绑定注册事务。</li><li>拒绝 CRLF、超长地址和非法域；谨慎处理 Gmail 点号/别名。</li><li>不要在邮件主题、推送和日志中泄露完整账号信息。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>3. 账号注册（金刚号/账号）</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>给出 8–20 位、字母和数字规则。</li><li>有账号冲突提示，邀请人 ID 明确为选填。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>无联系方式验证时限制资产、奖励和敏感能力。</li><li>加入设备/IP 风控与人机验证，防止账号农场。</li><li>规范化大小写与 Unicode，禁用保留词、冒充官方的相似账号。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>4. 国家/地区选择</h3><span class="badge badge--low">低</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>独立列表避免用户自由输入国家码。</li><li>有搜索与完整国家/地区状态。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>服务端重新解析号码，不信任客户端区号。</li><li>处理共享国家码、虚拟号码和高欺诈地区的差异化风控。</li><li>不要把地区选择直接等同于用户国籍、税务或合规归属。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>5. 设置登录密码</h3><span class="badge badge--medium">中</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>双输入确认、眼睛开关、格式错误态完整。</li><li>注册和重置均复用一致流程。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>改为允许 12–64/128 位，支持密码管理器与粘贴。</li><li>禁止常见、泄露、账号相似密码；不要仅依赖字母+数字。</li><li>输入框关闭自动纠错，避免明文进入日志、剪贴板分析和截图。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>6. 用户协议与隐私政策</h3><span class="badge badge--medium">中</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>链接醒目，未同意时按钮有禁用态。</li><li>注册和登录入口均展示。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>确认默认不勾选，避免把浏览页面当作同意。</li><li>服务端记录条款版本与明确动作，接口绕过时拒绝注册。</li><li>第三方营销同意应与基础服务条款拆分。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>7. 完善资料、系统头像、相册与拍照</h3><span class="badge badge--medium">中</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>提供系统头像，可不授予相册/相机权限。</li><li>拍照、裁剪、移动缩放和确认状态完整。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>昵称做长度、控制字符、冒充官方词和富文本注入校验。</li><li>图片服务端重编码、剥离 EXIF、限尺寸、病毒/内容扫描。</li><li>头像 URL 不应暴露原始文件名、路径或永久公开对象。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>8. 账号密码登录</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>手机号/邮箱/金刚号统一入口，密码默认隐藏。</li><li>提供忘记密码和验证码登录替代路径。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>防撞库：账号/IP/设备联合限流、泄露凭证检测和风险验证。</li><li>账号不存在与密码错误使用统一文案和近似时延。</li><li>成功登录后轮换会话标识；刷新令牌仅服务端可撤销且每次轮换。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>9. 验证码登录</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>先输入手机号/邮箱，再进入六位 OTP 页。</li><li>支持重发、清空及短信/WhatsApp/垃圾邮件提示。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>OTP 不能成为绕过密码风控的更弱入口。</li><li>验证码必须绑定 login 用途，不能拿注册/绑定/重置 OTP 混用。</li><li>新设备验证码登录后，对改绑、改密、资金操作增加冷静期或二次验证。</li></ul></div>
+          </div>
+        </article>
+
+        <article class="module">
+          <div class="module__head"><h3>10. H5 登录与注册</h3><span class="badge badge--medium">中</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>流程与 APP 基本一致，减少不同端安全规则漂移。</li><li>注册成功后引导设置头像和昵称。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>Cookie 使用 Secure、HttpOnly、SameSite；全站 HTTPS 与 HSTS。</li><li>CSP 禁止内联脚本和未知域，禁止被第三方 iframe 嵌入。</li><li>防 CSRF、开放重定向、DOM XSS；敏感值不进 URL/localStorage。</li></ul></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="modules-recovery">
+        <h2>逐模块审计（二）：找回与重置登录密码</h2>
+        <article class="module">
+          <div class="module__head"><h3>11. 手机号/邮箱找回入口</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>只允许通过已注册/已绑定渠道验证。</li><li>未绑定时清楚引导联系在线客服。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>始终返回“如信息匹配将发送验证码”，防止枚举。</li><li>客服恢复按高风险流程处理，不能凭昵称、余额截图或金刚号直接重置。</li><li>对短期大量查询不同账号的设备/IP 触发封禁。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>12. 找回验证码</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>六位输入、下一步、重新获取、错误反馈均有状态。</li><li>短信与邮件分支一致。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>OTP 与找回事务及账号绑定，不应只按手机号/邮箱校验。</li><li>验证成功生成一次性、短时的 reset ticket；不能把 OTP 当长期凭证。</li><li>任何新 OTP 产生后旧 OTP 立即作废，成功使用后整个事务关闭。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>13. 设置新密码与成功页</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>新密码与确认密码双输入，错误提示明确。</li><li>成功后引导返回登录而非自动进入敏感会话。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>新密码不得与近期密码、账号、手机号高度相似。</li><li>提交时校验 reset ticket 的账号、用途、设备上下文和时效。</li><li>成功后撤销全部旧会话、刷新令牌和未完成的恢复事务，并发送通知。</li></ul></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="modules-security">
+        <h2>逐模块审计（三）：账号与安全设置</h2>
+        <article class="module">
+          <div class="module__head"><h3>14. 账号与安全总览</h3><span class="badge badge--medium">中</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>手机号、邮箱脱敏并展示绑定状态。</li><li>登录密码、安全密码、注销、登出集中管理。</li><li>已锁定的账号信息有明确锁图标。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>增加最后改密时间、登录设备、风险事件和全部会话下线。</li><li>复制金刚号后给出短提示；敏感剪贴板可设置过期清理。</li><li>手机号/邮箱完全不可改会造成换号困境，应提供受控换绑而非永久锁死。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>15. 绑定手机号</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>从触发提示进入，包含手机号验证、邮箱验证和成功页。</li><li>已绑定邮箱时可借助历史邮箱完成身份验证。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>无历史因子时不能仅验证新填邮箱；必须重输登录密码/可信设备确认。</li><li>目标手机号也要单独验证，不能把“验证邮箱”当成“证明拥有新手机号”。</li><li>改绑后通知旧、新渠道，旧渠道可在短期内发起冻结；资金操作设置冷静期。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>16. 绑定邮箱</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>邮箱输入、验证码、重发和绑定成功闭环完整。</li><li>成功后回到安全页并更新脱敏状态。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>登录会话超过一定时间必须近期重认证。</li><li>验证邮件需标识设备、时间和用途，禁止自动点击即完成高风险改绑。</li><li>防止邮件预取器提前消费链接；OTP/链接只能二选一且单次有效。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>17. 设置安全密码</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>明确用途和“勿与登录密码相同”。</li><li>双输入确认、隐藏显示、格式错误和成功状态齐全。</li><li>未绑定恢复因子时先引导绑定。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>六位 PIN 禁止弱序列、生日和重复数字；与登录密码服务端比对不可逆摘要或安全规则，不存明文。</li><li>高风险资金操作采用交易级签名，验证码/确认内容绑定收款方、金额和币种。</li><li>失败次数跨设备累计，锁定后只能通过强恢复解锁，客服不得直接清零。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>18. 修改安全密码</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>按未绑定、仅手机、仅邮箱、双绑定分别设计身份验证路径。</li><li>验证后再输入新安全密码，成功状态明确。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>验证通过票据只能用于修改安全密码，短时、单次并绑定账号。</li><li>新设备/异常网络要求强因子；双绑定账号不应无条件降级为任选一项。</li><li>修改成功后立即告警并设置资金敏感操作冷静期。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>19. 金刚号/注册账号修改限制</h3><span class="badge badge--low">低</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>注册账号不可修改、金刚号仅修改一次，能维持身份稳定和审计追踪。</li><li>点击后通过 Toast 解释限制。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>修改次数由服务端原子控制，不能依赖客户端锁图标。</li><li>改名前检查保留词、同形字符和冒充风险；旧 ID 需保留映射防止被他人抢注。</li><li>公开展示时可保留历史别名一段时间，降低改名诈骗。</li></ul></div>
+          </div>
+        </article>
+        <article class="module">
+          <div class="module__head"><h3>20. 登出、注销与在线客服</h3><span class="badge badge--high">高</span></div>
+          <div class="module__body">
+            <div><h4 class="good">保留</h4><ul><li>登出与注销入口清晰，找回失败有客服兜底。</li></ul></div>
+            <div><h4 class="risk">补强</h4><ul><li>登出必须撤销服务端会话/刷新令牌，而非只清本地状态。</li><li>注销需重认证、资产检查、冷静期、全端登出和法定数据保留说明。</li><li>客服会话防钓鱼：仅从官方入口打开，不要求用户提供密码、OTP 或安全密码。</li></ul></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="matrix">
+        <h2>关键安全控制矩阵</h2>
+        <div class="matrix-wrap">
+          <table>
+            <thead><tr><th>控制项</th><th>设计可见状态</th><th>上线要求</th><th>优先级</th></tr></thead>
+            <tbody>
+              <tr><td>密码隐藏与确认</td><td class="status-yes">已体现</td><td>支持密码管理器；服务端强校验，不记录明文。</td><td>P1</td></tr>
+              <tr><td>密码现代策略</td><td class="status-no">不足：8–20 位字母+数字</td><td>12–64/128 位、泄露密码拦截、Argon2id。</td><td>P0</td></tr>
+              <tr><td>OTP 单次/短时有效</td><td class="status-part">界面不可证明</td><td>5 分钟、最新一枚有效、使用后立即作废。</td><td>P0</td></tr>
+              <tr><td>OTP 尝试与发送限流</td><td class="status-no">未体现</td><td>5 次尝试、60 秒重发、多维度配额与风控。</td><td>P0</td></tr>
+              <tr><td>账号枚举防护</td><td class="status-no">明确“已注册”提示</td><td>找回/登录统一响应；注册冲突接口强限流。</td><td>P0</td></tr>
+              <tr><td>敏感操作近期重认证</td><td class="status-part">部分有验证码</td><td>登录密码/Passkey + 历史可信因子；新因子不能自证。</td><td>P0</td></tr>
+              <tr><td>改密后全会话撤销</td><td class="status-no">未体现</td><td>撤销刷新令牌、轮换会话、通知用户。</td><td>P0</td></tr>
+              <tr><td>恢复因子改绑保护</td><td class="status-part">有验证流程</td><td>旧渠道通知、冷静期、异常设备增强验证。</td><td>P0</td></tr>
+              <tr><td>安全密码抗暴力</td><td class="status-no">六位数字</td><td>弱 PIN 黑名单、5 次锁定、交易级二次确认。</td><td>P0</td></tr>
+              <tr><td>会话/设备管理</td><td class="status-no">未体现</td><td>设备列表、异常登录、单设备/全部下线。</td><td>P1</td></tr>
+              <tr><td>Passkey / TOTP</td><td class="status-no">未体现</td><td>高价值用户至少提供一种独立强因子。</td><td>P1</td></tr>
+              <tr><td>隐私脱敏</td><td class="status-part">安全页已做，OTP 页不足</td><td>全流程、客服、日志、推送采用一致脱敏规则。</td><td>P1</td></tr>
+              <tr><td>H5 安全头与 Token 存储</td><td class="status-part">界面不可证明</td><td>CSP、HSTS、CSRF、Secure/HttpOnly/SameSite。</td><td>P0</td></tr>
+              <tr><td>头像上传安全</td><td class="status-part">界面不可证明</td><td>重编码、剥离 EXIF、限尺寸、私有存储。</td><td>P1</td></tr>
+              <tr><td>账号注销</td><td class="status-no">仅有入口</td><td>重认证、资产检查、冷静期、令牌撤销、留存说明。</td><td>P0</td></tr>
+              <tr><td>安全审计日志</td><td class="status-no">未体现</td><td>关键操作不可抵赖日志、告警与敏感字段脱敏。</td><td>P1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="roadmap">
+        <h2>建议整改路线</h2>
+        <div class="grid grid--3">
+          <article class="phase">
+            <div class="phase__time">P0 · 上线阻断</div>
+            <h3>先封住接管与资金风险</h3>
+            <ul>
+              <li>OTP 生命周期、重放和联合限流。</li>
+              <li>新因子不能自证身份；敏感改绑必须近期重认证。</li>
+              <li>安全 PIN 尝试锁定、弱 PIN 拦截和交易二次确认。</li>
+              <li>重置密码后撤销全会话并发通知。</li>
+              <li>注销流程、客服恢复 SOP、H5 Token 安全。</li>
+            </ul>
+          </article>
+          <article class="phase">
+            <div class="phase__time">P1 · 首版必须</div>
+            <h3>补齐可发现与可恢复能力</h3>
+            <ul>
+              <li>现代密码策略与泄露密码检测。</li>
+              <li>登录设备、活动记录、全部设备下线。</li>
+              <li>统一隐私脱敏与安全通知。</li>
+              <li>头像上传安全和邀请风控。</li>
+              <li>账号规范化、同形字符和并发唯一约束。</li>
+            </ul>
+          </article>
+          <article class="phase">
+            <div class="phase__time">P2 · 增强能力</div>
+            <h3>建立抗钓鱼与风险认证</h3>
+            <ul>
+              <li>Passkey、TOTP、恢复码与可信设备。</li>
+              <li>风险引擎动态决定验证强度。</li>
+              <li>高价值操作的交易内容签名。</li>
+              <li>安全中心评分、风险教育和自助冻结。</li>
+              <li>持续欺诈分析与客服社工演练。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section id="tests">
+        <h2>上线前安全验收清单</h2>
+        <ol class="test-list">
+          <li><strong>OTP 暴力测试：</strong>同一验证码连续输错 5 次后失效；切 IP、切设备、并发请求不能继续尝试。</li>
+          <li><strong>OTP 重放测试：</strong>验证码成功使用、重发新码、修改目标号码、切换用途后，旧码全部不可用。</li>
+          <li><strong>短信轰炸测试：</strong>同手机号、邮箱、账号、IP、设备、ASN 均有配额，接口并发不能绕过 60 秒冷却。</li>
+          <li><strong>账号枚举测试：</strong>存在与不存在账号在文案、状态码、响应体长度及耗时上无可稳定区分的差异。</li>
+          <li><strong>绑定接管测试：</strong>只有被盗会话、没有历史因子时，攻击者不能直接绑定自己的邮箱或手机号。</li>
+          <li><strong>改密会话测试：</strong>密码重置后，其他设备的 access token、refresh token、Web Cookie 立即失效。</li>
+          <li><strong>安全 PIN 测试：</strong>123456、000000、连续/重复数字和生日型 PIN 被拒；失败锁定跨设备生效。</li>
+          <li><strong>越权测试：</strong>所有绑定、改密、注销接口修改 accountId、ticket、手机号后均被服务端拒绝。</li>
+          <li><strong>并发一致性测试：</strong>两个请求同时注册同一账号/手机/邮箱，只能有一个成功，数据库唯一约束有效。</li>
+          <li><strong>H5 安全测试：</strong>验证 CSP、CSRF、点击劫持、开放重定向、XSS、Cookie 属性及刷新令牌轮换。</li>
+          <li><strong>上传测试：</strong>伪装图片、超大像素、畸形文件、SVG/HTML、带 EXIF 定位的照片均被安全处理。</li>
+          <li><strong>日志检查：</strong>服务端、客户端埋点、APM、客服后台不得出现密码、OTP、完整邮箱/手机号或令牌。</li>
+          <li><strong>客服演练：</strong>模拟攻击者持有昵称、金刚号、历史截图和部分交易信息，客服不能据此直接接管账号。</li>
+          <li><strong>注销测试：</strong>余额/订单未结清不能注销；提交后全端下线；冷静期可撤销；到期按政策删除或匿名化。</li>
+          <li><strong>通知测试：</strong>新设备登录、绑定/换绑、改登录密码、改安全密码、注销申请均通知历史可信渠道。</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>推荐的最小安全参数</h2>
+        <div class="grid grid--2">
+          <article class="control-card">
+            <h3>验证码</h3>
+            <ul>
+              <li>6 位随机数使用密码学安全随机源生成。</li>
+              <li>有效期 ≤5 分钟，单次有效，最新一枚生效。</li>
+              <li>每枚最多 5 次；重发冷却 ≥60 秒。</li>
+              <li>绑定 account + target + purpose + transactionId。</li>
+              <li>服务端只存带密钥摘要，不记录明文 OTP。</li>
+            </ul>
+          </article>
+          <article class="control-card">
+            <h3>登录密码与安全 PIN</h3>
+            <ul>
+              <li>登录密码允许 12–64/128 位，检查泄露密码。</li>
+              <li>Argon2id 独立盐哈希，参数按服务器基准确定。</li>
+              <li>安全 PIN 失败 5 次锁定并渐进延迟。</li>
+              <li>安全 PIN 不可使用连续、重复、生日和账号片段。</li>
+              <li>资金类操作叠加设备/生物识别/OTP 与交易限额。</li>
+            </ul>
+          </article>
+          <article class="control-card">
+            <h3>会话</h3>
+            <ul>
+              <li>短时 access token，refresh token 每次使用即轮换。</li>
+              <li>检测 refresh token 重用并撤销整个 token family。</li>
+              <li>改密、注销、恢复因子异常变更后全会话撤销。</li>
+              <li>移动端存 Keychain/Keystore；H5 使用 HttpOnly Cookie。</li>
+              <li>服务端验证账号状态、设备状态和 token 版本。</li>
+            </ul>
+          </article>
+          <article class="control-card">
+            <h3>敏感变更</h3>
+            <ul>
+              <li>要求最近 5–15 分钟内完成重认证。</li>
+              <li>验证票据短时、单次、限用途并绑定账号。</li>
+              <li>通知旧/新渠道，提供“非本人操作”冻结入口。</li>
+              <li>异常改绑后 24–48 小时限制提现/转账。</li>
+              <li>高风险恢复与客服操作进入不可篡改审计日志。</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p><strong>结论：</strong>这套流程的产品完整度较好，尤其是多渠道分支、错误状态和安全设置入口；真正决定能否安全上线的，是服务端是否把“验证码、验证票据、会话、恢复因子、资金操作”绑定到同一条不可绕过的信任链。建议将本报告的 P0 项直接转为研发验收条件与渗透测试用例。</p>
+        <p>报告版本：1.0 · 生成日期：2026-08-28 · 适用范围：所给 Figma 两个节点及其子流程</p>
+      </footer>
+    </main>
+  </div>
+
+  <button class="print-btn" type="button" onclick="window.print()">打印 / 导出 PDF</button>
+</body>
+</html>

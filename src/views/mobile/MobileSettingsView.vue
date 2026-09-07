@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { withMineHallFrom } from '../../constants/mineHall'
 import { MINE_SETTINGS_GROUPS, type MineSettingsItem } from '../../constants/mineSettings'
 import { appLocaleMeta, t } from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const route = useRoute()
+
+function hallQuery() {
+  return withMineHallFrom(route.query.from)
+}
 
 function handleItemClick(item: MineSettingsItem) {
+  if (item.key === 'account-security') {
+    void router.push({ name: 'mobile-mine-account-security', query: hallQuery() })
+    return
+  }
   if (item.key === 'language') {
-    void router.push({ name: 'mobile-mine-language' })
+    void router.push({ name: 'mobile-mine-language', query: hallQuery() })
+    return
+  }
+  if (item.key === 'pip') {
+    void router.push({ name: 'mobile-mine-pip-settings', query: hallQuery() })
     return
   }
   void mh5Alert({
@@ -44,12 +58,6 @@ function handleItemClick(item: MineSettingsItem) {
                 stroke-linecap="round"
               />
             </svg>
-            <!-- 钱包安全密码 -->
-            <svg v-else-if="item.key === 'wallet-password'" width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.6" />
-              <path d="M8 10V8a4 4 0 118 0v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-              <circle cx="12" cy="15" r="1.2" fill="currentColor" />
-            </svg>
             <!-- 语言设置 -->
             <svg v-else-if="item.key === 'language'" width="22" height="22" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="5" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.6" />
@@ -64,6 +72,11 @@ function handleItemClick(item: MineSettingsItem) {
                 stroke-linejoin="round"
               />
               <path d="M8 10h8M8 13h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            <!-- 小窗设置 -->
+            <svg v-else-if="item.key === 'pip'" width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="3.5" y="5" width="13" height="10" rx="2" stroke="currentColor" stroke-width="1.6" />
+              <rect x="10.5" y="11" width="10" height="8" rx="1.8" stroke="currentColor" stroke-width="1.6" />
             </svg>
             <!-- 隐私设置 -->
             <svg v-else-if="item.key === 'privacy'" width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -124,25 +137,6 @@ function handleItemClick(item: MineSettingsItem) {
             </template>
             <template v-else-if="item.trailing?.type === 'phone'">
               <span class="mh5-settings-item__phone">{{ item.trailing.value }}</span>
-            </template>
-            <template v-else-if="item.trailing?.type === 'wallet-unset'">
-              <svg
-                class="mh5-settings-item__warn-icon"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-              >
-                <path
-                  d="M12 2.5l9 5.2v7.6L12 20.5 3 15.3V7.7L12 2.5z"
-                  stroke="currentColor"
-                  stroke-width="1.6"
-                  stroke-linejoin="round"
-                />
-                <path d="M12 8.5v5M12 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-              </svg>
-              <span class="mh5-settings-item__warn-text">未设置</span>
             </template>
             <svg
               width="16"

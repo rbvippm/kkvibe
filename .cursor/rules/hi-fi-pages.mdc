@@ -19,7 +19,7 @@ alwaysApply: true
 
 1. **先复用再新建**：优先复用现有布局、组件、`mh5-*` / `wf-*` class、Mock 常量与相近页面交互；禁止新造一套样式体系或外壳。
 2. **弹层定位**：底部 Sheet / Mask 默认挂在手机画布内的 `position: relative` 根上；若 `Teleport to="body"`，必须用项目已有的 overlay 约束（如 `mh5-agent-overlay-*`），禁止宽屏跑版。
-3. **PRD 同步**：页面有「注N」或用户要求标注时，按对应 PRD Skill 维护 `*Spec.ts`；原型与标注双向一致。
+3. **PRD 同步**：页面有标注或用户要求 PRD 时，按对应 PRD Skill 维护 `*Spec.ts`；原型与标注双向一致。移动端触发器默认「标注」、放在对应功能旁、不递增注N；PC 后台仍用「注N」。
 4. **中文完整态**：文案、占位符、Mock、空态 / 禁用 / 异常提示一律中文，且符合真实产品用语。
 5. **端侧隔离**：移动端不用 PC 的 `wf-*` / `WfSpecAnnot`；PC 不用移动端 Tailwind 优先壳层或 `Mh5SpecAnnot` 六大结构套反。
 6. **PC 即时通知**：保存成功等用 `showPcToast` 全局顶部提示，不要在工具栏堆 `wf-modal__hint`。

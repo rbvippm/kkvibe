@@ -79,6 +79,18 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['管理后台', '直播管理', '主播列表', '文档说明'],
   },
   {
+    path: '/pc/live-broadcast-list/doc',
+    routeName: 'pc-live-broadcast-list-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '直播管理', '直播列表', '文档说明'],
+  },
+  {
+    path: '/pc/live-anchor-audit/doc',
+    routeName: 'pc-live-anchor-audit-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '直播管理', '主播审核列表', '文档说明'],
+  },
+  {
     path: '/pc/user-list/doc',
     routeName: 'pc-user-list-doc',
     title: '文档说明',
@@ -297,6 +309,29 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-live-anchor-list',
         pagePath: ['管理后台', '直播管理', '主播列表'],
         docRouteName: 'pc-live-anchor-list-doc',
+      },
+      {
+        key: 'live-anchor-audit',
+        title: '主播审核列表',
+        path: '/pc/live-anchor-audit',
+        routeName: 'pc-live-anchor-audit',
+        pagePath: ['管理后台', '直播管理', '主播审核列表'],
+        docRouteName: 'pc-live-anchor-audit-doc',
+      },
+      {
+        key: 'live-product-config',
+        title: '产品配置',
+        path: '/pc/live-product-config',
+        routeName: 'pc-live-product-config',
+        pagePath: ['管理后台', '直播管理', '产品配置'],
+      },
+      {
+        key: 'live-broadcast-list',
+        title: '直播列表',
+        path: '/pc/live-broadcast-list',
+        routeName: 'pc-live-broadcast-list',
+        pagePath: ['管理后台', '直播管理', '直播列表'],
+        docRouteName: 'pc-live-broadcast-list-doc',
       },
       {
         key: 'live-danmaku-mute-list',

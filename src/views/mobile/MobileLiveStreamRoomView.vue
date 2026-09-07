@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue'
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
 import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
@@ -9,6 +9,8 @@ import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import { mh5Alert } from '../../composables/useMh5Confirm'
+import { useLivePip } from '../../composables/useLivePip'
+import { buildLivePipSession } from '../../constants/livePip'
 import { liveListRouteName } from '../../constants/mobileDiscover'
 import {
   LIVE_STREAM_ASSETS,
@@ -22,6 +24,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const pip = useLivePip()
 
 const followed = ref(false)
 const danmakuOn = ref(true)
@@ -88,10 +91,43 @@ const shareLink = computed(
   () => `https://kkvibe.app/live/${room.value.id}?host=${encodeURIComponent(room.value.hostName)}`,
 )
 
-function goBack() {
-  // 关闭房间：replace 回社区直播列表，避免 history 残留导致列表再「返回」又进房
-  router.replace({ name: liveListRouteName(String(route.query.from || '')) })
+function currentPipSession() {
+  const from = String(route.query.from || '')
+  const query: Record<string, string> = {}
+  for (const [key, value] of Object.entries(route.query)) {
+    if (typeof value === 'string' && value) query[key] = value
+  }
+  return buildLivePipSession({
+    roomId: room.value.id,
+    hostName: room.value.hostName,
+    stage: room.value.stage,
+    videoRatio: videoRatio.value,
+    muted: muted.value,
+    from,
+    query,
+  })
 }
+
+function leaveLiveRoom() {
+  pip.armLeave('exit')
+  // 关闭房间：replace 回社区直播列表，避免 history 残留导致列表再「返回」又进房
+  void router.replace({ name: liveListRouteName(String(route.query.from || '')) })
+}
+
+function goBack() {
+  leaveLiveRoom()
+}
+
+onBeforeRouteLeave((to) => {
+  if (to.name === 'mobile-live-stream') return
+  if (pip.state.leaveArmed) return
+  pip.openIfAllowed(pip.takePendingReason(), currentPipSession())
+})
+
+onMounted(() => {
+  pip.resetLeaveArmed()
+  pip.hideIfWatchingLive()
+})
 
 function toggleFollow() {
   followed.value = !followed.value

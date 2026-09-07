@@ -15,8 +15,8 @@ export type MobilePrdSpecSection = {
 }
 
 export type MobilePrdSpec = {
-  /** 页面内独立编号，从 1 起 */
-  no: number
+  /** 历史「注N」编号，新标注不要传；触发器统一显示「标注」 */
+  no?: number
   /** 功能/页面名称 */
   title: string
   /** 六大结构正文，顺序固定 */
@@ -37,7 +37,7 @@ export const MOBILE_PRD_SECTION_META: Record<
   },
   visual: {
     label: '视觉表现',
-    hint: '业务页面布局、颜色、组件状态与动效；勿写「注N」标注入口或 PRD 浮层本身；颜色与字号以实际设计稿为准（见 MOBILE_PRD_VISUAL_DESIGN_DRAFT_NOTE）',
+    hint: '业务页面布局、颜色、组件状态与动效；勿写「标注」标注入口或 PRD 浮层本身；颜色与字号以实际设计稿为准（见 MOBILE_PRD_VISUAL_DESIGN_DRAFT_NOTE）',
   },
   data: {
     label: '数据规则',
