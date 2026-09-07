@@ -35,7 +35,7 @@ const gamePlayExpanded = ref(false)
 const playAnchor = ref<'game' | 'center'>('game')
 const floatPulse = ref(false)
 const flyChip = ref<{ x: number; y: number; scale: number; opacity: number } | null>(null)
-const flyChipIcon = ref(VOICE_ROOM_ASSETS.gameFloat)
+const flyChipIcon = ref<string>(VOICE_ROOM_ASSETS.gameFloat)
 let flyRaf = 0
 let pulseTimer: ReturnType<typeof setTimeout> | null = null
 

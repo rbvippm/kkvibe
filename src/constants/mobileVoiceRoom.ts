@@ -145,6 +145,7 @@ export type VoiceGameItem = {
   id: string
   name: string
   icon: string
+  live?: boolean
   tabs: VoiceGameTab[]
   display: VoiceGameDisplay
 }
@@ -154,6 +155,7 @@ export const MOCK_VOICE_GAMES: VoiceGameItem[] = [
     id: 'g1',
     name: '奔驰宝马',
     icon: VOICE_ROOM_ASSETS.gameIcon,
+    live: true,
     tabs: ['hot', 'fun'],
     display: 'portrait',
   },

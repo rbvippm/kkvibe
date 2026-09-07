@@ -135,7 +135,7 @@ export function useLivePip() {
     bindVisibility()
   }
 
-  function openIfAllowed(reason: LivePipLeaveReason, session: LivePipSession) {
+  function openIfAllowed(_reason: LivePipLeaveReason, session: LivePipSession) {
     const allow = state.settings.inAppAuto
     state.leaveArmed = true
     if (!allow) return false
