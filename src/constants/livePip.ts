@@ -129,18 +129,22 @@ export function writeLivePipSettings(next: LivePipSettings) {
   localStorage.setItem(LIVE_PIP_SETTINGS_KEY, JSON.stringify(next))
 }
 
+const emptyLivePipHints = (): Record<LivePipHintKind, boolean> => ({
+  'external-return': false,
+  'in-app-close': false,
+})
+
+/** 本趟页面会话内记住，整页刷新后清空，方便反复演示关闭提示 */
+let livePipHints = emptyLivePipHints()
+
+try {
+  localStorage.removeItem(LIVE_PIP_HINTS_KEY)
+} catch {
+  /* 旧本机记录清不掉也不挡演示 */
+}
+
 export function readLivePipHints(): Record<LivePipHintKind, boolean> {
-  try {
-    const raw = localStorage.getItem(LIVE_PIP_HINTS_KEY)
-    if (!raw) return { 'external-return': false, 'in-app-close': false }
-    const parsed = JSON.parse(raw) as Partial<Record<LivePipHintKind, boolean>>
-    return {
-      'external-return': Boolean(parsed['external-return']),
-      'in-app-close': Boolean(parsed['in-app-close']),
-    }
-  } catch {
-    return { 'external-return': false, 'in-app-close': false }
-  }
+  return { ...livePipHints }
 }
 
 export function buildLivePipSession(input: {
@@ -172,8 +176,7 @@ export function buildLivePipSession(input: {
 }
 
 export function markLivePipHintShown(kind: LivePipHintKind) {
-  const next = { ...readLivePipHints(), [kind]: true }
-  localStorage.setItem(LIVE_PIP_HINTS_KEY, JSON.stringify(next))
+  livePipHints = { ...livePipHints, [kind]: true }
 }
 
 export const LIVE_PIP_PAD_X = 12
