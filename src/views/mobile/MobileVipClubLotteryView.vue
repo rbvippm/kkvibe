@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import {
   VIP_CLUB_ASSETS,
   VIP_CLUB_LOTTERY_ASSETS,
@@ -10,6 +11,7 @@ import {
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const miniGame = useMiniAppGame()
 const toast = ref('')
 let toastTimer = 0
 
@@ -30,7 +32,7 @@ function openGame(game: VipClubLotteryGame) {
     showToast('敬请期待')
     return
   }
-  router.push({ name: 'mobile-vip-club-play', params: { kind: 'lottery', id: game.id } })
+  miniGame.open(game.title, 'lottery')
 }
 </script>
 

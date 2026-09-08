@@ -182,6 +182,26 @@ export function getVipClubVendor(kind: string, id: string | undefined) {
   return getVipClubVendors(kind).find((item) => item.id === id) ?? null
 }
 
+export type VipClubPlayKind = 'sports' | 'live' | 'slot' | 'lottery'
+
+/** 解析贵宾厅进游戏层要用的名称与品类，未知或敬请期待返回空 */
+export function resolveVipClubPlayGame(
+  kind: string,
+  id?: string,
+): { name: string; kind: VipClubPlayKind } | null {
+  if (kind === 'sports') return { name: '金刚体育', kind: 'sports' }
+  if (kind === 'lottery') {
+    const game = getVipClubLotteryGame(id)
+    if (!game || game.comingSoon) return null
+    return { name: game.title, kind: 'lottery' }
+  }
+  if (kind === 'live' || kind === 'slot') {
+    const vendor = getVipClubVendor(kind, id)
+    return vendor ? { name: vendor.title, kind } : null
+  }
+  return null
+}
+
 export type VipClubHallId = 'macau' | 'singapore' | 'vietnam' | 'malaysia' | 'philippines'
 
 export type VipClubHallFeature = {

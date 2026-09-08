@@ -84,14 +84,7 @@ function switchMode(mode: LobbyMode) {
 
 function openLobbyGame(game: LobbyGame) {
   if (!game.play) return
-  if (isTraditional.value) {
-    miniGame.open(game.title, game.play.kind)
-    return
-  }
-  router.push({
-    name: 'mobile-vip-club-play',
-    params: game.play.id ? { kind: game.play.kind, id: game.play.id } : { kind: game.play.kind },
-  })
+  miniGame.open(game.title, game.play.kind)
 }
 
 function dismissHallSwitchHint() {

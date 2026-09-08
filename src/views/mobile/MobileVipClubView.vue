@@ -3,14 +3,16 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
+import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import { formatCreditWalletBalance } from '../../constants/walletCatalog'
-import { VIP_CLUB_ASSETS, VIP_CLUB_GAMES, VIP_CLUB_HALLS, getVipClubVendors, type VipClubGameAction, type VipClubVendorKind } from '../../constants/vipClub'
+import { VIP_CLUB_ASSETS, VIP_CLUB_GAMES, VIP_CLUB_HALLS, getVipClubVendor, getVipClubVendors, type VipClubGameAction, type VipClubVendorKind } from '../../constants/vipClub'
 import { VIP_CLUB_ENTRY_SPEC } from '../../constants/vipClubSpec'
 import { mineHallQuery } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const miniGame = useMiniAppGame()
 const hallSheetOpen = ref(false)
 const vendorSheetKind = ref<VipClubVendorKind | null>(null)
 const accountSheetOpen = ref(false)
@@ -43,7 +45,7 @@ function onGameAction(action: VipClubGameAction, key: string) {
     router.push({ name: 'mobile-vip-club-lottery' })
     return
   }
-  router.push({ name: 'mobile-vip-club-play', params: { kind: 'sports' } })
+  miniGame.open('金刚体育', 'sports')
 }
 
 function openHall(id: string) {
@@ -54,8 +56,10 @@ function openHall(id: string) {
 function openVendor(id: string) {
   const kind = vendorSheetKind.value
   if (!kind) return
+  const vendor = getVipClubVendor(kind, id)
   vendorSheetKind.value = null
-  router.push({ name: 'mobile-vip-club-play', params: { kind, id } })
+  if (!vendor) return
+  miniGame.open(vendor.title, kind)
 }
 
 const vendorSheetTitle = computed(() =>
