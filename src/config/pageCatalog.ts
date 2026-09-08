@@ -30,6 +30,8 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-mine-language', platform: 'mobile', routeName: 'mobile-mine-language', path: '/mobile/mine/settings/language', title: '语言设置', group: '我的', pagePath: ['移动端', '我的', '设置', '语言设置'] },
   { id: 'mobile-mine-pip-settings', platform: 'mobile', routeName: 'mobile-mine-pip-settings', path: '/mobile/mine/settings/pip', title: '小窗设置', group: '我的', pagePath: ['移动端', '我的', '设置', '小窗设置'] },
   { id: 'mobile-mine-more', platform: 'mobile', routeName: 'mobile-mine-more', path: '/mobile/mine/more', title: '更多功能', group: '我的', pagePath: ['移动端', '我的', '更多功能'] },
+  { id: 'mobile-mine-feedback', platform: 'mobile', routeName: 'mobile-mine-feedback', path: '/mobile/mine/feedback', title: '意见反馈', group: '我的', pagePath: ['移动端', '我的', '意见反馈'] },
+  { id: 'mobile-mine-about', platform: 'mobile', routeName: 'mobile-mine-about', path: '/mobile/mine/about', title: '关于我们', group: '我的', pagePath: ['移动端', '我的', '关于我们'] },
   { id: 'mobile-agent-invites', platform: 'mobile', routeName: 'mobile-agent-invites', path: '/mobile/mine/agent-invites', title: '代理邀请', group: '我的', pagePath: ['移动端', '我的', '代理邀请'] },
   { id: 'mobile-invite-friends', platform: 'mobile', routeName: 'mobile-invite-friends', path: '/mobile/mine/invite', title: '邀请好友', group: '我的', pagePath: ['移动端', '我的', '邀请好友'] },
   { id: 'mobile-invite-records', platform: 'mobile', routeName: 'mobile-invite-records', path: '/mobile/mine/invite/records', title: '邀请好友记录', group: '我的', pagePath: ['移动端', '我的', '邀请好友', '邀请好友记录'] },

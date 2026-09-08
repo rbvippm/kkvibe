@@ -373,6 +373,18 @@ export const router = createRouter({
           meta: { title: '更多功能', hideTabBar: true },
         },
         {
+          path: 'mine/feedback',
+          name: 'mobile-mine-feedback',
+          component: () => import('../views/mobile/MobileFeedbackView.vue'),
+          meta: { title: '意见反馈', hideTabBar: true },
+        },
+        {
+          path: 'mine/about',
+          name: 'mobile-mine-about',
+          component: () => import('../views/mobile/MobileAboutView.vue'),
+          meta: { title: '关于我们', hideTabBar: true },
+        },
+        {
           path: 'mine/agent-invites',
           name: 'mobile-agent-invites',
           component: () => import('../views/mobile/MobileAgentInvitesView.vue'),

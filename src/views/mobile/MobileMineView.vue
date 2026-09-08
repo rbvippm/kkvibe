@@ -2,13 +2,15 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { mh5Alert } from '../../composables/useMh5Confirm'
 import Mh5VipCreditWallet from '../../components/mobile/Mh5VipCreditWallet.vue'
 import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
+import { ACCOUNT_SECURITY_COPY_ICON } from '../../constants/accountSecurity'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
 import { mineHallQuery } from '../../constants/mineHall'
 import { VIP_CLUB_MINE_SPEC } from '../../constants/vipClubSpec'
-import { sumWalletsCny, walletsForSheet } from '../../constants/walletCatalog'
+import { sumWalletsCny, sumWalletsFrozenCny, walletsForSheet } from '../../constants/walletCatalog'
 import { walletTransferRoute } from '../../constants/walletTransfer'
 import {
   effectivePreferredFiat,
@@ -76,6 +78,16 @@ const preferredFiatAmountText = computed(() => {
   return `${preferredFiat.value.symbol}\u00A0${value}`
 })
 
+const frozenAssetsInPreferredFiat = computed(
+  () => sumWalletsFrozenCny(walletsForSheet(false, isVipClub.value)) * preferredFiat.value.fromCny,
+)
+
+const frozenAmountText = computed(() => {
+  const amount = formatPreferredAmount(frozenAssetsInPreferredFiat.value)
+  const value = balanceHidden.value ? mask(amount) : amount
+  return `${preferredFiat.value.symbol}\u00A0${value}`
+})
+
 const amountRef = ref<HTMLElement | null>(null)
 const AMOUNT_MAX_PX = 28
 const AMOUNT_MIN_PX = 15
@@ -103,17 +115,70 @@ const user = {
   ],
 }
 
+const copyToast = ref('')
+const pageRef = ref<HTMLElement | null>(null)
+const headerCompact = ref(false)
+const HEADER_COMPACT_AT = 48
+
+function onPageScroll(event?: Event) {
+  const el = event?.currentTarget instanceof HTMLElement ? event.currentTarget : pageRef.value
+  headerCompact.value = (el?.scrollTop ?? 0) > HEADER_COMPACT_AT
+}
+
+function showCopyToast(message: string) {
+  copyToast.value = message
+  window.setTimeout(() => {
+    if (copyToast.value === message) copyToast.value = ''
+  }, 1600)
+}
+
+async function copyKingkongId() {
+  try {
+    await navigator.clipboard.writeText(user.id)
+    showCopyToast('已复制金刚号')
+  } catch {
+    showCopyToast('复制失败，请手动长按复制')
+  }
+}
+
 const vipProgress = {
-  level: 0,
-  current: 50,
-  target: 100,
+  level: 1,
+  nextLevel: 2,
+  current: 59,
+  target: 1500,
+}
+
+function formatVipAmount(amount: number) {
+  return amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
 }
 
 const vipProgressPercent = computed(() =>
   Math.min(100, Math.max(0, (vipProgress.current / vipProgress.target) * 100)),
 )
 
-const vipProgressText = computed(() => `${vipProgress.current}/${vipProgress.target}`)
+const vipRemaining = computed(() => Math.max(0, vipProgress.target - vipProgress.current))
+
+const vipCurrentLabel = computed(() => `VIP${vipProgress.level}`)
+
+const vipNextLabel = computed(() =>
+  vipProgress.nextLevel == null ? '已满级' : `VIP${vipProgress.nextLevel}`,
+)
+
+function vipEmblemSrc(level: number) {
+  return `/images/mine/vip-emblem-${level}.png`
+}
+
+const vipTurnoverText = computed(
+  () => `¥${formatVipAmount(vipProgress.current)}/${formatVipAmount(vipProgress.target)}`,
+)
+
+const vipAriaLabel = computed(
+  () =>
+    `${vipCurrentLabel.value}，下一等级 ${vipNextLabel.value}，晋级流水已达 ¥${formatVipAmount(vipProgress.current)}，目标 ¥${formatVipAmount(vipProgress.target)}，还差 ¥${formatVipAmount(vipRemaining.value)}，VIP特权`,
+)
 
 interface MineShortcutItem {
   key: string
@@ -158,6 +223,10 @@ const walletShortcuts = computed(() =>
         BET_SHORTCUT,
         { key: 'assets', label: '资产明细', icon: '/images/mine/icon-assets.svg', route: 'mobile-asset-detail' },
         { key: 'bank', label: '金刚银行', icon: '/images/mine/icon-bank.svg' },
+        { key: 'invite', label: '邀请好友', icon: '/images/mine/icon-invite.svg', route: 'mobile-invite-friends' },
+        { key: 'live', label: '直播中心', icon: '/images/mine/icon-live.svg', route: 'mobile-go-live' },
+        { key: 'feedback', label: '意见反馈', icon: '/images/mine/icon-feedback.svg', route: 'mobile-mine-feedback' },
+        { key: 'about', label: '关于我们', icon: '/images/mine/icon-about.svg', route: 'mobile-mine-about' },
       ],
 )
 
@@ -212,6 +281,7 @@ function menuIconSrc(key: string) {
     if (key === 'invite') return '/images/vip-club/icon-mine-invite.svg'
     if (key === 'agent' || key === 'agent-invite') return '/images/vip-club/icon-mine-agent.svg'
   }
+  if (key === 'payment') return '/images/mine/icon-payment.svg'
   if (key === 'live') return '/images/mine/icon-live.svg'
   if (key === 'invite') return '/images/mine/icon-invite.svg'
   if (key === 'agent' || key === 'agent-invite') return '/images/mine/icon-agent.svg'
@@ -228,6 +298,10 @@ function goVipDetail() {
 
 function goSettings() {
   router.push({ name: 'mobile-mine-settings', query: hallQuery() })
+}
+
+function goScan() {
+  showCopyToast('扫一扫即将开放')
 }
 
 function goAllWallets() {
@@ -267,6 +341,22 @@ function goRoute(routeName?: string) {
   if (routeName) router.push({ name: routeName, query: hallQuery() })
 }
 
+function goShortcut(item: MineShortcutItem) {
+  if (item.route) {
+    goRoute(item.route)
+    return
+  }
+  void mh5Alert({
+    title: `「${item.label}」功能开发中`,
+    message: '原型占位',
+    showCancel: false,
+  })
+}
+
+function goActivityCenter() {
+  showCopyToast('活动中心即将开放')
+}
+
 function goMenuItem(item: MineMenuItem) {
   if (item.key === 'agent') {
     router.push({ name: 'mobile-agent', query: { from: 'mine' } })
@@ -275,8 +365,96 @@ function goMenuItem(item: MineMenuItem) {
   goRoute(item.route)
 }
 
+type MinePromoBanner = {
+  key: 'invite' | 'live' | 'agent'
+  title: string
+  desc: string
+  cta: string
+}
+
+const promoBanners: MinePromoBanner[] = [
+  {
+    key: 'invite',
+    title: '邀请好友一起赚钱',
+    desc: '好友充值成功，双方都有返利',
+    cta: '立即邀请',
+  },
+  {
+    key: 'live',
+    title: '招募优质主播入住',
+    desc: '优质主播优先扶持，开播即赚',
+    cta: '立即入驻',
+  },
+  {
+    key: 'agent',
+    title: '全球最高返佣，邀请代理一起赚钱',
+    desc: '佣金全球领先，发展代理即享分成',
+    cta: '立即加入',
+  },
+]
+
+const bannerTrackRef = ref<HTMLElement | null>(null)
+const bannerIndex = ref(0)
+const BANNER_AUTOPLAY_MS = 4200
+let bannerTimer: number | null = null
+let bannerPaused = false
+
+function goPromoBanner(key: MinePromoBanner['key']) {
+  if (key === 'invite') {
+    goRoute('mobile-invite-friends')
+    return
+  }
+  if (key === 'live') {
+    goRoute('mobile-go-live')
+    return
+  }
+  if (memberAgentMembershipJoined.value) {
+    router.push({ name: 'mobile-agent', query: { from: 'mine' } })
+    return
+  }
+  goRoute('mobile-agent-invites')
+}
+
+function syncBannerIndex() {
+  const el = bannerTrackRef.value
+  if (!el || !el.clientWidth) return
+  bannerIndex.value = Math.round(el.scrollLeft / el.clientWidth)
+}
+
+function scrollBannerTo(index: number, smooth = true) {
+  const el = bannerTrackRef.value
+  if (!el) return
+  const next = ((index % promoBanners.length) + promoBanners.length) % promoBanners.length
+  el.scrollTo({ left: next * el.clientWidth, behavior: smooth ? 'smooth' : 'auto' })
+  bannerIndex.value = next
+}
+
+function stopBannerAutoplay() {
+  if (bannerTimer == null) return
+  window.clearInterval(bannerTimer)
+  bannerTimer = null
+}
+
+function startBannerAutoplay() {
+  stopBannerAutoplay()
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  bannerTimer = window.setInterval(() => {
+    if (bannerPaused) return
+    scrollBannerTo(bannerIndex.value + 1)
+  }, BANNER_AUTOPLAY_MS)
+}
+
+function pauseBannerAutoplay() {
+  bannerPaused = true
+}
+
+function resumeBannerAutoplay() {
+  bannerPaused = false
+}
+
 onMounted(() => {
   void nextTick(fitAmountText)
+  if (!isVipClub.value) startBannerAutoplay()
   const parent = amountRef.value?.parentElement
   if (!parent || typeof ResizeObserver === 'undefined') return
   amountResizeObs = new ResizeObserver(() => fitAmountText())
@@ -284,6 +462,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  stopBannerAutoplay()
   amountResizeObs?.disconnect()
   amountResizeObs = null
 })
@@ -296,9 +475,35 @@ watch(preferredFiatAmountText, () => {
 <template>
   <div class="mh5-mine-root">
     <div id="mh5-mine-overlays" class="mh5-mine-overlays" />
-    <div class="mh5-mine-page">
+    <p v-if="copyToast" class="mh5-bet-order-copy-tip" role="status">{{ copyToast }}</p>
+    <div
+      ref="pageRef"
+      class="mh5-mine-page"
+      :class="{ 'mh5-mine-page--compact': headerCompact }"
+      @scroll.passive="onPageScroll"
+    >
     <div class="mh5-mine-topbar">
       <Mh5SpecAnnot v-if="isVipClub" :spec="VIP_CLUB_MINE_SPEC" placement="bottom" />
+      <button
+        type="button"
+        class="mh5-mine-topbar__btn mh5-mine-topbar__scan"
+        :aria-label="$t('扫一扫')"
+        @click="goScan"
+      >
+        <img src="/images/mine/icon-scan.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        class="mh5-mine-topbar__me"
+        :class="{ 'mh5-mine-topbar__me--show': headerCompact }"
+        :tabindex="headerCompact ? 0 : -1"
+        :aria-hidden="!headerCompact"
+        :aria-label="$t('进入个人主页')"
+        @click="goUserHome"
+      >
+        <img :src="user.avatar" alt="" class="mh5-mine-topbar__avatar" />
+        <span>{{ $t(user.name) }}</span>
+      </button>
       <div class="mh5-mine-topbar__actions">
       <button type="button" class="mh5-mine-topbar__btn" :aria-label="$t('客服')">
         <img src="/images/mine/icon-cs.svg" alt="" class="mh5-mine-icon mh5-mine-icon--22" aria-hidden="true" />
@@ -308,6 +513,7 @@ watch(preferredFiatAmountText, () => {
       </button>
       </div>
     </div>
+    <div class="mh5-mine-hero">
 
     <section
       class="mh5-mine-profile"
@@ -323,8 +529,22 @@ watch(preferredFiatAmountText, () => {
           <div class="mh5-mine-profile__info">
             <h2 class="mh5-mine-profile__name">{{ $t(user.name) }}</h2>
             <p class="mh5-mine-profile__id">
-              <span>金刚号：{{ user.id }}</span>
+              <span>{{ $t('金刚号') }}：{{ user.id }}</span>
+              <button
+                type="button"
+                class="mh5-mine-profile__copy"
+                :aria-label="$t('复制金刚号')"
+                @click.stop="copyKingkongId"
+              >
+                <img :src="ACCOUNT_SECURITY_COPY_ICON" alt="" width="14" height="14" />
+              </button>
             </p>
+            <div class="mh5-mine-profile__stats">
+              <div v-for="stat in user.stats" :key="stat.label" class="mh5-mine-profile__stat">
+                <span class="mh5-mine-profile__stat-value">{{ stat.value }}</span>
+                <span class="mh5-mine-profile__stat-label">{{ $t(stat.label) }}</span>
+              </div>
+            </div>
           </div>
           <div class="mh5-mine-profile__trailing">
             <img
@@ -342,42 +562,69 @@ watch(preferredFiatAmountText, () => {
           </div>
         </div>
         <button
+          v-if="!isVipClub"
           type="button"
           class="mh5-mine-profile__vip"
-          :aria-label="`${$t('VIP 等级')} VIP${vipProgress.level} ${vipProgressText} ${$t('晋级流水')}`"
+          :aria-label="vipAriaLabel"
           @click.stop="goVipDetail"
         >
-          <img
-            src="/images/mine/vip0.svg"
-            alt=""
-            class="mh5-mine-profile__vip-badge"
-            aria-hidden="true"
-          />
-          <span class="mh5-mine-profile__vip-ratio">{{ vipProgressText }}</span>
-          <span
-            class="mh5-mine-profile__vip-bar"
-            role="progressbar"
-            :aria-valuenow="vipProgress.current"
-            :aria-valuemin="0"
-            :aria-valuemax="vipProgress.target"
-          >
-            <i class="mh5-mine-profile__vip-bar-fill" :style="{ width: `${vipProgressPercent}%` }" />
-          </span>
-          <span class="mh5-mine-profile__vip-label">{{ $t('晋级流水') }}</span>
+          <div class="mh5-mine-profile__vip-track">
+            <span class="mh5-mine-vip-badge" :class="`mh5-mine-vip-badge--${vipProgress.level}`">
+              <span class="mh5-mine-vip-badge__pill">{{ vipCurrentLabel }}</span>
+              <span class="mh5-mine-vip-badge__emblem" aria-hidden="true">
+                <img :src="vipEmblemSrc(vipProgress.level)" alt="" />
+                <img src="/images/mine/vip-emblem-spark.png" alt="" class="mh5-mine-vip-badge__spark" />
+              </span>
+            </span>
+            <span
+              class="mh5-mine-profile__vip-bar"
+              role="progressbar"
+              :aria-valuenow="vipProgress.current"
+              :aria-valuemin="0"
+              :aria-valuemax="vipProgress.target"
+            >
+              <i class="mh5-mine-profile__vip-bar-fill" :style="{ width: `${vipProgressPercent}%` }" />
+              <i
+                class="mh5-mine-profile__vip-knob"
+                :style="{ left: `${vipProgressPercent}%` }"
+                aria-hidden="true"
+              />
+            </span>
+            <span
+              v-if="vipProgress.nextLevel == null"
+              class="mh5-mine-profile__vip-level"
+            >{{ vipNextLabel }}</span>
+            <span
+              v-else
+              class="mh5-mine-vip-badge"
+              :class="`mh5-mine-vip-badge--${vipProgress.nextLevel}`"
+            >
+              <span class="mh5-mine-vip-badge__pill">{{ vipNextLabel }}</span>
+              <span class="mh5-mine-vip-badge__emblem" aria-hidden="true">
+                <img :src="vipEmblemSrc(vipProgress.nextLevel)" alt="" />
+                <img src="/images/mine/vip-emblem-spark.png" alt="" class="mh5-mine-vip-badge__spark" />
+              </span>
+            </span>
+          </div>
+          <div class="mh5-mine-profile__vip-meta">
+            <span class="mh5-mine-profile__vip-turnover">
+              {{ $t('晋级流水') }} {{ vipTurnoverText }}
+            </span>
+            <span class="mh5-mine-profile__vip-remain">
+              {{ $t('VIP特权') }}
+              <img
+                src="/images/mine/icon-arrow-right.svg"
+                alt=""
+                class="mh5-mine-icon mh5-mine-icon--12"
+                aria-hidden="true"
+              />
+            </span>
+          </div>
         </button>
-      </div>
-
-      <div class="mh5-mine-profile__stats">
-        <div v-for="stat in user.stats" :key="stat.label" class="mh5-mine-profile__stat">
-          <span class="mh5-mine-profile__stat-value">{{ stat.value }}</span>
-          <span class="mh5-mine-profile__stat-label">{{ $t(stat.label) }}</span>
-        </div>
       </div>
     </section>
 
-    <Mh5VipCreditWallet v-if="isVipClub" :actions="vipRecordActions" @go="goRoute" />
-
-    <div v-else class="mh5-mine-wallet-overview">
+    <div v-if="!isVipClub" class="mh5-mine-wallet-overview">
       <div class="mh5-mine-wallet__head">
         <div class="mh5-mine-wallet__label">
           <span class="mh5-mine-wallet__title">{{ $t('总资产') }}</span>
@@ -416,6 +663,9 @@ watch(preferredFiatAmountText, () => {
         </button>
       </div>
     </div>
+    </div>
+
+    <Mh5VipCreditWallet v-if="isVipClub" :actions="vipRecordActions" @go="goRoute" />
 
     <section v-if="!isVipClub" class="mh5-mine-wallet">
       <div class="mh5-mine-wallet__balance-row">
@@ -431,6 +681,10 @@ watch(preferredFiatAmountText, () => {
             <img src="/images/mine/icon-refresh.svg" alt="" class="mh5-mine-icon mh5-mine-icon--20" />
           </button>
         </div>
+        <p class="mh5-mine-wallet__frozen">
+          <span class="mh5-mine-wallet__frozen-label">{{ $t('冻结额度') }}</span>
+          <span class="mh5-mine-wallet__frozen-value">{{ frozenAmountText }}</span>
+        </p>
       </div>
 
       <div class="mh5-mine-actions">
@@ -447,20 +701,106 @@ watch(preferredFiatAmountText, () => {
             <img src="/images/mine/icon-convert.svg" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
           </span>{{ $t('兑换') }}</button>
       </div>
+    </section>
 
-      <div v-if="walletShortcuts.length" class="mh5-mine-wallet__shortcuts">
+    <section v-if="walletShortcuts.length" class="mh5-mine-quick" :aria-label="$t('活动中心')">
+      <div class="mh5-mine-quick__card">
+        <button type="button" class="mh5-mine-activity" @click="goActivityCenter">
+          <span class="mh5-mine-activity__title">
+            <img src="/images/live-stream/gift-icon.svg" alt="" class="mh5-mine-activity__gift" />
+            {{ $t('活动中心，尽享福利') }}
+          </span>
+          <span class="mh5-mine-activity__cta">
+            <svg class="mh5-mine-activity__wave" viewBox="0 0 28 36" preserveAspectRatio="none" aria-hidden="true">
+              <path d="M28 0H15.2C6.4 1.2 12.8 11.2 7.4 18.2C2 25.2 7.6 32.4 0 36H28V0Z" />
+            </svg>
+            {{ $t('参与活动') }}
+            <span class="mh5-mine-activity__arrow" aria-hidden="true">›</span>
+          </span>
+        </button>
+        <div class="mh5-mine-quick__grid">
+          <button
+            v-for="item in walletShortcuts"
+            :key="item.key"
+            type="button"
+            class="mh5-mine-wallet__shortcut"
+            @click="goShortcut(item)"
+          >
+            <span class="mh5-mine-wallet__shortcut-icon" aria-hidden="true">
+              <img :src="item.icon" alt="" class="mh5-mine-icon mh5-mine-icon--20" />
+            </span>
+            <span class="mh5-mine-wallet__shortcut-label">{{ $t(item.label) }}</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section
+      v-if="!isVipClub"
+      class="mh5-mine-banners"
+      aria-roledescription="carousel"
+      :aria-label="$t('推广 Banner')"
+    >
+      <div
+        ref="bannerTrackRef"
+        class="mh5-mine-banners__track"
+        @scroll.passive="syncBannerIndex"
+        @pointerdown="pauseBannerAutoplay"
+        @pointerup="resumeBannerAutoplay"
+        @pointercancel="resumeBannerAutoplay"
+        @pointerleave="resumeBannerAutoplay"
+      >
         <button
-          v-for="item in walletShortcuts"
+          v-for="item in promoBanners"
           :key="item.key"
           type="button"
-          class="mh5-mine-wallet__shortcut"
-          @click="goRoute(item.route)"
+          class="mh5-mine-invite-banner"
+          :class="`mh5-mine-invite-banner--${item.key}`"
+          :aria-label="$t(item.title)"
+          @click="goPromoBanner(item.key)"
         >
-          <span class="mh5-mine-wallet__shortcut-icon" aria-hidden="true">
-            <img :src="item.icon" alt="" class="mh5-mine-icon mh5-mine-icon--24" />
+          <img
+            v-if="item.key === 'live'"
+            src="/images/mine/banner-recruit-live.jpg"
+            alt=""
+            class="mh5-mine-invite-banner__art"
+          />
+          <span v-if="item.key !== 'live'" class="mh5-mine-invite-banner__copy">
+            <strong class="mh5-mine-invite-banner__title">{{ $t(item.title) }}</strong>
+            <span class="mh5-mine-invite-banner__desc">{{ $t(item.desc) }}</span>
+            <span class="mh5-mine-invite-banner__cta">{{ $t(item.cta) }}</span>
           </span>
-          <span class="mh5-mine-wallet__shortcut-label">{{ $t(item.label) }}</span>
+          <span v-if="item.key !== 'live'" class="mh5-mine-invite-banner__deco" aria-hidden="true">
+            <svg v-if="item.key === 'invite'" viewBox="0 0 88 72" fill="none">
+              <circle cx="58" cy="28" r="16" fill="rgb(255 255 255 / 0.22)" />
+              <circle cx="40" cy="36" r="14" fill="rgb(255 255 255 / 0.16)" />
+              <path d="M50 18c6 0 10 4 10 9s-4 9-10 9-10-4-10-9 4-9 10-9Z" fill="#fff6d6" />
+              <path d="M34 28c5 0 8 3.5 8 8s-3 8-8 8-8-3.5-8-8 3-8 8-8Z" fill="#ffe7a8" />
+              <ellipse cx="70" cy="50" rx="10" ry="10" fill="#ffd45a" />
+              <path d="M66 50h8M70 46v8" stroke="#c97800" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+            <svg v-else viewBox="0 0 88 72" fill="none">
+              <circle cx="54" cy="28" r="16" fill="rgb(255 255 255 / 0.2)" />
+              <path d="M46 22c5 0 8 4 8 8s-3 8-8 8-8-4-8-8 3-8 8-8Z" fill="#fff6d6" />
+              <path d="M62 24c5 0 8 4 8 8s-3 8-8 8-8-4-8-8 3-8 8-8Z" fill="#ffe7a8" />
+              <path d="M42 48c4-6 16-6 20 0" stroke="#fff6d6" stroke-width="2.2" stroke-linecap="round" />
+              <ellipse cx="72" cy="52" rx="9" ry="9" fill="#ffd45a" />
+              <path d="M69 52h6M72 49v6" stroke="#c97800" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+          </span>
         </button>
+      </div>
+      <div class="mh5-mine-banners__dots" role="tablist" :aria-label="$t('Banner 切换')">
+        <button
+          v-for="(item, index) in promoBanners"
+          :key="item.key"
+          type="button"
+          class="mh5-mine-banners__dot"
+          :class="{ 'mh5-mine-banners__dot--active': bannerIndex === index }"
+          :aria-label="item.title"
+          :aria-selected="bannerIndex === index"
+          @click="scrollBannerTo(index)"
+        />
       </div>
     </section>
 
@@ -475,24 +815,10 @@ watch(preferredFiatAmountText, () => {
         @click="goMenuItem(item)"
       >
         <span class="mh5-mine-menu__icon" aria-hidden="true">
-          <svg
-            v-if="item.key === 'payment'"
-            class="mh5-mine-icon mh5-mine-icon--24"
-            viewBox="0 0 20 20"
-            fill="none"
-          >
-            <path
-              fill-rule="evenodd"
-              clip-rule="evenodd"
-              d="M13.6377 2.19015C14.0125 2.12058 14.3982 2.13338 14.7676 2.22823C15.1407 2.3241 15.4882 2.50128 15.7852 2.74679C16.0822 2.99251 16.3221 3.3013 16.4863 3.65011C16.6505 3.99885 16.7352 4.3799 16.7354 4.76534V5.3171C17.9069 5.54361 18.792 6.57448 18.792 7.81222V15.3122C18.792 16.7159 17.6537 17.8542 16.25 17.8542H3.75C2.34628 17.8542 1.20898 16.7159 1.20898 15.3122V6.52315C1.20872 5.91336 1.42098 5.32222 1.80957 4.85226C2.19823 4.38236 2.73888 4.06217 3.33789 3.94796C3.34196 3.94724 3.34653 3.9467 3.35059 3.94601L13.6377 2.19015ZM3.75 6.60421C3.08266 6.60421 2.54199 7.14487 2.54199 7.81222V15.3122C2.54199 15.9796 3.08266 16.5212 3.75 16.5212H16.25C16.9173 16.5212 17.459 15.9796 17.459 15.3122V7.81222C17.459 7.14487 16.9173 6.60421 16.25 6.60421H3.75ZM10 8.3962C10.3682 8.3962 10.667 8.69403 10.667 9.06222V12.4538L12.0293 11.0915C12.2896 10.8312 12.7113 10.8312 12.9717 11.0915C13.2315 11.3519 13.2319 11.7737 12.9717 12.0339L10.4717 14.5339C10.2115 14.7941 9.78968 14.7938 9.5293 14.5339L7.0293 12.0339C6.76895 11.7735 6.76895 11.3519 7.0293 11.0915C7.27343 10.8474 7.65905 10.8319 7.9209 11.0456L7.97168 11.0915L9.33398 12.4538V9.06222C9.33398 8.69403 9.63181 8.3962 10 8.3962ZM14.4355 3.52022C14.2525 3.47326 14.0607 3.46637 13.875 3.50167C13.8709 3.50244 13.8664 3.5039 13.8623 3.5046L3.58105 5.25948C3.54122 5.26729 3.50153 5.27636 3.46289 5.2878C3.55717 5.2772 3.65289 5.2712 3.75 5.2712H15.4023V4.76534C15.4022 4.57627 15.3598 4.38955 15.2793 4.21847C15.1987 4.04726 15.0813 3.89574 14.9355 3.77511C14.7898 3.65452 14.6188 3.56734 14.4355 3.52022Z"
-              fill="#454545"
-            />
-          </svg>
           <img
-            v-else
             :src="menuIconSrc(item.key)"
             alt=""
-            class="mh5-mine-icon mh5-mine-icon--24"
+            class="mh5-mine-icon mh5-mine-icon--22"
           />
         </span>
         <span class="mh5-mine-menu__title">{{ $t(item.title) }}</span>

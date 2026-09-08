@@ -420,3 +420,7 @@ export function formatWalletBalance(item: WalletCatalogItem) {
 export function sumWalletsCny(items: WalletCatalogItem[]) {
   return items.reduce((sum, item) => sum + item.balance * item.cnyRate, 0)
 }
+
+export function sumWalletsFrozenCny(items: WalletCatalogItem[]) {
+  return items.reduce((sum, item) => sum + walletFrozen(item) * item.cnyRate, 0)
+}
