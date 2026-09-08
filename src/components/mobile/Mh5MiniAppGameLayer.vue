@@ -43,7 +43,8 @@ function onMenuAction(id: ChatGameMenuActionId) {
     return
   }
   if (id === 'recharge') {
-    close()
+    const shell = document.getElementById('mh5-app-shell')
+    dismissToHome(shell?.clientHeight || 812)
     void router.push({ name: 'mobile-wallet-transfer' })
     return
   }

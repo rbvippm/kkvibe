@@ -106,6 +106,15 @@ function expandFromDock() {
   showMenu.value = false
 }
 
+/** 离开当前页时直接落到全局底条，避免收起动画被路由卸载打断 */
+function openDock(name: string, kind: MiniAppGameKind = 'sports') {
+  stopHomeDismiss()
+  gameName.value = name
+  gameKind.value = kind
+  mode.value = 'dock'
+  showMenu.value = false
+}
+
 export function useMiniAppGame() {
   return {
     gameName,
@@ -120,6 +129,7 @@ export function useMiniAppGame() {
     stageStyle,
     showToast,
     open,
+    openDock,
     close,
     dismissToHome,
     expandFromDock,

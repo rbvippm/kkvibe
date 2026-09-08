@@ -68,18 +68,16 @@
 }
 
 /* ---------- 底栏导航 ---------- */
+.mh5-app-shell--game-dock .mh5-app-tabbar {
+  bottom: var(--mh5-chat-game-dock-h, 0px);
+}
+
 .mh5-app-shell--game-dock:not(.mh5-app-shell--game-full) .mh5-app-body {
   padding-bottom: calc(var(--mh5-app-tabbar-h) + var(--mh5-chat-game-dock-h, 0px) + env(safe-area-inset-bottom));
 }
 
 .mh5-app-shell--game-dock:not(.mh5-app-shell--game-full) .mh5-app-body--immersive {
   padding-bottom: var(--mh5-chat-game-dock-h, 0px);
-}
-
-.mh5-app-shell--game-dock:not(.mh5-app-shell--game-full)
-  .mh5-app-tabbar
-  ~ .mh5-mini-game-layer--dock:not(.mh5-mini-game-layer--full) {
-  bottom: calc(var(--mh5-app-tabbar-h) + env(safe-area-inset-bottom));
 }
 
 .mh5-app-tabbar {

@@ -415,13 +415,28 @@ function closeGamePlay() {
   gameStageShift.value = null
 }
 
-function dismissGameToHome() {
-  const name = gamePlayName.value || lastGameName.value
+function persistLocalGameToGlobalDock() {
+  const name = gamePlayName.value
   if (!name) return
   closeGamePlay()
-  miniGame.open(name, 'sports')
-  const shell = document.getElementById('mh5-app-shell')
-  miniGame.dismissToHome(shell?.clientHeight || 812)
+  if (miniGame.gameName.value) return
+  miniGame.openDock(name, 'sports')
+}
+
+function dismissGameToHome() {
+  const name = gamePlayName.value || lastGameName.value || miniGame.gameName.value
+  if (!name) return
+  closeGamePlay()
+  if (miniGame.mode.value === 'full' && miniGame.gameName.value) {
+    const shell = document.getElementById('mh5-app-shell')
+    miniGame.dismissToHome(shell?.clientHeight || 812)
+    return
+  }
+  if (!miniGame.dockOpen.value) {
+    miniGame.open(name, 'sports')
+    const shell = document.getElementById('mh5-app-shell')
+    miniGame.dismissToHome(shell?.clientHeight || 812)
+  }
 }
 
 function expandGameFromDock() {
@@ -471,7 +486,7 @@ function onGameMenuAction(id: ChatGameMenuActionId) {
     return
   }
   if (id === 'recharge') {
-    closeGamePlay()
+    dismissGameToHome()
     void router.push({ name: 'mobile-wallet-transfer' })
     return
   }
@@ -800,6 +815,7 @@ const activeMsg = computed(() => messages.value.find((m) => m.id === activeMsgId
 const resendMsg = computed(() => messages.value.find((m) => m.id === resendMsgId.value) ?? null)
 
 function goBack() {
+  persistLocalGameToGlobalDock()
   if (window.history.length > 1) router.back()
   else router.replace({ name: 'mobile-chat' })
 }
@@ -1165,6 +1181,7 @@ function fileMetaText(msg: ChatRoomMessage) {
 }
 
 onBeforeUnmount(() => {
+  persistLocalGameToGlobalDock()
   if (toastTimer.value) clearTimeout(toastTimer.value)
   if (pulseTimer) clearTimeout(pulseTimer)
   stopFlyChip()
