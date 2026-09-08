@@ -62,6 +62,8 @@ export const MOCK_LIVE_ONLINE_CONFIG: LiveOnlineHostConfig[] = [
   { roomId: 'voice-demo', baseCount: 430, enterDelta: [1, 5], leaveDelta: [1, 3] },
   { roomId: 'sch_20260827_88392', baseCount: 1580, enterDelta: [2, 8], leaveDelta: [1, 5] },
   { roomId: 'sch_20260828_11021', baseCount: 420, enterDelta: [1, 5], leaveDelta: [1, 3] },
+  { roomId: 'sch_20260828_96012', baseCount: 80, enterDelta: [1, 3], leaveDelta: [1, 2] },
+  { roomId: 'sch_20260828_65077', baseCount: 60, enterDelta: [1, 3], leaveDelta: [1, 2] },
 ]
 
 /** 大赏排名 · 不足 3 人时顶栏用系统头像补齐 */

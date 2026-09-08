@@ -173,9 +173,9 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
       cover: GO_LIVE_DEFAULT_COVER,
       category: '体育竞赛',
       mode: 'video',
-      startAt: atHour(0, 20, 0),
-      subscriberCount: 158,
-      status: 'pending',
+      startAt: atHour(-1, 20, 0),
+      subscriberCount: 159,
+      status: 'live',
     },
     {
       id: 'sch_20260828_11021',
@@ -183,15 +183,45 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
       cover: '/images/live-stream/stage.png',
       category: '游戏互动',
       mode: 'voice',
-      startAt: atHour(1, 19, 30),
-      subscriberCount: 42,
+      startAt: atHour(-1, 19, 30),
+      subscriberCount: 43,
+      status: 'live',
+    },
+    {
+      id: 'sch_20260828_96012',
+      title: '小红来了正在直播',
+      cover: '/images/live-stream/stage.png',
+      category: '游戏互动',
+      mode: 'voice',
+      startAt: atHour(-1, 18, 0),
+      subscriberCount: 0,
+      status: 'live',
+    },
+    {
+      id: 'sch_20260828_65077',
+      title: '小红来了正在直播',
+      cover: '/images/discover/cover-1.jpg',
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(-1, 16, 30),
+      subscriberCount: 0,
+      status: 'live',
+    },
+    {
+      id: 'sch_20260908_89732',
+      title: '小红来了正在直播',
+      cover: '/images/discover/cover-1.jpg',
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(1, 14, 45),
+      subscriberCount: 0,
       status: 'pending',
     },
   ],
   reservedIds: [],
 })
 
-const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v1'
+const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v2'
 
 function applyGoLiveStoreSnapshot(data: { items?: GoLiveSchedule[]; reservedIds?: string[] }) {
   if (Array.isArray(data.items)) {
