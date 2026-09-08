@@ -6,7 +6,7 @@ import {
   CHAT_GROUP_GAME_ASSETS,
   type ChatGameMenuActionId,
 } from '../../constants/mobileChatGroupGame'
-import { VIP_CLUB_ASSETS } from '../../constants/vipClub'
+import { VIP_CLUB_ASSETS, VIP_CLUB_SPORTS_ASSETS } from '../../constants/vipClub'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5VipSportsDesk from './Mh5VipSportsDesk.vue'
 
@@ -21,10 +21,18 @@ const {
   dockOpen,
   dockSlotH,
   stageStyle,
+  stageDrag,
+  stagePinch,
+  pipSpringing,
   showToast,
   close,
   dismissToHome,
   expandFromDock,
+  collapseToPip,
+  onStagePointerDown,
+  onStagePointerMove,
+  onStagePointerUp,
+  onStageWheel,
 } = useMiniAppGame()
 
 function openMenu() {
@@ -67,24 +75,43 @@ function onMenuCategory(label: string) {
     class="mh5-mini-game-layer"
       :class="{
         'mh5-mini-game-layer--full': mode === 'full',
+        'mh5-mini-game-layer--pip': mode === 'pip',
         'mh5-mini-game-layer--dock': dockOpen,
         'mh5-mini-game-layer--leaving': Boolean(homeDismiss),
       }"
     >
       <section
-        v-if="mode === 'full'"
-        class="mh5-chat-game-stage mh5-chat-game-stage--full"
-        :class="{ 'mh5-chat-game-stage--leaving': Boolean(homeDismiss) }"
+        v-if="mode === 'full' || mode === 'pip'"
+        class="mh5-chat-game-stage"
+        :class="{
+          'mh5-chat-game-stage--full': mode === 'full',
+          'mh5-chat-game-stage--pip': mode === 'pip',
+          'mh5-chat-game-stage--dragging': Boolean(stageDrag),
+          'mh5-chat-game-stage--pinching': Boolean(stagePinch),
+          'mh5-chat-game-stage--spring': pipSpringing,
+          'mh5-chat-game-stage--leaving': Boolean(homeDismiss),
+        }"
         :style="stageStyle"
         role="dialog"
-        aria-modal="true"
+        :aria-modal="mode === 'full'"
         :aria-label="gameName"
+        @pointerdown="onStagePointerDown"
+        @pointermove="onStagePointerMove"
+        @pointerup="onStagePointerUp"
+        @pointercancel="onStagePointerUp"
+        @wheel="onStageWheel"
       >
         <Mh5VipSportsDesk
-          v-if="gameKind === 'sports'"
+          v-if="mode === 'full' && gameKind === 'sports'"
           embedded
           :show-collapse-handle="!showMenu && !homeDismiss"
           @menu="openMenu"
+        />
+        <img
+          v-else-if="mode === 'pip'"
+          class="mh5-chat-game-stage__desk"
+          :src="VIP_CLUB_SPORTS_ASSETS.matchCard"
+          alt=""
         />
         <div v-else class="mh5-mini-game-placeholder">
           <button
@@ -100,7 +127,7 @@ function onMenuCategory(label: string) {
           <p class="mh5-mini-game-placeholder__hint">游戏加载中（原型占位）</p>
         </div>
 
-        <template v-if="!homeDismiss">
+        <template v-if="mode === 'full' && !homeDismiss">
           <Transition name="mh5-chat-game-menu">
             <div v-if="showMenu" class="mh5-chat-game-menu">
               <button
@@ -148,7 +175,25 @@ function onMenuCategory(label: string) {
               </section>
             </div>
           </Transition>
+          <button
+            type="button"
+            class="mh5-chat-game-full__msg"
+            :aria-label="$t('查看消息')"
+            @click.stop="collapseToPip"
+          >
+            <img :src="CHAT_GROUP_GAME_ASSETS.msgBubble" alt="" width="28" height="28" />
+          </button>
         </template>
+        <button
+          v-if="mode === 'pip'"
+          type="button"
+          class="mh5-chat-game-stage__close"
+          :aria-label="$t('关闭')"
+          @pointerdown.stop
+          @click.stop="close"
+        >
+          <img :src="CHAT_GROUP_GAME_ASSETS.close" alt="" width="16" height="16" />
+        </button>
       </section>
 
       <div

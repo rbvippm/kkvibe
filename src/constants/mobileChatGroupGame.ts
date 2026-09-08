@@ -9,6 +9,7 @@ export const CHAT_GROUP_GAME_ASSETS = {
   close: VOICE_ROOM_ASSETS.floatClose,
   gamePlay: '/images/chat-room/group-game/game-play.jpg',
   expand: '/images/chat-room/group-game/icon-expand.svg',
+  collapse: '/images/chat-room/group-game/icon-collapse.svg',
   playClose: '/images/chat-room/group-game/icon-play-close.svg',
   webLogo: '/images/chat-room/group-game/float-link.png',
   msgBubble: '/images/chat-room/group-game/icon-msg-bubble.png',
@@ -16,6 +17,10 @@ export const CHAT_GROUP_GAME_ASSETS = {
 } as const
 
 export type ChatGamePlayMode = 'sheet' | 'full' | 'pip' | 'dock'
+
+export type ChatGamePipSize = 'small' | 'medium' | 'large'
+
+export const CHAT_GAME_PIP_SIZE_ORDER = ['small', 'medium', 'large'] as const satisfies readonly ChatGamePipSize[]
 
 export const CHAT_GAME_PIP = {
   width: 130,
@@ -27,6 +32,15 @@ export const CHAT_GAME_PIP = {
   expandDy: -96,
   clickSlop: 8,
   homeDismissMs: 420,
+  /** 对角线占画布对角线的比例，宽高始终按 130:282 等比 */
+  ratios: {
+    small: 1 / 3,
+    medium: 1 / 2,
+    large: 3 / 4,
+  },
+  /** 双指距离变化超过该倍率即吸附相邻档（小窗上外扩一点就能到中档） */
+  pinchStep: 1.08,
+  springMs: 560,
 } as const
 
 /** 返回主页收起后的底部悬浮条 */

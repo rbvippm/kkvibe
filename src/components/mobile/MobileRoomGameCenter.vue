@@ -3,12 +3,14 @@ import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { CHAT_GROUP_GAME_ASSETS } from '../../constants/mobileChatGroupGame'
 import Mh5VipSportsDesk from './Mh5VipSportsDesk.vue'
 import {
-  filterVoiceGames,
+  listRoomGameCenterGames,
+  markVoiceGameLastOpened,
   resolveVoiceGameDisplay,
   resolveVoiceGameIcon,
-  voiceGameDisplayLabel,
+  voiceGameLastOpenedId,
   VOICE_GAME_TABS,
   VOICE_ROOM_ASSETS,
+  type VoiceGameItem,
   type VoiceGameTab,
 } from '../../constants/mobileVoiceRoom'
 
@@ -28,7 +30,12 @@ const rootEl = ref<HTMLElement | null>(null)
 const showGameFloat = ref(true)
 const showGameCenterFloat = ref(true)
 const gameTab = ref<VoiceGameTab>('hot')
-const gameList = computed(() => filterVoiceGames(gameTab.value))
+const gameList = computed(() => listRoomGameCenterGames(gameTab.value))
+const lastOpenedId = computed(() => voiceGameLastOpenedId.value)
+
+function isLastOpened(game: VoiceGameItem) {
+  return Boolean(lastOpenedId.value) && game.id === lastOpenedId.value
+}
 const lastGameName = ref('奔驰宝马')
 const gamePlayName = ref('')
 const gamePlayExpanded = ref(false)
@@ -60,7 +67,9 @@ function closePanel() {
   open.value = false
 }
 
-function openGame(name: string, anchor: 'game' | 'center' = 'center') {
+function openGame(game: VoiceGameItem | string, anchor: 'game' | 'center' = 'center') {
+  const name = typeof game === 'string' ? game : game.name
+  if (typeof game !== 'string') markVoiceGameLastOpened(game.id)
   emit('openGame', name)
   playAnchor.value = anchor
   lastGameName.value = name
@@ -257,14 +266,17 @@ defineExpose({ openPanel, closePanel })
             v-for="(game, index) in gameList"
             :key="game.id"
             class="mh5-voice-gc__row"
-            :class="{ 'mh5-voice-gc__row--split': index === 0 }"
+            :class="{
+              'mh5-voice-gc__row--split': Boolean(lastOpenedId) && index === 0 && gameList.length > 1,
+              'mh5-voice-gc__row--last': isLastOpened(game),
+            }"
           >
             <img class="mh5-voice-gc__icon" :src="game.icon" :alt="game.name" />
             <div class="mh5-voice-gc__meta">
               <p class="mh5-voice-gc__name">{{ $t(game.name) }}</p>
-              <p class="mh5-voice-gc__display">{{ $t(voiceGameDisplayLabel(game.display)) }}</p>
+              <p v-if="isLastOpened(game)" class="mh5-voice-gc__last">{{ $t('上次打开') }}</p>
             </div>
-            <button type="button" class="mh5-voice-gc__open" @click="openGame(game.name, 'center')">{{ $t('打开') }}</button>
+            <button type="button" class="mh5-voice-gc__open" @click="openGame(game, 'center')">{{ $t('打开') }}</button>
           </article>
 
           <p v-if="!gameList.length" class="mh5-voice-gc__empty">{{ $t('该分类暂无游戏') }}</p>
@@ -329,7 +341,7 @@ defineExpose({ openPanel, closePanel })
               :aria-label="$t('收起')"
               @click="minimizeGamePlay"
             >
-              <span class="mh5-chat-game-play__min" aria-hidden="true" />
+              <img :src="CHAT_GROUP_GAME_ASSETS.collapse" alt="" width="24" height="24" />
             </button>
             <button
               type="button"

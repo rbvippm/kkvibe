@@ -27,6 +27,7 @@ import {
 } from '../../constants/mobileChatFileSend'
 import { CHAT_FILE_SEND_SPEC } from '../../constants/mobileChatFileSendSpec'
 import { CHAT_UNREAD_JUMP_SPEC } from '../../constants/mobileChatUnreadSpec'
+import { CHAT_GROUP_GAME_SPEC } from '../../constants/mobileChatGroupGameSpec'
 import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC } from '../../constants/mobileChatMediaPickerSpec'
 import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
@@ -218,7 +219,7 @@ function cyclePinned(delta: 1 | -1) {
 }
 
 function onPinnedPointerDown(ev: PointerEvent) {
-  if ((ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__enter')) {
+  if ((ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__enter, .mh5-spec-annot')) {
     pinnedSwipe = null
     return
   }
@@ -235,7 +236,11 @@ function onPinnedPointerUp(ev: PointerEvent) {
     cyclePinned(dy < 0 ? 1 : -1)
     return
   }
-  if (Math.abs(dy) < 8 && Math.abs(dx) < 8 && !(ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__rail')) {
+  if (
+    Math.abs(dy) < 8 &&
+    Math.abs(dx) < 8 &&
+    !(ev.target as HTMLElement | null)?.closest('.mh5-chat-pinned-game__rail, .mh5-spec-annot')
+  ) {
     cyclePinned(1)
   }
 }
@@ -586,6 +591,10 @@ function openFloat(item: (typeof CHAT_GROUP_FLOATS)[number]) {
     return
   }
   if (item.kind === 'play') {
+    if (miniGame.mode.value === 'pip' && miniGame.gameName.value) {
+      miniGame.expandFromPip()
+      return
+    }
     if (miniGame.dockOpen.value && miniGame.gameName.value) {
       miniGame.expandFromDock()
       return
@@ -1217,7 +1226,11 @@ onBeforeUnmount(() => {
             placement="bottom"
           />
         </h1>
-        <Mh5SpecAnnot :spec="CHAT_UNREAD_JUMP_SPEC" placement="bottom" />
+        <Mh5SpecAnnot
+          v-if="isGroupRoom"
+          :spec="CHAT_GROUP_GAME_SPEC"
+          placement="bottom"
+        />
       </div>
       <div class="mh5-chat-room-header__actions">
         <template v-if="room.kind === 'direct'">
@@ -1668,6 +1681,11 @@ onBeforeUnmount(() => {
         v-if="showUnreadJump && unreadJumpLabel && !overlayOpen"
         class="mh5-chat-room-unread-wrap"
       >
+        <Mh5SpecAnnot
+          class="mh5-chat-room-unread__annot"
+          :spec="CHAT_UNREAD_JUMP_SPEC"
+          placement="bottom"
+        />
         <button
           type="button"
           class="mh5-chat-room-unread"
@@ -1916,7 +1934,7 @@ onBeforeUnmount(() => {
               :aria-label="$t('收起')"
               @click="minimizeGamePlay"
             >
-              <span class="mh5-chat-game-play__min" aria-hidden="true" />
+              <img :src="CHAT_GROUP_GAME_ASSETS.collapse" alt="" width="24" height="24" />
             </button>
             <button
               type="button"

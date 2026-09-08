@@ -2,13 +2,8 @@
 
 import { buildMobilePrdSections, type MobilePrdSpec } from './mobilePrdSpec'
 
-export const CHAT_UNREAD_JUMP_SPEC_ANNOT_NO = {
-  unreadJump: 3,
-} as const
-
-/** 注3 · 群聊 / 私聊历史未读（入房到底 + 跳第一条未读） */
+/** 群聊 / 私聊历史未读（入房到底 + 跳第一条未读） */
 export const CHAT_UNREAD_JUMP_SPEC: MobilePrdSpec = {
-  no: CHAT_UNREAD_JUMP_SPEC_ANNOT_NO.unreadJump,
   title: '历史未读消息',
   sections: buildMobilePrdSections({
     logic: [

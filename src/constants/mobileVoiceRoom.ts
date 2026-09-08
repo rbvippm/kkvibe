@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, ref } from 'vue'
 
 /** 发现页 · 语聊房房间 Mock（Figma 515:63984） */
 
@@ -139,7 +139,7 @@ export const VOICE_GAME_TABS: { key: VoiceGameTab; label: string }[] = [
   { key: 'scratch', label: '刮刮乐' },
 ]
 
-export type VoiceGameDisplay = 'portrait' | 'half'
+export type VoiceGameDisplay = 'landscape' | 'portrait' | 'half'
 
 export type VoiceGameItem = {
   id: string
@@ -185,7 +185,7 @@ export const MOCK_VOICE_GAMES: VoiceGameItem[] = [
     name: '欢乐弹珠',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'marble'],
-    display: 'portrait',
+    display: 'landscape',
   },
   {
     id: 'g6',
@@ -206,9 +206,67 @@ export const MOCK_VOICE_GAMES: VoiceGameItem[] = [
     name: '金牌弹珠',
     icon: VOICE_ROOM_ASSETS.gameIcon,
     tabs: ['hot', 'marble'],
-    display: 'portrait',
+    display: 'landscape',
+  },
+  {
+    id: 'g9',
+    name: '极速赛车',
+    icon: VOICE_ROOM_ASSETS.gameIcon,
+    tabs: ['hot', 'fun'],
+    display: 'landscape',
+  },
+  {
+    id: 'g10',
+    name: '百家乐',
+    icon: VOICE_ROOM_ASSETS.gameIcon,
+    tabs: ['hot', 'fun'],
+    display: 'landscape',
+  },
+  {
+    id: 'g11',
+    name: '龙虎斗',
+    icon: VOICE_ROOM_ASSETS.gameIcon,
+    tabs: ['hot', 'fun'],
+    display: 'landscape',
+  },
+  {
+    id: 'g12',
+    name: '水果刮刮乐',
+    icon: VOICE_ROOM_ASSETS.gameIcon,
+    tabs: ['hot', 'scratch'],
+    display: 'landscape',
+  },
+  {
+    id: 'g13',
+    name: '幸运刮刮',
+    icon: VOICE_ROOM_ASSETS.gameIcon,
+    tabs: ['hot', 'scratch'],
+    display: 'landscape',
   },
 ]
+
+/** 房间游戏中心只出横屏，竖屏 / 半屏留给语聊房其它入口 */
+export function isRoomGameCenterListed(game: VoiceGameItem) {
+  return game.display === 'landscape'
+}
+
+/** 房间游戏中心全局「上次打开」，每个分类顶部都置顶同一条 */
+export const voiceGameLastOpenedId = ref<string | null>('g9')
+
+export function markVoiceGameLastOpened(gameId: string) {
+  voiceGameLastOpenedId.value = gameId
+}
+
+export function listRoomGameCenterGames(tab: VoiceGameTab): VoiceGameItem[] {
+  const items = MOCK_VOICE_GAMES.filter((game) => game.tabs.includes(tab) && isRoomGameCenterListed(game))
+  const lastId = voiceGameLastOpenedId.value
+  if (!lastId) return items
+  const last =
+    items.find((game) => game.id === lastId) ??
+    MOCK_VOICE_GAMES.find((game) => game.id === lastId && isRoomGameCenterListed(game))
+  if (!last) return items
+  return [last, ...items.filter((game) => game.id !== lastId)]
+}
 
 export function resolveVoiceGameDisplay(name: string): VoiceGameDisplay {
   return MOCK_VOICE_GAMES.find((game) => game.name === name)?.display ?? 'portrait'
@@ -220,7 +278,9 @@ export function resolveVoiceGameIcon(name: string) {
 }
 
 export function voiceGameDisplayLabel(display: VoiceGameDisplay) {
-  return display === 'half' ? '半屏' : '竖屏'
+  if (display === 'half') return '半屏'
+  if (display === 'landscape') return '横屏'
+  return '竖屏'
 }
 
 export function filterVoiceGames(tab: VoiceGameTab): VoiceGameItem[] {
