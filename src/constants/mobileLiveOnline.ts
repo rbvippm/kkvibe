@@ -127,18 +127,14 @@ export function getLiveRewardRank(roomId: string): LiveRewardRankUser[] {
 }
 
 function formatScaled(value: number): string {
-  if (value >= 10) return String(Math.round(value))
   return value.toFixed(1).replace(/\.0$/, '')
 }
 
-/** 简体 / 繁体万分制（w）；英 / 泰 / 越千分制（k） */
+/** 未满 1000 整数；满 1000 用 k；中文满 10000 用 w；一位小数四舍五入并去尾 0 */
 export function formatLiveOnlineCount(count: number, locale: AppLocale): string {
   const safe = Math.max(0, Math.floor(count))
   const useWan = locale === 'zh-CN' || locale === 'zh-TW'
-  if (useWan) {
-    if (safe >= 10000) return `${formatScaled(safe / 10000)}w`
-    return String(safe)
-  }
+  if (useWan && safe >= 10000) return `${formatScaled(safe / 10000)}w`
   if (safe >= 1000) return `${formatScaled(safe / 1000)}k`
   return String(safe)
 }
