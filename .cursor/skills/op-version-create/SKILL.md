@@ -100,6 +100,18 @@ BUG目录 (Phase)                     ← 与版本计划同级根
 
 测试用例若 start > due，或表底缺 DEV/开发时间：停下来问用户，不要硬填。
 
+### 工时（完成列 / estimatedTime）
+
+有 `start` + `due` 的**叶子 Task** 必须写入预估工时；Phase 父级、BUG 目录、无日期任务**不写**（父级由子项汇总）。
+
+规则：
+
+- 只计周一到周五，**周六、周日不计**（与 OP `ignoreNonWorkingDays=false` 一致，不额外扣法定假）。
+- **1 个工作日 = 1H**，写入 ISO 时长 `PT{n}H`（例：`9.10–9.11` 周四到周五 → `PT2H`）。
+- 区间全是休息日 → 工时为 0，不写 `1H`。
+- 创建时 POST body 带 `estimatedTime`；已存在则 `PATCH`，必须带当前 `lockVersion`。未开工的同时写 `remainingTime` 等于预估；已有完成度的按比例改剩余工时，**不要改 `percentageDone`**。
+- 日期变更后按新区间重算并覆盖预估，不要沿用旧工时。
+
 ## 人员
 
 先查目标项目 `available_assignees`，再用花名匹配（大小写不敏感）：
@@ -113,6 +125,7 @@ BUG目录 (Phase)                     ← 与版本计划同级根
 | owen | owen H5 | 44 |
 | link | link IOS | 70 |
 | kai | peter IOS | 29 |
+| flow | flow IOS | 56 |
 | bear | bear Android | 99 |
 | negan | kylin Android | 51 |
 | pual / paul | tt-kk Go-Payment | 41 |
@@ -132,8 +145,8 @@ BUG目录 (Phase)                     ← 与版本计划同级根
 1. 读 `排期表` + 表底时间；`GET` 目标项目，确认 Phase/Task 可用。
 2. **先发中文预览树**（模块、端口、日期、指派人、待补项），等用户说可以建。用户明确「直接建」可跳过等待。
 3. 按层级创建（先根再子），记下 ID 再挂 parent。
-4. Phase 必须用 `typeId=3`。`create_work_package` 写不出 Phase 时，改 `raw_api_call` `POST /api/v3/projects/{id}/work_packages`，body 里 `_links.type.href=/api/v3/types/3`、`parent`、`assignee`。
-5. 建完再拉一遍工作包，核对数量、父子、端口、日期；把待补日期/待指派人列给用户。
+4. Phase 必须用 `typeId=3`。`create_work_package` 写不出 Phase 时，改 `raw_api_call` `POST /api/v3/projects/{id}/work_packages`，body 里 `_links.type.href=/api/v3/types/3`、`parent`、`assignee`。叶子 Task 同时写 `estimatedTime`（见上节工时规则）。
+5. 建完再拉一遍工作包，核对数量、父子、端口、日期、叶子工时（工作日小时数）；把待补日期/待指派人列给用户。
 6. 回复项目链接。
 
 预览示例：

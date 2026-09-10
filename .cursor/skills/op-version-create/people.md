@@ -14,6 +14,7 @@
 | link / Link | link IOS | 70 |
 | kai / Kai | peter IOS | 29 |
 | bear / Bear | bear Android | 99 |
+| flow / Flow | flow IOS | 56 |
 | negan / Negan | kylin Android | 51 |
 | pual / Pual / paul / Paul | tt-kk Go-Payment | 41 |
 | kaio / Kaio | kaio QA | 97 |
@@ -26,6 +27,5 @@
 
 | OpenProject 显示名 | userId | 备注 |
 |---|---|---|
-| flow IOS | 56 | — |
 | eva Golang | 60 | 出现在 v2.24.0 |
 | claude H5 | 45 | 出现在 v2.24.0 |
