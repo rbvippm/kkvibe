@@ -95,7 +95,7 @@ export const GO_LIVE_SPORTS_COVERS = [
   '/images/live-stream/sports-cover-studio.png',
 ] as const
 
-export const GO_LIVE_DEFAULT_COVER = GO_LIVE_SPORTS_COVERS[0]
+export const GO_LIVE_DEFAULT_COVER: string = GO_LIVE_SPORTS_COVERS[0]
 
 export const GO_LIVE_COVERS = [
   ...GO_LIVE_SPORTS_COVERS,
@@ -103,7 +103,7 @@ export const GO_LIVE_COVERS = [
   '/images/discover/cover-1.jpg',
 ] as const
 
-export function nextGoLiveCover(current: string) {
+export function nextGoLiveCover(current: string): string {
   const index = GO_LIVE_COVERS.findIndex((item) => item === current)
   return GO_LIVE_COVERS[(index + 1) % GO_LIVE_COVERS.length]
 }
