@@ -42,6 +42,8 @@ export type DiscoverLiveCard = {
   startAt?: number
   /** 预告预约人数（主播场次以开播页数据为准） */
   subscriberCount?: number
+  /** 运营排序，数字越大越靠前；缺省按 0 */
+  sortOrder?: number
   /** 开播大类；缺省时语聊房卡视为 voice，其余为 video */
   liveMode?: DiscoverLiveMode
   /** 是否展示语聊房角标 */
@@ -129,6 +131,7 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
     hostName: '小鹿开黑',
     roomTitle: '今晚连麦冲分局，缺一等你',
     heat: '1.2W',
+    sortOrder: 10,
     category: 'game',
     categoryLabel: '游戏',
     tag: '彩票丨香港六合彩',
@@ -157,6 +160,7 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
     hostName: '阿哲解说',
     roomTitle: '新服首发攻略，边看边玩',
     heat: '3.4W',
+    sortOrder: 10,
     category: 'tag',
     categoryLabel: '分类标签',
     tag: '游戏分类丨游戏名称',
@@ -243,6 +247,7 @@ export function mapGoLiveScheduleToDiscoverCard(item: GoLiveSchedule): DiscoverL
     subscriberCount: item.subscriberCount,
     liveMode: item.mode,
     voiceRoom: item.mode === 'voice',
+    sortOrder: item.sortOrder,
   }
 }
 
@@ -252,8 +257,6 @@ function visibleHostScheduleCards(now: number): DiscoverLiveCard[] {
       if (item.status === 'live') return true
       return item.status === 'pending' && now < item.startAt + HOST_SCHEDULE_OVERTIME_MS
     })
-    .slice()
-    .sort((a, b) => a.startAt - b.startAt)
     .map(mapGoLiveScheduleToDiscoverCard)
 }
 
@@ -350,11 +353,42 @@ export function toggleDiscoverPreviewReserve(id: string): 'reserved' | 'cancelle
   return 'reserved'
 }
 
+/** 热度文案转可比数字：1.2W=12000、8.6K=8600、159=159 */
+export function parseDiscoverHeat(heat: string): number {
+  const raw = heat.trim().toUpperCase().replace(/,/g, '')
+  const wan = raw.match(/^([\d.]+)\s*W$/)
+  if (wan) return Number(wan[1]) * 10000
+  const kilo = raw.match(/^([\d.]+)\s*K$/)
+  if (kilo) return Number(kilo[1]) * 1000
+  const num = Number(raw)
+  return Number.isFinite(num) ? num : 0
+}
+
+function discoverCardSortOrder(card: DiscoverLiveCard) {
+  return card.sortOrder ?? 0
+}
+
+function compareDiscoverLiveCards(a: DiscoverLiveCard, b: DiscoverLiveCard) {
+  const aLive = !isLivePreviewCard(a)
+  const bLive = !isLivePreviewCard(b)
+  if (aLive !== bLive) return aLive ? -1 : 1
+
+  const sortDiff = discoverCardSortOrder(b) - discoverCardSortOrder(a)
+  if (sortDiff !== 0) return sortDiff
+
+  if (aLive) return parseDiscoverHeat(b.heat) - parseDiscoverHeat(a.heat)
+  return previewSubscriberCount(b) - previewSubscriberCount(a)
+}
+
+export function sortDiscoverLiveCards(cards: DiscoverLiveCard[]): DiscoverLiveCard[] {
+  return cards.slice().sort(compareDiscoverLiveCards)
+}
+
 export function filterDiscoverLiveCards(
   filter: DiscoverLiveFilter,
   now = Date.now(),
 ): DiscoverLiveCard[] {
   const source = allDiscoverLiveCards(now)
   const scoped = filter === 'all' ? source : source.filter((card) => card.filterKeys.includes(filter))
-  return scoped.filter((card) => !isLivePreviewExpired(card, now))
+  return sortDiscoverLiveCards(scoped.filter((card) => !isLivePreviewExpired(card, now)))
 }
