@@ -15,6 +15,7 @@ import {
   formatLivePreviewStartAt,
   getDiscoverLiveCardById,
   isDiscoverPreviewReserved,
+  isLivePreviewCountdownOn,
   isLivePreviewExpired,
   isLivePreviewLate,
   liveListRouteName,
@@ -75,6 +76,11 @@ const isLate = computed(() => {
 const countdown = computed(() => {
   if (!card.value) return '00:00:00'
   return formatLivePreviewClock(livePreviewRemainMs(card.value, nowMs.value))
+})
+
+const showCountdown = computed(() => {
+  if (!card.value || hostLive.value || isLate.value) return false
+  return isLivePreviewCountdownOn(card.value, nowMs.value)
 })
 
 const startLabel = computed(() => {
@@ -216,20 +222,22 @@ async function handleForwarded(names: string[]) {
         <template v-else-if="isLate">
           <p class="mh5-live-preview-late" aria-live="polite">{{ $t('主播迟到了～正在赶来') }}</p>
         </template>
-        <template v-else>
+        <template v-else-if="showCountdown">
           <p class="mh5-live-preview-label">{{ $t('距离开播还有') }}</p>
           <div class="mh5-live-preview-count" aria-live="polite">{{ countdown }}</div>
         </template>
-        <p class="mh5-live-preview-subs">{{ reserveCount }}{{ $t('人已预约') }}</p>
-        <button
-          v-if="!hostLive"
-          type="button"
-          class="mh5-live-preview-reserve"
-          :class="{ 'is-on': reserved }"
-          @click="toggleReserve"
-        >
-          {{ reserved ? $t('已预约') : $t('预约直播') }}
-        </button>
+        <div class="mh5-live-preview-actions">
+          <p class="mh5-live-preview-subs">{{ reserveCount }}{{ $t('人已预约') }}</p>
+          <button
+            v-if="!hostLive"
+            type="button"
+            class="mh5-live-preview-reserve"
+            :class="{ 'is-on': reserved }"
+            @click="toggleReserve"
+          >
+            {{ reserved ? $t('已预约') : $t('预约直播') }}
+          </button>
+        </div>
       </div>
     </div>
 

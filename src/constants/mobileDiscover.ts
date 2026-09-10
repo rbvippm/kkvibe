@@ -290,6 +290,14 @@ export function livePreviewRemainMs(card: DiscoverLiveCard, now = Date.now()): n
   return Math.max(0, card.startAt - now)
 }
 
+const LIVE_PREVIEW_COUNTDOWN_MS = 24 * 60 * 60 * 1000
+
+export function isLivePreviewCountdownOn(card: DiscoverLiveCard, now = Date.now()): boolean {
+  if (isLivePreviewLate(card, now) || isLivePreviewExpired(card, now)) return false
+  const remain = livePreviewRemainMs(card, now)
+  return remain > 0 && remain <= LIVE_PREVIEW_COUNTDOWN_MS
+}
+
 export function formatLivePreviewClock(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000))
   const hours = Math.floor(total / 3600)

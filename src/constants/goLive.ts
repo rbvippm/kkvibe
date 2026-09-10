@@ -86,14 +86,21 @@ export const GO_LIVE_BACKGROUNDS = [
   { id: 'starship', name: '星际舰桥', image: '/images/voice-room/backgrounds/starship-bridge.png' },
 ] as const
 
-export const GO_LIVE_DEFAULT_COVER = '/images/vip-club/lottery/cover-desert.png'
+export const GO_LIVE_SPORTS_COVERS = [
+  '/images/live-stream/sports-cover-ucl.png',
+  '/images/live-stream/sports-cover-epl-red.png',
+  '/images/live-stream/sports-cover-epl-blue.png',
+  '/images/live-stream/sports-cover-ligue1-navy.png',
+  '/images/live-stream/sports-cover-ligue1-dusk.png',
+  '/images/live-stream/sports-cover-studio.png',
+] as const
+
+export const GO_LIVE_DEFAULT_COVER = GO_LIVE_SPORTS_COVERS[0]
 
 export const GO_LIVE_COVERS = [
-  GO_LIVE_DEFAULT_COVER,
+  ...GO_LIVE_SPORTS_COVERS,
   '/images/live-stream/stage.png',
   '/images/discover/cover-1.jpg',
-  '/images/discover/cover-2.jpg',
-  '/images/vip-club/lottery/cover-hawaii.png',
 ] as const
 
 export function nextGoLiveCover(current: string) {
@@ -170,7 +177,7 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
     {
       id: 'sch_20260827_88392',
       title: '欧冠巅峰夜！皇马VS曼城实时解说',
-      cover: GO_LIVE_DEFAULT_COVER,
+      cover: GO_LIVE_SPORTS_COVERS[0],
       category: '体育竞赛',
       mode: 'video',
       startAt: atHour(-1, 20, 0),
@@ -200,7 +207,7 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
     {
       id: 'sch_20260828_65077',
       title: '小红来了正在直播',
-      cover: '/images/discover/cover-1.jpg',
+      cover: GO_LIVE_SPORTS_COVERS[5],
       category: '体育竞赛',
       mode: 'video',
       startAt: atHour(-1, 16, 30),
@@ -210,18 +217,58 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
     {
       id: 'sch_20260908_89732',
       title: '小红来了正在直播',
-      cover: '/images/discover/cover-1.jpg',
+      cover: GO_LIVE_SPORTS_COVERS[5],
       category: '体育竞赛',
       mode: 'video',
       startAt: atHour(1, 14, 45),
       subscriberCount: 0,
       status: 'pending',
     },
+    {
+      id: 'sch_20260910_22011',
+      title: '英超联赛 利物浦VS曼联',
+      cover: GO_LIVE_SPORTS_COVERS[1],
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(1, 20, 0),
+      subscriberCount: 128,
+      status: 'pending',
+    },
+    {
+      id: 'sch_20260910_22012',
+      title: '英超联赛 阿森纳VS切尔西',
+      cover: GO_LIVE_SPORTS_COVERS[2],
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(2, 19, 30),
+      subscriberCount: 96,
+      status: 'pending',
+    },
+    {
+      id: 'sch_20260910_33021',
+      title: '法甲联赛 巴黎VS马赛',
+      cover: GO_LIVE_SPORTS_COVERS[3],
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(2, 21, 45),
+      subscriberCount: 74,
+      status: 'pending',
+    },
+    {
+      id: 'sch_20260910_33022',
+      title: '法甲联赛 里昂VS摩纳哥',
+      cover: GO_LIVE_SPORTS_COVERS[4],
+      category: '体育竞赛',
+      mode: 'video',
+      startAt: atHour(3, 20, 0),
+      subscriberCount: 41,
+      status: 'pending',
+    },
   ],
   reservedIds: [],
 })
 
-const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v2'
+const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v4'
 
 function applyGoLiveStoreSnapshot(data: { items?: GoLiveSchedule[]; reservedIds?: string[] }) {
   if (Array.isArray(data.items)) {
