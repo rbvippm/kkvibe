@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>个人中心与常用功能 · 浅色功能说明</title>
+  <style>
+    :root {
+      --bg: #f5f2ec;
+      --board: #faf8f4;
+      --card: #ffffff;
+      --text: #26211c;
+      --muted: #766e65;
+      --line: #e8aa70;
+      --orange: #ff7918;
+      --orange-soft: #fff1e4;
+      --border: #e5ded5;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    button, a { font: inherit; }
+
+    .page {
+      width: min(1660px, 100%);
+      margin: 0 auto;
+      padding: 28px 24px 72px;
+    }
+    .page-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    .eyebrow {
+      margin: 0 0 4px;
+      color: #d95c00;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .12em;
+    }
+    h1 { margin: 0 0 5px; font-size: clamp(26px, 3vw, 40px); line-height: 1.25; }
+    .subtitle { margin: 0; color: var(--muted); }
+    .figma-link {
+      flex: 0 0 auto;
+      padding: 9px 15px;
+      border: 1px solid #ffc99d;
+      border-radius: 999px;
+      background: var(--orange-soft);
+      color: #ce5700;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin: 38px 0 14px;
+      font-size: 20px;
+    }
+    .section-title span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .board-scroll {
+      width: 100%;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .annotation-board {
+      position: relative;
+      display: grid;
+      align-items: start;
+      overflow: hidden;
+      border: 1px solid #dfd7ce;
+      border-radius: 22px;
+      background:
+        linear-gradient(rgba(255,255,255,.78), rgba(255,255,255,.78)),
+        repeating-linear-gradient(0deg, transparent 0 27px, rgba(181,157,127,.09) 27px 28px),
+        repeating-linear-gradient(90deg, transparent 0 27px, rgba(181,157,127,.09) 27px 28px),
+        var(--board);
+      box-shadow: 0 12px 42px rgba(80, 60, 37, .08);
+    }
+    .board-main {
+      grid-template-columns: 340px 393px 340px;
+      justify-content: center;
+      gap: 92px;
+      min-width: 1337px;
+      min-height: 940px;
+      padding: 42px 52px 46px;
+    }
+    .board-custom {
+      grid-template-columns: 310px 816px 310px;
+      justify-content: center;
+      gap: 54px;
+      min-width: 1584px;
+      min-height: 1120px;
+      padding: 42px 26px 210px;
+    }
+
+    .wires {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+    .wire {
+      fill: none;
+      stroke: var(--line);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+    }
+    .wire-dot {
+      fill: var(--orange);
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .notes {
+      position: relative;
+      z-index: 6;
+      display: grid;
+      gap: 20px;
+    }
+    .main-left { padding-top: 30px; }
+    .main-right { padding-top: 62px; }
+    .custom-left { padding-top: 92px; }
+    .custom-right { padding-top: 256px; }
+    .note {
+      position: relative;
+      padding: 17px 18px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 7px 22px rgba(76, 55, 31, .08);
+      cursor: pointer;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .note:hover,
+    .note.is-active {
+      border-color: #ffaf6e;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(220, 99, 7, .14);
+    }
+    .note.is-active::after {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border: 2px solid rgba(255,121,24,.30);
+      border-radius: inherit;
+      animation: notePulse .85s ease-out;
+    }
+    .note-head { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+    .note-no {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--orange-soft);
+      color: #db5d00;
+      font-weight: 900;
+    }
+    .note h3 { margin: 0; font-size: 16px; }
+    .note p { margin: 0; color: #5e5750; font-size: 13px; }
+    .note code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #f4f0eb;
+      color: #725234;
+      font-size: 12px;
+    }
+    .note-3 { margin-top: 34px; }
+    .note-4 { margin-top: 88px; }
+    .note-5 { margin-top: 292px; }
+
+    .screen-column {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+    }
+    .screen-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #786b5d;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .screen-label::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #2ab673;
+      box-shadow: 0 0 0 4px rgba(42,182,115,.12);
+    }
+    .device {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 18px 52px rgba(45, 34, 22, .18);
+    }
+    .device img {
+      display: block;
+      width: 393px;
+      height: 852px;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+    .interactive-lists {
+      position: absolute;
+      z-index: 6;
+      top: 181px;
+      right: 0;
+      bottom: 16px;
+      left: 0;
+      overflow-y: auto;
+      padding: 0 24px 82px;
+      background: #f6f6f6;
+      scrollbar-width: none;
+    }
+    .interactive-lists::-webkit-scrollbar { display: none; }
+    .device-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 42px;
+      color: #4c4c4c;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .device-count {
+      color: #ff710c;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .device-feature-list {
+      overflow: hidden;
+      min-height: 62px;
+      border-radius: 12px;
+      background: #fff;
+      transition: box-shadow .18s ease, background .18s ease;
+    }
+    .device-feature-list.is-over {
+      background: #fff8f1;
+      box-shadow: 0 0 0 2px #ff8a32;
+    }
+    .device-feature-row {
+      display: grid;
+      grid-template-columns: 42px 1fr 40px;
+      align-items: center;
+      height: 62px;
+      padding: 0 14px 0 18px;
+      border-bottom: 1px solid #f0f0f0;
+      background: #fff;
+      color: #343434;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transition: opacity .15s ease, transform .15s ease, background .15s ease;
+    }
+    .device-feature-row:last-child { border-bottom: 0; }
+    .device-feature-row:hover { background: #fffaf6; }
+    .device-feature-row.is-dragging { opacity: .36; transform: scale(.98); }
+    .device-feature-row.is-drop-before { box-shadow: inset 0 2px 0 #ff7a18; }
+    .device-feature-icon {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      overflow: hidden;
+      border-radius: 9px;
+      color: #ff7414;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .device-feature-icon.is-sprite {
+      background-image: url("./figma-common-custom-light.png");
+      background-repeat: no-repeat;
+      background-size: 393px 852px;
+    }
+    .icon-bank { background-position: -45px -238px; }
+    .icon-payment { background-position: -45px -300px; }
+    .icon-live { background-position: -45px -362px; }
+    .icon-invite { background-position: -45px -424px; }
+    .icon-bet { background-position: -45px -486px; }
+    .icon-today { background-position: -45px -548px; }
+    .icon-agent { background-position: -45px -680px; }
+    .device-feature-icon.is-mock {
+      border: 1px solid #ffd2ad;
+      background: linear-gradient(145deg, #fff7ee, #ffe0c3);
+    }
+    .device-feature-name {
+      overflow: hidden;
+      font-size: 16px;
+      font-weight: 650;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .device-drag {
+      position: relative;
+      width: 24px;
+      height: 22px;
+      justify-self: end;
+      opacity: .78;
+    }
+    .device-drag::before,
+    .device-drag::after,
+    .device-drag span {
+      content: "";
+      position: absolute;
+      left: 0;
+      width: 22px;
+      height: 2px;
+      border-radius: 2px;
+      background: #737373;
+    }
+    .device-drag::before { top: 2px; }
+    .device-drag span { top: 10px; }
+    .device-drag::after { top: 18px; }
+    .device-empty {
+      display: grid;
+      place-items: center;
+      min-height: 62px;
+      color: #aaa29a;
+      font-size: 13px;
+    }
+    .drag-ghost {
+      position: fixed;
+      z-index: 100;
+      margin: 0;
+      border: 1px solid #ffad69;
+      border-radius: 10px;
+      background: #fff;
+      opacity: .94;
+      pointer-events: none;
+      box-shadow: 0 12px 30px rgba(87,55,27,.22);
+      transform: rotate(1.5deg);
+    }
+    .device-home-indicator {
+      position: absolute;
+      z-index: 8;
+      bottom: 6px;
+      left: 50%;
+      width: 162px;
+      height: 5px;
+      border-radius: 999px;
+      background: #858585;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+    .hotspot {
+      position: absolute;
+      z-index: 4;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .hotspot:hover,
+    .hotspot.is-active {
+      outline: 2px solid var(--orange);
+      outline-offset: 1px;
+      background: rgba(255,121,24,.08);
+    }
+    .hotspot.is-active { animation: targetPulse .85s ease-out; }
+    #target-profile { left: 20px; top: 108px; width: 250px; height: 54px; }
+    #target-home { left: 340px; top: 108px; width: 38px; height: 54px; }
+    #target-trade { left: 282px; top: 186px; width: 92px; height: 40px; }
+    #target-frozen { left: 20px; top: 306px; width: 196px; height: 31px; }
+    #target-custom { left: 296px; top: 558px; width: 79px; height: 37px; }
+
+    .pair {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      grid-template-columns: 393px 393px;
+      gap: 30px;
+    }
+    .pair .screen-column { gap: 12px; }
+    #target-reorder {
+      left: 18px;
+      top: 184px;
+      width: 357px;
+      height: 315px;
+      cursor: grab;
+    }
+    #target-hidden {
+      left: 18px;
+      top: 632px;
+      width: 357px;
+      height: 112px;
+    }
+    #target-tutorial {
+      left: 18px;
+      top: 60px;
+      width: 357px;
+      height: 651px;
+    }
+
+    .screen-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+    .screen-actions button {
+      padding: 7px 11px;
+      border: 1px solid #e2d7ca;
+      border-radius: 9px;
+      background: #fff;
+      color: #6f5d49;
+      cursor: pointer;
+    }
+    .screen-actions button:hover { border-color: #ffb478; color: #d95c00; }
+
+    .logic-demo {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      bottom: 168px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid #ffd1ad;
+      border-radius: 12px;
+      background: #fff;
+      color: #6b523b;
+      opacity: 0;
+      transform: translate(-50%, 8px);
+      pointer-events: none;
+      transition: .22s ease;
+      box-shadow: 0 8px 24px rgba(88,61,32,.10);
+    }
+    .logic-demo.is-open { opacity: 1; transform: translate(-50%, 0); }
+    .logic-demo b { color: #dc5d00; }
+    .logic-arrow { color: var(--orange); font-size: 20px; }
+
+    .mock-demo {
+      position: absolute;
+      z-index: 6;
+      left: 50%;
+      bottom: 26px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      width: 816px;
+      padding: 14px 16px;
+      border: 1px solid #e8ded2;
+      border-radius: 14px;
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 9px 26px rgba(76,55,31,.09);
+      transform: translateX(-50%);
+    }
+    .mock-demo__head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+    .mock-count {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--orange-soft);
+      color: #d95c00;
+      font-size: 12px;
+    }
+    .mock-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      min-height: 30px;
+    }
+    #mockHiddenList {
+      cursor: pointer;
+      border-radius: 8px;
+    }
+    .mock-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 30px;
+      padding: 4px 9px;
+      border: 1px solid #ece4da;
+      border-radius: 8px;
+      background: #faf8f5;
+      color: #5d554c;
+      font-size: 12px;
+    }
+    button.mock-chip {
+      cursor: grab;
+      transition: border-color .18s ease, transform .18s ease;
+    }
+    button.mock-chip:hover {
+      border-color: #ffad69;
+      transform: translateY(-1px);
+    }
+    .mock-chip b { color: var(--orange); font-size: 14px; }
+    .mock-empty { color: #a1988e; font-size: 12px; }
+
+    .tutorial-modal {
+      position: fixed;
+      z-index: 30;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(32,25,18,.58);
+    }
+    .tutorial-modal.is-open { display: grid; animation: fadeIn .2s ease; }
+    .tutorial-modal__body {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      max-height: calc(100vh - 48px);
+      aspect-ratio: 393 / 852;
+    }
+    .tutorial-modal__body img { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .modal-skip {
+      position: absolute;
+      top: 59px;
+      right: 17px;
+      width: 54px;
+      height: 31px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .modal-ok {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      bottom: 143px;
+      height: 52px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 40;
+      left: 50%;
+      bottom: 28px;
+      max-width: min(420px, calc(100vw - 40px));
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(28,24,20,.92);
+      color: #fff;
+      text-align: center;
+      opacity: 0;
+      transform: translate(-50%, 10px);
+      pointer-events: none;
+      transition: .2s ease;
+    }
+    .toast.is-open { opacity: 1; transform: translate(-50%, 0); }
+
+    .footnote {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      margin-top: 16px;
+      color: #877b6e;
+      font-size: 12px;
+    }
+
+    @keyframes notePulse {
+      from { opacity: 1; }
+      to { opacity: 0; transform: scale(1.025); }
+    }
+    @keyframes targetPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255,121,24,.42); }
+      100% { box-shadow: 0 0 0 14px rgba(255,121,24,0); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (max-width: 900px) {
+      .page { padding: 18px 12px 48px; }
+      .page-head { display: block; }
+      .figma-link { display: inline-block; margin-top: 12px; }
+      .footnote { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">MOBILE PRODUCT SPECIFICATION · LIGHT</p>
+        <h1>个人中心与常用功能说明</h1>
+        <p class="subtitle">Figma 原图 1:1 展示 · 标记线实时连接说明卡与对应功能区域</p>
+      </div>
+      <a class="figma-link" href="https://www.figma.com/design/fhxyVsdLGVxKi9XpwAXlcF/2.25.0-%E7%BB%BC%E5%90%88%E9%97%AE%E9%A2%98%E4%BC%98%E5%8C%96-%E6%8A%95%E6%B3%A8%E8%AE%B0%E5%BD%95?node-id=269-8942" target="_blank" rel="noreferrer">打开 Figma 源稿</a>
+    </header>
+
+    <h2 class="section-title"><span>01</span>个人中心</h2>
+    <div class="board-scroll">
+      <section class="annotation-board board-main" id="mainBoard" aria-label="个人中心功能说明">
+        <svg class="wires" aria-hidden="true"></svg>
+
+        <div class="notes main-left">
+          <article class="note" data-note="1" data-target="target-profile" data-side="left" tabindex="0">
+            <div class="note-head"><span class="note-no">01</span><h3>头像与昵称</h3></div>
+            <p>点击头像或昵称区域，进入<strong>“修改资料”</strong>页面。</p>
+          </article>
+          <article class="note note-3" data-note="3" data-target="target-trade" data-side="left" tabindex="0">
+            <div class="note-head"><span class="note-no">03</span><h3>交易历史</h3></div>
+            <p>点击钱包卡片右上角<strong>“交易历史”</strong>，进入<strong>“账单列表”</strong>。</p>
+          </article>
+          <article class="note note-4" data-note="4" data-target="target-frozen" data-side="left" tabindex="0">
+            <div class="note-head"><span class="note-no">04</span><h3>冻结额度换算</h3></div>
+            <p>各币种冻结金额换算为当前总资产币种后求和，规则与余额一致：<code>Σ(冻结金额 × 汇率)</code>。</p>
+          </article>
+        </div>
+
+        <div class="screen-column">
+          <span class="screen-label">Figma 浅色稿 · 393 × 852</span>
+          <div class="device">
+            <img src="./figma-mine-light.png" alt="个人中心浅色设计稿" width="393" height="852" />
+            <button class="hotspot" id="target-profile" data-action="profile" aria-label="点击头像和昵称进入修改资料"></button>
+            <button class="hotspot" id="target-home" data-action="home" aria-label="点击向右箭头进入个人主页"></button>
+            <button class="hotspot" id="target-trade" data-action="billing" aria-label="点击交易历史进入账单列表"></button>
+            <button class="hotspot" id="target-frozen" data-action="frozen" aria-label="查看冻结额度换算规则"></button>
+            <button class="hotspot" id="target-custom" data-action="custom" aria-label="进入常用功能自定义"></button>
+          </div>
+          <div class="screen-actions">
+            <button type="button" data-action="profile">修改资料</button>
+            <button type="button" data-action="home">个人主页</button>
+            <button type="button" data-action="billing">账单列表</button>
+            <button type="button" data-action="custom">常用功能自定义</button>
+          </div>
+        </div>
+
+        <div class="notes main-right">
+          <article class="note" data-note="2" data-target="target-home" data-side="right" tabindex="0">
+            <div class="note-head"><span class="note-no">02</span><h3>个人主页入口</h3></div>
+            <p>点击用户信息卡最右侧<strong>向右箭头</strong>，进入<strong>“个人主页”</strong>。</p>
+          </article>
+          <article class="note note-5" data-note="5" data-target="target-custom" data-side="right" tabindex="0">
+            <div class="note-head"><span class="note-no">05</span><h3>常用功能展示</h3></div>
+            <p>个人中心最多展示 <strong>8 个</strong>常用功能；点击<strong>“自定义”</strong>进入自定义页面。</p>
+          </article>
+        </div>
+      </section>
+    </div>
+
+    <h2 class="section-title"><span>02</span>常用功能自定义与教学动画</h2>
+    <div class="board-scroll">
+      <section class="annotation-board board-custom" id="customBoard" aria-label="常用功能自定义说明">
+        <svg class="wires" aria-hidden="true"></svg>
+
+        <div class="notes custom-left">
+          <article class="note" data-note="6" data-target="target-tutorial" data-side="left" tabindex="0">
+            <div class="note-head"><span class="note-no">06</span><h3>教学动画时效</h3></div>
+            <p>当前发布日起一个月内，每次进入自定义页均弹教学动画；一个月后的版本改为仅首次弹出。</p>
+          </article>
+        </div>
+
+        <div class="pair">
+          <div class="screen-column">
+            <span class="screen-label">常用功能自定义 · 393 × 852</span>
+            <div class="device">
+              <img src="./figma-common-custom-light.png" alt="常用功能自定义浅色设计稿" width="393" height="852" />
+              <div class="interactive-lists" aria-label="可拖拽的常用功能列表">
+                <div class="device-section-head">
+                  <span>常用功能</span>
+                  <span class="device-count" id="deviceCount">6/8</span>
+                </div>
+                <div class="device-feature-list" id="deviceCommonList" data-device-list="common"></div>
+                <div class="device-section-head"><span>隐藏功能</span></div>
+                <div class="device-feature-list" id="deviceHiddenList" data-device-list="hidden"></div>
+              </div>
+              <span class="device-home-indicator" aria-hidden="true"></span>
+              <button class="hotspot" id="target-reorder" data-action="reorder" aria-label="常用功能拖动排序区域"></button>
+              <button class="hotspot" id="target-hidden" data-action="overflow" aria-label="隐藏功能和超过八个挤出区域"></button>
+            </div>
+          </div>
+
+          <div class="screen-column">
+            <span class="screen-label">教学动画 · 393 × 852</span>
+            <div class="device">
+              <img src="./figma-common-tutorial-light.png" alt="常用功能教学动画浅色设计稿" width="393" height="852" />
+              <button class="hotspot" id="target-tutorial" data-action="tutorial" aria-label="查看教学动画"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="notes custom-right">
+          <article class="note" data-note="7" data-target="target-hidden" data-side="right" tabindex="0">
+            <div class="note-head"><span class="note-no">07</span><h3>超过 8 个的挤出规则</h3></div>
+            <p>从隐藏功能拖入时，如常用功能已满 8 个，保留拖入项，并将排序最后一项移入隐藏列表。</p>
+          </article>
+        </div>
+
+        <div class="mock-demo" aria-label="超过八个功能的 Mock 演示">
+          <div>
+            <div class="mock-demo__head">
+              <span>常用功能</span>
+              <span class="mock-count" id="mockCount">6/8</span>
+            </div>
+            <div class="mock-list" id="mockCommonList"></div>
+          </div>
+          <div>
+            <div class="mock-demo__head">
+              <span>隐藏功能（点击或拖入左侧）</span>
+              <button class="mock-chip" type="button" data-reset-mock>重置演示</button>
+            </div>
+            <div class="mock-list" id="mockHiddenList" title="点击空白处可依次移入第一个隐藏功能"></div>
+          </div>
+        </div>
+
+        <div class="logic-demo" id="logicDemo">
+          <span>隐藏功能：<b id="logicIncoming">功能2</b></span>
+          <span class="logic-arrow">→</span>
+          <span>常用功能第 8 位</span>
+          <span class="logic-arrow">→</span>
+          <span>原最后一项 <b id="logicEvicted">功能1</b> 移入隐藏列表</span>
+        </div>
+      </section>
+    </div>
+
+    <footer class="footnote">
+      <span>设计基准：Figma 节点 269:8942，仅使用浅色方案；三张界面均为 Figma 原尺寸导出。</span>
+      <span>连接线由页面实时计算卡片与热区坐标，窗口变化后自动重绘。</span>
+    </footer>
+  </main>
+
+  <div class="tutorial-modal" id="tutorialModal" aria-hidden="true">
+    <div class="tutorial-modal__body">
+      <img src="./figma-common-tutorial-light.png" alt="常用功能教学动画" width="393" height="852" />
+      <button class="modal-skip" data-close-tutorial aria-label="跳过教学"></button>
+      <button class="modal-ok" data-close-tutorial aria-label="知道了"></button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const RELEASE_DATE = new Date("2026-09-04T00:00:00+08:00");
+    const MONTH_WINDOW_END = new Date("2026-10-04T23:59:59+08:00");
+    const TUTORIAL_SEEN_KEY = "common-function-tutorial-seen-v2";
+    let toastTimer = 0;
+    let lineFrame = 0;
+    const mockNames = {
+      bank: "金刚银行",
+      payment: "收款方式",
+      live: "直播中心",
+      invite: "邀请好友",
+      bet: "投注记录",
+      today: "今日数据",
+      agent: "代理中心",
+      mock1: "功能1",
+      mock2: "功能2"
+    };
+    const initialMockCommon = ["bank", "payment", "live", "invite", "bet", "today"];
+    const initialMockHidden = ["agent", "mock1", "mock2"];
+    let mockCommon = [...initialMockCommon];
+    let mockHidden = [...initialMockHidden];
+    let draggingMock = null;
+    let pointerDrag = null;
+    let suppressMockClickUntil = 0;
+
+    function drawBoardLines(board) {
+      const svg = board.querySelector(".wires");
+      const boardRect = board.getBoundingClientRect();
+      svg.setAttribute("viewBox", `0 0 ${boardRect.width} ${boardRect.height}`);
+      svg.innerHTML = "";
+
+      board.querySelectorAll(".note[data-target]").forEach(note => {
+        const target = board.querySelector(`#${note.dataset.target}`);
+        if (!target) return;
+
+        const noteRect = note.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const isLeft = note.dataset.side === "left";
+        const startX = (isLeft ? noteRect.right : noteRect.left) - boardRect.left;
+        const startY = noteRect.top + noteRect.height / 2 - boardRect.top;
+        const endX = targetRect.left + targetRect.width / 2 - boardRect.left;
+        const endY = targetRect.top + targetRect.height / 2 - boardRect.top;
+        const bendX = isLeft
+          ? startX + Math.max(38, (endX - startX) * .48)
+          : startX - Math.max(38, (startX - endX) * .48);
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("class", "wire");
+        path.setAttribute("d", `M ${startX} ${startY} C ${bendX} ${startY}, ${bendX} ${endY}, ${endX} ${endY}`);
+        svg.appendChild(path);
+
+        const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        dot.setAttribute("class", "wire-dot");
+        dot.setAttribute("cx", endX);
+        dot.setAttribute("cy", endY);
+        dot.setAttribute("r", 5);
+        svg.appendChild(dot);
+      });
+    }
+
+    function drawAllLines() {
+      cancelAnimationFrame(lineFrame);
+      lineFrame = requestAnimationFrame(() => {
+        document.querySelectorAll(".annotation-board").forEach(drawBoardLines);
+      });
+    }
+
+    function activate(number) {
+      const note = document.querySelector(`[data-note="${number}"]`);
+      const target = document.querySelector(`#${note?.dataset.target}`);
+      if (!note || !target) return;
+      note.classList.remove("is-active");
+      target.classList.remove("is-active");
+      void note.offsetWidth;
+      note.classList.add("is-active");
+      target.classList.add("is-active");
+      setTimeout(() => {
+        note.classList.remove("is-active");
+        target.classList.remove("is-active");
+      }, 1300);
+    }
+
+    function showToast(message) {
+      const toast = document.querySelector("#toast");
+      toast.textContent = message;
+      toast.classList.add("is-open");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("is-open"), 2400);
+    }
+
+    function shouldShowTutorial() {
+      const now = new Date();
+      if (now >= RELEASE_DATE && now <= MONTH_WINDOW_END) return true;
+      return localStorage.getItem(TUTORIAL_SEEN_KEY) !== "1";
+    }
+
+    function openTutorial() {
+      const modal = document.querySelector("#tutorialModal");
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      activate(6);
+    }
+
+    function closeTutorial() {
+      const modal = document.querySelector("#tutorialModal");
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      if (new Date() > MONTH_WINDOW_END) {
+        localStorage.setItem(TUTORIAL_SEEN_KEY, "1");
+      }
+    }
+
+    function scrollToCustom() {
+      document.querySelector("#customBoard").scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        activate(5);
+        if (shouldShowTutorial()) openTutorial();
+      }, 500);
+    }
+
+    function showOverflowRule() {
+      activate(7);
+      const demo = document.querySelector("#logicDemo");
+      demo.classList.add("is-open");
+      showToast("已保留拖入项，并把原排序最后一项移入隐藏功能");
+      setTimeout(() => demo.classList.remove("is-open"), 3200);
+    }
+
+    function renderMockDemo() {
+      const commonList = document.querySelector("#mockCommonList");
+      const hiddenList = document.querySelector("#mockHiddenList");
+      document.querySelector("#mockCount").textContent = `${mockCommon.length}/8`;
+      document.querySelector("#deviceCount").textContent = `${mockCommon.length}/8`;
+      commonList.innerHTML = mockCommon
+        .map(id => `<span class="mock-chip">${mockNames[id]}</span>`)
+        .join("");
+      hiddenList.innerHTML = mockHidden.length
+        ? mockHidden.map(id => `
+            <button class="mock-chip" type="button" draggable="true" data-mock-add="${id}">
+              <b>＋</b>${mockNames[id]}
+            </button>`).join("")
+        : `<span class="mock-empty">暂无隐藏功能</span>`;
+
+      renderDeviceList(document.querySelector("#deviceCommonList"), mockCommon, "common");
+      renderDeviceList(document.querySelector("#deviceHiddenList"), mockHidden, "hidden");
+    }
+
+    function renderDeviceList(container, ids, listName) {
+      if (!ids.length) {
+        container.innerHTML = `<div class="device-empty">暂无${listName === "common" ? "常用" : "隐藏"}功能</div>`;
+        return;
+      }
+      container.innerHTML = ids.map(id => {
+        const iconClass = ["mock1", "mock2"].includes(id)
+          ? "device-feature-icon is-mock"
+          : `device-feature-icon is-sprite icon-${id}`;
+        const mockLabel = id === "mock1" ? "F1" : id === "mock2" ? "F2" : "";
+        const addAttrs = listName === "hidden"
+          ? `data-mock-add="${id}" aria-label="将${mockNames[id]}移入常用功能"`
+          : `aria-label="拖动调整${mockNames[id]}的顺序"`;
+        return `
+          <div class="device-feature-row" draggable="false" role="button" tabindex="0"
+            data-device-item="${id}" data-device-from="${listName}" ${addAttrs}>
+            <span class="${iconClass}">${mockLabel}</span>
+            <span class="device-feature-name">${mockNames[id]}</span>
+            <span class="device-drag" aria-hidden="true"><span></span></span>
+          </div>`;
+      }).join("");
+    }
+
+    function addMockFunction(id) {
+      const hiddenIndex = mockHidden.indexOf(id);
+      if (hiddenIndex < 0) return;
+      mockHidden.splice(hiddenIndex, 1);
+      mockCommon.push(id);
+
+      let evicted = "";
+      if (mockCommon.length > 8) {
+        evicted = mockCommon.splice(mockCommon.length - 2, 1)[0];
+        mockHidden.unshift(evicted);
+      }
+
+      renderMockDemo();
+      activate(7);
+      if (evicted) {
+        document.querySelector("#logicIncoming").textContent = mockNames[id];
+        document.querySelector("#logicEvicted").textContent = mockNames[evicted];
+        showOverflowRule();
+      } else {
+        showToast(`已将“${mockNames[id]}”移入常用功能（${mockCommon.length}/8）`);
+      }
+    }
+
+    function moveMockItem(id, from, to, beforeId = "") {
+      if (!id || !from || !to) return;
+      const source = from === "common" ? mockCommon : mockHidden;
+      const target = to === "common" ? mockCommon : mockHidden;
+      const sourceIndex = source.indexOf(id);
+      if (sourceIndex < 0) return;
+
+      source.splice(sourceIndex, 1);
+      let insertIndex = beforeId ? target.indexOf(beforeId) : target.length;
+      if (insertIndex < 0) insertIndex = target.length;
+      if (from === "hidden" && to === "common" && target.length >= 8 && !beforeId) {
+        insertIndex = Math.max(0, target.length - 1);
+      }
+      target.splice(insertIndex, 0, id);
+
+      let evicted = "";
+      if (mockCommon.length > 8) {
+        evicted = mockCommon.pop();
+        mockHidden.unshift(evicted);
+      }
+
+      renderMockDemo();
+      activate(7);
+      if (evicted) {
+        document.querySelector("#logicIncoming").textContent = mockNames[id];
+        document.querySelector("#logicEvicted").textContent = mockNames[evicted];
+        showOverflowRule();
+      } else if (from === to) {
+        showToast(`已调整“${mockNames[id]}”的排序`);
+      } else {
+        showToast(`已将“${mockNames[id]}”移入${to === "common" ? "常用" : "隐藏"}功能`);
+      }
+    }
+
+    function clearPointerDrag() {
+      pointerDrag?.ghost?.remove();
+      pointerDrag?.source?.classList.remove("is-dragging");
+      document.querySelectorAll(".device-feature-row").forEach(row => row.classList.remove("is-drop-before"));
+      document.querySelectorAll(".device-feature-list").forEach(list => list.classList.remove("is-over"));
+      pointerDrag = null;
+    }
+
+    function updatePointerDropTarget(clientX, clientY) {
+      document.querySelectorAll(".device-feature-row").forEach(row => row.classList.remove("is-drop-before"));
+      document.querySelectorAll(".device-feature-list").forEach(list => list.classList.remove("is-over"));
+      const under = document.elementFromPoint(clientX, clientY);
+      const list = under?.closest("[data-device-list]");
+      const row = under?.closest("[data-device-item]");
+      list?.classList.add("is-over");
+      if (row && row.dataset.deviceItem !== pointerDrag?.id) row.classList.add("is-drop-before");
+      return { list, row };
+    }
+
+    function resetMockDemo() {
+      mockCommon = [...initialMockCommon];
+      mockHidden = [...initialMockHidden];
+      renderMockDemo();
+      showToast("演示数据已重置，可依次拖入代理中心、功能1、功能2");
+    }
+
+    function runAction(action) {
+      const actions = {
+        profile: () => { activate(1); showToast("模拟跳转：修改资料"); },
+        home: () => { activate(2); showToast("模拟跳转：个人主页"); },
+        billing: () => { activate(3); showToast("模拟跳转：账单列表"); },
+        frozen: () => { activate(4); showToast("冻结额度按各币种冻结金额换算后合计"); },
+        custom: scrollToCustom,
+        reorder: () => { activate(7); showToast("长按右侧三横线，上下拖动调整显示顺序"); },
+        overflow: showOverflowRule,
+        tutorial: openTutorial
+      };
+      actions[action]?.();
+    }
+
+    document.addEventListener("click", event => {
+      if (Date.now() < suppressMockClickUntil && event.target.closest("[data-device-item]")) {
+        event.preventDefault();
+        return;
+      }
+      const actionNode = event.target.closest("[data-action]");
+      if (actionNode) runAction(actionNode.dataset.action);
+
+      const note = event.target.closest(".note[data-target]");
+      if (note) {
+        const number = Number(note.dataset.note);
+        activate(number);
+        if (number === 5) scrollToCustom();
+        if (number === 6) openTutorial();
+        if (number === 7) showOverflowRule();
+      }
+
+      const mockButton = event.target.closest("[data-mock-add]");
+      if (mockButton) {
+        addMockFunction(mockButton.dataset.mockAdd);
+      } else if (event.target.closest("#mockHiddenList") && mockHidden.length) {
+        addMockFunction(mockHidden[0]);
+      }
+      if (event.target.closest("[data-reset-mock]")) resetMockDemo();
+
+      if (event.target.closest("[data-close-tutorial]") || event.target === document.querySelector("#tutorialModal")) {
+        closeTutorial();
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      const note = event.target.closest(".note[data-target]");
+      if (note && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        note.click();
+      }
+      const mockItem = event.target.closest("[data-mock-add]");
+      if (mockItem && (event.key === "Enter" || event.key === " ")) {
+        event.preventDefault();
+        addMockFunction(mockItem.dataset.mockAdd);
+      }
+      if (event.key === "Escape") closeTutorial();
+    });
+
+    document.addEventListener("pointerdown", event => {
+      const row = event.target.closest(".device-feature-row");
+      if (!row || event.button !== 0) return;
+      pointerDrag = {
+        id: row.dataset.deviceItem,
+        from: row.dataset.deviceFrom,
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        source: row,
+        ghost: null,
+        active: false
+      };
+      row.setPointerCapture?.(event.pointerId);
+    });
+
+    document.addEventListener("pointermove", event => {
+      if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+      const moved = Math.hypot(event.clientX - pointerDrag.startX, event.clientY - pointerDrag.startY);
+      if (!pointerDrag.active && moved < 6) return;
+      event.preventDefault();
+
+      if (!pointerDrag.active) {
+        pointerDrag.active = true;
+        pointerDrag.source.classList.add("is-dragging");
+        const rect = pointerDrag.source.getBoundingClientRect();
+        const ghost = pointerDrag.source.cloneNode(true);
+        ghost.classList.remove("is-dragging");
+        ghost.classList.add("drag-ghost");
+        ghost.removeAttribute("id");
+        ghost.style.width = `${rect.width}px`;
+        ghost.style.height = `${rect.height}px`;
+        document.body.appendChild(ghost);
+        pointerDrag.ghost = ghost;
+      }
+
+      pointerDrag.ghost.style.left = `${event.clientX - pointerDrag.ghost.offsetWidth / 2}px`;
+      pointerDrag.ghost.style.top = `${event.clientY - 30}px`;
+      updatePointerDropTarget(event.clientX, event.clientY);
+    }, { passive: false });
+
+    document.addEventListener("pointerup", event => {
+      if (!pointerDrag || pointerDrag.pointerId !== event.pointerId) return;
+      pointerDrag.source.releasePointerCapture?.(event.pointerId);
+      if (!pointerDrag.active) {
+        pointerDrag = null;
+        return;
+      }
+
+      event.preventDefault();
+      const { list, row } = updatePointerDropTarget(event.clientX, event.clientY);
+      const dragged = { id: pointerDrag.id, from: pointerDrag.from };
+      suppressMockClickUntil = Date.now() + 350;
+      clearPointerDrag();
+      if (list) {
+        moveMockItem(dragged.id, dragged.from, list.dataset.deviceList, row?.dataset.deviceItem || "");
+      } else {
+        showToast("请拖到“常用功能”或“隐藏功能”列表内");
+      }
+    });
+
+    document.addEventListener("pointercancel", clearPointerDrag);
+
+    document.addEventListener("dragstart", event => {
+      const deviceItem = event.target.closest("[data-device-item]");
+      const mockButton = event.target.closest("[data-mock-add]");
+      if (deviceItem) {
+        draggingMock = {
+          id: deviceItem.dataset.deviceItem,
+          from: deviceItem.dataset.deviceFrom
+        };
+        deviceItem.classList.add("is-dragging");
+      } else if (mockButton) {
+        draggingMock = { id: mockButton.dataset.mockAdd, from: "hidden" };
+      } else {
+        return;
+      }
+      event.dataTransfer.setData("text/plain", draggingMock.id);
+      event.dataTransfer.effectAllowed = "move";
+    });
+    document.addEventListener("dragend", () => {
+      draggingMock = null;
+      document.querySelectorAll(".device-feature-row").forEach(row => {
+        row.classList.remove("is-dragging", "is-drop-before");
+      });
+      document.querySelectorAll(".device-feature-list").forEach(list => list.classList.remove("is-over"));
+    });
+    document.querySelectorAll("[data-device-list]").forEach(list => {
+      list.addEventListener("dragover", event => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        list.classList.add("is-over");
+        const row = event.target.closest("[data-device-item]");
+        list.querySelectorAll(".device-feature-row").forEach(item => item.classList.remove("is-drop-before"));
+        if (row && row.dataset.deviceItem !== draggingMock?.id) row.classList.add("is-drop-before");
+      });
+      list.addEventListener("dragleave", event => {
+        if (!list.contains(event.relatedTarget)) list.classList.remove("is-over");
+      });
+      list.addEventListener("drop", event => {
+        event.preventDefault();
+        const row = event.target.closest("[data-device-item]");
+        moveMockItem(
+          draggingMock?.id || event.dataTransfer.getData("text/plain"),
+          draggingMock?.from || "hidden",
+          list.dataset.deviceList,
+          row?.dataset.deviceItem || ""
+        );
+      });
+    });
+    document.querySelector("#mockCommonList").addEventListener("dragover", event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    });
+    document.querySelector("#mockCommonList").addEventListener("drop", event => {
+      event.preventDefault();
+      moveMockItem(
+        draggingMock?.id || event.dataTransfer.getData("text/plain"),
+        draggingMock?.from || "hidden",
+        "common"
+      );
+      draggingMock = null;
+    });
+
+    window.addEventListener("resize", drawAllLines);
+    window.addEventListener("load", drawAllLines);
+    if ("ResizeObserver" in window) {
+      const observer = new ResizeObserver(drawAllLines);
+      document.querySelectorAll(".annotation-board, .note, .device").forEach(node => observer.observe(node));
+    }
+    renderMockDemo();
+    drawAllLines();
+  </script>
+</body>
+</html>

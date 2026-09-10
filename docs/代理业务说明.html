@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>代理业务说明</title>
+  <style>
+    :root {
+      --bg: #f4f1eb;
+      --paper: #fffdf8;
+      --card: #ffffff;
+      --text: #241f1a;
+      --muted: #746c63;
+      --line: #e6dfd6;
+      --orange: #ff7918;
+      --orange-soft: #fff1e4;
+      --green: #1f7a45;
+      --green-soft: #e8f6ee;
+      --blue: #1d5fbf;
+      --blue-soft: #eaf2ff;
+      --ink: #2b241c;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    a { color: #c75a00; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 22px 16px 32px;
+      background: #2b241c;
+      color: #f6efe6;
+    }
+    .nav h2 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      letter-spacing: .14em;
+      color: #ffb36a;
+    }
+    .nav p {
+      margin: 0 0 18px;
+      color: #c9b9a8;
+      font-size: 12px;
+    }
+    .nav a {
+      display: block;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #f4eadf;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .nav a:hover,
+    .nav a:focus { background: rgb(255 255 255 / 10%); }
+    .nav .lv2 { padding-left: 22px; color: #d8c8b6; font-size: 12px; }
+
+    .page { padding: 28px 36px 80px; }
+    .page-head { max-width: 980px; margin-bottom: 28px; }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: #d95c00;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 3vw, 40px); line-height: 1.2; }
+    .lead { margin: 0; color: var(--muted); max-width: 46em; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--orange-soft);
+      color: #b24e00;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .chip-mute {
+      background: #eee9e2;
+      color: #5c534a;
+    }
+
+    .section { max-width: 1080px; margin-top: 44px; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 0 16px;
+      font-size: 24px;
+    }
+    .section-title span {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 15px;
+    }
+    h3 { margin: 28px 0 12px; font-size: 19px; }
+
+    .tip {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-left: 4px solid var(--orange);
+      background: var(--orange-soft);
+      border-radius: 0 10px 10px 0;
+    }
+    .tip strong { color: #b24e00; }
+    .callout {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-left: 4px solid #8a5a00;
+      background: #fff6df;
+      border-radius: 0 10px 10px 0;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px 18px;
+    }
+    .card h4 { margin: 0 0 8px; font-size: 16px; }
+    .card ul { margin: 0; padding-left: 18px; }
+    .tag {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .tag-share { background: var(--green-soft); color: var(--green); }
+    .tag-rebate { background: var(--blue-soft); color: var(--blue); }
+    .tag-water { background: #fff3cf; color: #8a5a00; }
+    .tag-dev { background: #eee9e2; color: #5c534a; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th { background: #f7f2ea; color: #5c534a; font-weight: 700; }
+    tr:last-child td { border-bottom: 0; }
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .formula {
+      margin: 10px 0;
+      padding: 12px 14px;
+      background: #1f1a16;
+      color: #f6efe6;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .formula em { color: #ffb36a; font-style: normal; }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 0;
+    }
+    .flow b {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .flow i {
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .links a {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--paper);
+      border: 1px solid #ffd2a8;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .note { color: var(--muted); font-size: 13px; }
+
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; }
+      .nav { position: relative; height: auto; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .page { padding: 20px 16px 56px; }
+    }
+
+    @media print {
+      .nav { display: none; }
+      .layout { display: block; }
+      .page { padding: 0; }
+      .card, table { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <nav class="nav" aria-label="目录">
+      <h2>目录</h2>
+      <p>给运营配置、开发对照用的业务说明。口径以当前原型为准。</p>
+      <a href="#s0">文档范围</a>
+      <a href="#s1">一、代理类型</a>
+      <a class="lv2" href="#s1-1">1. 占成 / 退水</a>
+      <a class="lv2" href="#s1-2">2. 返佣代理</a>
+      <a href="#s2">二、成为代理与开户</a>
+      <a class="lv2" href="#s2-1">1. 后台创建</a>
+      <a class="lv2" href="#s2-2">2. 代理端创建</a>
+      <a class="lv2" href="#s2-3">3. 代理邀请</a>
+      <a href="#s3">三、代理报表</a>
+      <a class="lv2" href="#s3-1">1. 字段定义和来源</a>
+      <a href="#s4">四、结算与账单</a>
+      <a class="lv2" href="#s4-1">1. 占成</a>
+      <a class="lv2" href="#s4-2">2. 退水（占成内）</a>
+      <a class="lv2" href="#s4-3">3. 返佣</a>
+    </nav>
+
+    <main class="page">
+      <header class="page-head">
+        <p class="eyebrow">KK VIBE · 业务说明</p>
+        <h1>代理业务说明</h1>
+        <p class="lead">
+          给运营和开发直接对照。系统身份只有两种：<strong>占成代理</strong>（<code>share</code>）与<strong>返佣代理</strong>（<code>rebate</code>）。
+          「退水代理」不是第三种身份，而是占成体系里的退水 / 赚水机制。
+        </p>
+        <div class="chips">
+          <span class="chip">占成 share</span>
+          <span class="chip">返佣 rebate</span>
+          <span class="chip">退水 = 占成内机制</span>
+          <span class="chip chip-mute">信用现状：仅 x 币</span>
+        </div>
+      </header>
+
+      <section class="section" id="s0">
+        <h2 class="section-title"><span>0</span>文档范围</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>项</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>读者</td><td>运营（配置、对账、开户规则）、开发（身份、入口、字段与结算实现）</td></tr>
+            <tr><td>用途</td><td>统一代理身份、开户能力、报表字段、结算方式；可对照原型验收</td></tr>
+            <tr><td>身份枚举</td><td>仅 <code>share</code> / <code>rebate</code>。代理端用查询参数 <code>agentType=share|rebate</code> 切换演示身份</td></tr>
+            <tr><td>当前信用账</td><td>只有 <strong>x 币</strong>，用于授信与上下分。未来对应「信用额度-CNY」</td></tr>
+            <tr><td>未上线，不按此配置 / 实现</td><td>信用额度-CNY、信用额度-USD、双信用钱包。返佣邀请、返佣创建下级代理</td></tr>
+          </tbody>
+        </table>
+        <p class="callout"><strong>未上线不要当现状：</strong>后台入口已从「x 币上下分」改名为「授信」，但账本仍按 x 币。CNY / USD 信用额度未做，运营不要配、开发不要按双钱包实现。</p>
+      </section>
+
+      <section class="section" id="s1">
+        <h2 class="section-title"><span>一</span>代理类型</h2>
+        <p class="tip"><strong>口径：</strong>后台与代理端按 <code>share</code> / <code>rebate</code> 两套身份切能力。占成可发展多级团队；返佣只有一层直属会员，不发展下级代理，没有邀请。</p>
+
+        <h3 id="s1-1">1. 占成代理 / 退水</h3>
+        <div class="grid-2">
+          <article class="card">
+            <span class="tag tag-share">占成代理 · share</span>
+            <h4>按实占分盈亏</h4>
+            <ul>
+              <li>多级树形团队：直属会员 + 下级代理下会员一起算实占。</li>
+              <li>收益两块：<strong>实占净输赢</strong> + <strong>代理赚水</strong> = 总盈亏。</li>
+              <li>信用：当前仅 <strong>x 币</strong> 授信、上下分；未来映射「信用额度-CNY」。USD / 双信用钱包未上线。</li>
+              <li>现金币种：KKC / KKV / USDT。</li>
+              <li>代理中心报表 Tab：<strong>盈亏 + 游戏</strong>。</li>
+            </ul>
+          </article>
+          <article class="card">
+            <span class="tag tag-water">退水 · 占成内机制</span>
+            <h4>不是单独一种代理</h4>
+            <ul>
+              <li>后台旧「赚水」已改成「退水」：填写值是<strong>向下级返还</strong>的退水比例。</li>
+              <li>会员侧：「投注退水 / 会员退水」。代理侧：「代理赚水」（退水利润，为正数加项）。</li>
+              <li>授信、创建、邀请（仅占成）时，占成与退水<strong>一起配</strong>。</li>
+              <li>列表、筛选、账密里不要出现第三种代理类型。</li>
+            </ul>
+          </article>
+        </div>
+
+        <h3 id="s1-2">2. 返佣代理</h3>
+        <article class="card">
+          <span class="tag tag-rebate">返佣代理 · rebate</span>
+          <h4>一层直属，按月拿佣金</h4>
+          <ul>
+            <li>固定一级，不发展下级代理，列表无上级。</li>
+            <li>不配占成、不配退水、不授信、无上下分；<strong>无邀请、无邀请记录、不能创建下级代理</strong>。</li>
+            <li>成为返佣代理只走 PC 后台；代理端只能创建直属会员。</li>
+            <li>只统计直属会员；报表 Tab：<strong>佣金 + 游戏</strong>。</li>
+            <li>佣金档位：当月团队净输赢门槛 + 活跃人数 → 命中佣金比例。</li>
+            <li>公式：佣金 = max(净输赢 − 负盈利累计, 0) × 佣金比例。</li>
+          </ul>
+        </article>
+
+        <h3>能力对照</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th>占成（含退水机制）</th>
+              <th>返佣</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>系统身份</td><td><code>share</code></td><td><code>rebate</code></td></tr>
+            <tr><td>层级</td><td>多级团队</td><td>仅一层直属</td></tr>
+            <tr><td>核心收益</td><td>总盈亏 = 实占净输赢 + 代理赚水</td><td>月结佣金</td></tr>
+            <tr><td>退水 / 赚水</td><td>有会员退水、代理赚水</td><td>无</td></tr>
+            <tr><td>信用 / 上下分</td><td>支持；当前只有 x 币（未来 = 信用额度-CNY）</td><td>全部隐藏</td></tr>
+            <tr><td>币种</td><td>现金三币种 + x 币；信用额度-CNY/USD 未上线</td><td>仅现金三币种</td></tr>
+            <tr><td>成为代理</td><td>后台创建 / 代理端创建 / 邀请已有会员</td><td>仅后台创建</td></tr>
+            <tr><td>代理端「+」</td><td>创建代理、创建会员、会员授信、邀请下级代理</td><td>仅创建会员账户</td></tr>
+            <tr><td>邀请</td><td>可邀请已有会员当下级代理</td><td>无入口、无记录</td></tr>
+            <tr><td>结算节奏</td><td>盈亏可按日看；交收线下</td><td>只按月，线上派发</td></tr>
+          </tbody>
+        </table>
+        <p class="links">
+          <a href="/mobile/agent?agentType=share">占成代理中心</a>
+          <a href="/mobile/agent?agentType=rebate">返佣代理中心</a>
+        </p>
+      </section>
+
+      <section class="section" id="s2">
+        <h2 class="section-title"><span>二</span>成为代理与开户</h2>
+        <p class="tip"><strong>规则：</strong>占成有三条进线——后台创建、代理端创建下级代理、邀请已有会员。成为返佣代理<strong>只有后台创建</strong>。返佣团队页只能创建会员，不提供创建下级代理、邀请和邀请记录。</p>
+
+        <h3 id="s2-1">1. 后台创建</h3>
+        <div class="grid-2">
+          <article class="card">
+            <span class="tag tag-share">PC · 占成代理配置</span>
+            <p>模块「推广返利」→ 占成代理配置。搜索用户后授信 / 编辑。</p>
+            <ul>
+              <li>区分现金代理与信用代理两套账密。</li>
+              <li>一级入口已从「x 币上下分」改为「授信」：先加信用方案，再出「信」标识。当前仍按 x 币记账，未来映射「信用额度-CNY」。</li>
+              <li>弹框配多品类<strong>占成 + 退水</strong>，区间 0～上级最大值。</li>
+              <li>可按代理等级 1～10、是否信用代理筛选。</li>
+            </ul>
+            <p class="note">运营：在此给用户开占成身份并配比例。开发：路由 <code>/pc/share-agent-config</code>。</p>
+            <p class="links"><a href="/pc/share-agent-config">占成代理配置</a></p>
+          </article>
+          <article class="card">
+            <span class="tag tag-rebate">PC · 返佣代理配置</span>
+            <p>按用户 ID 搜索后新增，固定一级。</p>
+            <ul>
+              <li>不选级别、不选上级、不配赚取退水。</li>
+              <li>只绑定用户并生成代理后台账密。</li>
+              <li>佣金档位另在「返佣金设置」按币种配：盈利门槛 + 活跃人数 + 比例。</li>
+            </ul>
+            <p class="note">运营：返佣身份只在这里开。开发：<code>/pc/rebate-agent-config</code>、<code>/pc/agent-commission-setting</code>。</p>
+            <p class="links">
+              <a href="/pc/rebate-agent-config">返佣代理配置</a>
+              <a href="/pc/agent-commission-setting">返佣金设置</a>
+            </p>
+          </article>
+        </div>
+
+        <h3 id="s2-2">2. 代理端创建</h3>
+        <p>入口：<strong>团队管理 → 创建账户</strong>。占成可建下级代理 / 会员；返佣<strong>只能建直属会员</strong>。</p>
+        <article class="card">
+          <h4>占成 · 创建代理账户（三步）</h4>
+          <div class="flow">
+            <b>填写账号</b><i>→</i><b>收益比例（占成 / 退水 / 其他成本 / 分产品）</b><i>→</i><b>完成创建</b>
+          </div>
+          <p>成功后写入「信用代理」，比例同步到收益比例的信用 Tab。当前授信仍按 x 币。</p>
+          <p class="note">开发：<code>/mobile/agent/create-account</code>。创建账户枚举含 <code>agent</code> / <code>member</code> / <code>member_credit</code> / <code>invite_existing</code>。</p>
+          <p class="links"><a href="/mobile/agent/create-account">创建代理账户</a></p>
+        </article>
+        <article class="card" style="margin-top:12px">
+          <h4>返佣 · 只创建会员（两步）</h4>
+          <div class="flow">
+            <b>填写账号</b><i>→</i><b>完成创建</b>
+          </div>
+          <p>顶栏「+」只出「创建会员账户」，不设收益比例，写入直属会员。不创建下级代理、没有邀请。</p>
+          <p class="note">开发：<code>/mobile/agent/create-member</code>。返佣创建枚举仅 <code>member</code>；顶栏隐藏邀请记录信封。</p>
+          <p class="links"><a href="/mobile/agent/create-member">创建会员账户</a></p>
+        </article>
+        <article class="card" style="margin-top:12px">
+          <h4>占成其它动作</h4>
+          <ul>
+            <li>占成也可创建会员（原型占位）。</li>
+            <li>可对未开通信用的直属代理做「代理授信」：设置收益比例 → 授信成功，迁入信用代理。</li>
+          </ul>
+        </article>
+
+        <h3 id="s2-3">3. 代理邀请</h3>
+        <p class="tip"><strong>仅占成：</strong>返佣团队页不暴露「邀请会员为下级代理」和邀请记录。成为返佣代理走后台新增；发展直属会员走代理端「创建会员」。</p>
+        <p>占成把平台<strong>已有会员</strong>拉成直属下级代理。入口：团队管理 → 创建账户 →「邀请会员为下级代理」。</p>
+        <article class="card">
+          <span class="tag tag-share">占成邀请</span>
+          <div class="flow">
+            <b>输金刚号</b><i>→</i><b>搜索验证</b><i>→</i><b>设收益比例</b><i>→</i><b>确认邀请</b><i>→</i><b>会员同意</b>
+          </div>
+          <p>比例在发邀请时一次配完；邀请记录页只看状态，不再改比例。会员在「我的 → 代理邀请」同意后写入团队。</p>
+          <ul>
+            <li>有效期 72 小时。</li>
+            <li>对象：渠道一致、当前不是代理、没有上级；邀请箱满则拦截。</li>
+          </ul>
+        </article>
+        <p class="note">C 端「邀请好友返利」是全民邀请，与代理邀请不是同一条能力，不要混用入口和统计。</p>
+        <p class="links">
+          <a href="/mobile/agent/invite-member">代理发邀请（仅占成）</a>
+          <a href="/mobile/agent/invite-records">邀请记录（仅占成）</a>
+          <a href="/mobile/mine/agent-invites">会员端代理邀请</a>
+        </p>
+      </section>
+
+      <section class="section" id="s3">
+        <h2 class="section-title"><span>三</span>代理报表</h2>
+        <p class="tip"><strong>数据源：</strong>现金侧约 10 分钟一批（投注、输赢、退水、佣金）；金刚侧实时（充值、取款、活跃、人数）。概况卡片只到「游戏输赢」；净输赢 / 总盈亏 / 佣金在「我的报表」和「我的盈亏 / 我的佣金」。</p>
+
+        <h3 id="s3-1">1. 字段定义和来源</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>列</th>
+              <th>含义</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>统计方式</td><td><strong>实时</strong> = 金刚即时数；<strong>10 分钟</strong> = 现金批次。</td></tr>
+            <tr><td>处理方</td><td><strong>现金</strong>负责游戏账、退水、佣金；<strong>金刚</strong>负责充提、活跃、人数。</td></tr>
+            <tr><td>统计维度</td><td>占成：实占（直属 + 非直属）。返佣：仅直属会员。</td></tr>
+            <tr><td>完整底表</td><td>字段定义页，验收时按「处理方 + 公式」核对。</td></tr>
+          </tbody>
+        </table>
+        <p class="links">
+          <a href="/docs/agent-field-definitions">占成字段定义</a>
+          <a href="/docs/agent-rebate-field-definitions">返佣字段定义</a>
+        </p>
+
+        <h3>占成 · 核心字段</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>字段</th>
+              <th>业务口径 / 来源</th>
+              <th>方式</th>
+              <th>处理方</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>新增会员</td><td>直属会员某日期段新增人数</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>活跃人数</td><td>直属会员某日期段是否在线过</td><td>实时</td><td>金刚</td></tr>
+            <tr><td>充值 / 取款总额</td><td>直属会员按日期 + 币种汇总</td><td>实时</td><td>金刚</td></tr>
+            <tr><td>有效投注</td><td>直属会员有效投注总额</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>投注退水</td><td>直属会员投注退水总额（会员退水）</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>VIP退水 / 礼金 / 奖金</td><td>直属会员对应优惠项</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>游戏输赢</td><td>直属会员游戏输赢总额；概况展示到这一项为止</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>游戏净输赢</td><td>实占游戏输赢 − 实占退水 − 实占VIP退水 − 场馆费</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>其他成本</td><td>VIP晋级礼金 + VIP额外奖金 + 活动金 + 充提手续费</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>实占净输赢</td><td>游戏净输赢 − 其他成本</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>代理赚水</td><td>后台开启的游戏大类退水利润之和，各项为正，不进游戏净输赢</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>总盈亏</td><td>实占净输赢 + 代理赚水</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>会员上分 / 下分</td><td>当前按 x 币；含直属与下级代理下会员。信用额度-CNY/USD 未上线</td><td>实时</td><td>金刚</td></tr>
+          </tbody>
+        </table>
+        <div class="formula">
+          <em>占成公式</em><br />
+          游戏净输赢 = 实占游戏输赢 − 实占退水 − 实占VIP退水 − 场馆费<br />
+          实占净输赢 = 游戏净输赢 − 其他成本<br />
+          总盈亏 = 实占净输赢 + 代理赚水<br />
+          会员盈亏 = 游戏输赢 + 会员退水 + VIP退水 + 其他奖励（退水对会员为正）
+        </div>
+
+        <h3>返佣 · 核心字段</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>字段</th>
+              <th>业务口径 / 来源</th>
+              <th>方式</th>
+              <th>处理方</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>新增会员 / 充提 / 有效投注 / 游戏输赢</td><td>只统计直属会员；无下级代理树</td><td>见占成同类</td><td>现金 / 金刚</td></tr>
+            <tr><td>活跃人数</td><td>自然月累计：当月同时满足充值与有效投注阈值计 1 人；概况不展示，只在返佣比例弹层「本月进度」</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>投注退水</td><td>无此字段</td><td>—</td><td>—</td></tr>
+            <tr><td>游戏净输赢</td><td>团队游戏输赢 − 团队VIP退水 − 场馆费；不加「实占」，无赚水</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>其他成本</td><td>与占成相同四项</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>净输赢</td><td>游戏净输赢 − 其他成本</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>负盈利累计</td><td>历史负盈利，待派发与历史月都展示</td><td>10分钟</td><td>现金</td></tr>
+            <tr><td>佣金比例</td><td>当前币种当月档位；概况出当前档，详情出全部档</td><td>实时</td><td>金刚</td></tr>
+            <tr><td>预计佣金 / 总佣金</td><td>本月看预计，历史月看已结算总佣金</td><td>10分钟</td><td>现金</td></tr>
+          </tbody>
+        </table>
+        <div class="formula">
+          <em>返佣公式</em><br />
+          游戏净输赢 = 团队游戏输赢 − 团队VIP退水 − 场馆费<br />
+          净输赢 = 游戏净输赢 − 其他成本<br />
+          佣金 = max(净输赢 − 负盈利累计, 0) × 佣金比例<br />
+          总佣金 = 佣金（负盈利不再扣第二次）
+        </div>
+
+        <h3>页面展示范围</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>页面</th>
+              <th>占成</th>
+              <th>返佣</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>概况</td><td>直属 / 下级代理经营数，到游戏输赢；有投注退水</td><td>只有直属；无投注退水；比例看档位进度</td></tr>
+            <tr><td>我的报表-游戏</td><td>团队充提、上下分、游戏净输赢（实占）</td><td>直属充提、游戏净输赢（无实占、无赚水）</td></tr>
+            <tr><td>我的报表-盈亏 / 佣金</td><td>总盈亏拆成游戏净输赢、其他成本、代理赚水</td><td>月份账单：预计/总佣金、负盈利、档位</td></tr>
+            <tr><td>我的</td><td>我的盈亏（按币种团队盈亏）</td><td>历史全部已结算总佣金，不限月份</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="s4">
+        <h2 class="section-title"><span>四</span>结算与账单</h2>
+        <p class="tip"><strong>结账：</strong>占成看日/月盈亏，交收走线下；退水跟投注走、按现金批次；返佣只月结，线上派发到现金钱包。</p>
+
+        <h3 id="s4-1">1. 占成：盈亏 + 赚水，会员退水，盈亏线下，退水按批次</h3>
+        <div class="grid-2">
+          <article class="card">
+            <h4>盈亏 + 赚水</h4>
+            <p>账单主结果是<strong>总盈亏</strong>，不是佣金。</p>
+            <div class="formula">总盈亏 = 实占净输赢 + 代理赚水</div>
+            <p>「我的盈亏」可按今天 / 昨天 / 本月 / 上月或自定义日期看。代理赚水按后台开启的游戏大类加总，项项为正。</p>
+          </article>
+          <article class="card">
+            <h4>会员退水</h4>
+            <p>会员视角退水为正，进会员盈亏；代理视角「实占退水」从游戏净输赢里减。</p>
+            <p>概况有「投注退水」。会员退水比例可在代理端单独配。</p>
+            <p class="links"><a href="/mobile/agent/member/rebate-ratio">会员退水比例</a></p>
+          </article>
+          <article class="card">
+            <h4>盈亏线下</h4>
+            <p>信用交收看上下分对账，不在钱包里自动划转。当前只对 <strong>x 币</strong>；未来这本账对应「信用额度-CNY」。USD 和第二套信用钱包未上线。</p>
+            <div class="formula">净额 = 下分 − 上分<br />正数：代理欠平台　负数：平台需线下付给代理</div>
+            <p>入口：代理结算对账。</p>
+            <p class="links"><a href="/mobile/agent/settlement">结算对账</a></p>
+          </article>
+          <article class="card">
+            <h4>退水按批次</h4>
+            <p>充值、取款、活跃是金刚<strong>实时</strong>。投注退水、VIP 退水、输赢、赚水是现金<strong>约 10 分钟</strong>一批。退水跟注单批次出，不做月结佣金。</p>
+          </article>
+        </div>
+
+        <h3 id="s4-2">2. 退水（占成内）：赚水，会员退水，按批次</h3>
+        <article class="card">
+          <p>这里是占成体系里的<strong>退水账</strong>，不是另一套代理后台。</p>
+          <ul>
+            <li><strong>赚水：</strong>代理从团队流水拿到的退水利润，加进总盈亏，不加进游戏净输赢。</li>
+            <li><strong>会员退水：</strong>按退水比例返给会员，会员账单里是正项；代理报表里是实占退水减项。</li>
+            <li><strong>批次：</strong>跟注单走（约 10 分钟），不做月结佣金。</li>
+            <li>比例来源：后台占成配置、代理端创建 / 授信、占成邀请时的收益比例、会员退水比例页。返佣不配退水、没有邀请。</li>
+          </ul>
+        </article>
+
+        <h3 id="s4-3">3. 返佣：佣金月结，走线上</h3>
+        <article class="card">
+          <ul>
+            <li>只能选月份，不能按日。近 12 个结算月（含本月）。</li>
+            <li>本月：<strong>待派发</strong>，看预计佣金；历史月：<strong>已派发 / 无佣金</strong>。</li>
+            <li>累计发放只加「已派发」月。</li>
+            <li>成为代理之前的月份显示「未入驻」，没有账单。</li>
+            <li>冲减负盈利后为负，当月佣金按 0。</li>
+            <li>线上派发到现金钱包，不走信用上下分。</li>
+          </ul>
+          <div class="formula">
+            佣金 = max(净输赢 − 负盈利累计, 0) × 当月档位佣金比例
+          </div>
+          <p class="links">
+            <a href="/mobile/agent?agentType=rebate">返佣代理中心</a>
+          </p>
+        </article>
+
+        <h3>账单对照</h3>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>占成</th>
+              <th>退水（占成内）</th>
+              <th>返佣</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>看什么数</td><td>总盈亏</td><td>赚水 + 会员退水</td><td>月佣金</td></tr>
+            <tr><td>周期</td><td>可按日 / 月</td><td>跟注单批次</td><td>只按月</td></tr>
+            <tr><td>怎么给钱</td><td>盈亏交收线下</td><td>退水进批次账</td><td>线上派发</td></tr>
+            <tr><td>有没有信用</td><td>有，当前只有 x 币</td><td>跟占成走（x 币）</td><td>无</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
