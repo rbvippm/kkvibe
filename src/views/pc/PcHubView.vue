@@ -61,7 +61,7 @@ const quickLinks = [
     to: '/pc/live-anchor-list',
     icon: '📋',
     title: '主播列表',
-    desc: '全局与按主播配置基准人数、预约、热度、本场点赞及高阶增减规则。',
+    desc: '全局与按主播配置基准人数、预约、热度、本场点赞及每分钟人数增加 / 人数减少等规则。',
   },
   {
     to: '/pc/live-danmaku-mute-list',

@@ -351,8 +351,8 @@ function validateMetricConfig(config: AnchorMetricConfig) {
     asNonNegInt(config.appointmentBase, '基础预约') ||
     asNonNegInt(config.heatBase, '基础热度') ||
     asNonNegInt(config.likeBase, '本场点赞') ||
-    validateRange(config.people.enter, '进入随机范围') ||
-    validateRange(config.people.leave, '退出随机范围') ||
+    validateRange(config.people.increase, '人数增加（人/分钟）') ||
+    validateRange(config.people.decrease, '人数减少（人/分钟）') ||
     validateRange(config.appointment.book, '点击预约随机范围') ||
     validateRange(config.appointment.cancel, '取消预约随机范围') ||
     validateRange(config.like.tap, '点赞随机范围') ||
@@ -370,10 +370,10 @@ function normalizeConfig(config: AnchorMetricConfig): AnchorMetricConfig {
   next.appointmentBase = Number(next.appointmentBase)
   next.heatBase = Number(next.heatBase)
   next.likeBase = Number(next.likeBase)
-  next.people.enter.min = Number(next.people.enter.min)
-  next.people.enter.max = Number(next.people.enter.max)
-  next.people.leave.min = Number(next.people.leave.min)
-  next.people.leave.max = Number(next.people.leave.max)
+  next.people.increase.min = Number(next.people.increase.min)
+  next.people.increase.max = Number(next.people.increase.max)
+  next.people.decrease.min = Number(next.people.decrease.min)
+  next.people.decrease.max = Number(next.people.decrease.max)
   next.appointment.book.min = Number(next.appointment.book.min)
   next.appointment.book.max = Number(next.appointment.book.max)
   next.appointment.cancel.min = Number(next.appointment.cancel.min)
@@ -781,15 +781,15 @@ function saveModal() {
               </h4>
 
               <div class="lal-sub">
-                <h5 class="lal-sub__title">人数增减</h5>
+                <h5 class="lal-sub__title">人数变化</h5>
                 <p class="lal-sub__desc">
-                  登录用户进入直播间，展示人数 + 范围内随机整数；登录用户退出，展示人数 − 范围内随机整数；结果不低于 0。游客进出不计入。
+                  每分钟按人数增加区间加人、按人数减少区间减人。不依赖真实用户进房，就算暂时没人进来，展示人数也会自己起伏。展示人数 = 基准人数 + 虚拟人数，不低于基准。
                 </p>
                 <div class="wf-form-row lal-form-row">
-                  <label class="wf-form-row__label">进入增加</label>
+                  <label class="wf-form-row__label">人数增加</label>
                   <div class="lal-range">
                     <input
-                      v-model.number="form.people.enter.min"
+                      v-model.number="form.people.increase.min"
                       type="number"
                       min="0"
                       step="1"
@@ -798,21 +798,21 @@ function saveModal() {
                     />
                     <span class="lal-range__sep">~</span>
                     <input
-                      v-model.number="form.people.enter.max"
+                      v-model.number="form.people.increase.max"
                       type="number"
                       min="0"
                       step="1"
                       class="wf-input"
                       :disabled="formReadonly"
                     />
-                    <span class="wf-muted">当前 {{ formatRange(form.people.enter) }}</span>
+                    <span class="wf-muted">人/分钟 · 当前 {{ formatRange(form.people.increase) }}</span>
                   </div>
                 </div>
                 <div class="wf-form-row lal-form-row">
-                  <label class="wf-form-row__label">退出减少</label>
+                  <label class="wf-form-row__label">人数减少</label>
                   <div class="lal-range">
                     <input
-                      v-model.number="form.people.leave.min"
+                      v-model.number="form.people.decrease.min"
                       type="number"
                       min="0"
                       step="1"
@@ -821,14 +821,14 @@ function saveModal() {
                     />
                     <span class="lal-range__sep">~</span>
                     <input
-                      v-model.number="form.people.leave.max"
+                      v-model.number="form.people.decrease.max"
                       type="number"
                       min="0"
                       step="1"
                       class="wf-input"
                       :disabled="formReadonly"
                     />
-                    <span class="wf-muted">当前 {{ formatRange(form.people.leave) }}</span>
+                    <span class="wf-muted">人/分钟 · 当前 {{ formatRange(form.people.decrease) }}</span>
                   </div>
                 </div>
               </div>
@@ -919,7 +919,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">热度综合</h5>
                 <p class="lal-sub__desc">
-                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 登录用户进出人数。弹幕、礼物、点赞均不计游客。
+                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 虚拟人数。弹幕、礼物、点赞均不计游客。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">人数系数</label>

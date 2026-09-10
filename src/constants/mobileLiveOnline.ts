@@ -1,9 +1,9 @@
-/** 直播间 · 在线人数（后台按主播配置基准 + 进出波动） */
+/** 直播间 · 在线人数（后台基准 + 每分钟人数增加 / 人数减少，不依赖真实进房） */
 
 import type { AppLocale } from '../i18n/locale'
 import { LIVE_STREAM_ASSETS } from './mobileLiveStream'
 
-/** 后台可改：登录用户进入 / 退出时的人数波动区间（游客不计入） */
+/** 后台可改：每分钟人数增加或人数减少区间 */
 export type LiveOnlineDeltaRange = readonly [number, number]
 
 export type LiveOnlineHostConfig = {
@@ -11,10 +11,19 @@ export type LiveOnlineHostConfig = {
   roomId: string
   /** 后台可改的基准在线人数 */
   baseCount: number
-  /** 登录用户进入时增加的随机区间；游客进出不触发 */
-  enterDelta: LiveOnlineDeltaRange
-  /** 有人退出时减少的随机区间 */
-  leaveDelta: LiveOnlineDeltaRange
+  /** 每分钟增加的虚拟人数区间 */
+  increase: LiveOnlineDeltaRange
+  /** 每分钟减少的虚拟人数区间 */
+  decrease: LiveOnlineDeltaRange
+}
+
+/** 原型把 1 配置分钟压成 10 秒，方便看出每分钟起伏 */
+export const LIVE_ONLINE_MINUTE_MS = 10_000
+
+export type LiveOnlineTickState = {
+  virtual: number
+  addCarry: number
+  subCarry: number
 }
 
 /** 本场大赏贡献排行 */
@@ -46,24 +55,24 @@ export const LIVE_SYSTEM_AVATARS: string[] = [...AV, ...FRIEND, ...SYS_EXTRA]
 
 export const DEFAULT_LIVE_ONLINE_CONFIG: Omit<LiveOnlineHostConfig, 'roomId'> = {
   baseCount: 1200,
-  enterDelta: [1, 6],
-  leaveDelta: [1, 4],
+  increase: [1, 6],
+  decrease: [1, 4],
 }
 
 /** 模拟后台：每个主播一条可改配置 */
 export const MOCK_LIVE_ONLINE_CONFIG: LiveOnlineHostConfig[] = [
-  { roomId: 'ls-demo', baseCount: 12000, enterDelta: [3, 12], leaveDelta: [2, 8] },
-  { roomId: 'ls-land-game', baseCount: 68000, enterDelta: [8, 28], leaveDelta: [5, 18] },
-  { roomId: 'ls-land-esport', baseCount: 153000, enterDelta: [12, 40], leaveDelta: [8, 24] },
-  { roomId: 'ls-land-outdoor', baseCount: 21000, enterDelta: [4, 16], leaveDelta: [3, 10] },
-  { roomId: 'ls-land-music', baseCount: 28400, enterDelta: [5, 18], leaveDelta: [3, 12] },
-  { roomId: 'd2', baseCount: 860, enterDelta: [1, 5], leaveDelta: [1, 3] },
-  { roomId: 'd4', baseCount: 420, enterDelta: [1, 4], leaveDelta: [1, 3] },
-  { roomId: 'voice-demo', baseCount: 430, enterDelta: [1, 5], leaveDelta: [1, 3] },
-  { roomId: 'sch_20260827_88392', baseCount: 1580, enterDelta: [2, 8], leaveDelta: [1, 5] },
-  { roomId: 'sch_20260828_11021', baseCount: 420, enterDelta: [1, 5], leaveDelta: [1, 3] },
-  { roomId: 'sch_20260828_96012', baseCount: 80, enterDelta: [1, 3], leaveDelta: [1, 2] },
-  { roomId: 'sch_20260828_65077', baseCount: 60, enterDelta: [1, 3], leaveDelta: [1, 2] },
+  { roomId: 'ls-demo', baseCount: 12000, increase: [3, 12], decrease: [2, 8] },
+  { roomId: 'ls-land-game', baseCount: 68000, increase: [8, 28], decrease: [5, 18] },
+  { roomId: 'ls-land-esport', baseCount: 153000, increase: [12, 40], decrease: [8, 24] },
+  { roomId: 'ls-land-outdoor', baseCount: 21000, increase: [4, 16], decrease: [3, 10] },
+  { roomId: 'ls-land-music', baseCount: 28400, increase: [5, 18], decrease: [3, 12] },
+  { roomId: 'd2', baseCount: 860, increase: [1, 5], decrease: [1, 3] },
+  { roomId: 'd4', baseCount: 420, increase: [1, 4], decrease: [1, 3] },
+  { roomId: 'voice-demo', baseCount: 430, increase: [1, 5], decrease: [1, 3] },
+  { roomId: 'sch_20260827_88392', baseCount: 1580, increase: [2, 8], decrease: [1, 5] },
+  { roomId: 'sch_20260828_11021', baseCount: 420, increase: [1, 5], decrease: [1, 3] },
+  { roomId: 'sch_20260828_96012', baseCount: 80, increase: [1, 3], decrease: [1, 2] },
+  { roomId: 'sch_20260828_65077', baseCount: 60, increase: [1, 3], decrease: [1, 2] },
 ]
 
 /** 大赏排名 · 不足 3 人时顶栏用系统头像补齐 */
@@ -156,8 +165,42 @@ export function pickLiveHeaderAvatars(roomId: string): string[] {
   return picked.slice(0, 3)
 }
 
-export function nextLiveOnlineDelta(roomId: string, kind: 'enter' | 'leave'): number {
+function avgRange(range: LiveOnlineDeltaRange) {
+  return (range[0] + range[1]) / 2
+}
+
+/** 先铺一层虚拟人数，避免从 0 往上爬 */
+export function seedLiveOnlineVirtual(roomId: string): LiveOnlineTickState {
   const config = getLiveOnlineConfig(roomId)
-  const [min, max] = kind === 'enter' ? config.enterDelta : config.leaveDelta
-  return randInt(min, max)
+  return {
+    virtual: Math.max(0, Math.round(avgRange(config.increase))),
+    addCarry: 0,
+    subCarry: 0,
+  }
+}
+
+/** 按每分钟人数增加 / 人数减少区间加减；真实无人进房也会起伏 */
+export function stepLiveOnlineVirtual(
+  roomId: string,
+  state: LiveOnlineTickState,
+  dtMs: number,
+): LiveOnlineTickState {
+  const config = getLiveOnlineConfig(roomId)
+  const minutes = Math.max(0, dtMs) / LIVE_ONLINE_MINUTE_MS
+  const addRate = randInt(config.increase[0], config.increase[1])
+  const subRate = randInt(config.decrease[0], config.decrease[1])
+
+  let addCarry = state.addCarry + addRate * minutes
+  const arrived = Math.floor(addCarry)
+  addCarry -= arrived
+
+  let subCarry = state.subCarry + subRate * minutes
+  const left = Math.floor(subCarry)
+  subCarry -= left
+
+  return {
+    virtual: Math.max(0, state.virtual + arrived - left),
+    addCarry,
+    subCarry,
+  }
 }

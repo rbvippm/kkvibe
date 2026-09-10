@@ -2,8 +2,10 @@ import { computed, onBeforeUnmount, onMounted, ref, watch, type MaybeRefOrGetter
 import {
   formatLiveOnlineCount,
   getLiveOnlineConfig,
-  nextLiveOnlineDelta,
   pickLiveHeaderAvatars,
+  seedLiveOnlineVirtual,
+  stepLiveOnlineVirtual,
+  type LiveOnlineTickState,
 } from '../constants/mobileLiveOnline'
 import { appLocale } from '../i18n'
 
@@ -12,40 +14,46 @@ function nextTickMs() {
 }
 
 /**
- * 顶栏在线人数：后台基准 + 登录用户进出随机波动（游客不计）；头像取大赏前三，不足用系统头像补。
- * 不提供点击进列表。
+ * 顶栏在线人数：后台基准 + 每分钟人数增加 / 人数减少持续起伏（不依赖真实进房）。
+ * 头像取大赏前三，不足用系统头像补。不提供点击进列表。
  */
 export function useLiveOnlinePresence(roomId: MaybeRefOrGetter<string>) {
   const count = ref(0)
   const avatars = ref<string[]>([])
   let timer: number | undefined
+  let tickState: LiveOnlineTickState = seedLiveOnlineVirtual(toValue(roomId))
+  let lastTickAt = 0
 
-  function resetFromBackend() {
-    const id = toValue(roomId)
-    count.value = getLiveOnlineConfig(id).baseCount
+  function syncCount(id: string) {
+    count.value = getLiveOnlineConfig(id).baseCount + tickState.virtual
     avatars.value = pickLiveHeaderAvatars(id)
   }
 
-  function applyMove(kind: 'enter' | 'leave') {
+  function resetFromBackend() {
     const id = toValue(roomId)
-    const delta = nextLiveOnlineDelta(id, kind)
-    if (kind === 'enter') {
-      count.value += delta
-      return
-    }
-    count.value = Math.max(0, count.value - delta)
+    tickState = seedLiveOnlineVirtual(id)
+    lastTickAt = Date.now()
+    syncCount(id)
+  }
+
+  function applyTick() {
+    const now = Date.now()
+    const dtMs = lastTickAt ? now - lastTickAt : nextTickMs()
+    lastTickAt = now
+    const id = toValue(roomId)
+    tickState = stepLiveOnlineVirtual(id, tickState, dtMs)
+    syncCount(id)
   }
 
   function schedule() {
     timer = window.setTimeout(() => {
-      applyMove(Math.random() < 0.58 ? 'enter' : 'leave')
+      applyTick()
       schedule()
     }, nextTickMs())
   }
 
   onMounted(() => {
     resetFromBackend()
-    applyMove('enter')
     schedule()
   })
 
@@ -58,7 +66,6 @@ export function useLiveOnlinePresence(roomId: MaybeRefOrGetter<string>) {
     () => {
       if (timer) window.clearTimeout(timer)
       resetFromBackend()
-      applyMove('enter')
       schedule()
     },
   )

@@ -13,8 +13,10 @@ export type MetricRange = {
 }
 
 export type PeopleRule = {
-  enter: MetricRange
-  leave: MetricRange
+  /** 每分钟增加的虚拟人数区间，不依赖真实进房 */
+  increase: MetricRange
+  /** 每分钟减少的虚拟人数区间 */
+  decrease: MetricRange
 }
 
 export type AppointmentRule = {
@@ -151,8 +153,8 @@ export function createDefaultMetricConfig(): AnchorMetricConfig {
     heatBase: 500,
     likeBase: 50,
     people: {
-      enter: createRange(3, 8),
-      leave: createRange(2, 6),
+      increase: createRange(3, 8),
+      decrease: createRange(2, 6),
     },
     appointment: {
       book: createRange(2, 5),
@@ -179,8 +181,8 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     heatBase: 160,
     likeBase: 12,
     people: {
-      enter: createRange(1, 3),
-      leave: createRange(1, 2),
+      increase: createRange(1, 3),
+      decrease: createRange(1, 2),
     },
     appointment: {
       book: createRange(1, 2),
@@ -201,8 +203,8 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     heatBase: 980,
     likeBase: 72,
     people: {
-      enter: createRange(4, 9),
-      leave: createRange(3, 7),
+      increase: createRange(4, 9),
+      decrease: createRange(3, 7),
     },
     appointment: {
       book: createRange(2, 5),
@@ -223,8 +225,8 @@ export const METRIC_PRESETS: Record<Exclude<MetricPreset, 'custom'>, AnchorMetri
     heatBase: 8600,
     likeBase: 760,
     people: {
-      enter: createRange(16, 42),
-      leave: createRange(12, 32),
+      increase: createRange(16, 42),
+      decrease: createRange(12, 32),
     },
     appointment: {
       book: createRange(6, 16),
@@ -263,8 +265,8 @@ export function cloneMetricConfig(config: AnchorMetricConfig): AnchorMetricConfi
     heatBase: config.heatBase,
     likeBase: config.likeBase,
     people: {
-      enter: cloneRange(config.people.enter),
-      leave: cloneRange(config.people.leave),
+      increase: cloneRange(config.people.increase),
+      decrease: cloneRange(config.people.decrease),
     },
     appointment: {
       book: cloneRange(config.appointment.book),
@@ -343,8 +345,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       heatBase: 1200,
       likeBase: 180,
       people: {
-        enter: createRange(5, 12),
-        leave: createRange(3, 8),
+        increase: createRange(5, 12),
+        decrease: createRange(3, 8),
       },
       appointment: {
         book: createRange(3, 7),
@@ -396,8 +398,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       heatBase: 220,
       likeBase: 12,
       people: {
-        enter: createRange(1, 3),
-        leave: createRange(1, 2),
+        increase: createRange(1, 3),
+        decrease: createRange(1, 2),
       },
       appointment: {
         book: createRange(1, 2),
@@ -464,8 +466,8 @@ export const liveAnchorStore = ref<LiveAnchorRow[]>([
       heatBase: 860,
       likeBase: 90,
       people: {
-        enter: createRange(4, 9),
-        leave: createRange(2, 7),
+        increase: createRange(4, 9),
+        decrease: createRange(2, 7),
       },
       appointment: {
         book: createRange(2, 6),

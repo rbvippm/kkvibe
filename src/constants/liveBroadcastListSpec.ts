@@ -10,13 +10,13 @@ export type LiveBroadcastListFeatureRow = PcPrdFeatureRow
 export const LIVE_BROADCAST_LIST_META = {
   title: '直播管理 · 直播列表',
   module: '直播管理',
-  updatedAt: '2026-09-07',
-  prdVersion: 'v1.0',
+  updatedAt: '2026-09-10',
+  prdVersion: 'v1.1',
 } as const
 
 export const LIVE_BROADCAST_LIST_BACKGROUND = [
   '运营需要按场次查看当前房间是正在直播还是直播预告，并核对人数、预约、热度、点赞的展示值是否与主播列表配置对得上。',
-  '展示值拆成基准、实际、总数：基准读自主播列表该主播的生效配置，实际是进出房 / 预约 / 互动叠加后的展示量，总数 = 基准 + 实际。',
+  '展示值拆成基准、实际、总数：基准读自主播列表该主播的生效配置，实际是人数增加/人数减少 / 预约 / 互动叠加后的展示量，总数 = 基准 + 实际。',
   '本页只做列表核对与进房，不在本页改基准配置。',
 ] as const
 
@@ -51,7 +51,7 @@ export const LIVE_BROADCAST_LIST_FEATURE_LIST: LiveBroadcastListFeatureRow[] = [
     pageLocation: '列表「人数」列',
     prd: {
       functionalLogic:
-        '展示该场次的展示人数。基准读自主播列表该主播生效的基准人数；实际为按登录用户进出房规则叠加后的展示人数；总数 = 基准 + 实际。',
+        '展示该场次的展示人数。基准读自主播列表该主播生效的基准人数；实际为按每分钟人数增加 / 人数减少算出的虚拟人数；总数 = 基准 + 实际。不依赖真实用户进房。',
       interactiveBehavior: '只读。列表式、卡片式同一口径。不在本页改基准或高阶规则。',
       visualPresentation:
         '表头「人数」旁「注2」。单元格三行：总数 / 基准 / 实际，数字千分位。卡片在「人数」下同样三行。',
@@ -139,7 +139,7 @@ export const LIVE_BROADCAST_LIST_ANNOT_MAP: Record<
   people: {
     no: 2,
     title: '人数',
-    items: ['三行：总数 / 基准 / 实际，总数 = 基准 + 实际。', '基准读主播列表生效基准人数，实际为进出房叠加后的展示人数。'],
+    items: ['三行：总数 / 基准 / 实际，总数 = 基准 + 实际。', '基准读主播列表生效基准人数，实际为每分钟人数增加 / 人数减少算出的虚拟人数。'],
   },
   appointment: {
     no: 3,
