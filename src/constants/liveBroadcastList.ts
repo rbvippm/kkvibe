@@ -11,8 +11,16 @@ export type LiveBroadcastMetricPair = {
   actual: number
 }
 
+/** 人数：展示人数 = 基准 + 虚拟 + 会员 + 游客；实际 = 会员 + 游客（含游客） */
+export type LiveBroadcastPeopleMetric = {
+  base: number
+  virtual: number
+  member: number
+  guest: number
+}
+
 export type LiveBroadcastMetrics = {
-  people: LiveBroadcastMetricPair
+  people: LiveBroadcastPeopleMetric
   appointment: LiveBroadcastMetricPair
   heat: LiveBroadcastMetricPair
   like: LiveBroadcastMetricPair
@@ -42,6 +50,14 @@ function metricPair(base: number, actual: number): LiveBroadcastMetricPair {
   return { base, actual }
 }
 
+/** 原叠加量拆成虚拟 + 实际，实际再按约 38% 拆游客 */
+function peopleMetric(base: number, overlay: number): LiveBroadcastPeopleMetric {
+  const virtual = Math.round(overlay * 0.45)
+  const actual = overlay - virtual
+  const guest = Math.round(actual * 0.38)
+  return { base, virtual, member: actual - guest, guest }
+}
+
 function metrics(
   people: readonly [number, number],
   appointment: readonly [number, number],
@@ -49,7 +65,7 @@ function metrics(
   like: readonly [number, number],
 ): LiveBroadcastMetrics {
   return {
-    people: metricPair(people[0], people[1]),
+    people: peopleMetric(people[0], people[1]),
     appointment: metricPair(appointment[0], appointment[1]),
     heat: metricPair(heat[0], heat[1]),
     like: metricPair(like[0], like[1]),
@@ -274,4 +290,8 @@ export function formatLiveBroadcastMetric(value: number) {
 
 export function liveBroadcastMetricTotal(pair: LiveBroadcastMetricPair) {
   return pair.base + pair.actual
+}
+
+export function liveBroadcastPeopleTotal(metric: LiveBroadcastPeopleMetric) {
+  return metric.base + metric.virtual + metric.member + metric.guest
 }

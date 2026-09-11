@@ -14,6 +14,7 @@ import {
   formatLiveBroadcastGame,
   formatLiveBroadcastMetric,
   liveBroadcastMetricTotal,
+  liveBroadcastPeopleTotal,
   liveBroadcastModeLabel,
   liveBroadcastStatusLabel,
   type LiveBroadcastMode,
@@ -250,9 +251,18 @@ watch(totalPages, (last) => {
                 :key="`${row.roomId}-${col.key}`"
                 class="wf-td lbl-metric"
               >
-                <p class="lbl-metric__line">总数 {{ formatLiveBroadcastMetric(liveBroadcastMetricTotal(row.metrics[col.key])) }}</p>
-                <p class="lbl-metric__line">基准 {{ formatLiveBroadcastMetric(row.metrics[col.key].base) }}</p>
-                <p class="lbl-metric__line">实际 {{ formatLiveBroadcastMetric(row.metrics[col.key].actual) }}</p>
+                <template v-if="col.key === 'people'">
+                  <p class="lbl-metric__line">总数 {{ formatLiveBroadcastMetric(liveBroadcastPeopleTotal(row.metrics.people)) }}</p>
+                  <p class="lbl-metric__line">基准 {{ formatLiveBroadcastMetric(row.metrics.people.base) }}</p>
+                  <p class="lbl-metric__line">虚拟 {{ formatLiveBroadcastMetric(row.metrics.people.virtual) }}</p>
+                  <p class="lbl-metric__line">会员 {{ formatLiveBroadcastMetric(row.metrics.people.member) }}</p>
+                  <p class="lbl-metric__line">游客 {{ formatLiveBroadcastMetric(row.metrics.people.guest) }}</p>
+                </template>
+                <template v-else>
+                  <p class="lbl-metric__line">总数 {{ formatLiveBroadcastMetric(liveBroadcastMetricTotal(row.metrics[col.key])) }}</p>
+                  <p class="lbl-metric__line">基准 {{ formatLiveBroadcastMetric(row.metrics[col.key].base) }}</p>
+                  <p class="lbl-metric__line">实际 {{ formatLiveBroadcastMetric(row.metrics[col.key].actual) }}</p>
+                </template>
               </td>
               <td class="wf-td wf-td--actions wf-td--center">
                 <button type="button" class="wf-link-action" @click="enterRoom">进入直播间</button>
@@ -276,9 +286,18 @@ watch(totalPages, (last) => {
             <div class="lbl-card__metrics">
               <p v-for="col in LIVE_BROADCAST_METRIC_COLUMNS" :key="col.key" class="lbl-card__metric">
                 {{ col.label }}
-                <span>总数 {{ formatLiveBroadcastMetric(liveBroadcastMetricTotal(row.metrics[col.key])) }}</span>
-                <span>基准 {{ formatLiveBroadcastMetric(row.metrics[col.key].base) }}</span>
-                <span>实际 {{ formatLiveBroadcastMetric(row.metrics[col.key].actual) }}</span>
+                <template v-if="col.key === 'people'">
+                  <span>总数 {{ formatLiveBroadcastMetric(liveBroadcastPeopleTotal(row.metrics.people)) }}</span>
+                  <span>基准 {{ formatLiveBroadcastMetric(row.metrics.people.base) }}</span>
+                  <span>虚拟 {{ formatLiveBroadcastMetric(row.metrics.people.virtual) }}</span>
+                  <span>会员 {{ formatLiveBroadcastMetric(row.metrics.people.member) }}</span>
+                  <span>游客 {{ formatLiveBroadcastMetric(row.metrics.people.guest) }}</span>
+                </template>
+                <template v-else>
+                  <span>总数 {{ formatLiveBroadcastMetric(liveBroadcastMetricTotal(row.metrics[col.key])) }}</span>
+                  <span>基准 {{ formatLiveBroadcastMetric(row.metrics[col.key].base) }}</span>
+                  <span>实际 {{ formatLiveBroadcastMetric(row.metrics[col.key].actual) }}</span>
+                </template>
               </p>
             </div>
             <button type="button" class="wf-link-action" @click="enterRoom">进入直播间</button>
@@ -349,7 +368,7 @@ watch(totalPages, (last) => {
 
 .lbl-th-metric,
 .lbl-metric {
-  min-width: 108px;
+  min-width: 118px;
 }
 
 .lbl-th-head {

@@ -783,7 +783,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">人数变化</h5>
                 <p class="lal-sub__desc">
-                  每分钟按人数增加区间加人、按人数减少区间减人。不依赖真实用户进房，就算暂时没人进来，展示人数也会自己起伏。展示人数 = 基准人数 + 虚拟人数，不低于基准。
+                  每分钟按人数增加区间加人、按人数减少区间减人。不依赖真实用户进房，就算暂时没人进来，虚拟人数也会自己起伏。展示人数 = 基准人数 + 虚拟人数 + 实际人数（包含游客），不低于基准。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">人数增加</label>
@@ -836,7 +836,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">预约增减</h5>
                 <p class="lal-sub__desc">
-                  登录用户点击预约，展示预约 + 范围内随机整数；登录用户取消预约，展示预约 − 范围内随机整数；结果不低于 0。游客不计入。
+                  登录用户点击预约，展示预约 + 范围内随机整数；登录用户取消预约，展示预约 − 范围内随机整数；结果不低于 0。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">点击增加</label>
@@ -889,7 +889,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">本场点赞</h5>
                 <p class="lal-sub__desc">
-                  登录用户每次点赞，本场点赞 + 范围内随机整数；结果不低于 0。游客点赞不计入。
+                  登录用户每次点赞，本场点赞 + 范围内随机整数；结果不低于 0。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">点赞增加</label>
@@ -919,7 +919,7 @@ function saveModal() {
               <div class="lal-sub">
                 <h5 class="lal-sub__title">热度综合</h5>
                 <p class="lal-sub__desc">
-                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 虚拟人数。弹幕、礼物、点赞均不计游客。
+                  展示热度 = 基础热度 + 展示人数×人数系数 + 弹幕条数×弹幕系数 + 礼物金额×礼物系数 + 本场点赞×点赞系数。展示人数 = 基准人数 + 虚拟人数 + 实际人数（包含游客）。弹幕、礼物均不计游客。
                 </p>
                 <div class="wf-form-row lal-form-row">
                   <label class="wf-form-row__label">人数系数</label>
