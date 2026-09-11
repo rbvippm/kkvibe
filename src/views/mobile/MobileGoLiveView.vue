@@ -127,14 +127,14 @@ const pickingTimeLabel = computed(() =>
   ),
 )
 const scheduleBadgeMap = computed(() => {
-  const map: Record<string, { text: string; tone: 'soon' | 'late' } | null> = {}
+  const map: Record<string, { text: string; tone: 'soon' | 'late' | 'pending' }> = {}
   for (const item of activeSchedules.value) {
     if (isGoLiveScheduleOvertime(item, nowMs.value)) {
       map[item.id] = { text: formatGoLiveOvertime(item.startAt, nowMs.value), tone: 'late' }
     } else if (nearestSchedule.value?.id === item.id) {
       map[item.id] = { text: '即将开始', tone: 'soon' }
     } else {
-      map[item.id] = null
+      map[item.id] = { text: '待播', tone: 'pending' }
     }
   }
   return map
@@ -202,7 +202,7 @@ function tickSchedules() {
   nowMs.value = Date.now()
   const expired = expireOverdueGoLiveSchedules(nowMs.value)
   if (expired.length) {
-    showToast(t('「{title}」已超时失效，已通知预约粉丝', { title: expired[0].title }))
+    showToast(t('「{title}」已超时失效', { title: expired[0].title }))
   }
   if (linkedId.value && !linkedSchedule.value) {
     const next = nearestPendingGoLiveSchedule(nowMs.value)
@@ -376,7 +376,7 @@ function editSchedule(item: GoLiveSchedule) {
 async function removeSchedule(item: GoLiveSchedule) {
   const ok = await mh5Confirm({
     title: '删除直播预告？',
-    message: '删除后已预约粉丝将收到取消通知，该场次不可恢复。',
+    message: '删除后该场次不可恢复。',
     confirmText: '删除',
     cancelText: '再想想',
   })
@@ -388,7 +388,7 @@ async function removeSchedule(item: GoLiveSchedule) {
     else unlinkSchedule()
   }
   tickSchedules()
-  showToast('预告已删除，已通知预约粉丝（原型）')
+  showToast('预告已删除')
 }
 
 function sendPoster() {
@@ -458,7 +458,7 @@ function submitLive() {
     fulfillGoLiveSchedule(schedule.id)
     unlinkSchedule()
     tickSchedules()
-    showToast(t('已向 {n} 位预约粉丝推送开播通知', { n: count }))
+    showToast(t('已开播'))
     window.setTimeout(() => enterFulfilledRoom(schedule, count), 700)
     return
   }

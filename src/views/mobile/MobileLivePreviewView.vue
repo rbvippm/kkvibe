@@ -133,7 +133,7 @@ function toggleReserve() {
   if (!card.value) return
   const result = toggleDiscoverPreviewReserve(card.value.id)
   reservedTick.value += 1
-  if (result === 'reserved') showToast('预约成功，开播时会提醒你')
+  if (result === 'reserved') showToast('预约成功')
   else if (result === 'cancelled') showToast('已取消预约')
   else showToast('本场预告已失效')
 }

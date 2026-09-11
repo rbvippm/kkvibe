@@ -2427,6 +2427,11 @@
   color: #cf1322;
 }
 
+.lal-badge--pending {
+  background: #f5f5f5;
+  color: #8c8c8c;
+}
+
 .lal-badge--draft {
   background: var(--pc-primary-bg);
   color: var(--pc-primary);

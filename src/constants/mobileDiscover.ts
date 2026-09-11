@@ -3,7 +3,6 @@
 import { reactive } from 'vue'
 import {
   GO_LIVE_HOST_NAME,
-  GO_LIVE_SCHEDULE_OVERTIME_MIN,
   findGoLiveSchedule,
   goLiveScheduleStore,
   isGoLiveScheduleReserved,
@@ -42,7 +41,7 @@ export type DiscoverLiveCard = {
   startAt?: number
   /** 预告预约人数（主播场次以开播页数据为准） */
   subscriberCount?: number
-  /** 运营排序，数字越大越靠前；缺省按 0 */
+  /** 运营排序，数字越小越靠前；缺省按 999，与后台直播列表一致 */
   sortOrder?: number
   /** 开播大类；缺省时语聊房卡视为 voice，其余为 video */
   liveMode?: DiscoverLiveMode
@@ -213,8 +212,6 @@ export const MOCK_DISCOVER_LIVE_CARDS: DiscoverLiveCard[] = [
   },
 ]
 
-const HOST_SCHEDULE_OVERTIME_MS = GO_LIVE_SCHEDULE_OVERTIME_MIN * 60_000
-
 const discoverPreviewReserveStore = reactive<{ ids: string[]; extra: Record<string, number> }>({
   ids: [],
   extra: {},
@@ -255,7 +252,7 @@ function visibleHostScheduleCards(now: number): DiscoverLiveCard[] {
   return goLiveScheduleStore.items
     .filter((item) => {
       if (item.status === 'live') return true
-      return item.status === 'pending' && now < item.startAt + HOST_SCHEDULE_OVERTIME_MS
+      return item.status === 'pending' && now < item.startAt + LIVE_PREVIEW_LATE_LIMIT_MS
     })
     .map(mapGoLiveScheduleToDiscoverCard)
 }
@@ -277,7 +274,7 @@ export function isLivePreviewExpired(card: DiscoverLiveCard, now = Date.now()): 
       return true
     }
     if (schedule.status === 'live') return false
-    return now >= schedule.startAt + HOST_SCHEDULE_OVERTIME_MS
+    return now >= schedule.startAt + LIVE_PREVIEW_LATE_LIMIT_MS
   }
   if (!isLivePreviewCard(card) || card.startAt == null) return false
   return now >= card.startAt + LIVE_PREVIEW_LATE_LIMIT_MS
@@ -364,8 +361,11 @@ export function parseDiscoverHeat(heat: string): number {
   return Number.isFinite(num) ? num : 0
 }
 
+/** 未设置运营排序时与后台直播列表相同，按 999 参与比较 */
+const DISCOVER_LIVE_SORT_DEFAULT = 999
+
 function discoverCardSortOrder(card: DiscoverLiveCard) {
-  return card.sortOrder ?? 0
+  return card.sortOrder ?? DISCOVER_LIVE_SORT_DEFAULT
 }
 
 function compareDiscoverLiveCards(a: DiscoverLiveCard, b: DiscoverLiveCard) {
@@ -373,7 +373,7 @@ function compareDiscoverLiveCards(a: DiscoverLiveCard, b: DiscoverLiveCard) {
   const bLive = !isLivePreviewCard(b)
   if (aLive !== bLive) return aLive ? -1 : 1
 
-  const sortDiff = discoverCardSortOrder(b) - discoverCardSortOrder(a)
+  const sortDiff = discoverCardSortOrder(a) - discoverCardSortOrder(b)
   if (sortDiff !== 0) return sortDiff
 
   if (aLive) return parseDiscoverHeat(b.heat) - parseDiscoverHeat(a.heat)

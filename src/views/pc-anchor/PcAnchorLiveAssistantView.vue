@@ -1652,7 +1652,7 @@ function onScheduleHourChange(event: Event) {
             </template>
 
             <template v-else-if="a.modal.value === 'deleteSchedule'">
-              <p>删除后已预约粉丝将收到取消通知，该场次不可恢复。</p>
+              <p>删除后该场次不可恢复。</p>
               <p v-if="a.deleteTarget.value">场次：{{ a.deleteTarget.value.title }}</p>
             </template>
           </div>

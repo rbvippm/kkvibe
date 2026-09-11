@@ -277,21 +277,21 @@ export function useLiveAnchorAssistant() {
   })
   const startConfirmHint = computed(() => {
     if (linkedSchedule.value) {
-      return `将向 ${linkedSchedule.value.subscriberCount} 位预约粉丝推送开播通知。`
+      return '开播后该场预告变为直播中，观众可从社区列表进房。'
     }
     if (liveMode.value === 'voice') return '创建后观众可进入本房间。'
     if (liveMode.value === 'screen') return '观众将实时看到投屏画面。'
     return '开始后观众可见本房间。'
   })
   const scheduleBadgeMap = computed(() => {
-    const map: Record<string, { text: string; tone: 'soon' | 'late' } | null> = {}
+    const map: Record<string, { text: string; tone: 'soon' | 'late' | 'pending' }> = {}
     for (const item of activeSchedules.value) {
       if (isGoLiveScheduleOvertime(item, nowMs.value)) {
         map[item.id] = { text: formatGoLiveOvertime(item.startAt, nowMs.value), tone: 'late' }
       } else if (nearestSchedule.value?.id === item.id) {
         map[item.id] = { text: '即将开始', tone: 'soon' }
       } else {
-        map[item.id] = null
+        map[item.id] = { text: '待播', tone: 'pending' }
       }
     }
     return map
@@ -586,7 +586,7 @@ export function useLiveAnchorAssistant() {
     nowMs.value = Date.now()
     const expired = expireOverdueGoLiveSchedules(nowMs.value)
     if (expired.length) {
-      showPcToast(`「${expired[0].title}」已超时失效，已通知预约粉丝`)
+      showPcToast(`「${expired[0].title}」已超时失效`)
     }
     if (linkedId.value && !linkedSchedule.value) {
       const next = nearestPendingGoLiveSchedule(nowMs.value)
@@ -747,7 +747,7 @@ export function useLiveAnchorAssistant() {
     deleteTarget.value = null
     tickSchedules()
     openModal('previewNotice')
-    showPcToast('预告已删除，已通知预约粉丝（原型）')
+    showPcToast('预告已删除')
   }
 
   function cancelDeleteSchedule() {
@@ -908,12 +908,10 @@ export function useLiveAnchorAssistant() {
       return
     }
     if (linkedSchedule.value) {
-      const schedule = linkedSchedule.value
-      const count = schedule.subscriberCount
-      fulfillGoLiveSchedule(schedule.id)
+      fulfillGoLiveSchedule(linkedSchedule.value.id)
       unlinkSchedule()
       tickSchedules()
-      beginLive(`已向 ${count} 位预约粉丝推送开播通知`)
+      beginLive('已开播')
       return
     }
     if (liveMode.value === 'voice') {

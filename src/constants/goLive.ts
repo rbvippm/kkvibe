@@ -133,7 +133,7 @@ export type GoLiveSchedule = {
   startAt: number
   subscriberCount: number
   status: GoLiveScheduleStatus
-  /** 社区列表运营排序，数字越大越靠前 */
+  /** 社区列表运营排序，数字越小越靠前 */
   sortOrder?: number
 }
 

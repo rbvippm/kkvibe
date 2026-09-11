@@ -31565,6 +31565,11 @@ div.agent-home__profit-tab--ratio {
   color: #f87171;
 }
 
+.mh5-golive-scard__badge.is-pending {
+  background: rgb(255 255 255 / 10%);
+  color: rgb(255 255 255 / 72%);
+}
+
 .mh5-golive-scard strong {
   display: block;
   margin-bottom: 4px;
