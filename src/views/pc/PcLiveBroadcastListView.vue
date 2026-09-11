@@ -151,7 +151,7 @@ function applySort(roomId: string) {
   setLiveBroadcastSort(roomId, parsed.value)
   sortDraft.value = { ...sortDraft.value, [roomId]: String(parsed.value) }
   sortTick.value += 1
-  showPcToast(raw.trim() === '' ? '已恢复默认排序 999' : '已更新排序')
+  showPcToast(raw.trim() === '' ? `已恢复默认排序 ${LIVE_BROADCAST_SORT_DEFAULT}` : '已更新排序')
 }
 
 watch(pageSize, () => {
