@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
+import { showPcToast } from '../../composables/usePcToast'
 import { LIVE_BROADCAST_LIST_ANNOT_MAP } from '../../constants/liveBroadcastListSpec'
 import {
   LIVE_BROADCAST_CATEGORY_OPTIONS,
@@ -10,13 +11,18 @@ import {
   LIVE_BROADCAST_MODE_OPTIONS,
   LIVE_BROADCAST_PAGE_SIZE_OPTIONS,
   LIVE_BROADCAST_ROWS,
+  LIVE_BROADCAST_SORT_DEFAULT,
   LIVE_BROADCAST_STATUS_OPTIONS,
+  compareLiveBroadcastSort,
   formatLiveBroadcastGame,
   formatLiveBroadcastMetric,
+  getLiveBroadcastSort,
   liveBroadcastMetricTotal,
   liveBroadcastPeopleTotal,
   liveBroadcastModeLabel,
   liveBroadcastStatusLabel,
+  parseLiveBroadcastSortInput,
+  setLiveBroadcastSort,
   type LiveBroadcastMode,
   type LiveBroadcastRow,
   type LiveBroadcastStatus,
@@ -43,6 +49,7 @@ const defaultFilter = (): ListFilter => ({
 })
 
 const statusAnnot = LIVE_BROADCAST_LIST_ANNOT_MAP.liveStatus
+const sortAnnot = LIVE_BROADCAST_LIST_ANNOT_MAP.sort
 const metricAnnotByKey = {
   people: LIVE_BROADCAST_LIST_ANNOT_MAP.people,
   appointment: LIVE_BROADCAST_LIST_ANNOT_MAP.appointment,
@@ -56,8 +63,13 @@ const viewMode = ref<LiveBroadcastViewMode>('list')
 const pageSize = ref<(typeof LIVE_BROADCAST_PAGE_SIZE_OPTIONS)[number]>(10)
 const page = ref(1)
 const jumpInput = ref('1')
+const sortTick = ref(0)
+const sortDraft = ref<Record<string, string>>({})
 
-const filteredRows = computed(() => LIVE_BROADCAST_ROWS.filter(matchRow))
+const filteredRows = computed(() => {
+  void sortTick.value
+  return LIVE_BROADCAST_ROWS.filter(matchRow).slice().sort(compareLiveBroadcastSort)
+})
 
 const total = computed(() => filteredRows.value.length)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
@@ -119,6 +131,27 @@ function jumpToPage() {
 
 function enterRoom() {
   void router.push({ name: 'pc-live-broadcast' })
+}
+
+function sortInputValue(roomId: string) {
+  return sortDraft.value[roomId] ?? String(getLiveBroadcastSort(roomId))
+}
+
+function updateSortDraft(roomId: string, value: string) {
+  sortDraft.value = { ...sortDraft.value, [roomId]: value }
+}
+
+function applySort(roomId: string) {
+  const raw = sortInputValue(roomId)
+  const parsed = parseLiveBroadcastSortInput(raw)
+  if (!parsed.ok) {
+    showPcToast(parsed.message, 'error')
+    return
+  }
+  setLiveBroadcastSort(roomId, parsed.value)
+  sortDraft.value = { ...sortDraft.value, [roomId]: String(parsed.value) }
+  sortTick.value += 1
+  showPcToast(raw.trim() === '' ? '已恢复默认排序 999' : '已更新排序')
 }
 
 watch(pageSize, () => {
@@ -216,6 +249,17 @@ watch(totalPages, (last) => {
               <th class="wf-th">游戏分类 / 游戏名称</th>
               <th class="wf-th">直播分类</th>
               <th class="wf-th">直播状态</th>
+              <th class="wf-th">
+                <span class="lbl-th-head">
+                  排序
+                  <WfSpecAnnot
+                    :no="sortAnnot.no"
+                    :title="sortAnnot.title"
+                    :items="[...sortAnnot.items]"
+                    placement="top"
+                  />
+                </span>
+              </th>
               <th
                 v-for="col in LIVE_BROADCAST_METRIC_COLUMNS"
                 :key="col.key"
@@ -236,7 +280,7 @@ watch(totalPages, (last) => {
           </thead>
           <tbody>
             <tr v-if="!pageRows.length">
-              <td colspan="12" class="wf-td wf-td--empty">暂无数据</td>
+              <td colspan="13" class="wf-td wf-td--empty">暂无数据</td>
             </tr>
             <tr v-for="row in pageRows" :key="row.roomId">
               <td class="wf-td">{{ row.roomId }}</td>
@@ -246,6 +290,37 @@ watch(totalPages, (last) => {
               <td class="wf-td">{{ formatLiveBroadcastGame(row) }}</td>
               <td class="wf-td">{{ row.category }}</td>
               <td class="wf-td">{{ liveBroadcastStatusLabel(row.status) }}</td>
+              <td class="wf-td">
+                <div class="lbl-sort">
+                  <input
+                    :id="`lbl-sort-${row.roomId}`"
+                    :value="sortInputValue(row.roomId)"
+                    type="text"
+                    inputmode="numeric"
+                    class="wf-input lbl-sort__input"
+                    placeholder="999"
+                    @input="updateSortDraft(row.roomId, ($event.target as HTMLInputElement).value)"
+                    @keydown.enter.prevent="applySort(row.roomId)"
+                  />
+                  <button
+                    type="button"
+                    class="lbl-sort__apply"
+                    aria-label="应用排序"
+                    @click="applySort(row.roomId)"
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </td>
               <td
                 v-for="col in LIVE_BROADCAST_METRIC_COLUMNS"
                 :key="`${row.roomId}-${col.key}`"
@@ -279,6 +354,36 @@ watch(totalPages, (last) => {
           <div class="lbl-card__body">
             <h2 class="lbl-card__name">{{ row.hostName }}</h2>
             <p class="lbl-card__meta">直播间ID {{ row.roomId }}</p>
+            <div class="lbl-sort lbl-sort--card">
+              <label class="lbl-sort__label" :for="`lbl-sort-card-${row.roomId}`">排序</label>
+              <input
+                :id="`lbl-sort-card-${row.roomId}`"
+                :value="sortInputValue(row.roomId)"
+                type="text"
+                inputmode="numeric"
+                class="wf-input lbl-sort__input"
+                placeholder="999"
+                @input="updateSortDraft(row.roomId, ($event.target as HTMLInputElement).value)"
+                @keydown.enter.prevent="applySort(row.roomId)"
+              />
+              <button
+                type="button"
+                class="lbl-sort__apply"
+                aria-label="应用排序"
+                @click="applySort(row.roomId)"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  <path
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"
+                  />
+                </svg>
+              </button>
+            </div>
             <p class="lbl-card__meta">
               {{ liveBroadcastModeLabel(row.mode) }} · {{ row.category }} · {{ liveBroadcastStatusLabel(row.status) }}
             </p>
@@ -359,7 +464,47 @@ watch(totalPages, (last) => {
 <style scoped>
 .lbl-table {
   table-layout: auto;
-  min-width: 1280px;
+  min-width: 1420px;
+}
+
+.lbl-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lbl-sort--card {
+  margin: 0 0 6px;
+}
+
+.lbl-sort__label {
+  color: var(--pc-text-secondary);
+  font-size: var(--pc-font-size-sm);
+  white-space: nowrap;
+}
+
+.lbl-sort__input {
+  width: 72px;
+  text-align: center;
+}
+
+.lbl-sort__apply {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--pc-border);
+  border-radius: var(--pc-radius);
+  background: var(--pc-bg-page);
+  color: var(--pc-text);
+  cursor: pointer;
+}
+
+.lbl-sort__apply:hover {
+  border-color: var(--pc-primary);
+  color: var(--pc-primary);
 }
 
 .wf-table .wf-th--op {

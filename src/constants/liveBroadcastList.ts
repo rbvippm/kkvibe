@@ -295,3 +295,66 @@ export function liveBroadcastMetricTotal(pair: LiveBroadcastMetricPair) {
 export function liveBroadcastPeopleTotal(metric: LiveBroadcastPeopleMetric) {
   return metric.base + metric.virtual + metric.member + metric.guest
 }
+
+export const LIVE_BROADCAST_SORT_DEFAULT = 999
+export const LIVE_BROADCAST_SORT_MIN = 0
+export const LIVE_BROADCAST_SORT_MAX = 9999
+
+const LIVE_BROADCAST_SORT_KEY = 'pc-live-broadcast-sort-v1'
+
+type LiveBroadcastSortMap = Record<string, number>
+
+function readLiveBroadcastSortMap(): LiveBroadcastSortMap {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = window.localStorage.getItem(LIVE_BROADCAST_SORT_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object') return {}
+    const next: LiveBroadcastSortMap = {}
+    for (const [roomId, value] of Object.entries(parsed)) {
+      if (Number.isInteger(value)) next[roomId] = Number(value)
+    }
+    return next
+  } catch {
+    return {}
+  }
+}
+
+function writeLiveBroadcastSortMap(map: LiveBroadcastSortMap) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(LIVE_BROADCAST_SORT_KEY, JSON.stringify(map))
+}
+
+/** 未设置过的房间默认 999；已设置的按直播间ID记住 */
+export function getLiveBroadcastSort(roomId: string): number {
+  const value = readLiveBroadcastSortMap()[roomId]
+  return Number.isInteger(value) ? value : LIVE_BROADCAST_SORT_DEFAULT
+}
+
+export function setLiveBroadcastSort(roomId: string, value: number) {
+  const next = readLiveBroadcastSortMap()
+  next[roomId] = value
+  writeLiveBroadcastSortMap(next)
+}
+
+export function compareLiveBroadcastSort(a: LiveBroadcastRow, b: LiveBroadcastRow) {
+  const sortDiff = getLiveBroadcastSort(a.roomId) - getLiveBroadcastSort(b.roomId)
+  if (sortDiff !== 0) return sortDiff
+  return a.roomId.localeCompare(b.roomId)
+}
+
+export function parseLiveBroadcastSortInput(
+  raw: string,
+): { ok: true; value: number } | { ok: false; message: string } {
+  const text = raw.trim()
+  if (text === '') return { ok: true, value: LIVE_BROADCAST_SORT_DEFAULT }
+  if (!/^\d+$/.test(text)) {
+    return { ok: false, message: '排序须为 0～9999 的整数' }
+  }
+  const value = Number(text)
+  if (value < LIVE_BROADCAST_SORT_MIN || value > LIVE_BROADCAST_SORT_MAX) {
+    return { ok: false, message: '排序须为 0～9999 的整数' }
+  }
+  return { ok: true, value }
+}

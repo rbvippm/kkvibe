@@ -11,18 +11,20 @@ export const LIVE_BROADCAST_LIST_META = {
   title: '直播管理 · 直播列表',
   module: '直播管理',
   updatedAt: '2026-09-11',
-  prdVersion: 'v1.4',
+  prdVersion: 'v1.5',
 } as const
 
 export const LIVE_BROADCAST_LIST_BACKGROUND = [
   '运营需要按场次查看当前房间是正在直播还是直播预告，并核对人数、预约、热度、点赞的展示值是否与主播列表配置对得上。',
   '展示值拆成基准、叠加量、总数：基准读自主播列表该主播的生效配置。人数的展示人数 = 基准 + 虚拟 + 实际，实际再拆成会员和游客（包含游客）；预约、热度、点赞仍用实际。',
-  '本页只做列表核对与进房，不在本页改基准配置。',
+  '运营还需要按房间手动排列表顺序：排序值越小越靠前，未设置默认 999，设定后跟直播间ID绑定。',
+  '本页只做列表核对、排序与进房，不在本页改基准配置。',
 ] as const
 
 export const LIVE_BROADCAST_LIST_GOALS = [
   '筛选和列表都能区分「正在直播」「直播预告」。',
   '人数列展示总数 / 基准 / 虚拟 / 会员 / 游客；预约、热度、点赞仍展示总数 / 基准 / 实际。口径与主播列表生效配置对齐。',
+  '运营可给每个直播间设排序，数值越小越靠前；未设置默认 999；点刷新立刻生效并按直播间ID记住。',
 ]
 
 export const LIVE_BROADCAST_LIST_FEATURE_LIST: LiveBroadcastListFeatureRow[] = [
@@ -112,6 +114,25 @@ export const LIVE_BROADCAST_LIST_FEATURE_LIST: LiveBroadcastListFeatureRow[] = [
       routing: '不跳转；点赞增减范围在主播列表高阶设置。',
     },
   },
+  {
+    id: 6,
+    module: '列表排序',
+    feature: '排序',
+    pageLocation: '列表「排序」列、卡片式排序控件',
+    prd: {
+      functionalLogic:
+        '运营给当前直播间设展示顺序。数值越小越靠前；未设置过默认 999。设定后跟直播间ID绑定，刷新页面仍保留。',
+      interactiveBehavior:
+        '输入框改值不会立刻重排。点刷新图标或在输入框按回车后校验并生效：合法则写入该直播间ID、立刻重排列表，全局顶部提示「已更新排序」；清空后点刷新恢复默认 999，提示「已恢复默认排序 999」。非法值不写入、不重排，全局顶部提示「排序须为 0～9999 的整数」。',
+      visualPresentation:
+        '表头「排序」旁「注6」，位于「直播状态」后、「人数」前。单元格：数字输入框 + 刷新图标按钮。卡片式在直播间ID下方同样一组控件。未设置过的房间输入框默认展示 999。',
+      dataRules:
+        '非负整数，区间 0～9999。未设置过的房间按 999 参与排序。相同排序值再按直播间ID升序稳定排列。绑定键为直播间ID（roomId），不跟主播ID走。',
+      exceptions:
+        '小数、负数、字母、超范围均拦截。筛选后只对当前结果集排序。改排序导致当前页无数据时回到最后一页。',
+      routing: '停留本页，不跳转；排序只影响本列表与卡片顺序。',
+    },
+  },
 ]
 
 export const LIVE_BROADCAST_LIST_SPEC_ANNOT_NO = {
@@ -120,6 +141,7 @@ export const LIVE_BROADCAST_LIST_SPEC_ANNOT_NO = {
   appointment: 3,
   heat: 4,
   like: 5,
+  sort: 6,
 } as const
 
 export type LiveBroadcastListAnnotContext = keyof typeof LIVE_BROADCAST_LIST_SPEC_ANNOT_NO
@@ -158,5 +180,13 @@ export const LIVE_BROADCAST_LIST_ANNOT_MAP: Record<
     no: 5,
     title: '点赞',
     items: ['三行：总数 / 基准 / 实际，总数 = 基准 + 实际。', '基准读主播列表本场点赞底数，实际为登录用户点赞叠加值。'],
+  },
+  sort: {
+    no: 6,
+    title: '排序',
+    items: [
+      '输入后点刷新或回车生效，数值越小越靠前；未设置默认 999。',
+      '设定后跟直播间ID绑定，刷新页面仍保留。',
+    ],
   },
 }
