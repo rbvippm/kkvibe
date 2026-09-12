@@ -18,9 +18,11 @@ const open = defineModel<boolean>('open', { default: false })
 const props = withDefaults(
   defineProps<{
     showFloats?: boolean
+    /** 最近讲解/上次游戏浮窗；预告间无已选游戏时关掉 */
+    showLastGame?: boolean
     interceptOpen?: boolean
   }>(),
-  { showFloats: true, interceptOpen: false },
+  { showFloats: true, showLastGame: true, interceptOpen: false },
 )
 const emit = defineEmits<{
   openGame: [name: string]
@@ -136,7 +138,7 @@ function minimizeGamePlay(ev?: MouseEvent) {
   const anchor = playAnchor.value
 
   if (anchor === 'center') showGameCenterFloat.value = true
-  else showGameFloat.value = true
+  else if (props.showLastGame) showGameFloat.value = true
   flyChipIcon.value = icon
   flyChip.value = { x: start.x, y: start.y, scale: startScale, opacity: 1 }
   closeGamePlay()
@@ -197,7 +199,7 @@ defineExpose({ openPanel, closePanel })
   <div ref="rootEl" class="mh5-room-gc-anchor">
     <div v-if="showRoomFloats" class="mh5-voice-room__floats">
       <div
-        v-if="showGameFloat"
+        v-if="showLastGame && showGameFloat"
         class="mh5-voice-float"
         :class="{ 'mh5-voice-float--pulse': floatPulse && playAnchor === 'game' }"
         data-voice-float="game"

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MobileRoomBottomBar from '../../components/mobile/MobileRoomBottomBar.vue'
 import MobileRoomGameCenter from '../../components/mobile/MobileRoomGameCenter.vue'
-import MobileRoomShareSheet from '../../components/mobile/MobileRoomShareSheet.vue'
 import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.vue'
 import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
-import { mh5Alert } from '../../composables/useMh5Confirm'
 import { findGoLiveSchedule } from '../../constants/goLive'
 import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
 import {
@@ -23,11 +20,7 @@ import {
   previewSubscriberCount,
   toggleDiscoverPreviewReserve,
 } from '../../constants/mobileDiscover'
-import {
-  LIVE_STREAM_ASSETS,
-  buildLiveStreamRoom,
-  type LiveShareActionKey,
-} from '../../constants/mobileLiveStream'
+import { LIVE_STREAM_ASSETS, buildLiveStreamRoom } from '../../constants/mobileLiveStream'
 
 const PREVIEW_SYSTEM_MSG = '主播尚未开播，开播后即可互动'
 
@@ -35,9 +28,7 @@ const route = useRoute()
 const router = useRouter()
 const nowMs = ref(Date.now())
 const followed = ref(false)
-const showShareSheet = ref(false)
 const showGameCenter = ref(false)
-const muted = ref(false)
 const toast = ref('')
 const reservedTick = ref(0)
 
@@ -99,11 +90,6 @@ const reserveCount = computed(() => {
   return card.value ? previewSubscriberCount(card.value) : 0
 })
 
-const shareLink = computed(() => {
-  if (!room.value) return ''
-  return `https://kkvibe.app/live/${room.value.id}?host=${encodeURIComponent(room.value.hostName)}`
-})
-
 function showToast(message: string) {
   toast.value = message
   window.setTimeout(() => {
@@ -156,57 +142,6 @@ watch([nowMs, card], () => {
 function toggleFollow() {
   followed.value = !followed.value
 }
-
-function openShareSheet() {
-  showShareSheet.value = true
-}
-
-function closeShareSheet() {
-  showShareSheet.value = false
-}
-
-async function shareToFriend(name: string) {
-  closeShareSheet()
-  await mh5Alert({
-    title: `已分享给「${name}」`,
-    message: '原型演示：会话消息已发送',
-    showCancel: false,
-  })
-}
-
-async function handleShareAction(key: LiveShareActionKey) {
-  if (key === 'copy') {
-    try {
-      await navigator.clipboard.writeText(shareLink.value)
-      closeShareSheet()
-      await mh5Alert({
-        title: '链接已复制',
-        message: shareLink.value,
-        showCancel: false,
-      })
-    } catch {
-      closeShareSheet()
-      await mh5Alert({
-        title: '复制失败',
-        message: '请手动长按复制链接',
-        showCancel: false,
-      })
-    }
-    return
-  }
-
-  if (key === 'mute') {
-    muted.value = !muted.value
-  }
-}
-
-async function handleForwarded(names: string[]) {
-  await mh5Alert({
-    title: '转发成功',
-    message: `已转发至：${names.join('、')}`,
-    showCancel: false,
-  })
-}
 </script>
 
 <template>
@@ -241,7 +176,7 @@ async function handleForwarded(names: string[]) {
       </div>
     </div>
 
-    <MobileRoomGameCenter v-model:open="showGameCenter" />
+    <MobileRoomGameCenter v-model:open="showGameCenter" :show-last-game="false" />
 
     <header class="mh5-livestream-header">
       <div class="mh5-livestream-header__row">
@@ -279,31 +214,15 @@ async function handleForwarded(names: string[]) {
       </div>
     </header>
 
-    <div class="mh5-livestream-footer">
-      <div class="mh5-livestream-side">
-        <div class="mh5-livestream-chat">
-          <div class="mh5-livestream-bubble mh5-livestream-bubble--system">
-            {{ hostLive ? $t('主播已开播') : $t('主播尚未开播，开播后即可互动') }}
-          </div>
-        </div>
+    <div class="mh5-livestream-footer mh5-live-preview-footer">
+      <div class="mh5-live-preview-hold" role="status">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.4" />
+          <path d="M8 4.6v.2M8 7v4.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <span>{{ hostLive ? $t('主播已开播') : $t('主播尚未开播，开播后即可互动') }}</span>
       </div>
-
-      <MobileRoomBottomBar
-        :input-label="$t('开播后即可发言')"
-        input-with-emoji
-        input-disabled
-        @game="showGameCenter = true"
-        @share="openShareSheet"
-      />
     </div>
-
-    <MobileRoomShareSheet
-      v-model:open="showShareSheet"
-      :muted="muted"
-      @action="handleShareAction"
-      @share-friend="shareToFriend"
-      @forwarded="handleForwarded"
-    />
     <p v-if="toast" class="mh5-golive-toast" role="status">{{ toast }}</p>
   </div>
 </template>

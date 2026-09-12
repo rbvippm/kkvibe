@@ -1007,8 +1007,17 @@ onUnmounted(() => {
                 {{ scheduleBadgeMap[item.id]?.text }}
               </span>
             </div>
-            <strong>{{ item.title }}</strong>
-            <span>{{ scheduleMeta(item) }}</span>
+            <div class="mh5-golive-scard__main">
+              <div class="mh5-golive-scard__info">
+                <strong class="mh5-golive-scard__title">{{ item.title }}</strong>
+                <span class="mh5-golive-scard__meta">{{ scheduleMeta(item) }}</span>
+              </div>
+              <img
+                class="mh5-golive-scard__cover"
+                :src="item.cover"
+                :alt="item.title"
+              />
+            </div>
             <div class="mh5-golive-scard__actions">
               <button type="button" @click="editSchedule(item)">{{ $t('编辑') }}</button>
               <button type="button" @click="removeSchedule(item)">{{ $t('删除') }}</button>

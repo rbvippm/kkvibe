@@ -165,6 +165,11 @@ function atHour(daysFromToday: number, hour: number, minute: number) {
   return date.getTime()
 }
 
+/** 相对当前时刻回拨，保证刷新后仍落在「已超时」且未满 2 小时保留窗 */
+function minutesAgo(minutes: number) {
+  return Date.now() - minutes * 60_000
+}
+
 function newScheduleId() {
   const date = new Date()
   const stamp = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
@@ -217,13 +222,13 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
       status: 'live',
     },
     {
-      id: 'sch_20260908_89732',
-      title: '小红来了正在直播',
+      id: 'sch_20260912_11880',
+      title: '西甲联赛 皇马VS巴萨',
       cover: GO_LIVE_SPORTS_COVERS[5],
       category: '体育竞赛',
       mode: 'video',
-      startAt: atHour(1, 14, 45),
-      subscriberCount: 0,
+      startAt: minutesAgo(18),
+      subscriberCount: 52,
       status: 'pending',
     },
     {
@@ -270,7 +275,7 @@ export const goLiveScheduleStore = reactive<{ items: GoLiveSchedule[]; reservedI
   reservedIds: [],
 })
 
-const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v4'
+const GO_LIVE_STORE_KEY = 'mh5-go-live-schedule-store-v5'
 
 function applyGoLiveStoreSnapshot(data: { items?: GoLiveSchedule[]; reservedIds?: string[] }) {
   if (Array.isArray(data.items)) {
