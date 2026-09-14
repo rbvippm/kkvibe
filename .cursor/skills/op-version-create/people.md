@@ -1,8 +1,8 @@
 # OP 人员花名对照
 
-创建前用目标项目的 `available_assignees` 核对 ID，表只是默认。对不上就问，不要猜。
+创建前用目标项目可指派列表核对 ID，表只是默认。对不上就问，不要猜。`GET /api/v3/users` 若 403，改查 `/api/v3/principals`。
 
-## 已确认（v2.24.1 用过）
+## 已确认（v2.24.1 / v2.27.0 用过）
 
 | 排期常见写法 | OpenProject 显示名 | userId |
 |---|---|---|
@@ -18,6 +18,9 @@
 | negan / Negan | kylin Android | 51 |
 | pual / Pual / paul / Paul | tt-kk Go-Payment | 41 |
 | kaio / Kaio | kaio QA | 97 |
+| eva / Eva | eva Golang | 60 |
+| zustand / Zustand | zustand H5 | 57 |
+| byran / Byran | byran Golang | 83 |
 
 `kai` 与 `kaio` 必须整词区分，不要互相误伤。
 
@@ -27,5 +30,4 @@
 
 | OpenProject 显示名 | userId | 备注 |
 |---|---|---|
-| eva Golang | 60 | 出现在 v2.24.0 |
 | claude H5 | 45 | 出现在 v2.24.0 |
