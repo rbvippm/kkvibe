@@ -1,6 +1,6 @@
 ---
 name: op-version-create
-description: 按排期表在 OpenProject 搭版本固定骨架与开发模块。QA 必建四件套+表底排期；BUG 必按 DEV→STG→PROD；先邀请再指派。适用于 /op版本创建、建立op、创建OP版本、搭版本计划、补 QA/BUG 骨架。
+description: 按排期表在 OpenProject 搭版本固定骨架与开发模块。QA 必建四件套+表底排期；BUG 必按 DEV→STG→PROD；QA/BUG 默认指派 ruby QA（管理员）。适用于 /op版本创建、建立op、创建OP版本、搭版本计划、补 QA/BUG 骨架。
 ---
 
 # op版本创建
@@ -149,6 +149,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 | negan | kylin Android | 51 |
 | pual / paul | tt-kk Go-Payment | 41 |
 | kaio | kaio QA | 97 |
+| ruby | ruby QA | 13 |
 
 ### 先邀请再指派
 
@@ -166,7 +167,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 }
 ```
 
-角色固定 **Member（id=4）**。已是成员则跳过。ezreal 一般已是 Project admin，不必再邀。
+默认角色 **Member（id=4）**。**Ruby 固定用 Project admin（id=3）**，不要降成 Member。已是成员则跳过（Ruby 若已是 Member，PATCH membership 升为 Project admin）。ezreal 一般已是 Project admin，不必再邀。
 
 指派：
 
@@ -175,7 +176,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 | 版本计划、PM、PM 三件套、开发 Phase | ezreal PM |
 | 模块 Phase | 该模块服务端负责人；无服务端则用第一个已建端口的人 |
 | 端侧 Task | 该端口在 `投入人力` 里的人 |
-| QA 四件套、QA Phase、BUG 三环境 | 排期测试负责人。花名为 `xxx` / 空 / 未映射：**任务照建，不指派、不猜 kaio** |
+| QA Phase、QA 四件套、BUG目录、BUG 三环境 | **一律 ruby QA（id=13）**。排期测试是 `xxx` / 空 / 别人：仍指派 Ruby，不要空着、不要猜 kaio |
 
 ## 执行流程
 
@@ -193,7 +194,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 开发模块（同名已合并）：
 - 直播预告 → 服务端、IOS、安卓、H5
 - 人气热度 → 服务端、IOS、安卓、H5
-待确认：测试 xxx → QA/BUG 不指派
+QA/BUG 受理人：ruby QA（Project admin）
 ```
 
 ## 工具

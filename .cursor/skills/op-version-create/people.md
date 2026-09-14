@@ -18,11 +18,14 @@
 | negan / Negan | kylin Android | 51 |
 | pual / Pual / paul / Paul | tt-kk Go-Payment | 41 |
 | kaio / Kaio | kaio QA | 97 |
+| ruby / Ruby | ruby QA | 13 |
 | eva / Eva | eva Golang | 60 |
 | zustand / Zustand | zustand H5 | 57 |
 | byran / Byran | byran Golang | 83 |
 
 `kai` 与 `kaio` 必须整词区分，不要互相误伤。
+
+**Ruby**：建版本时默认进项目，角色 **Project admin（`/api/v3/roles/3`）**；QA / BUG 目录及全部子项受理人一律指派给她。
 
 ## 项目里可能出现、禁止自动对花名
 
