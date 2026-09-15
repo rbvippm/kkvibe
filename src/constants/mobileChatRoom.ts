@@ -36,10 +36,20 @@ export type ChatMediaItem = {
   src: string
   isVideo?: boolean
   duration?: string
+  /** 视频体积，如下载中的「18.4 MB」 */
+  sizeLabel?: string
+  /** 对方图片/视频按条下载：待下 / 下载中 / 已暂停 / 完成 / 失败 */
+  downloadStatus?: ChatFileDownloadStatus
+  /** 单条下载进度 0–100 */
+  downloadProgress?: number
+  /** 本人多图/视频按条上传：排队 / 上传中 / 已暂停 / 完成 */
+  uploadStatus?: 'queued' | 'sending' | 'paused' | 'sent'
+  /** 单条上传进度 0–100 */
+  uploadProgress?: number
 }
 
-/** 本人媒体气泡发送态：上传中 / 失败 / 已送达 */
-export type ChatMediaSendStatus = 'sending' | 'failed' | 'sent'
+/** 本人媒体气泡发送态：上传中 / 已暂停 / 失败 / 已送达 */
+export type ChatMediaSendStatus = 'sending' | 'paused' | 'failed' | 'sent'
 
 export type ChatRoomMessage = {
   id: string
@@ -57,7 +67,7 @@ export type ChatRoomMessage = {
   /** 用户配文 */
   text?: string
   sendStatus?: ChatMediaSendStatus
-  /** 上传进度 0–100，仅 sending */
+  /** 上传进度 0–100，上传中 / 已暂停时保留，继续传不从头开始 */
   uploadProgress?: number
   /** WhatsApp 风格原始文件气泡 */
   file?: ChatFileAttachment
@@ -236,12 +246,43 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       time: '22:01',
       read: false,
       layout: '5-plus',
-      media: pick(4, 0),
+      media: pick(4, 0).map((item, index) => ({
+        ...item,
+        uploadStatus: index === 0 ? 'sending' : 'queued',
+        uploadProgress: index === 0 ? 25 : 0,
+      })),
       extraCount: 3,
       text: 'ok',
       sendStatus: 'sending',
-      uploadProgress: 25,
       caption: '多图 · 上传中',
+    },
+    {
+      id: 'm-upload-2v',
+      direction: 'sent',
+      time: '22:25',
+      read: false,
+      layout: '2-portrait',
+      media: [
+        { src: M[0], isVideo: true, duration: '0:12', uploadStatus: 'sending', uploadProgress: 42 },
+        { src: M[1], isVideo: true, duration: '0:04', uploadStatus: 'queued', uploadProgress: 0 },
+      ],
+      sendStatus: 'sending',
+      caption: '双视频 · 上传中可暂停',
+    },
+    {
+      id: 'm-paused',
+      direction: 'sent',
+      time: '22:26',
+      read: false,
+      layout: '5-plus',
+      media: pick(4, 2).map((item, index) => ({
+        ...item,
+        uploadStatus: index === 0 ? 'paused' : 'queued',
+        uploadProgress: index === 0 ? 68 : 0,
+      })),
+      extraCount: 1,
+      sendStatus: 'paused',
+      caption: '多图 · 已暂停',
     },
     {
       id: 'm-fail',
@@ -261,10 +302,70 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       avatar: CHAT_ROOM_ASSETS.avatar,
       time: '22:05',
       layout: '5-plus',
-      media: pick(4, 3),
+      media: pick(4, 3).map((item) => ({ ...item, downloadStatus: 'failed' as const })),
       extraCount: 2,
-      downloadStatus: 'failed',
       caption: '多图 · 下载失败',
+    },
+    {
+      id: 'm-photo-dl',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:27',
+      layout: '4-grid',
+      media: pick(4, 1).map((item) => ({ ...item, downloadStatus: 'pending' as const })),
+      caption: '多图 · 点下载',
+    },
+    {
+      id: 'm-video-dl',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:28',
+      layout: '2-portrait',
+      media: [
+        {
+          src: M[0],
+          isVideo: true,
+          duration: '1:56',
+          sizeLabel: '18.4 MB',
+          downloadStatus: 'pending',
+        },
+        {
+          src: M[1],
+          isVideo: true,
+          duration: '0:48',
+          sizeLabel: '8.6 MB',
+          downloadStatus: 'pending',
+        },
+      ],
+      caption: '双视频 · 点下载',
+    },
+    {
+      id: 'm-video-dling',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:29',
+      layout: '2-portrait',
+      media: [
+        {
+          src: M[0],
+          isVideo: true,
+          duration: '1:56',
+          sizeLabel: '18.4 MB',
+          downloadStatus: 'downloading',
+          downloadProgress: 64,
+        },
+        {
+          src: M[1],
+          isVideo: true,
+          duration: '0:48',
+          sizeLabel: '8.6 MB',
+          downloadStatus: 'pending',
+        },
+      ],
+      caption: '双视频 · 分别进度',
     },
     {
       id: 'm-file',
@@ -287,6 +388,18 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       text: '请看这表',
       sendStatus: 'failed',
       file: CHAT_FILE_MOCK_ITEMS[4],
+    },
+    {
+      id: 'm-file-paused',
+      direction: 'sent',
+      time: '17:29',
+      read: false,
+      layout: '1-square',
+      media: [],
+      text: '先发这张',
+      sendStatus: 'paused',
+      uploadProgress: 54,
+      file: CHAT_FILE_MOCK_ITEMS[0],
     },
     {
       id: 'm-file-recv',

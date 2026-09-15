@@ -7483,6 +7483,219 @@
   clip-path: polygon(0 20%, 70% 20%, 70% 0, 100% 50%, 70% 100%, 70% 80%, 0 80%);
 }
 
+.mh5-chat-room-media__play-hit {
+  pointer-events: auto;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-chat-room-media__time {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.mh5-chat-room-media__dlchip {
+  pointer-events: auto;
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 8px);
+  padding: 3px 8px 3px 3px;
+  border: none;
+  border-radius: 16px;
+  background: rgb(0 0 0 / 58%);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-chat-room-media__dlchip-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+}
+
+.mh5-chat-room-media__dlchip-ring svg:first-child {
+  width: 26px;
+  height: 26px;
+}
+
+.mh5-chat-room-media__dlchip-disk {
+  fill: none;
+  stroke: rgb(255 255 255 / 35%);
+  stroke-width: 2;
+}
+
+.mh5-chat-room-media__dlchip-disk--fill {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 85%);
+  background: rgb(0 0 0 / 25%);
+}
+
+.mh5-chat-room-media__dlchip-bar {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 14px 14px;
+  transition: stroke-dashoffset 0.2s linear;
+}
+
+.mh5-chat-room-media__dlchip-stop {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 1.5px;
+  background: #fff;
+}
+
+.mh5-chat-room-media__dlchip-play,
+.mh5-chat-room-media__dlchip-arrow {
+  position: absolute;
+  color: #fff;
+}
+
+.mh5-chat-room-media__dlchip-play {
+  margin-left: 1px;
+}
+
+.mh5-chat-room-media__dlchip-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mh5-chat-room-media__dlchip-copy b,
+.mh5-chat-room-media__dlchip-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-chat-room-media__dlchip-copy b {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.mh5-chat-room-media__dlchip-copy small {
+  color: rgb(255 255 255 / 88%);
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.mh5-chat-room-media__dlchip-ring--spin svg:first-child,
+.mh5-chat-room-media__cellxfer-ring--spin svg:first-child {
+  animation: mh5-chat-media-spin 0.9s linear infinite;
+}
+
+.mh5-chat-room-media__dlchip-ring--spin .mh5-chat-room-media__dlchip-bar,
+.mh5-chat-room-media__cellxfer-ring--spin .mh5-chat-room-media__cellxfer-bar {
+  transition: none;
+}
+
+@keyframes mh5-chat-media-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mh5-chat-room-media__cell--xfer .mh5-chat-room-media__img {
+  filter: brightness(0.72);
+}
+
+.mh5-chat-room-media__cellxfer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-chat-room-media__cellxfer-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.mh5-chat-room-media__cellxfer-ring svg:first-child {
+  width: 44px;
+  height: 44px;
+}
+
+.mh5-chat-room-media__cellxfer-disk {
+  fill: rgb(58 58 60 / 46%);
+  stroke: #fff;
+  stroke-width: 1.4;
+}
+
+.mh5-chat-room-media__cellxfer-bar {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 22px 22px;
+  transition: stroke-dashoffset 0.16s linear;
+}
+
+.mh5-chat-room-media__cellxfer-pct,
+.mh5-chat-room-media__cellxfer-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: #fff;
+  pointer-events: none;
+}
+
+.mh5-chat-room-media__cellxfer-pct {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
 .mh5-chat-room-media__plus {
   position: absolute;
   inset: 0;
@@ -7576,6 +7789,14 @@
   line-height: 1;
 }
 
+.mh5-chat-room-media__upload-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: #fff;
+  pointer-events: none;
+}
+
 .mh5-chat-room-media__download {
   position: absolute;
   inset: 0;
@@ -7624,6 +7845,158 @@
   flex-direction: column;
   justify-content: flex-end;
   background: rgb(0 0 0 / 48%);
+}
+
+.mh5-chat-room-watch {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: #111;
+}
+
+.mh5-chat-room-watch__close {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 14%);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-chat-room-watch__stage {
+  position: relative;
+  width: 100%;
+}
+
+.mh5-chat-room-watch__img {
+  display: block;
+  width: 100%;
+  max-height: 72%;
+  object-fit: contain;
+}
+
+.mh5-chat-room-watch__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mh5-chat-room-watch__keep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: rgb(28 40 51 / 82%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mh5-chat-room-watch__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  color: #fff;
+  pointer-events: auto;
+}
+
+.mh5-chat-room-watch__clock {
+  flex-shrink: 0;
+  min-width: 32px;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 55%);
+}
+
+.mh5-chat-room-watch__clock:last-child {
+  text-align: right;
+}
+
+.mh5-chat-room-watch__track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  height: 28px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.mh5-chat-room-watch__rail {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 28%);
+}
+
+.mh5-chat-room-watch__buf,
+.mh5-chat-room-watch__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.mh5-chat-room-watch__buf {
+  background: rgb(255 255 255 / 46%);
+}
+
+.mh5-chat-room-watch__fill {
+  background: #fff;
+}
+
+.mh5-chat-room-watch__thumb {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 18%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mh5-chat-room-watch-enter-active,
+.mh5-chat-room-watch-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.mh5-chat-room-watch-enter-from,
+.mh5-chat-room-watch-leave-to {
+  opacity: 0;
 }
 
 .mh5-chat-room-resend__sheet {
@@ -7912,6 +8285,32 @@
   height: 10px;
   border-radius: 1.5px;
   background: #5f5f5f;
+}
+
+.mh5-chat-room-file__pause {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 12px;
+  height: 12px;
+}
+
+.mh5-chat-room-file__pause i {
+  display: block;
+  width: 3px;
+  height: 10px;
+  border-radius: 1px;
+  background: #5f5f5f;
+}
+
+.mh5-chat-room-file__play {
+  position: relative;
+  z-index: 1;
+  margin-left: 1px;
+  color: #5f5f5f;
 }
 
 .mh5-chat-room-file__stop--ring {

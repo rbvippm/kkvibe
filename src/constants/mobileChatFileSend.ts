@@ -239,7 +239,13 @@ export function filterChatFiles(query: string, location?: ChatFileLocation | nul
   })
 }
 
-export type ChatFileDownloadStatus = 'pending' | 'downloading' | 'done' | 'failed' | 'blocked'
+export type ChatFileDownloadStatus =
+  | 'pending'
+  | 'downloading'
+  | 'paused'
+  | 'done'
+  | 'failed'
+  | 'blocked'
 
 export function chatFileNeedsManualDownload(file: ChatFileAttachment) {
   return file.sizeBytes >= PREPARE_BYTES && file.sizeBytes <= CHAT_FILE_MAX_BYTES
@@ -248,6 +254,10 @@ export function chatFileNeedsManualDownload(file: ChatFileAttachment) {
 export function fileUploadProgressText(progress: number, sizeLabel: string) {
   const remain = Math.max(0, Math.ceil((100 - Math.min(100, Math.max(0, progress))) / 28))
   return `${Math.round(progress)}% (还剩${remain}秒) · ${sizeLabel}`
+}
+
+export function fileUploadPausedText(progress: number, sizeLabel: string) {
+  return `已暂停 · ${Math.round(Math.min(100, Math.max(0, progress)))}% · ${sizeLabel}`
 }
 
 export function fileSendFailMeta(file: ChatFileAttachment) {
@@ -260,6 +270,7 @@ export function fileReceiveMeta(
   progress = 0,
 ) {
   if (status === 'downloading') return fileUploadProgressText(progress, file.sizeLabel)
+  if (status === 'paused') return fileUploadPausedText(progress, file.sizeLabel)
   if (status === 'failed') return '下载失败，点击重试'
   if (status === 'blocked' || isChatFileOversize(file)) return `${file.sizeLabel} · 超过上限，无法下载`
   if (status === 'pending') return `${file.sizeLabel} · 点击下载`
