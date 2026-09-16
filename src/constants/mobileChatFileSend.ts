@@ -264,6 +264,10 @@ export function fileSendFailMeta(file: ChatFileAttachment) {
   return `发送失败 · ${file.sizeLabel}`
 }
 
+export function fileSendCancelMeta(file: ChatFileAttachment) {
+  return `发送取消 · ${file.sizeLabel}`
+}
+
 export function fileReceiveMeta(
   file: ChatFileAttachment,
   status?: ChatFileDownloadStatus,

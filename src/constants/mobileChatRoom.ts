@@ -38,18 +38,18 @@ export type ChatMediaItem = {
   duration?: string
   /** 视频体积，如下载中的「18.4 MB」 */
   sizeLabel?: string
-  /** 对方图片/视频按条下载：待下 / 下载中 / 已暂停 / 完成 / 失败 */
+  /** 对方图片/视频按条下载：待下 / 下载中 / 完成 / 失败 */
   downloadStatus?: ChatFileDownloadStatus
   /** 单条下载进度 0–100 */
   downloadProgress?: number
-  /** 本人多图/视频按条上传：排队 / 上传中 / 已暂停 / 完成 */
+  /** 本人多图/视频按条上传：排队 / 上传中 / 完成 */
   uploadStatus?: 'queued' | 'sending' | 'paused' | 'sent'
   /** 单条上传进度 0–100 */
   uploadProgress?: number
 }
 
-/** 本人媒体气泡发送态：上传中 / 已暂停 / 失败 / 已送达 */
-export type ChatMediaSendStatus = 'sending' | 'paused' | 'failed' | 'sent'
+/** 本人媒体气泡发送态：上传中 / 失败 / 取消 / 已送达 */
+export type ChatMediaSendStatus = 'sending' | 'paused' | 'failed' | 'cancelled' | 'sent'
 
 export type ChatRoomMessage = {
   id: string
@@ -67,7 +67,7 @@ export type ChatRoomMessage = {
   /** 用户配文 */
   text?: string
   sendStatus?: ChatMediaSendStatus
-  /** 上传进度 0–100，上传中 / 已暂停时保留，继续传不从头开始 */
+  /** 上传进度 0–100，上传中保留 */
   uploadProgress?: number
   /** WhatsApp 风格原始文件气泡 */
   file?: ChatFileAttachment
@@ -267,22 +267,7 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
         { src: M[1], isVideo: true, duration: '0:04', uploadStatus: 'queued', uploadProgress: 0 },
       ],
       sendStatus: 'sending',
-      caption: '双视频 · 上传中可暂停',
-    },
-    {
-      id: 'm-paused',
-      direction: 'sent',
-      time: '22:26',
-      read: false,
-      layout: '5-plus',
-      media: pick(4, 2).map((item, index) => ({
-        ...item,
-        uploadStatus: index === 0 ? 'paused' : 'queued',
-        uploadProgress: index === 0 ? 68 : 0,
-      })),
-      extraCount: 1,
-      sendStatus: 'paused',
-      caption: '多图 · 已暂停',
+      caption: '双视频 · 上传中',
     },
     {
       id: 'm-fail',
@@ -314,7 +299,7 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       time: '22:27',
       layout: '4-grid',
       media: pick(4, 1).map((item) => ({ ...item, downloadStatus: 'pending' as const })),
-      caption: '多图 · 点下载',
+      caption: '多图 · 进入可视区自动下载',
     },
     {
       id: 'm-video-dl',
@@ -397,7 +382,7 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       layout: '1-square',
       media: [],
       text: '先发这张',
-      sendStatus: 'paused',
+      sendStatus: 'sending',
       uploadProgress: 54,
       file: CHAT_FILE_MOCK_ITEMS[0],
     },

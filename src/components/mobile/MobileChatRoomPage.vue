@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   CHAT_ROOM_MENU_ACTIONS,
@@ -20,6 +20,7 @@ import {
 import {
   chatFileKindTone,
   fileReceiveMeta,
+  fileSendCancelMeta,
   fileSendFailMeta,
   fileUploadPausedText,
   fileUploadProgressText,
@@ -85,6 +86,7 @@ let watchPlayTimer: number | null = null
 const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const uploadTimers = new Map<string, number>()
 const downloadTimers = new Map<string, number>()
+let photoIo: IntersectionObserver | null = null
 const mainEl = ref<HTMLElement | null>(null)
 const showJumpBottom = ref(false)
 const newMsgCount = ref(0)
@@ -829,6 +831,7 @@ watch(
     resetJumpState()
     await scrollToBottom()
     await nextTick()
+    observePhotoAlbums()
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         revealUnreadJump(unread, packed.firstUnreadId)
@@ -920,7 +923,20 @@ function startDownload(msg: ChatRoomMessage) {
 
 function cancelDownload(msg: ChatRoomMessage) {
   stopDownload(msg.id)
-  patchMessage(msg.id, { downloadStatus: 'failed', downloadProgress: 0 })
+  patchMessage(msg.id, { downloadStatus: 'pending', downloadProgress: 0 })
+  showToast('已取消下载')
+}
+
+function closeWatchIfItem(msgId: string, index: number) {
+  if (watchingVideo.value?.msgId === msgId && watchingVideo.value.index === index) {
+    closeVideoWatch(true)
+  }
+}
+
+function discardMediaDownload(msgId: string, index: number) {
+  stopMediaDownload(msgId, index)
+  patchMediaItem(msgId, index, { downloadStatus: 'pending', downloadProgress: 0 })
+  closeWatchIfItem(msgId, index)
 }
 
 function mediaDlKey(msgId: string, index: number) {
@@ -969,10 +985,7 @@ function downloadTrackedItems(msg: ChatRoomMessage) {
 
 function albumHasActiveDownload(msg: ChatRoomMessage) {
   return downloadTrackedItems(msg).some(
-    (item) =>
-      item.downloadStatus === 'downloading' ||
-      item.downloadStatus === 'paused' ||
-      item.downloadStatus === 'done',
+    (item) => item.downloadStatus === 'downloading' || item.downloadStatus === 'paused',
   )
 }
 
@@ -981,11 +994,12 @@ function showMediaChip(msg: ChatRoomMessage, item: ChatMediaItem) {
   if (msg.direction === 'received') {
     return Boolean(item.downloadStatus && item.downloadStatus !== 'done')
   }
+  if (needsResend(msg)) return false
   return item.uploadStatus === 'queued' || item.uploadStatus === 'sending' || item.uploadStatus === 'paused'
 }
 
 function showVideoTimeBadge(msg: ChatRoomMessage, item: ChatMediaItem) {
-  if (!item.isVideo || !item.duration || isMediaUploadingItem(item)) return false
+  if (!item.isVideo || !item.duration || isMediaUploadingItem(item, msg)) return false
   if (showMediaChip(msg, item)) return false
   return true
 }
@@ -994,14 +1008,15 @@ function showSentDuration(msg: ChatRoomMessage, item: ChatMediaItem) {
   return Boolean(item.duration && msg.direction === 'sent' && (!item.uploadStatus || item.uploadStatus === 'sent'))
 }
 
-function isMediaUploadingItem(item: ChatMediaItem) {
+function isMediaUploadingItem(item: ChatMediaItem, msg?: ChatRoomMessage) {
+  if (msg && needsResend(msg)) return false
   return item.uploadStatus === 'queued' || item.uploadStatus === 'sending' || item.uploadStatus === 'paused'
 }
 
 function showCellXfer(msg: ChatRoomMessage, item: ChatMediaItem) {
   if (item.isVideo) return false
-  if (msg.direction === 'sent') return isMediaUploadingItem(item)
-  return Boolean(item.downloadStatus && item.downloadStatus !== 'done')
+  if (msg.direction === 'sent') return isMediaUploadingItem(item, msg)
+  return item.downloadStatus === 'failed'
 }
 
 function isPhotoDownloading(msg: ChatRoomMessage) {
@@ -1035,46 +1050,44 @@ function nextUploadIndex(msg: ChatRoomMessage, fromIndex: number) {
 function nextDownloadIndex(msg: ChatRoomMessage, fromIndex: number) {
   const pick = (status: NonNullable<ChatMediaItem['downloadStatus']>) => {
     for (let i = fromIndex + 1; i < msg.media.length; i += 1) {
-      if (msg.media[i]?.downloadStatus === status) return i
+      const item = msg.media[i]
+      if (item?.downloadStatus === status && item.isVideo) return i
     }
     for (let i = 0; i <= fromIndex; i += 1) {
-      if (msg.media[i]?.downloadStatus === status) return i
+      const item = msg.media[i]
+      if (item?.downloadStatus === status && item.isVideo) return i
     }
     return -1
   }
-  const paused = pick('paused')
-  if (paused >= 0) return paused
   const pending = pick('pending')
   if (pending >= 0) return pending
   return pick('failed')
 }
 
-function pauseOtherDownloads(msgId: string, keepIndex: number) {
+function resetOtherVideoDownloads(msgId: string, keepIndex: number) {
   const msg = messages.value.find((item) => item.id === msgId)
   if (!msg) return
   msg.media.forEach((item, index) => {
-    if (index === keepIndex || item.downloadStatus !== 'downloading') return
-    stopMediaDownload(msgId, index)
-    const progress = Math.min(100, Math.max(0, item.downloadProgress ?? 0))
-    patchMediaItem(msgId, index, { downloadStatus: 'paused', downloadProgress: progress })
+    if (index === keepIndex || item.downloadStatus !== 'downloading' || !item.isVideo) return
+    discardMediaDownload(msgId, index)
   })
 }
 
-function startMediaItemDownload(msgId: string, index: number, continueQueue = true) {
+function startMediaItemDownload(msgId: string, index: number, continueQueue = true, parallel = false) {
   const msg = messages.value.find((item) => item.id === msgId)
   const item = msg?.media[index]
   if (!msg || !item || item.downloadStatus === 'done') return
-  pauseOtherDownloads(msgId, index)
+  if (item.downloadStatus === 'downloading' && downloadTimers.has(mediaDlKey(msgId, index))) return
+  if (!parallel) resetOtherVideoDownloads(msgId, index)
   stopMediaDownload(msgId, index)
   const kept = item.downloadProgress ?? 0
   const progress =
     item.downloadStatus === 'downloading'
       ? Math.max(1, kept)
-      : kept > 0 && kept < 100
-        ? kept
-        : 8
+      : 8
   patchMediaItem(msgId, index, { downloadStatus: 'downloading', downloadProgress: progress })
-  const step = index % 2 === 0 ? 3 : 2
+  const step = parallel ? 9 + (index % 4) * 2 : index % 2 === 0 ? 3 : 2
+  const interval = parallel ? 150 : 280
   const tick = () => {
     const current = messages.value.find((row) => row.id === msgId)?.media[index]
     if (!current || current.downloadStatus !== 'downloading') return
@@ -1090,16 +1103,77 @@ function startMediaItemDownload(msgId: string, index: number, continueQueue = tr
       return
     }
     patchMediaItem(msgId, index, { downloadProgress: next })
-    downloadTimers.set(mediaDlKey(msgId, index), window.setTimeout(tick, 280))
+    downloadTimers.set(mediaDlKey(msgId, index), window.setTimeout(tick, interval))
   }
-  downloadTimers.set(mediaDlKey(msgId, index), window.setTimeout(tick, 280))
+  downloadTimers.set(mediaDlKey(msgId, index), window.setTimeout(tick, interval))
 }
 
-function pauseMediaItemDownload(msgId: string, index: number) {
-  stopMediaDownload(msgId, index)
-  const current = messages.value.find((row) => row.id === msgId)?.media[index]
-  const progress = Math.min(100, Math.max(0, current?.downloadProgress ?? 0))
-  patchMediaItem(msgId, index, { downloadStatus: 'paused', downloadProgress: progress })
+function albumNeedsPhotoAutoDl(msg: ChatRoomMessage) {
+  if (msg.direction !== 'received' || msg.file) return false
+  return msg.media.some(
+    (item) =>
+      !item.isVideo &&
+      (item.downloadStatus === 'pending' ||
+        item.downloadStatus === 'paused' ||
+        item.downloadStatus === 'downloading'),
+  )
+}
+
+function showPhotoReveal(item: ChatMediaItem) {
+  return Boolean(!item.isVideo && item.downloadStatus && item.downloadStatus !== 'done')
+}
+
+function photoRevealStyle(item: ChatMediaItem) {
+  if (!showPhotoReveal(item)) return undefined
+  const pct =
+    item.downloadStatus === 'failed' ? 0 : Math.min(100, Math.max(0, item.downloadProgress ?? 0))
+  const t = 1 - pct / 100
+  return {
+    '--mh5-photo-blur': `${(16 * t).toFixed(2)}px`,
+    '--mh5-photo-scale': (1 + 0.1 * t).toFixed(3),
+  }
+}
+
+function startAlbumPhotoAutoDownload(msgId: string) {
+  const msg = messages.value.find((row) => row.id === msgId)
+  if (!msg) return
+  msg.media.forEach((item, index) => {
+    if (item.isVideo) return
+    if (item.downloadStatus !== 'pending' && item.downloadStatus !== 'paused') return
+    startMediaItemDownload(msgId, index, false, true)
+  })
+}
+
+function observePhotoAlbums() {
+  const root = mainEl.value
+  if (!root || typeof IntersectionObserver === 'undefined') return
+  photoIo?.disconnect()
+  photoIo = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue
+        const msgId = (entry.target as HTMLElement).dataset.photoAutodl
+        if (msgId) startAlbumPhotoAutoDownload(msgId)
+      }
+    },
+    { root, rootMargin: '180px 0px 120px 0px', threshold: 0.06 },
+  )
+  root.querySelectorAll<HTMLElement>('[data-photo-autodl]').forEach((el) => {
+    photoIo?.observe(el)
+  })
+}
+
+function openPhotoWatch(msg: ChatRoomMessage, index: number) {
+  startAlbumPhotoAutoDownload(msg.id)
+  closeMenu()
+  watchPlaying.value = false
+  watchSeeking.value = false
+  watchCloseArmed.value = false
+  stopWatchPlayback()
+  watchingVideo.value = { msgId: msg.id, index }
+  window.setTimeout(() => {
+    watchCloseArmed.value = true
+  }, 320)
 }
 
 function startMediaItemUpload(msgId: string, index: number) {
@@ -1132,53 +1206,43 @@ function startMediaItemUpload(msgId: string, index: number) {
   uploadTimers.set(mediaUlKey(msgId, index), window.setTimeout(tick, 160))
 }
 
-function pauseMediaItemUpload(msgId: string, index: number) {
-  stopMediaUpload(msgId, index)
-  const current = messages.value.find((row) => row.id === msgId)?.media[index]
-  const progress = Math.min(100, Math.max(0, current?.uploadProgress ?? 0))
-  patchMediaItem(msgId, index, { uploadStatus: 'paused', uploadProgress: progress })
-  syncAlbumSendStatus(msgId)
-}
-
-function showMediaCancel(item: ChatMediaItem) {
-  return item.uploadStatus === 'paused' || item.downloadStatus === 'paused'
-}
-
-function cancelPausedMedia(msg: ChatRoomMessage, index: number) {
-  const item = msg.media[index]
-  if (!item || !showMediaCancel(item)) return
-  if (item.uploadStatus === 'paused') {
+function failOutgoingUpload(msg: ChatRoomMessage) {
+  if (msg.direction !== 'sent' || needsResend(msg)) return
+  const media = msg.media.map((item, index) => {
     stopMediaUpload(msg.id, index)
-    const nextMedia = msg.media.filter((_, i) => i !== index)
-    if (!nextMedia.length) {
-      messages.value = messages.value.filter((row) => row.id !== msg.id)
-      showToast(item.isVideo ? '已取消这条视频' : '已取消这张图片')
-      return
+    if (!item.uploadStatus || item.uploadStatus === 'sent') return item
+    return {
+      ...item,
+      uploadStatus: 'queued' as const,
+      uploadProgress: item.uploadProgress ?? 0,
     }
-    patchMessage(msg.id, {
-      media: nextMedia,
-      layout: layoutForMediaCount(nextMedia.length + (msg.extraCount ?? 0)),
-    })
-    syncAlbumSendStatus(msg.id)
-    startAlbumUpload(msg.id)
-    showToast(item.isVideo ? '已取消这条视频' : '已取消这张图片')
+  })
+  stopUpload(msg.id)
+  patchMessage(msg.id, {
+    media,
+    sendStatus: 'cancelled',
+    read: false,
+  })
+}
+
+function cancelMediaItem(msg: ChatRoomMessage, index: number) {
+  const item = msg.media[index]
+  if (!item) return
+  if (item.uploadStatus && item.uploadStatus !== 'sent') {
+    failOutgoingUpload(msg)
     return
   }
-  stopMediaDownload(msg.id, index)
-  patchMediaItem(msg.id, index, { downloadStatus: 'pending', downloadProgress: 0 })
+  if (!item.downloadStatus || item.downloadStatus === 'done') return
+  discardMediaDownload(msg.id, index)
   showToast('已取消下载')
-  const latest = messages.value.find((row) => row.id === msg.id)
-  const following = latest ? nextDownloadIndex(latest, index) : -1
-  if (following >= 0 && following !== index) startMediaItemDownload(msg.id, following, true)
 }
 
 function startAlbumUpload(msgId: string) {
   const msg = messages.value.find((item) => item.id === msgId)
   if (!msg) return
-  const paused = msg.media.findIndex((item) => item.uploadStatus === 'paused')
   const sending = msg.media.findIndex((item) => item.uploadStatus === 'sending')
   const queued = msg.media.findIndex((item) => item.uploadStatus === 'queued')
-  const idx = paused >= 0 ? paused : sending >= 0 ? sending : queued
+  const idx = sending >= 0 ? sending : queued
   if (idx < 0) return
   startMediaItemUpload(msgId, idx)
 }
@@ -1187,12 +1251,11 @@ function onMediaChipClick(msg: ChatRoomMessage, index: number) {
   const item = msg.media[index]
   if (!item) return
   if (msg.direction === 'sent') {
-    if (item.uploadStatus === 'sending') pauseMediaItemUpload(msg.id, index)
-    else if (item.uploadStatus === 'paused') startMediaItemUpload(msg.id, index)
+    if (item.uploadStatus === 'sending' || item.uploadStatus === 'queued') cancelMediaItem(msg, index)
     return
   }
   if (item.downloadStatus === 'downloading') {
-    pauseMediaItemDownload(msg.id, index)
+    cancelMediaItem(msg, index)
     return
   }
   startMediaItemDownload(msg.id, index, true)
@@ -1206,15 +1269,10 @@ function onCellXferClick(msg: ChatRoomMessage, index: number) {
     return
   }
   if (msg.direction === 'sent') {
-    if (item.uploadStatus === 'sending') pauseMediaItemUpload(msg.id, index)
-    else if (item.uploadStatus === 'paused') startMediaItemUpload(msg.id, index)
+    if (item.uploadStatus === 'sending' || item.uploadStatus === 'queued') cancelMediaItem(msg, index)
     return
   }
-  if (item.downloadStatus === 'downloading') {
-    pauseMediaItemDownload(msg.id, index)
-    return
-  }
-  startMediaItemDownload(msg.id, index, true)
+  startMediaItemDownload(msg.id, index, false, true)
 }
 
 function cellXferProgress(item: ChatMediaItem) {
@@ -1376,30 +1434,30 @@ function onWatchSeekEnd(ev: PointerEvent) {
 }
 
 function onMediaCellClick(msg: ChatRoomMessage, item: ChatMediaItem, index: number) {
-  if (isMediaUploadingItem(item)) return
-  if (item.downloadStatus && item.downloadStatus !== 'done') {
-    if (item.isVideo) {
-      onVideoPlay(msg, index)
-      return
-    }
-    if (item.downloadStatus === 'downloading') {
-      pauseMediaItemDownload(msg.id, index)
-      return
-    }
-    startMediaItemDownload(msg.id, index, true)
+  if (isMediaUploadingItem(item, msg)) return
+  if (needsResend(msg)) {
+    openResend(msg)
     return
   }
-  if (item.isVideo) {
+  if (!item.isVideo) {
+    if (item.downloadStatus === 'failed') {
+      startMediaItemDownload(msg.id, index, false, true)
+      return
+    }
+    openPhotoWatch(msg, index)
+    return
+  }
+  if (item.downloadStatus && item.downloadStatus !== 'done') {
     onVideoPlay(msg, index)
     return
   }
-  onBubbleClick(msg)
+  onVideoPlay(msg, index)
 }
 
 function onVideoPlay(msg: ChatRoomMessage, index: number) {
   const item = msg.media[index]
   if (!item?.isVideo) return
-  if (isMediaUploadingItem(item)) return
+  if (isMediaUploadingItem(item, msg)) return
   if (item.downloadStatus && item.downloadStatus !== 'done') {
     startMediaItemDownload(msg.id, index, true)
   }
@@ -1464,20 +1522,16 @@ function mediaChipStopping(item: ChatMediaItem) {
   return item.downloadStatus === 'downloading' || item.uploadStatus === 'sending'
 }
 
-function mediaChipPaused(item: ChatMediaItem) {
-  return item.downloadStatus === 'paused' || item.uploadStatus === 'paused'
-}
-
 function videoChipMeta(item: ChatMediaItem) {
   if (mediaChipActive(item)) return uploadPercent(mediaChipProgress(item))
   return ''
 }
 
 function mediaChipAria(msg: ChatRoomMessage, item: ChatMediaItem) {
-  if (mediaChipStopping(item)) return item.uploadStatus === 'sending' ? '暂停上传' : '暂停下载'
-  if (mediaChipPaused(item)) return item.uploadStatus === 'paused' ? '继续上传' : '继续下载'
+  if (mediaChipStopping(item) || item.uploadStatus === 'queued') {
+    return item.uploadStatus ? '取消发送这条' : '取消下载'
+  }
   if (item.downloadStatus === 'failed') return '重新下载这条'
-  if (item.uploadStatus === 'queued') return '排队上传中'
   if (item.downloadStatus === 'pending') {
     return albumHasActiveDownload(msg) ? '排队下载中' : item.isVideo ? '下载并播放' : '下载这张'
   }
@@ -1516,27 +1570,8 @@ function startUpload(id: string) {
   uploadTimers.set(id, window.setTimeout(tick, 160))
 }
 
-function pauseUpload(msg: ChatRoomMessage) {
-  if (hasPerItemUpload(msg)) {
-    const idx = msg.media.findIndex((item) => item.uploadStatus === 'sending')
-    if (idx >= 0) pauseMediaItemUpload(msg.id, idx)
-    return
-  }
-  stopUpload(msg.id)
-  const current = messages.value.find((item) => item.id === msg.id)
-  const progress = Math.min(100, Math.max(0, current?.uploadProgress ?? msg.uploadProgress ?? 0))
-  patchMessage(msg.id, { sendStatus: 'paused', uploadProgress: progress, read: false })
-}
-
-function resumeUpload(msg: ChatRoomMessage) {
-  if (hasPerItemUpload(msg)) {
-    startAlbumUpload(msg.id)
-    return
-  }
-  const current = messages.value.find((item) => item.id === msg.id)
-  const progress = Math.min(99, Math.max(0, current?.uploadProgress ?? msg.uploadProgress ?? 0))
-  patchMessage(msg.id, { sendStatus: 'sending', uploadProgress: progress, read: false })
-  startUpload(msg.id)
+function cancelOutgoingMessage(msg: ChatRoomMessage) {
+  failOutgoingUpload(msg)
 }
 
 function onUploadControlClick(msg: ChatRoomMessage) {
@@ -1544,11 +1579,7 @@ function onUploadControlClick(msg: ChatRoomMessage) {
     cancelDownload(msg)
     return
   }
-  if (isPaused(msg)) {
-    resumeUpload(msg)
-    return
-  }
-  pauseUpload(msg)
+  cancelOutgoingMessage(msg)
 }
 
 function openResend(msg: ChatRoomMessage) {
@@ -1632,10 +1663,17 @@ function isFailed(msg: ChatRoomMessage) {
   return msg.direction === 'sent' && msg.sendStatus === 'failed'
 }
 
+function isCancelled(msg: ChatRoomMessage) {
+  return msg.direction === 'sent' && msg.sendStatus === 'cancelled'
+}
+
+function needsResend(msg: ChatRoomMessage) {
+  return isFailed(msg) || isCancelled(msg)
+}
+
 function mediaUploadAria(msg: ChatRoomMessage) {
   if (isDownloading(msg)) return '取消下载'
-  if (isPaused(msg)) return '继续上传'
-  return '暂停上传'
+  return '取消发送'
 }
 
 function isDownloading(msg: ChatRoomMessage) {
@@ -1660,7 +1698,7 @@ function isDownloadBlocked(msg: ChatRoomMessage) {
 
 function onFileBubbleClick(msg: ChatRoomMessage) {
   if (isSending(msg) || isDownloading(msg)) return
-  if (isFailed(msg)) {
+  if (needsResend(msg)) {
     openResend(msg)
     return
   }
@@ -1685,7 +1723,7 @@ function onBubbleClick(msg: ChatRoomMessage) {
     return
   }
   if (isSending(msg) || isPhotoDownloading(msg)) return
-  if (isFailed(msg)) {
+  if (needsResend(msg)) {
     openResend(msg)
     return
   }
@@ -1759,7 +1797,8 @@ function mediaClass(layout: ChatRoomMessage['layout'], index: number, total: num
     `mh5-chat-room-media__cell--${layout}`,
     index === 0 ? 'mh5-chat-room-media__cell--first' : '',
     total === 1 ? 'mh5-chat-room-media__cell--solo' : '',
-    item && msg && showCellXfer(msg, item) ? 'mh5-chat-room-media__cell--xfer' : '',
+    item && msg && showCellXfer(msg, item) && !showPhotoReveal(item) ? 'mh5-chat-room-media__cell--xfer' : '',
+    item && showPhotoReveal(item) ? 'mh5-chat-room-media__cell--photo-reveal' : '',
   ]
 }
 
@@ -1870,6 +1909,7 @@ function fileMetaText(msg: ChatRoomMessage) {
   if (!msg.file) return ''
   if (isSending(msg)) return fileUploadProgressText(msg.uploadProgress ?? 0, msg.file.sizeLabel)
   if (isPaused(msg)) return fileUploadPausedText(msg.uploadProgress ?? 0, msg.file.sizeLabel)
+  if (isCancelled(msg)) return fileSendCancelMeta(msg.file)
   if (isFailed(msg)) return fileSendFailMeta(msg.file)
   if (msg.direction === 'received') {
     return fileReceiveMeta(msg.file, msg.downloadStatus, msg.downloadProgress ?? 0)
@@ -1877,8 +1917,24 @@ function fileMetaText(msg: ChatRoomMessage) {
   return fileReceiveMeta(msg.file, 'done')
 }
 
+onMounted(() => {
+  void nextTick().then(() => {
+    requestAnimationFrame(() => observePhotoAlbums())
+  })
+})
+
+watch(
+  () => messages.value.filter((msg) => albumNeedsPhotoAutoDl(msg)).map((msg) => msg.id).join('|'),
+  async () => {
+    await nextTick()
+    requestAnimationFrame(() => observePhotoAlbums())
+  },
+)
+
 onBeforeUnmount(() => {
   persistLocalGameToGlobalDock()
+  photoIo?.disconnect()
+  photoIo = null
   if (toastTimer.value) clearTimeout(toastTimer.value)
   if (pulseTimer) clearTimeout(pulseTimer)
   stopFlyChip()
@@ -2013,7 +2069,7 @@ onBeforeUnmount(() => {
         <p v-if="msg.caption" class="mh5-chat-room-caption">
           {{ msg.caption }}
           <Mh5SpecAnnot
-            v-if="msg.id === 'm-video-dl'"
+            v-if="msg.id === 'm-video-dl' || msg.id === 'm-photo-dl'"
             :spec="CHAT_VIDEO_DOWNLOAD_SPEC"
             placement="bottom"
           />
@@ -2028,10 +2084,10 @@ onBeforeUnmount(() => {
             height="28"
           />
           <button
-            v-if="isFailed(msg)"
+            v-if="needsResend(msg)"
             type="button"
             class="mh5-chat-room-msg__fail"
-            aria-label="发送失败，点击重发"
+            :aria-label="isCancelled(msg) ? '发送取消，点击重发' : '发送失败，点击重发'"
             @click.stop="openResend(msg)"
           >
             !
@@ -2053,7 +2109,7 @@ onBeforeUnmount(() => {
               class="mh5-chat-room-file"
               :class="{
                 'mh5-chat-room-file--uploading': isUploadingUi(msg) || isDownloading(msg),
-                'mh5-chat-room-file--failed': isFailed(msg) || isDownloadFailed(msg),
+                'mh5-chat-room-file--failed': needsResend(msg) || isDownloadFailed(msg),
                 'mh5-chat-room-file--blocked': isDownloadBlocked(msg),
               }"
             >
@@ -2068,11 +2124,11 @@ onBeforeUnmount(() => {
                   <p class="mh5-chat-room-file__name">{{ msg.file.name }}</p>
                   <p class="mh5-chat-room-file__meta">{{ fileMetaText(msg) }}</p>
                 </div>
-                <button
+                <span
                   v-if="isUploadingUi(msg)"
-                  type="button"
+                  role="button"
                   class="mh5-chat-room-file__stop mh5-chat-room-file__stop--ring"
-                  :aria-label="isPaused(msg) ? '继续上传' : '暂停上传'"
+                  aria-label="取消发送"
                   @click.stop="onUploadControlClick(msg)"
                 >
                   <svg class="mh5-chat-room-file__ring" viewBox="0 0 32 32" aria-hidden="true">
@@ -2086,24 +2142,11 @@ onBeforeUnmount(() => {
                       :stroke-dashoffset="fileXferDashoffset(msg.uploadProgress)"
                     />
                   </svg>
-                  <svg
-                    v-if="isPaused(msg)"
-                    class="mh5-chat-room-file__play"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    aria-hidden="true"
-                  >
-                    <path d="M4 2.2v7.6L10.4 6 4 2.2z" fill="currentColor" />
-                  </svg>
-                  <span v-else class="mh5-chat-room-file__pause" aria-hidden="true">
-                    <i />
-                    <i />
-                  </span>
-                </button>
-                <button
+                  <span />
+                </span>
+                <span
                   v-else-if="isDownloading(msg)"
-                  type="button"
+                  role="button"
                   class="mh5-chat-room-file__stop mh5-chat-room-file__stop--ring"
                   aria-label="取消下载"
                   @click.stop="cancelDownload(msg)"
@@ -2120,7 +2163,7 @@ onBeforeUnmount(() => {
                     />
                   </svg>
                   <span />
-                </button>
+                </span>
                 <button
                   v-else-if="isDownloadPending(msg)"
                   type="button"
@@ -2151,13 +2194,14 @@ onBeforeUnmount(() => {
             <div
               v-if="msg.media.length"
               class="mh5-chat-room-media"
+              :data-photo-autodl="albumNeedsPhotoAutoDl(msg) ? msg.id : undefined"
               :class="[
                 `mh5-chat-room-media--${msg.layout}`,
                 {
                   'mh5-chat-room-media--uploading':
                     (isUploadingUi(msg) && !hasPerItemUpload(msg)) || isPhotoDownloading(msg),
                   'mh5-chat-room-media--failed':
-                    isFailed(msg) || (isDownloadFailed(msg) && !hasPerItemDownload(msg)),
+                    needsResend(msg) || (isDownloadFailed(msg) && !hasPerItemDownload(msg)),
                 },
               ]"
             >
@@ -2167,8 +2211,14 @@ onBeforeUnmount(() => {
                 :class="mediaClass(msg.layout, index, msg.media.length, msg)"
                 @click.stop="onMediaCellClick(msg, item, index)"
               >
-                <img class="mh5-chat-room-media__img" :src="item.src" alt="" />
-                <div v-if="isVideo(item) && !isMediaUploadingItem(item)" class="mh5-chat-room-media__video">
+                <img
+                  class="mh5-chat-room-media__img"
+                  :class="{ 'mh5-chat-room-media__img--reveal': showPhotoReveal(item) }"
+                  :style="photoRevealStyle(item)"
+                  :src="item.src"
+                  alt=""
+                />
+                <div v-if="isVideo(item) && !isMediaUploadingItem(item, msg)" class="mh5-chat-room-media__video">
                   <span
                     class="mh5-chat-room-media__play-hit"
                     role="button"
@@ -2185,11 +2235,12 @@ onBeforeUnmount(() => {
                     class="mh5-chat-room-media__duration"
                   >{{ item.duration }}</span>
                 </div>
-                <button
+                <span
                   v-if="showMediaChip(msg, item)"
-                  type="button"
+                  role="button"
                   class="mh5-chat-room-media__dlchip"
                   :aria-label="mediaChipAria(msg, item)"
+                  @pointerdown.stop
                   @click.stop="onMediaChipClick(msg, index)"
                 >
                   <span
@@ -2224,16 +2275,6 @@ onBeforeUnmount(() => {
                       class="mh5-chat-room-media__dlchip-stop"
                     />
                     <svg
-                      v-else-if="mediaChipPaused(item)"
-                      class="mh5-chat-room-media__dlchip-play"
-                      width="7"
-                      height="7"
-                      viewBox="0 0 10 10"
-                      aria-hidden="true"
-                    >
-                      <path d="M3.2 1.6v6.8L8.6 5 3.2 1.6z" fill="currentColor" />
-                    </svg>
-                    <svg
                       v-else-if="item.downloadStatus === 'failed'"
                       class="mh5-chat-room-media__dlchip-arrow"
                       width="9"
@@ -2262,10 +2303,10 @@ onBeforeUnmount(() => {
                     <b>{{ item.duration || '视频' }}</b>
                     <small v-if="videoChipMeta(item)">{{ videoChipMeta(item) }}</small>
                   </span>
-                </button>
-                <button
+                </span>
+                <span
                   v-if="showCellXfer(msg, item)"
-                  type="button"
+                  role="button"
                   class="mh5-chat-room-media__cellxfer"
                   :aria-label="mediaChipAria(msg, item)"
                   @click.stop="onCellXferClick(msg, index)"
@@ -2291,17 +2332,7 @@ onBeforeUnmount(() => {
                       />
                     </svg>
                     <svg
-                      v-if="item.uploadStatus === 'paused' || item.downloadStatus === 'paused'"
-                      class="mh5-chat-room-media__cellxfer-play"
-                      width="10"
-                      height="10"
-                      viewBox="0 0 14 14"
-                      aria-hidden="true"
-                    >
-                      <path d="M4.6 2.8v8.4L12 7 4.6 2.8z" fill="currentColor" />
-                    </svg>
-                    <svg
-                      v-else-if="item.downloadStatus === 'failed'"
+                      v-if="item.downloadStatus === 'failed'"
                       class="mh5-chat-room-media__cellxfer-play"
                       width="12"
                       height="12"
@@ -2325,22 +2356,11 @@ onBeforeUnmount(() => {
                       <path d="M4 13h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
                     </svg>
                     <span
-                      v-else-if="cellXferActive(item)"
-                      class="mh5-chat-room-media__cellxfer-pct"
-                    >{{ uploadPercent(cellXferProgress(item)) }}</span>
+                      v-else-if="item.uploadStatus === 'sending' || item.downloadStatus === 'downloading'"
+                      class="mh5-chat-room-media__cellxfer-stop"
+                    />
                   </span>
-                </button>
-                <button
-                  v-if="showMediaCancel(item)"
-                  type="button"
-                  class="mh5-chat-room-media__cancel"
-                  :aria-label="$t('取消')"
-                  @click.stop="cancelPausedMedia(msg, index)"
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                    <path d="M2 2l6 6M8 2 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </button>
+                </span>
                 <div
                   v-if="showPlus(msg, index) && !isDownloadFailed(msg) && !isPhotoDownloading(msg)"
                   class="mh5-chat-room-media__plus"
@@ -2369,17 +2389,7 @@ onBeforeUnmount(() => {
                       :stroke-dashoffset="uploadDashoffset(mediaXferProgress(msg))"
                     />
                   </svg>
-                  <svg
-                    v-if="isPaused(msg)"
-                    class="mh5-chat-room-media__upload-play"
-                    width="22"
-                    height="22"
-                    viewBox="0 0 22 22"
-                    aria-hidden="true"
-                  >
-                    <path d="M7.4 4.6v12.8L18.2 11 7.4 4.6z" fill="currentColor" />
-                  </svg>
-                  <span v-else class="mh5-chat-room-media__upload-pct">{{ uploadPercent(mediaXferProgress(msg)) }}</span>
+                  <span class="mh5-chat-room-media__upload-stop" />
                 </button>
               </div>
               <div v-else-if="isDownloadFailed(msg) && !hasPerItemDownload(msg)" class="mh5-chat-room-media__download">
@@ -2401,7 +2411,7 @@ onBeforeUnmount(() => {
               <div class="mh5-chat-room-media__meta">
                 <span>{{ msg.time }}</span>
                 <svg
-                  v-if="isUploadingUi(msg) || isFailed(msg)"
+                  v-if="isUploadingUi(msg) || needsResend(msg)"
                   class="mh5-chat-room-media__clock"
                   viewBox="0 0 14 14"
                   aria-label="发送中"
@@ -2422,7 +2432,7 @@ onBeforeUnmount(() => {
             <div v-if="!msg.media.length" class="mh5-chat-room-bubble__time">
               <span>{{ msg.time }}</span>
               <svg
-                v-if="msg.file && (isUploadingUi(msg) || isFailed(msg))"
+                v-if="msg.file && (isUploadingUi(msg) || needsResend(msg))"
                 class="mh5-chat-room-media__clock"
                 viewBox="0 0 14 14"
                 aria-label="发送中"
@@ -2716,24 +2726,33 @@ onBeforeUnmount(() => {
         v-if="watchingItem"
         class="mh5-chat-room-watch"
         role="dialog"
-        aria-label="视频预览"
+        :aria-label="watchingItem.item.isVideo ? '视频预览' : '图片预览'"
         @click.self="closeVideoWatch()"
       >
         <button type="button" class="mh5-chat-room-watch__close" :aria-label="$t('关闭')" @click.stop="closeVideoWatch(true)">
           ×
         </button>
-        <div class="mh5-chat-room-watch__stage" @click.stop="toggleWatchPlay">
-          <img class="mh5-chat-room-watch__img" :src="watchingItem.item.src" alt="" />
+        <div
+          class="mh5-chat-room-watch__stage"
+          @click.stop="watchingItem.item.isVideo ? toggleWatchPlay() : closeVideoWatch()"
+        >
           <img
-            v-if="!watchPlaying"
+            class="mh5-chat-room-watch__img"
+            :class="{ 'mh5-chat-room-watch__img--reveal': showPhotoReveal(watchingItem.item) }"
+            :style="photoRevealStyle(watchingItem.item)"
+            :src="watchingItem.item.src"
+            alt=""
+          />
+          <img
+            v-if="watchingItem.item.isVideo && !watchPlaying"
             class="mh5-chat-room-watch__play"
             :src="CHAT_ROOM_ASSETS.play"
             alt=""
             width="56"
             height="56"
           />
-          <p v-else-if="watchStalled" class="mh5-chat-room-watch__keep">正在保持</p>
-          <div class="mh5-chat-room-watch__bar" @click.stop>
+          <p v-else-if="watchingItem.item.isVideo && watchStalled" class="mh5-chat-room-watch__keep">正在保持</p>
+          <div v-if="watchingItem.item.isVideo" class="mh5-chat-room-watch__bar" @click.stop>
             <span class="mh5-chat-room-watch__clock">{{ formatDurationSec(watchTimeSec) }}</span>
             <div
               ref="watchTrackEl"
@@ -2770,7 +2789,15 @@ onBeforeUnmount(() => {
             {{ resendMsg.file ? $t('文件尚未送出') : $t('消息尚未送出') }}
           </p>
           <p class="mh5-chat-room-resend__desc">
-            {{ resendMsg.file ? $t('发送失败，是否重新发送该文件？') : $t('发送失败，是否重新发送？') }}
+            {{
+              resendMsg.file
+                ? isCancelled(resendMsg)
+                  ? $t('发送已取消，是否重新发送该文件？')
+                  : $t('发送失败，是否重新发送该文件？')
+                : isCancelled(resendMsg)
+                  ? $t('发送已取消，是否重新发送？')
+                  : $t('发送失败，是否重新发送？')
+            }}
           </p>
           <div class="mh5-chat-room-resend__actions">
             <button type="button" class="mh5-chat-room-resend__action" @click="confirmResend">

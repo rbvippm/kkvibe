@@ -7354,6 +7354,18 @@
   object-fit: cover;
 }
 
+.mh5-chat-room-media__cell--photo-reveal {
+  background: #c2c2c2;
+}
+
+.mh5-chat-room-media__img--reveal,
+.mh5-chat-room-watch__img--reveal {
+  filter: blur(var(--mh5-photo-blur, 14px)) saturate(1.06);
+  transform: scale(var(--mh5-photo-scale, 1.08));
+  transform-origin: center center;
+  transition: filter 0.2s linear, transform 0.4s ease-out;
+}
+
 .mh5-chat-room-media--1-portrait .mh5-chat-room-media__cell {
   width: 180px;
   height: 240px;
@@ -7516,17 +7528,18 @@
 .mh5-chat-room-media__dlchip {
   pointer-events: auto;
   position: absolute;
-  top: 5px;
-  left: 5px;
-  z-index: 3;
+  top: 4px;
+  left: 4px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 4px;
-  max-width: calc(100% - 10px);
-  height: 20px;
-  padding: 0 6px 0 3px;
+  max-width: calc(100% - 8px);
+  min-height: 24px;
+  height: 24px;
+  padding: 0 8px 0 4px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgb(0 0 0 / 52%);
   color: #fff;
   text-align: left;
@@ -7643,6 +7656,7 @@
 }
 
 .mh5-chat-room-media__cellxfer {
+  pointer-events: auto;
   position: absolute;
   inset: 0;
   z-index: 3;
@@ -7681,6 +7695,17 @@
   transform: rotate(-90deg);
   transform-origin: 14px 14px;
   transition: stroke-dashoffset 0.16s linear;
+}
+
+.mh5-chat-room-media__cellxfer-stop {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 1.2px;
+  background: #fff;
+  pointer-events: none;
 }
 
 .mh5-chat-room-media__cellxfer-pct,
@@ -7800,6 +7825,17 @@
   transition: stroke-dashoffset 0.16s linear;
 }
 
+.mh5-chat-room-media__upload-stop {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #fff;
+  pointer-events: none;
+}
+
 .mh5-chat-room-media__upload-pct {
   position: absolute;
   inset: 0;
@@ -7901,6 +7937,7 @@
 .mh5-chat-room-watch__stage {
   position: relative;
   width: 100%;
+  overflow: hidden;
 }
 
 .mh5-chat-room-watch__img {
@@ -8288,6 +8325,7 @@
   border: 1.5px solid #8a8a8a;
   border-radius: 50%;
   background: transparent;
+  color: inherit;
   cursor: pointer;
 }
 
