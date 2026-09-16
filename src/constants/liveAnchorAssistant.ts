@@ -179,7 +179,7 @@ export const GO_LIVE_GUIDE_STEPS = [
   },
   {
     title: '确认推流',
-    desc: '视频 / 投屏需将推流地址填入 OBS「推流」设置，确认成功后再开播。语聊房跳过本步。',
+    desc: '直播需将推流地址填入 OBS「推流」设置，确认成功后再开播。语聊房跳过本步。',
   },
   {
     title: '开始直播',
@@ -365,6 +365,39 @@ export const ASSISTANT_CHAT_EMOJIS = [
   '👌',
   '🤝',
 ] as const
+
+/** 语聊房麦克风输入音量：0 静音，100 默认，超过 100 为音频增强 */
+export const ASSISTANT_MIC_VOLUME_MIN = 0
+export const ASSISTANT_MIC_VOLUME_DEFAULT = 100
+export const ASSISTANT_MIC_VOLUME_MAX = 200
+export const ASSISTANT_MIC_BOOST_FROM = 100
+
+export const ASSISTANT_SPEAKER_DEVICES = [
+  { id: 'macbook', label: 'MacBook Pro 扬声器' },
+  { id: 'usb', label: '外接 USB 音箱' },
+  { id: 'headset', label: '蓝牙耳机' },
+] as const
+
+export type AssistantSpeakerDeviceId = (typeof ASSISTANT_SPEAKER_DEVICES)[number]['id']
+
+export const ASSISTANT_MIC_DEVICES = [
+  { id: 'macbook', label: 'MacBook Pro 麦克风' },
+  { id: 'usb', label: '外接 USB 麦克风' },
+  { id: 'headset', label: '蓝牙耳机麦克风' },
+  { id: 'none', label: '无设备' },
+] as const
+
+export type AssistantMicDeviceId = (typeof ASSISTANT_MIC_DEVICES)[number]['id']
+
+export const ASSISTANT_VOICE_PRESETS = [
+  { id: 'default', label: '默认' },
+  { id: 'uncle', label: '大叔' },
+  { id: 'loli', label: '萝莉音' },
+  { id: 'ethereal', label: '空灵' },
+  { id: 'ktv', label: 'KTV 混响' },
+] as const
+
+export type AssistantVoicePresetId = (typeof ASSISTANT_VOICE_PRESETS)[number]['id']
 
 export function formatAssistantChatLine(msg: AssistantChatMsg) {
   if (msg.kind === 'enter') return `${msg.nickname}：进入直播间`

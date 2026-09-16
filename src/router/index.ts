@@ -896,6 +896,12 @@ export const router = createRouter({
           component: () => import('../views/pc-anchor/PcAnchorLiveAssistantView.vue'),
           meta: { title: '主播控制台' },
         },
+        {
+          path: 'live-assistant/doc',
+          name: 'pca-live-assistant-doc',
+          component: () => import('../views/pc-anchor/PcAnchorLiveAssistantDocView.vue'),
+          meta: { title: '主播控制台-文档说明' },
+        },
       ],
     },
     {

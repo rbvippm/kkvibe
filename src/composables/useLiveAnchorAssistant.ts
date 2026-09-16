@@ -1,8 +1,15 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { showPcToast } from './usePcToast'
 import {
+  ASSISTANT_MIC_BOOST_FROM,
+  ASSISTANT_MIC_DEVICES,
+  ASSISTANT_MIC_VOLUME_DEFAULT,
+  ASSISTANT_MIC_VOLUME_MAX,
+  ASSISTANT_MIC_VOLUME_MIN,
   ASSISTANT_SELF_ID,
   ASSISTANT_SESSION_LIKES,
+  ASSISTANT_SPEAKER_DEVICES,
+  ASSISTANT_VOICE_PRESETS,
   MOCK_ASSISTANT_CHATS,
   PLAY_RESOLUTIONS,
   PUSH_STREAM,
@@ -11,6 +18,9 @@ import {
   SHARE_LINK,
   formatAssistantMetric,
   type AssistantChatMsg,
+  type AssistantMicDeviceId,
+  type AssistantSpeakerDeviceId,
+  type AssistantVoicePresetId,
   type LiveContentKind,
 } from '../constants/liveAnchorAssistant'
 import {
@@ -20,14 +30,12 @@ import {
   GO_LIVE_DEFAULT_COVER,
   GO_LIVE_GAME_GROUPS,
   GO_LIVE_GAMES,
-  GO_LIVE_MODE_LABELS,
   GO_LIVE_RATIOS,
   GO_LIVE_SCHEDULE_HOURS,
   GO_LIVE_SCHEDULE_LIMIT_HINT,
   GO_LIVE_SCHEDULE_MAX,
   GO_LIVE_SCHEDULE_MINUTES,
-  GO_LIVE_SCREEN_HINT,
-  GO_LIVE_TABS,
+  PC_GO_LIVE_TABS,
   cancelGoLiveSchedule,
   combineGoLiveScheduleTime,
   createGoLiveSchedule,
@@ -44,6 +52,8 @@ import {
   listActiveGoLiveSchedules,
   nearestPendingGoLiveSchedule,
   nextGoLiveCover,
+  pcGoLiveModeLabel,
+  pcNormalizeGoLiveMode,
   splitGoLiveScheduleTime,
   suggestGoLiveScheduleTime,
   validateGoLiveScheduleTime,
@@ -53,6 +63,7 @@ import {
   type GoLiveRatio,
   type GoLiveSchedule,
   type GoLiveTab,
+  type PcGoLiveTab,
 } from '../constants/goLive'
 import { filterVoiceGames, MOCK_VOICE_GAMES, VOICE_GAME_TABS, type VoiceGameTab } from '../constants/mobileVoiceRoom'
 import {
@@ -125,6 +136,20 @@ export function useLiveAnchorAssistant() {
   const PUSH_INGEST_CHECK_MS = 420
   const muted = ref(true)
   const volume = ref(100)
+  const volumeBeforeMute = ref(100)
+  const speakerDeviceId = ref<AssistantSpeakerDeviceId>('macbook')
+  const micMuted = ref(false)
+  const micVolume = ref(ASSISTANT_MIC_VOLUME_DEFAULT)
+  const micDeviceId = ref<AssistantMicDeviceId>('macbook')
+  const voicePresetId = ref<AssistantVoicePresetId>('default')
+  const micBoostHintShown = ref(false)
+  const micVolumeBeforeMute = ref(ASSISTANT_MIC_VOLUME_DEFAULT)
+  const micDeviceDisabled = computed(() => micDeviceId.value === 'none')
+  const micBoosted = computed(() => micVolume.value > ASSISTANT_MIC_BOOST_FROM)
+  const micSilent = computed(
+    () => micMuted.value || micVolume.value === ASSISTANT_MIC_VOLUME_MIN || micDeviceDisabled.value,
+  )
+  const speakerSilent = computed(() => muted.value || volume.value === 0)
   const typeConfigured = ref(false)
   const pushConfirmed = ref(false)
   const pushIngestReady = ref(false)
@@ -133,7 +158,7 @@ export function useLiveAnchorAssistant() {
   let pushLineSeq = 0
   const actionHint = ref('')
 
-  const liveMode = ref<GoLiveTab>('video')
+  const liveMode = ref<PcGoLiveTab>('video')
   const kkCategory = ref<(typeof GO_LIVE_CATEGORIES)[number]>(GO_LIVE_DEFAULT_CATEGORY)
   const ratio = ref<GoLiveRatio>('original')
   const gameGroup = ref<GoLiveGameGroup>('cash')
@@ -228,7 +253,7 @@ export function useLiveAnchorAssistant() {
   const canCreateSchedule = computed(() => activeSchedules.value.length < GO_LIVE_SCHEDULE_MAX)
   const hasUnpublishedDraft = computed(() => Boolean(draftTime.value && !linkedSchedule.value))
   const unpublishedMeta = computed(
-    () => `${kkCategory.value} | ${GO_LIVE_MODE_LABELS[liveMode.value]}`,
+    () => `${kkCategory.value} | ${pcGoLiveModeLabel(liveMode.value)}`,
   )
   const linkBarTime = computed(() => {
     if (!linkedSchedule.value) return ''
@@ -252,14 +277,13 @@ export function useLiveAnchorAssistant() {
     if (streamPhase.value === 'reconnecting') return '重连中'
     if (!live.value) return '暂未直播'
     if (liveMode.value === 'voice') return '语聊中'
-    if (liveMode.value === 'screen') return '投屏中'
     return '直播中'
   })
   const isStreamSignal = computed(
     () => streamPhase.value === 'connecting' || streamPhase.value === 'reconnecting',
   )
   const liveModeLabel = computed(
-    () => GO_LIVE_TABS.find((item) => item.key === liveMode.value)?.label ?? '视频',
+    () => PC_GO_LIVE_TABS.find((item) => item.key === liveMode.value)?.label ?? '直播',
   )
   const previewHudDetail = computed(() => {
     const parts = [currentTypeLabel.value]
@@ -272,7 +296,6 @@ export function useLiveAnchorAssistant() {
   const startConfirmLead = computed(() => {
     if (linkedSchedule.value) return `确认立即开播「${linkedSchedule.value.title}」？`
     if (liveMode.value === 'voice') return '确认创建语聊房间？'
-    if (liveMode.value === 'screen') return '确认开始手机画面直播？'
     return '确认推流已成功并开始直播？'
   })
   const startConfirmHint = computed(() => {
@@ -280,7 +303,6 @@ export function useLiveAnchorAssistant() {
       return '开播后该场预告变为直播中，观众可从社区列表进房。'
     }
     if (liveMode.value === 'voice') return '创建后观众可进入本房间。'
-    if (liveMode.value === 'screen') return '观众将实时看到投屏画面。'
     return '开始后观众可见本房间。'
   })
   const scheduleBadgeMap = computed(() => {
@@ -569,7 +591,7 @@ export function useLiveAnchorAssistant() {
     kkCategory.value = (GO_LIVE_CATEGORIES as readonly string[]).includes(item.category)
       ? (item.category as (typeof GO_LIVE_CATEGORIES)[number])
       : GO_LIVE_DEFAULT_CATEGORY
-    liveMode.value = item.mode
+    liveMode.value = pcNormalizeGoLiveMode(item.mode)
     draftTime.value = item.startAt
     categoryTag.value = item.category
     void nextTick(() => {
@@ -918,10 +940,6 @@ export function useLiveAnchorAssistant() {
       beginLive('已创建语聊房间')
       return
     }
-    if (liveMode.value === 'screen') {
-      beginLive('已开始投屏直播')
-      return
-    }
     beginLive('已开始直播')
   }
 
@@ -953,6 +971,109 @@ export function useLiveAnchorAssistant() {
       return
     }
     toast('画面已刷新')
+  }
+
+  function clampSpeakerVolume(n: number) {
+    if (!Number.isFinite(n)) return 100
+    return Math.min(100, Math.max(0, Math.round(n)))
+  }
+
+  function applySpeakerVolume(n: number) {
+    const next = clampSpeakerVolume(n)
+    volume.value = next
+    if (next === 0) muted.value = true
+    else muted.value = false
+  }
+
+  function speakerVolumeFromClientX(track: HTMLElement, clientX: number) {
+    const rect = track.getBoundingClientRect()
+    if (rect.width <= 0) return volume.value
+    const ratio = (clientX - rect.left) / rect.width
+    return clampSpeakerVolume(ratio * 100)
+  }
+
+  function nudgeSpeakerVolume(step: number) {
+    applySpeakerVolume(volume.value + step)
+  }
+
+  function toggleSpeakerMute() {
+    if (speakerSilent.value) {
+      muted.value = false
+      if (volume.value === 0) applySpeakerVolume(volumeBeforeMute.value || 100)
+      return
+    }
+    volumeBeforeMute.value = volume.value
+    muted.value = true
+  }
+
+  function setSpeakerDevice(id: string) {
+    const next = ASSISTANT_SPEAKER_DEVICES.find((item) => item.id === id)
+    if (!next) return
+    speakerDeviceId.value = next.id
+  }
+
+  function clampMicVolume(n: number) {
+    if (!Number.isFinite(n)) return ASSISTANT_MIC_VOLUME_DEFAULT
+    return Math.min(ASSISTANT_MIC_VOLUME_MAX, Math.max(ASSISTANT_MIC_VOLUME_MIN, Math.round(n)))
+  }
+
+  function applyMicVolume(n: number) {
+    if (micDeviceDisabled.value) return
+    const next = clampMicVolume(n)
+    micVolume.value = next
+    if (next === ASSISTANT_MIC_VOLUME_MIN) micMuted.value = true
+    if (next > ASSISTANT_MIC_BOOST_FROM && !micBoostHintShown.value) {
+      micBoostHintShown.value = true
+      showPcToast('开启音频增强，过高可能导致杂音或破音', 'info')
+    }
+  }
+
+  function volumeFromClientX(track: HTMLElement, clientX: number, max: number) {
+    const rect = track.getBoundingClientRect()
+    if (rect.width <= 0) return 0
+    const ratio = (clientX - rect.left) / rect.width
+    return ratio * max
+  }
+
+  function micVolumeFromClientX(track: HTMLElement, clientX: number) {
+    return clampMicVolume(volumeFromClientX(track, clientX, ASSISTANT_MIC_VOLUME_MAX))
+  }
+
+  function nudgeMicVolume(step: number) {
+    applyMicVolume(micVolume.value + step)
+  }
+
+  function toggleMicMute() {
+    if (micDeviceDisabled.value) {
+      showPcToast('未检测到麦克风设备', 'info')
+      return
+    }
+    if (micSilent.value) {
+      micMuted.value = false
+      if (micVolume.value === ASSISTANT_MIC_VOLUME_MIN) {
+        applyMicVolume(micVolumeBeforeMute.value || ASSISTANT_MIC_VOLUME_DEFAULT)
+      }
+      return
+    }
+    micVolumeBeforeMute.value = micVolume.value
+    micMuted.value = true
+  }
+
+  function setMicDevice(id: string) {
+    const next = ASSISTANT_MIC_DEVICES.find((item) => item.id === id)
+    if (!next) return
+    micDeviceId.value = next.id
+    if (next.id === 'none') {
+      micMuted.value = true
+      showPcToast('未检测到麦克风设备', 'info')
+    }
+  }
+
+  function setVoicePreset(id: string) {
+    const next = ASSISTANT_VOICE_PRESETS.find((item) => item.id === id)
+    if (!next) return
+    voicePresetId.value = next.id
+    showPcToast(next.id === 'default' ? '已恢复默认音色' : `已切换变声「${next.label}」`)
   }
 
   function applyToolboxWidth(width: number) {
@@ -1057,7 +1178,7 @@ export function useLiveAnchorAssistant() {
   }
 
   function switchLiveMode(next: GoLiveTab) {
-    liveMode.value = next
+    liveMode.value = pcNormalizeGoLiveMode(next)
   }
 
   function pickMountGame(id: string, name: string) {
@@ -1131,7 +1252,7 @@ export function useLiveAnchorAssistant() {
   }
 
   function scheduleMeta(item: GoLiveSchedule) {
-    return `${item.category} | ${GO_LIVE_MODE_LABELS[item.mode]}`
+    return `${item.category} | ${pcGoLiveModeLabel(item.mode)}`
   }
 
   function scheduleCoverOf(item: GoLiveSchedule) {
@@ -1191,6 +1312,19 @@ export function useLiveAnchorAssistant() {
     live,
     muted,
     volume,
+    speakerSilent,
+    speakerDeviceId,
+    micMuted,
+    micVolume,
+    micDeviceId,
+    voicePresetId,
+    micDeviceDisabled,
+    micBoosted,
+    micSilent,
+    ASSISTANT_SPEAKER_DEVICES,
+    ASSISTANT_MIC_DEVICES,
+    ASSISTANT_VOICE_PRESETS,
+    ASSISTANT_MIC_VOLUME_MAX,
     typeConfigured,
     pushConfirmed,
     pushIngestReady,
@@ -1284,14 +1418,13 @@ export function useLiveAnchorAssistant() {
     editingId,
     editTitle,
     editCategory,
-    GO_LIVE_TABS,
+    PC_GO_LIVE_TABS,
     GO_LIVE_CATEGORIES,
     GO_LIVE_RATIOS,
     GO_LIVE_GAME_GROUPS,
     GO_LIVE_BACKGROUNDS,
     GO_LIVE_SCHEDULE_HOURS,
     GO_LIVE_SCHEDULE_MINUTES,
-    GO_LIVE_SCREEN_HINT,
     toast,
     openModal,
     closeModal,
@@ -1306,6 +1439,17 @@ export function useLiveAnchorAssistant() {
     tryStopLive,
     stopLive,
     refreshPreview,
+    applyMicVolume,
+    micVolumeFromClientX,
+    nudgeMicVolume,
+    toggleMicMute,
+    setMicDevice,
+    applySpeakerVolume,
+    speakerVolumeFromClientX,
+    nudgeSpeakerVolume,
+    toggleSpeakerMute,
+    setSpeakerDevice,
+    setVoicePreset,
     copyText,
     switchLiveMode,
     bindToolboxShell,

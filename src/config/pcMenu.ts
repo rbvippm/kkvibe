@@ -146,7 +146,14 @@ export const pcDocRoutes: PcDocRoute[] = [
   },
 ]
 
-export const pcAnchorDocRoutes: PcDocRoute[] = []
+export const pcAnchorDocRoutes: PcDocRoute[] = [
+  {
+    path: '/pc-anchor/live-assistant/doc',
+    routeName: 'pca-live-assistant-doc',
+    title: '文档说明',
+    pagePath: ['主播后台', '主播控制台', '文档说明'],
+  },
+]
 
 /** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
 export const pcMenuV2Children: PcMenuItem[] = [
@@ -505,6 +512,7 @@ export const pcAnchorMenuTree: PcMenuItem[] = [
     icon: '📺',
     affix: true,
     pagePath: ['主播后台', '主播控制台'],
+    docRouteName: 'pca-live-assistant-doc',
   },
 ]
 

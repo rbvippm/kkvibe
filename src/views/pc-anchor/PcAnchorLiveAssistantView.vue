@@ -9,6 +9,8 @@ import {
   ASSISTANT_CHAT_EMOJIS,
   ASSISTANT_CHAT_FILTERS,
   ASSISTANT_GIFT_CURRENCY,
+  ASSISTANT_MIC_BOOST_FROM,
+  ASSISTANT_MIC_VOLUME_MAX,
   ASSISTANT_TOOLBOX,
   assistantAvatarOf,
   assistantGiftIconOf,
@@ -35,6 +37,134 @@ const voice = useAssistantVoiceRoom()
 const { muteUser, isUserMuted, blockUser, unblockUser, isUserBlocked } = useLiveDanmakuMute()
 const shellEl = ref<HTMLElement | null>(null)
 const onlineListEl = ref<HTMLElement | null>(null)
+const speakerFaderEl = ref<HTMLElement | null>(null)
+const micFaderEl = ref<HTMLElement | null>(null)
+
+const speakerFillPercent = computed(() => Math.min(100, a.volume.value))
+const micFillPercent = computed(() =>
+  Math.min(100, (a.micVolume.value / ASSISTANT_MIC_VOLUME_MAX) * 100),
+)
+const micUnityPercent = (ASSISTANT_MIC_BOOST_FROM / ASSISTANT_MIC_VOLUME_MAX) * 100
+const speakerPanelOpen = ref(false)
+const micPanelOpen = ref(false)
+const fxPanelOpen = ref(false)
+const speakerDeviceLabel = computed(
+  () => a.ASSISTANT_SPEAKER_DEVICES.find((item) => item.id === a.speakerDeviceId.value)?.label ?? '扬声器',
+)
+const micDeviceLabel = computed(
+  () => a.ASSISTANT_MIC_DEVICES.find((item) => item.id === a.micDeviceId.value)?.label ?? '麦克风',
+)
+const voicePresetLabel = computed(
+  () => a.ASSISTANT_VOICE_PRESETS.find((item) => item.id === a.voicePresetId.value)?.label ?? '变声',
+)
+
+function applySpeakerFromPointer(event: PointerEvent) {
+  const track = speakerFaderEl.value
+  if (!track) return
+  a.applySpeakerVolume(a.speakerVolumeFromClientX(track, event.clientX))
+}
+
+function onSpeakerFaderPointerDown(event: PointerEvent) {
+  const track = event.currentTarget as HTMLElement
+  track.setPointerCapture(event.pointerId)
+  applySpeakerFromPointer(event)
+}
+
+function onSpeakerFaderPointerMove(event: PointerEvent) {
+  if (!event.currentTarget || !(event.currentTarget as HTMLElement).hasPointerCapture(event.pointerId)) return
+  applySpeakerFromPointer(event)
+}
+
+function onSpeakerFaderKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
+    event.preventDefault()
+    a.nudgeSpeakerVolume(5)
+  } else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
+    event.preventDefault()
+    a.nudgeSpeakerVolume(-5)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    a.applySpeakerVolume(100)
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    a.applySpeakerVolume(0)
+  }
+}
+
+function onSpeakerFaderWheel(event: WheelEvent) {
+  event.preventDefault()
+  a.nudgeSpeakerVolume(event.deltaY < 0 ? 5 : -5)
+}
+
+function applyMicFromPointer(event: PointerEvent) {
+  const track = micFaderEl.value
+  if (!track || a.micDeviceDisabled.value) return
+  a.applyMicVolume(a.micVolumeFromClientX(track, event.clientX))
+}
+
+function onMicFaderPointerDown(event: PointerEvent) {
+  const track = event.currentTarget as HTMLElement
+  track.setPointerCapture(event.pointerId)
+  applyMicFromPointer(event)
+}
+
+function onMicFaderPointerMove(event: PointerEvent) {
+  if (!event.currentTarget || !(event.currentTarget as HTMLElement).hasPointerCapture(event.pointerId)) return
+  applyMicFromPointer(event)
+}
+
+function onMicFaderKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
+    event.preventDefault()
+    a.nudgeMicVolume(5)
+  } else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
+    event.preventDefault()
+    a.nudgeMicVolume(-5)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    a.applyMicVolume(ASSISTANT_MIC_VOLUME_MAX)
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    a.applyMicVolume(0)
+  }
+}
+
+function onMicFaderWheel(event: WheelEvent) {
+  event.preventDefault()
+  a.nudgeMicVolume(event.deltaY < 0 ? 5 : -5)
+}
+
+function closeAudioPanels() {
+  speakerPanelOpen.value = false
+  micPanelOpen.value = false
+  fxPanelOpen.value = false
+}
+
+function toggleSpeakerPanel(event: MouseEvent) {
+  event.stopPropagation()
+  micPanelOpen.value = false
+  fxPanelOpen.value = false
+  speakerPanelOpen.value = !speakerPanelOpen.value
+}
+
+function toggleMicPanel(event: MouseEvent) {
+  event.stopPropagation()
+  speakerPanelOpen.value = false
+  fxPanelOpen.value = false
+  micPanelOpen.value = !micPanelOpen.value
+}
+
+function toggleFxPanel(event: MouseEvent) {
+  event.stopPropagation()
+  speakerPanelOpen.value = false
+  micPanelOpen.value = false
+  fxPanelOpen.value = !fxPanelOpen.value
+}
+
+function pickVoicePreset(id: string) {
+  a.setVoicePreset(id)
+  fxPanelOpen.value = false
+}
 
 function goOnlinePage(next: number) {
   a.setOnlinePage(next)
@@ -245,6 +375,7 @@ function onDocumentClick() {
   if (actionMenuVisible.value) closeActionMenu()
   emojiOpen.value = false
   chatFilterOpen.value = false
+  closeAudioPanels()
 }
 
 function toggleEmojiPanel(event: MouseEvent) {
@@ -579,12 +710,9 @@ function onScheduleHourChange(event: Event) {
                     <p v-else class="lal-preview__hint">画面中断，正在尝试恢复</p>
                   </div>
                   <template v-else>
-                    <div class="lal-preview__icon" aria-hidden="true">
-                      {{ a.liveMode.value === 'screen' ? '📱' : '📺' }}
-                    </div>
+                    <div class="lal-preview__icon" aria-hidden="true">📺</div>
                     <strong>{{ a.previewStateLabel.value }}</strong>
                     <em v-if="a.linkedSchedule.value && !a.live.value">已回填</em>
-                    <p v-else-if="a.liveMode.value === 'screen' && !a.live.value" class="lal-preview__hint">{{ a.GO_LIVE_SCREEN_HINT }}</p>
                   </template>
                 </div>
               </template>
@@ -596,50 +724,312 @@ function onScheduleHourChange(event: Event) {
           </div>
           <div class="lal-preview__dock">
             <div class="lal-preview__dock-left">
-              <button
-                type="button"
-                class="lal-icon-btn"
-                :class="{ 'is-on': a.muted.value }"
-                :title="a.muted.value ? '取消静音' : '静音'"
-                :aria-label="a.muted.value ? '取消静音' : '静音'"
-                @click="a.muted.value = !a.muted.value"
-              >
-                <svg v-if="a.muted.value" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                  <path fill="currentColor" d="M2.5 6h2.2L8 3.2v9.6L4.7 10H2.5A.5.5 0 0 1 2 9.5v-3A.5.5 0 0 1 2.5 6Zm8.1-.9.7.7-1.5 1.5 1.5 1.5-.7.7-1.5-1.5-1.5 1.5-.7-.7 1.5-1.5-1.5-1.5.7-.7 1.5 1.5 1.5-1.5Z" />
-                </svg>
-                <svg v-else viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                  <path fill="currentColor" d="M2.5 6h2.2L8 3.2v9.6L4.7 10H2.5A.5.5 0 0 1 2 9.5v-3A.5.5 0 0 1 2.5 6Zm7.6-1.2a3.6 3.6 0 0 1 0 6.4l-.7-1.1a2.3 2.3 0 0 0 0-4.2l.7-1.1Zm1.8-1.6a5.6 5.6 0 0 1 0 9.6l-.8-1.1a4.3 4.3 0 0 0 0-7.4l.8-1.1Z" />
-                </svg>
-              </button>
-              <label class="lal-vol">
-                <input v-model.number="a.volume.value" type="range" min="0" max="100" :aria-label="`音量 ${a.volume.value}`" />
-                <span>{{ a.volume.value }}</span>
-              </label>
+              <div class="lal-audio-pop" @click.stop>
+                <div class="lal-audio-tile" :class="{ 'is-open': speakerPanelOpen, 'is-muted': a.speakerSilent.value }">
+                  <button
+                    type="button"
+                    class="lal-audio-tile__icon"
+                    :class="{ 'is-mute': a.speakerSilent.value }"
+                    :title="a.speakerSilent.value ? '取消静音' : '静音'"
+                    :aria-label="a.speakerSilent.value ? '取消静音' : '静音'"
+                    @click="a.toggleSpeakerMute"
+                  >
+                    <svg v-if="a.speakerSilent.value" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                      <path fill="currentColor" d="M2.3 6.15h1.85L7.1 3.5v9l-2.95-2.65H2.3A.85.85 0 0 1 1.45 9V7a.85.85 0 0 1 .85-.85Z" />
+                      <path class="lal-ico-slash-gap" fill="none" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                      <path class="lal-ico-slash" fill="none" stroke="currentColor" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                    </svg>
+                    <svg v-else viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                      <path fill="currentColor" d="M2.3 6.15h1.85L7.1 3.5v9l-2.95-2.65H2.3A.85.85 0 0 1 1.45 9V7a.85.85 0 0 1 .85-.85Z" />
+                      <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M9.15 6.15a2.15 2.15 0 0 1 0 3.7M11.05 4.55a4.15 4.15 0 0 1 0 6.9" />
+                    </svg>
+                  </button>
+                  <span class="lal-audio-tile__name">扬声器</span>
+                  <button
+                    type="button"
+                    class="lal-audio-tile__arrow"
+                    :class="{ 'is-on': speakerPanelOpen }"
+                    title="扬声器设置"
+                    :aria-label="`扬声器设置，当前 ${speakerDeviceLabel}`"
+                    :aria-expanded="speakerPanelOpen"
+                    @click="toggleSpeakerPanel"
+                  >
+                    <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+                      <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4.2 2.4 7.8 6 4.2 9.6" />
+                    </svg>
+                  </button>
+                </div>
+                <div
+                  v-if="speakerPanelOpen"
+                  class="lal-audio-pop__panel"
+                  role="dialog"
+                  aria-label="扬声器设置"
+                >
+                  <div class="lal-audio-pop__title">
+                    <span>声音</span>
+                    <em>{{ a.volume.value }}</em>
+                  </div>
+                  <div class="lal-hslider">
+                    <button
+                      type="button"
+                      class="lal-icon-btn lal-hslider__icon"
+                      :class="{ 'is-mute': a.speakerSilent.value }"
+                      :title="a.speakerSilent.value ? '取消静音' : '静音'"
+                      :aria-label="a.speakerSilent.value ? '取消静音' : '静音'"
+                      @click="a.toggleSpeakerMute"
+                    >
+                      <svg v-if="a.speakerSilent.value" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                        <path fill="currentColor" d="M2.3 6.15h1.85L7.1 3.5v9l-2.95-2.65H2.3A.85.85 0 0 1 1.45 9V7a.85.85 0 0 1 .85-.85Z" />
+                        <path class="lal-ico-slash-gap" fill="none" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                        <path class="lal-ico-slash" fill="none" stroke="currentColor" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                      </svg>
+                      <svg v-else viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                        <path fill="currentColor" d="M2.3 6.15h1.85L7.1 3.5v9l-2.95-2.65H2.3A.85.85 0 0 1 1.45 9V7a.85.85 0 0 1 .85-.85Z" />
+                        <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M9.15 6.15a2.15 2.15 0 0 1 0 3.7M11.05 4.55a4.15 4.15 0 0 1 0 6.9" />
+                      </svg>
+                    </button>
+                    <div
+                      ref="speakerFaderEl"
+                      class="lal-hslider__track"
+                      role="slider"
+                      tabindex="0"
+                      :aria-valuemin="0"
+                      :aria-valuemax="100"
+                      :aria-valuenow="a.volume.value"
+                      :aria-label="`扬声器音量 ${a.volume.value}`"
+                      @pointerdown="onSpeakerFaderPointerDown"
+                      @pointermove="onSpeakerFaderPointerMove"
+                      @keydown="onSpeakerFaderKeydown"
+                      @wheel.prevent="onSpeakerFaderWheel"
+                    >
+                      <i
+                        class="lal-hslider__fill"
+                        :class="{ 'is-mute': a.speakerSilent.value }"
+                        :style="{ width: `${speakerFillPercent}%` }"
+                      />
+                      <i class="lal-hslider__knob" :style="{ left: `${speakerFillPercent}%` }" />
+                    </div>
+                    <span class="lal-hslider__loud" aria-hidden="true">
+                      <svg viewBox="0 0 16 16" width="16" height="16">
+                        <path fill="currentColor" d="M2.5 6h2.2L8 3.2v9.6L4.7 10H2.5A.5.5 0 0 1 2 9.5v-3A.5.5 0 0 1 2.5 6Zm7.6-1.2a3.6 3.6 0 0 1 0 6.4l-.7-1.1a2.3 2.3 0 0 0 0-4.2l.7-1.1Zm1.8-1.6a5.6 5.6 0 0 1 0 9.6l-.8-1.1a4.3 4.3 0 0 0 0-7.4l.8-1.1Z" />
+                      </svg>
+                    </span>
+                  </div>
+                  <p class="lal-audio-pop__label">输出</p>
+                  <div class="lal-audio-pop__list" role="listbox" aria-label="扬声器设备">
+                    <button
+                      v-for="item in a.ASSISTANT_SPEAKER_DEVICES"
+                      :key="item.id"
+                      type="button"
+                      class="lal-audio-pop__option"
+                      :class="{ 'is-on': a.speakerDeviceId.value === item.id }"
+                      role="option"
+                      :aria-selected="a.speakerDeviceId.value === item.id"
+                      @click="a.setSpeakerDevice(item.id)"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <template v-if="a.liveMode.value === 'voice'">
+                <div class="lal-audio-pop" @click.stop>
+                  <div class="lal-audio-tile" :class="{ 'is-open': micPanelOpen, 'is-muted': a.micSilent.value }">
+                    <button
+                      type="button"
+                      class="lal-audio-tile__icon"
+                      :class="{ 'is-mute': a.micSilent.value }"
+                      :title="a.micSilent.value ? '开麦' : '关麦'"
+                      :aria-label="a.micSilent.value ? '开麦' : '关麦'"
+                      @click="a.toggleMicMute"
+                    >
+                      <svg v-if="a.micSilent.value" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <rect x="5.7" y="2.15" width="4.6" height="7.1" rx="2.3" fill="currentColor" />
+                        <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M4.05 8.15a3.95 3.95 0 0 0 3.15 3.85M8 13.5v.1" />
+                        <path class="lal-ico-slash-gap" fill="none" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                        <path class="lal-ico-slash" fill="none" stroke="currentColor" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                      </svg>
+                      <svg v-else viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                        <rect x="5.7" y="2.15" width="4.6" height="7.1" rx="2.3" fill="currentColor" />
+                        <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M3.7 8.2a4.3 4.3 0 0 0 8.6 0M8 12.45V14M5.55 14h4.9" />
+                      </svg>
+                    </button>
+                    <span class="lal-audio-tile__name">麦克风</span>
+                    <button
+                      type="button"
+                      class="lal-audio-tile__arrow"
+                      :class="{ 'is-on': micPanelOpen }"
+                      title="麦克风设置"
+                      :aria-label="`麦克风设置，当前 ${micDeviceLabel}`"
+                      :aria-expanded="micPanelOpen"
+                      @click="toggleMicPanel"
+                    >
+                      <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4.2 2.4 7.8 6 4.2 9.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div
+                    v-if="micPanelOpen"
+                    class="lal-audio-pop__panel"
+                    role="dialog"
+                    aria-label="麦克风设置"
+                  >
+                    <div class="lal-audio-pop__title">
+                      <span>麦克风</span>
+                      <em :class="{ 'is-boost': a.micBoosted.value }">{{ a.micVolume.value }}</em>
+                    </div>
+                    <div class="lal-hslider" :class="{ 'is-disabled': a.micDeviceDisabled.value }">
+                      <button
+                        type="button"
+                        class="lal-icon-btn lal-hslider__icon"
+                        :class="{ 'is-mute': a.micSilent.value }"
+                        :disabled="a.micDeviceDisabled.value"
+                        :title="a.micSilent.value ? '开麦' : '关麦'"
+                        :aria-label="a.micSilent.value ? '开麦' : '关麦'"
+                        @click="a.toggleMicMute"
+                      >
+                        <svg v-if="a.micSilent.value" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                          <rect x="5.7" y="2.15" width="4.6" height="7.1" rx="2.3" fill="currentColor" />
+                          <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M4.05 8.15a3.95 3.95 0 0 0 3.15 3.85M8 13.5v.1" />
+                          <path class="lal-ico-slash-gap" fill="none" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                          <path class="lal-ico-slash" fill="none" stroke="currentColor" stroke-linecap="round" d="M3.15 3.2 13.1 13" />
+                        </svg>
+                        <svg v-else viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                          <rect x="5.7" y="2.15" width="4.6" height="7.1" rx="2.3" fill="currentColor" />
+                          <path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M3.7 8.2a4.3 4.3 0 0 0 8.6 0M8 12.45V14M5.55 14h4.9" />
+                        </svg>
+                      </button>
+                      <div
+                        ref="micFaderEl"
+                        class="lal-hslider__track"
+                        role="slider"
+                        tabindex="0"
+                        :aria-valuemin="0"
+                        :aria-valuemax="ASSISTANT_MIC_VOLUME_MAX"
+                        :aria-valuenow="a.micVolume.value"
+                        :aria-disabled="a.micDeviceDisabled.value"
+                        :aria-label="`麦克风音量 ${a.micVolume.value}`"
+                        @pointerdown="onMicFaderPointerDown"
+                        @pointermove="onMicFaderPointerMove"
+                        @keydown="onMicFaderKeydown"
+                        @wheel.prevent="onMicFaderWheel"
+                      >
+                        <i class="lal-hslider__unity" :style="{ left: `${micUnityPercent}%` }" />
+                        <i
+                          class="lal-hslider__fill lal-hslider__fill--safe"
+                          :class="{ 'is-mute': a.micSilent.value }"
+                          :style="{ width: `${Math.min(micFillPercent, micUnityPercent)}%` }"
+                        />
+                        <i
+                          class="lal-hslider__fill lal-hslider__fill--boost"
+                          :class="{ 'is-mute': a.micSilent.value }"
+                          :style="{
+                            left: `${micUnityPercent}%`,
+                            width: `${Math.max(0, micFillPercent - micUnityPercent)}%`,
+                          }"
+                        />
+                        <i class="lal-hslider__knob" :style="{ left: `${micFillPercent}%` }" />
+                      </div>
+                    </div>
+                    <p class="lal-audio-pop__label">输入</p>
+                    <div class="lal-audio-pop__list" role="listbox" aria-label="麦克风设备">
+                      <button
+                        v-for="item in a.ASSISTANT_MIC_DEVICES"
+                        :key="item.id"
+                        type="button"
+                        class="lal-audio-pop__option"
+                        :class="{ 'is-on': a.micDeviceId.value === item.id }"
+                        role="option"
+                        :aria-selected="a.micDeviceId.value === item.id"
+                        @click="a.setMicDevice(item.id)"
+                      >
+                        {{ item.label }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="lal-audio-pop" @click.stop>
+                  <div class="lal-audio-tile" :class="{ 'is-open': fxPanelOpen, 'is-fx': a.voicePresetId.value !== 'default' }">
+                    <span
+                      class="lal-audio-tile__icon is-static"
+                      :class="{ 'is-fx-on': a.voicePresetId.value !== 'default' }"
+                      :title="`当前 ${voicePresetLabel}`"
+                      aria-hidden="true"
+                    >
+                      <svg viewBox="0 0 16 16" width="14" height="14">
+                        <rect x="3.7" y="8.5" width="2.1" height="4.7" rx="1.05" fill="currentColor" />
+                        <rect x="6.95" y="3.6" width="2.1" height="9.6" rx="1.05" fill="currentColor" />
+                        <rect x="10.2" y="6.2" width="2.1" height="7" rx="1.05" fill="currentColor" />
+                      </svg>
+                    </span>
+                    <span class="lal-audio-tile__name">变声</span>
+                    <button
+                      type="button"
+                      class="lal-audio-tile__arrow"
+                      :class="{ 'is-on': fxPanelOpen }"
+                      :title="`变声设置，当前 ${voicePresetLabel}`"
+                      :aria-label="`变声设置，当前 ${voicePresetLabel}`"
+                      :aria-expanded="fxPanelOpen"
+                      @click="toggleFxPanel"
+                    >
+                      <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+                        <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M4.2 2.4 7.8 6 4.2 9.6" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div
+                    v-if="fxPanelOpen"
+                    class="lal-audio-pop__panel"
+                    role="listbox"
+                    aria-label="变声预设"
+                  >
+                    <div class="lal-audio-pop__title">
+                      <span>变声</span>
+                      <em>{{ voicePresetLabel }}</em>
+                    </div>
+                    <div class="lal-audio-pop__list">
+                      <button
+                        v-for="item in a.ASSISTANT_VOICE_PRESETS"
+                        :key="item.id"
+                        type="button"
+                        class="lal-audio-pop__option"
+                        :class="{ 'is-on': a.voicePresetId.value === item.id }"
+                        role="option"
+                        :aria-selected="a.voicePresetId.value === item.id"
+                        @click="pickVoicePreset(item.id)"
+                      >
+                        {{ item.label }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
-            <div class="lal-preview__dock-right">
-              <button
-                type="button"
-                class="lal-icon-btn"
-                title="分享"
-                aria-label="分享"
-                @click="a.openModal('share')"
-              >
-                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                  <path fill="currentColor" d="M10.2 3.6a1.6 1.6 0 1 1 1.7 1.55L7.4 7.3a1.6 1.6 0 0 1 0 1.4l4.5 2.15a1.6 1.6 0 1 1-.55 1.15L6.9 9.85a1.6 1.6 0 1 1 0-3.7l4.45-2.15a1.6 1.6 0 0 1-.15-.4Z" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="lal-icon-btn"
-                title="刷新画面"
-                aria-label="刷新画面"
-                @click="a.refreshPreview"
-              >
-                <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
-                  <path fill="currentColor" d="M13.2 8A5.2 5.2 0 1 1 8 2.8V1.2L11 3.4 8 5.6V4a4 4 0 1 0 4 4h1.2Z" />
-                </svg>
-              </button>
-            </div>
+          </div>
+          <div class="lal-preview__dock-right">
+            <button
+              type="button"
+              class="lal-icon-btn"
+              title="分享"
+              aria-label="分享"
+              @click="a.openModal('share')"
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M10.2 3.6a1.6 1.6 0 1 1 1.7 1.55L7.4 7.3a1.6 1.6 0 0 1 0 1.4l4.5 2.15a1.6 1.6 0 1 1-.55 1.15L6.9 9.85a1.6 1.6 0 1 1 0-3.7l4.45-2.15a1.6 1.6 0 0 1-.15-.4Z" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="lal-icon-btn"
+              title="刷新画面"
+              aria-label="刷新画面"
+              @click="a.refreshPreview"
+            >
+              <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M13.2 8A5.2 5.2 0 1 1 8 2.8V1.2L11 3.4 8 5.6V4a4 4 0 1 0 4 4h1.2Z" />
+              </svg>
+            </button>
           </div>
         </div>
         <div class="lal-bar">
@@ -1223,9 +1613,9 @@ function onScheduleHourChange(event: Event) {
               <div class="lal-type">
                 <section class="lal-type__sec">
                   <h4 class="lal-type__title">开播类型</h4>
-                  <div class="lal-seg" role="radiogroup" aria-label="开播类型">
+                  <div class="lal-seg lal-seg--2" role="radiogroup" aria-label="开播类型">
                     <button
-                      v-for="item in a.GO_LIVE_TABS"
+                      v-for="item in a.PC_GO_LIVE_TABS"
                       :key="item.key"
                       type="button"
                       class="lal-seg__btn"

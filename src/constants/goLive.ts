@@ -18,6 +18,22 @@ export const GO_LIVE_TABS: { key: GoLiveTab; label: string }[] = [
   { key: 'screen', label: '手机画面' },
 ]
 
+/** PC + OBS 不区分视频 / 手机画面，仅直播与语音 */
+export type PcGoLiveTab = Exclude<GoLiveTab, 'screen'>
+
+export const PC_GO_LIVE_TABS: { key: PcGoLiveTab; label: string }[] = [
+  { key: 'video', label: '直播' },
+  { key: 'voice', label: '语音' },
+]
+
+export function pcNormalizeGoLiveMode(mode: GoLiveTab): PcGoLiveTab {
+  return mode === 'voice' ? 'voice' : 'video'
+}
+
+export function pcGoLiveModeLabel(mode: GoLiveTab): string {
+  return pcNormalizeGoLiveMode(mode) === 'voice' ? '语音' : '直播'
+}
+
 export const GO_LIVE_DEFAULT_TITLE = {
   video: '小红来了正在直播',
   voice: '小红来了正在语聊',
