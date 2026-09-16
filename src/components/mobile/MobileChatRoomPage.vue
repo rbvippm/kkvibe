@@ -105,9 +105,9 @@ const UPLOAD_RING_R = 28
 const UPLOAD_RING = 2 * Math.PI * UPLOAD_RING_R
 const FILE_XFER_RING_R = 14
 const FILE_XFER_RING = 2 * Math.PI * FILE_XFER_RING_R
-const VIDEO_CHIP_RING_R = 11
+const VIDEO_CHIP_RING_R = 6
 const VIDEO_CHIP_RING = 2 * Math.PI * VIDEO_CHIP_RING_R
-const CELL_XFER_RING_R = 16
+const CELL_XFER_RING_R = 11
 const CELL_XFER_RING = 2 * Math.PI * CELL_XFER_RING_R
 const JUMP_BOTTOM_GAP = 80
 const JUMP_BADGE_MAX = 999
@@ -967,33 +967,27 @@ function downloadTrackedItems(msg: ChatRoomMessage) {
   return msg.media.filter((item) => item.downloadStatus)
 }
 
-function showAlbumDownloadBtn(msg: ChatRoomMessage) {
-  if (!hasPerItemDownload(msg)) return false
-  const tracked = downloadTrackedItems(msg)
-  return tracked.every((item) => item.downloadStatus === 'pending' || item.downloadStatus === 'failed')
-}
-
-function albumDownloadFailed(msg: ChatRoomMessage) {
-  const tracked = downloadTrackedItems(msg)
-  return tracked.length > 0 && tracked.every((item) => item.downloadStatus === 'failed')
+function albumHasActiveDownload(msg: ChatRoomMessage) {
+  return downloadTrackedItems(msg).some(
+    (item) =>
+      item.downloadStatus === 'downloading' ||
+      item.downloadStatus === 'paused' ||
+      item.downloadStatus === 'done',
+  )
 }
 
 function showMediaChip(msg: ChatRoomMessage, item: ChatMediaItem) {
   if (!item.isVideo) return false
   if (msg.direction === 'received') {
-    if (!item.downloadStatus || item.downloadStatus === 'done') return false
-    if (showAlbumDownloadBtn(msg)) return false
-    return true
+    return Boolean(item.downloadStatus && item.downloadStatus !== 'done')
   }
   return item.uploadStatus === 'queued' || item.uploadStatus === 'sending' || item.uploadStatus === 'paused'
 }
 
-function showVideoDoneBadge(msg: ChatRoomMessage, item: ChatMediaItem) {
-  if (!item.isVideo) return false
-  if (msg.direction === 'received') {
-    return !item.downloadStatus || item.downloadStatus === 'done'
-  }
-  return !item.uploadStatus || item.uploadStatus === 'sent'
+function showVideoTimeBadge(msg: ChatRoomMessage, item: ChatMediaItem) {
+  if (!item.isVideo || !item.duration || isMediaUploadingItem(item)) return false
+  if (showMediaChip(msg, item)) return false
+  return true
 }
 
 function showSentDuration(msg: ChatRoomMessage, item: ChatMediaItem) {
@@ -1007,7 +1001,6 @@ function isMediaUploadingItem(item: ChatMediaItem) {
 function showCellXfer(msg: ChatRoomMessage, item: ChatMediaItem) {
   if (item.isVideo) return false
   if (msg.direction === 'sent') return isMediaUploadingItem(item)
-  if (showAlbumDownloadBtn(msg)) return false
   return Boolean(item.downloadStatus && item.downloadStatus !== 'done')
 }
 
@@ -1049,11 +1042,11 @@ function nextDownloadIndex(msg: ChatRoomMessage, fromIndex: number) {
     }
     return -1
   }
+  const paused = pick('paused')
+  if (paused >= 0) return paused
   const pending = pick('pending')
   if (pending >= 0) return pending
-  const failed = pick('failed')
-  if (failed >= 0) return failed
-  return pick('paused')
+  return pick('failed')
 }
 
 function pauseOtherDownloads(msgId: string, keepIndex: number) {
@@ -1109,15 +1102,6 @@ function pauseMediaItemDownload(msgId: string, index: number) {
   patchMediaItem(msgId, index, { downloadStatus: 'paused', downloadProgress: progress })
 }
 
-function startAlbumDownload(msg: ChatRoomMessage) {
-  const idx = msg.media.findIndex((item) => {
-    const status = item.downloadStatus
-    return status === 'pending' || status === 'failed' || status === 'paused'
-  })
-  if (idx < 0) return
-  startMediaItemDownload(msg.id, idx, true)
-}
-
 function startMediaItemUpload(msgId: string, index: number) {
   const msg = messages.value.find((item) => item.id === msgId)
   const item = msg?.media[index]
@@ -1156,6 +1140,38 @@ function pauseMediaItemUpload(msgId: string, index: number) {
   syncAlbumSendStatus(msgId)
 }
 
+function showMediaCancel(item: ChatMediaItem) {
+  return item.uploadStatus === 'paused' || item.downloadStatus === 'paused'
+}
+
+function cancelPausedMedia(msg: ChatRoomMessage, index: number) {
+  const item = msg.media[index]
+  if (!item || !showMediaCancel(item)) return
+  if (item.uploadStatus === 'paused') {
+    stopMediaUpload(msg.id, index)
+    const nextMedia = msg.media.filter((_, i) => i !== index)
+    if (!nextMedia.length) {
+      messages.value = messages.value.filter((row) => row.id !== msg.id)
+      showToast(item.isVideo ? '已取消这条视频' : '已取消这张图片')
+      return
+    }
+    patchMessage(msg.id, {
+      media: nextMedia,
+      layout: layoutForMediaCount(nextMedia.length + (msg.extraCount ?? 0)),
+    })
+    syncAlbumSendStatus(msg.id)
+    startAlbumUpload(msg.id)
+    showToast(item.isVideo ? '已取消这条视频' : '已取消这张图片')
+    return
+  }
+  stopMediaDownload(msg.id, index)
+  patchMediaItem(msg.id, index, { downloadStatus: 'pending', downloadProgress: 0 })
+  showToast('已取消下载')
+  const latest = messages.value.find((row) => row.id === msg.id)
+  const following = latest ? nextDownloadIndex(latest, index) : -1
+  if (following >= 0 && following !== index) startMediaItemDownload(msg.id, following, true)
+}
+
 function startAlbumUpload(msgId: string) {
   const msg = messages.value.find((item) => item.id === msgId)
   if (!msg) return
@@ -1184,7 +1200,11 @@ function onMediaChipClick(msg: ChatRoomMessage, index: number) {
 
 function onCellXferClick(msg: ChatRoomMessage, index: number) {
   const item = msg.media[index]
-  if (!item || item.isVideo) return
+  if (!item) return
+  if (item.isVideo) {
+    onVideoPlay(msg, index)
+    return
+  }
   if (msg.direction === 'sent') {
     if (item.uploadStatus === 'sending') pauseMediaItemUpload(msg.id, index)
     else if (item.uploadStatus === 'paused') startMediaItemUpload(msg.id, index)
@@ -1203,8 +1223,17 @@ function cellXferProgress(item: ChatMediaItem) {
   return 0
 }
 
-function cellXferSpinning(item: ChatMediaItem) {
-  return item.uploadStatus === 'queued' || item.downloadStatus === 'pending'
+function cellXferSpinning(msg: ChatRoomMessage, item: ChatMediaItem) {
+  if (item.uploadStatus === 'queued') return true
+  return item.downloadStatus === 'pending' && albumHasActiveDownload(msg)
+}
+
+function cellXferBusy(msg: ChatRoomMessage, item: ChatMediaItem) {
+  return (
+    cellXferSpinning(msg, item) ||
+    item.downloadStatus === 'downloading' ||
+    item.uploadStatus === 'sending'
+  )
 }
 
 function cellXferActive(item: ChatMediaItem) {
@@ -1348,6 +1377,18 @@ function onWatchSeekEnd(ev: PointerEvent) {
 
 function onMediaCellClick(msg: ChatRoomMessage, item: ChatMediaItem, index: number) {
   if (isMediaUploadingItem(item)) return
+  if (item.downloadStatus && item.downloadStatus !== 'done') {
+    if (item.isVideo) {
+      onVideoPlay(msg, index)
+      return
+    }
+    if (item.downloadStatus === 'downloading') {
+      pauseMediaItemDownload(msg.id, index)
+      return
+    }
+    startMediaItemDownload(msg.id, index, true)
+    return
+  }
   if (item.isVideo) {
     onVideoPlay(msg, index)
     return
@@ -1401,8 +1442,13 @@ function mediaChipProgress(item: ChatMediaItem) {
   return 0
 }
 
-function mediaChipSpinning(item: ChatMediaItem) {
-  return item.uploadStatus === 'queued' || item.downloadStatus === 'pending'
+function mediaChipSpinning(msg: ChatRoomMessage, item: ChatMediaItem) {
+  if (item.uploadStatus === 'queued') return true
+  return item.downloadStatus === 'pending' && albumHasActiveDownload(msg)
+}
+
+function mediaChipBusy(msg: ChatRoomMessage, item: ChatMediaItem) {
+  return mediaChipSpinning(msg, item) || mediaChipStopping(item)
 }
 
 function mediaChipActive(item: ChatMediaItem) {
@@ -1424,15 +1470,17 @@ function mediaChipPaused(item: ChatMediaItem) {
 
 function videoChipMeta(item: ChatMediaItem) {
   if (mediaChipActive(item)) return uploadPercent(mediaChipProgress(item))
-  if (item.downloadStatus === 'failed') return '下载失败'
   return ''
 }
 
-function mediaChipAria(item: ChatMediaItem) {
+function mediaChipAria(msg: ChatRoomMessage, item: ChatMediaItem) {
   if (mediaChipStopping(item)) return item.uploadStatus === 'sending' ? '暂停上传' : '暂停下载'
   if (mediaChipPaused(item)) return item.uploadStatus === 'paused' ? '继续上传' : '继续下载'
   if (item.downloadStatus === 'failed') return '重新下载这条'
-  if (item.downloadStatus === 'pending' || item.uploadStatus === 'queued') return item.uploadStatus ? '排队上传中' : '排队下载中'
+  if (item.uploadStatus === 'queued') return '排队上传中'
+  if (item.downloadStatus === 'pending') {
+    return albumHasActiveDownload(msg) ? '排队下载中' : item.isVideo ? '下载并播放' : '下载这张'
+  }
   return '下载'
 }
 
@@ -1641,10 +1689,6 @@ function onBubbleClick(msg: ChatRoomMessage) {
     openResend(msg)
     return
   }
-  if (showAlbumDownloadBtn(msg)) {
-    startAlbumDownload(msg)
-    return
-  }
   if (isDownloadFailed(msg) || isDownloadPending(msg)) {
     startDownload(msg)
     return
@@ -1722,7 +1766,7 @@ function mediaClass(layout: ChatRoomMessage['layout'], index: number, total: num
 function showPlus(msg: ChatRoomMessage, index: number) {
   if (msg.layout !== '5-plus' || index !== msg.media.length - 1 || (msg.extraCount ?? 0) <= 0) return false
   if (hasPerItemUpload(msg) && isUploadingUi(msg)) return false
-  if (hasPerItemDownload(msg) && !showAlbumDownloadBtn(msg)) return false
+  if (hasPerItemDownload(msg)) return false
   return true
 }
 
@@ -2111,9 +2155,7 @@ onBeforeUnmount(() => {
                 `mh5-chat-room-media--${msg.layout}`,
                 {
                   'mh5-chat-room-media--uploading':
-                    (isUploadingUi(msg) && !hasPerItemUpload(msg)) ||
-                    isPhotoDownloading(msg) ||
-                    showAlbumDownloadBtn(msg),
+                    (isUploadingUi(msg) && !hasPerItemUpload(msg)) || isPhotoDownloading(msg),
                   'mh5-chat-room-media--failed':
                     isFailed(msg) || (isDownloadFailed(msg) && !hasPerItemDownload(msg)),
                 },
@@ -2135,7 +2177,7 @@ onBeforeUnmount(() => {
                     <img class="mh5-chat-room-media__play" :src="CHAT_ROOM_ASSETS.play" alt="" width="30" height="30" />
                   </span>
                   <span
-                    v-if="showVideoDoneBadge(msg, item) && item.duration"
+                    v-if="showVideoTimeBadge(msg, item)"
                     class="mh5-chat-room-media__time"
                   >{{ item.duration }}</span>
                   <span
@@ -2147,27 +2189,27 @@ onBeforeUnmount(() => {
                   v-if="showMediaChip(msg, item)"
                   type="button"
                   class="mh5-chat-room-media__dlchip"
-                  :aria-label="mediaChipAria(item)"
+                  :aria-label="mediaChipAria(msg, item)"
                   @click.stop="onMediaChipClick(msg, index)"
                 >
                   <span
                     class="mh5-chat-room-media__dlchip-ring"
-                    :class="{ 'mh5-chat-room-media__dlchip-ring--spin': mediaChipSpinning(item) }"
+                    :class="{ 'mh5-chat-room-media__dlchip-ring--spin': mediaChipBusy(msg, item) }"
                   >
                     <svg
-                      v-if="mediaChipActive(item) || mediaChipSpinning(item)"
-                      viewBox="0 0 28 28"
+                      v-if="mediaChipActive(item) || mediaChipSpinning(msg, item)"
+                      viewBox="0 0 16 16"
                       aria-hidden="true"
                     >
-                      <circle cx="14" cy="14" r="12" class="mh5-chat-room-media__dlchip-disk" />
+                      <circle cx="8" cy="8" r="6.4" class="mh5-chat-room-media__dlchip-disk" />
                       <circle
-                        cx="14"
-                        cy="14"
+                        cx="8"
+                        cy="8"
                         :r="VIDEO_CHIP_RING_R"
                         class="mh5-chat-room-media__dlchip-bar"
                         :stroke-dasharray="VIDEO_CHIP_RING"
                         :stroke-dashoffset="
-                          mediaChipSpinning(item)
+                          mediaChipSpinning(msg, item)
                             ? VIDEO_CHIP_RING * 0.72
                             : videoChipDashoffset(mediaChipProgress(item))
                         "
@@ -2184,24 +2226,36 @@ onBeforeUnmount(() => {
                     <svg
                       v-else-if="mediaChipPaused(item)"
                       class="mh5-chat-room-media__dlchip-play"
-                      width="10"
-                      height="10"
+                      width="7"
+                      height="7"
                       viewBox="0 0 10 10"
                       aria-hidden="true"
                     >
                       <path d="M3.2 1.6v6.8L8.6 5 3.2 1.6z" fill="currentColor" />
                     </svg>
                     <svg
-                      v-else-if="!mediaChipSpinning(item)"
+                      v-else-if="item.downloadStatus === 'failed'"
                       class="mh5-chat-room-media__dlchip-arrow"
-                      width="12"
-                      height="12"
+                      width="9"
+                      height="9"
                       viewBox="0 0 16 16"
                       fill="none"
                       aria-hidden="true"
                     >
-                      <path d="M8 3v7.2M5.2 7.6 8 10.4l2.8-2.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M4 13h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                      <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                      <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <svg
+                      v-else-if="!mediaChipSpinning(msg, item)"
+                      class="mh5-chat-room-media__dlchip-arrow"
+                      width="9"
+                      height="9"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 3v7.2M5.2 7.6 8 10.4l2.8-2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M4 13h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
                     </svg>
                   </span>
                   <span class="mh5-chat-room-media__dlchip-copy">
@@ -2213,23 +2267,24 @@ onBeforeUnmount(() => {
                   v-if="showCellXfer(msg, item)"
                   type="button"
                   class="mh5-chat-room-media__cellxfer"
-                  :aria-label="mediaChipAria(item)"
+                  :aria-label="mediaChipAria(msg, item)"
                   @click.stop="onCellXferClick(msg, index)"
                 >
                   <span
                     class="mh5-chat-room-media__cellxfer-ring"
-                    :class="{ 'mh5-chat-room-media__cellxfer-ring--spin': cellXferSpinning(item) }"
+                    :class="{ 'mh5-chat-room-media__cellxfer-ring--spin': cellXferBusy(msg, item) }"
                   >
-                    <svg viewBox="0 0 44 44" aria-hidden="true">
-                      <circle cx="22" cy="22" r="20" class="mh5-chat-room-media__cellxfer-disk" />
+                    <svg viewBox="0 0 28 28" aria-hidden="true">
+                      <circle cx="14" cy="14" r="12" class="mh5-chat-room-media__cellxfer-disk" />
                       <circle
-                        cx="22"
-                        cy="22"
+                        v-if="cellXferSpinning(msg, item) || cellXferActive(item)"
+                        cx="14"
+                        cy="14"
                         :r="CELL_XFER_RING_R"
                         class="mh5-chat-room-media__cellxfer-bar"
                         :stroke-dasharray="CELL_XFER_RING"
                         :stroke-dashoffset="
-                          cellXferSpinning(item)
+                          cellXferSpinning(msg, item)
                             ? CELL_XFER_RING * 0.72
                             : cellXferDashoffset(cellXferProgress(item))
                         "
@@ -2238,8 +2293,8 @@ onBeforeUnmount(() => {
                     <svg
                       v-if="item.uploadStatus === 'paused' || item.downloadStatus === 'paused'"
                       class="mh5-chat-room-media__cellxfer-play"
-                      width="14"
-                      height="14"
+                      width="10"
+                      height="10"
                       viewBox="0 0 14 14"
                       aria-hidden="true"
                     >
@@ -2248,20 +2303,43 @@ onBeforeUnmount(() => {
                     <svg
                       v-else-if="item.downloadStatus === 'failed'"
                       class="mh5-chat-room-media__cellxfer-play"
-                      width="16"
-                      height="16"
+                      width="12"
+                      height="12"
                       viewBox="0 0 16 16"
                       fill="none"
                       aria-hidden="true"
                     >
-                      <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                      <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <svg
+                      v-else-if="item.downloadStatus === 'pending' && !cellXferSpinning(msg, item)"
+                      class="mh5-chat-room-media__cellxfer-play"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      aria-hidden="true"
+                    >
+                      <path d="M8 3v7.2M5.2 7.6 8 10.4l2.8-2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                      <path d="M4 13h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
                     </svg>
                     <span
                       v-else-if="cellXferActive(item)"
                       class="mh5-chat-room-media__cellxfer-pct"
                     >{{ uploadPercent(cellXferProgress(item)) }}</span>
                   </span>
+                </button>
+                <button
+                  v-if="showMediaCancel(item)"
+                  type="button"
+                  class="mh5-chat-room-media__cancel"
+                  :aria-label="$t('取消')"
+                  @click.stop="cancelPausedMedia(msg, index)"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M2 2l6 6M8 2 2 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
                 </button>
                 <div
                   v-if="showPlus(msg, index) && !isDownloadFailed(msg) && !isPhotoDownloading(msg)"
@@ -2302,33 +2380,6 @@ onBeforeUnmount(() => {
                     <path d="M7.4 4.6v12.8L18.2 11 7.4 4.6z" fill="currentColor" />
                   </svg>
                   <span v-else class="mh5-chat-room-media__upload-pct">{{ uploadPercent(mediaXferProgress(msg)) }}</span>
-                </button>
-              </div>
-              <div v-else-if="showAlbumDownloadBtn(msg)" class="mh5-chat-room-media__download">
-                <button
-                  type="button"
-                  class="mh5-chat-room-media__download-btn"
-                  :aria-label="albumDownloadFailed(msg) ? $t('重新下载') : $t('下载')"
-                  @click.stop="startAlbumDownload(msg)"
-                >
-                  <span class="mh5-chat-room-media__download-icon">
-                    <svg
-                      v-if="albumDownloadFailed(msg)"
-                      width="28"
-                      height="28"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      aria-hidden="true"
-                    >
-                      <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                      <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                    </svg>
-                    <svg v-else width="28" height="28" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <path d="M8 3v7.2M5.2 7.6 8 10.4l2.8-2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-                      <path d="M4 13h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                    </svg>
-                  </span>
-                  <span v-if="albumDownloadFailed(msg)" class="mh5-chat-room-media__download-label">{{ $t('下载失败') }}</span>
                 </button>
               </div>
               <div v-else-if="isDownloadFailed(msg) && !hasPerItemDownload(msg)" class="mh5-chat-room-media__download">
