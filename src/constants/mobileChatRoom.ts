@@ -66,6 +66,8 @@ export type ChatRoomMessage = {
   caption?: string
   /** 用户配文 */
   text?: string
+  /** 原图 / 高清发送，气泡第一格左下角展示 HD */
+  hd?: boolean
   sendStatus?: ChatMediaSendStatus
   /** 上传进度 0–100，上传中保留 */
   uploadProgress?: number

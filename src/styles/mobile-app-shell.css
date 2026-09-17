@@ -7486,6 +7486,27 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+.mh5-chat-room-media__duration--with-hd {
+  left: 38px;
+}
+
+.mh5-chat-room-media__hd {
+  pointer-events: none;
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 2;
+  padding: 1px 4px 2px;
+  border: 1px solid rgb(255 255 255 / 92%);
+  border-radius: 3px;
+  background: rgb(0 0 0 / 38%);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
 .mh5-chat-room-media__duration::before {
   content: '';
   width: 12px;

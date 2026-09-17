@@ -1802,6 +1802,13 @@ function mediaClass(layout: ChatRoomMessage['layout'], index: number, total: num
   ]
 }
 
+function showMediaHdBadge(msg: ChatRoomMessage, index: number) {
+  if (index !== 0 || !msg.media.length || msg.file) return false
+  if (msg.hd === false) return false
+  if ((isUploadingUi(msg) && !hasPerItemUpload(msg)) || isPhotoDownloading(msg)) return false
+  return true
+}
+
 function showPlus(msg: ChatRoomMessage, index: number) {
   if (msg.layout !== '5-plus' || index !== msg.media.length - 1 || (msg.extraCount ?? 0) <= 0) return false
   if (hasPerItemUpload(msg) && isUploadingUi(msg)) return false
@@ -1851,6 +1858,7 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       })),
       extraCount,
       text: payload.caption || undefined,
+      hd: payload.hd,
       sendStatus: 'sending',
     },
   ]
@@ -2233,6 +2241,7 @@ onBeforeUnmount(() => {
                   <span
                     v-else-if="showSentDuration(msg, item)"
                     class="mh5-chat-room-media__duration"
+                    :class="{ 'mh5-chat-room-media__duration--with-hd': showMediaHdBadge(msg, index) }"
                   >{{ item.duration }}</span>
                 </div>
                 <span
@@ -2361,6 +2370,7 @@ onBeforeUnmount(() => {
                     />
                   </span>
                 </span>
+                <span v-if="showMediaHdBadge(msg, index)" class="mh5-chat-room-media__hd" aria-hidden="true">HD</span>
                 <div
                   v-if="showPlus(msg, index) && !isDownloadFailed(msg) && !isPhotoDownloading(msg)"
                   class="mh5-chat-room-media__plus"
