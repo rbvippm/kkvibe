@@ -7768,12 +7768,18 @@
 .mh5-chat-room-media__plus {
   position: absolute;
   inset: 0;
+  z-index: 3;
   display: grid;
   place-items: center;
+  pointer-events: none;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
+}
+
+.mh5-chat-room-media__plus-n {
   font-size: 30px;
   font-weight: 500;
+  line-height: 1;
 }
 
 .mh5-chat-room-media__meta {

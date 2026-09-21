@@ -79,9 +79,25 @@ export type ChatRoomMessage = {
   downloadProgress?: number
 }
 
-/** 气泡内媒体总张数（含宫格溢出的 +N） */
+/** 宫格最多露出 4 格，再多收进末格 +N */
+export const ALBUM_VISIBLE_MAX = 4
+
+/** 气泡内媒体总张数（含宫格溢出的 +N；完整 media[] 已含收起项时不重复加） */
 export function chatMediaItemCount(msg: ChatRoomMessage) {
+  if (msg.media.length > ALBUM_VISIBLE_MAX) return msg.media.length
   return msg.media.length + (msg.extraCount ?? 0)
+}
+
+export function albumExtraCount(msg: Pick<ChatRoomMessage, 'media' | 'extraCount'>) {
+  return Math.max(msg.extraCount ?? 0, Math.max(0, msg.media.length - ALBUM_VISIBLE_MAX))
+}
+
+export function visibleAlbumMedia(msg: Pick<ChatRoomMessage, 'media'>) {
+  return msg.media.slice(0, ALBUM_VISIBLE_MAX)
+}
+
+export function overflowAlbumMedia(msg: Pick<ChatRoomMessage, 'media'>) {
+  return msg.media.slice(ALBUM_VISIBLE_MAX)
 }
 
 /** 按选中张数推断气泡布局 */
@@ -108,6 +124,22 @@ function pick(count: number, offset = 0): ChatMediaItem[] {
     src: M[(offset + i) % M.length],
     isVideo: i === 0 && count <= 3,
     duration: i === 0 && count <= 3 ? '0:04' : undefined,
+  }))
+}
+
+function pickPhotos(count: number, offset = 0): ChatMediaItem[] {
+  return Array.from({ length: count }, (_, i) => ({
+    src: M[(offset + i) % M.length],
+  }))
+}
+
+const VIDEO_DURS = ['1:56', '0:48', '0:32', '1:12', '0:18', '2:04', '0:55', '1:40', '0:27']
+
+function pickVideos(count: number, offset = 0): ChatMediaItem[] {
+  return Array.from({ length: count }, (_, i) => ({
+    src: M[(offset + i) % M.length],
+    isVideo: true,
+    duration: VIDEO_DURS[i % VIDEO_DURS.length],
   }))
 }
 
@@ -248,15 +280,15 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       time: '22:01',
       read: false,
       layout: '5-plus',
-      media: pick(4, 0).map((item, index) => ({
+      media: pickPhotos(7, 0).map((item, index) => ({
         ...item,
-        uploadStatus: index === 0 ? 'sending' : 'queued',
-        uploadProgress: index === 0 ? 25 : 0,
+        uploadStatus: index === 0 ? 'sent' : 'sending',
+        uploadProgress: index === 0 ? 100 : 18 + index * 9,
       })),
       extraCount: 3,
       text: 'ok',
       sendStatus: 'sending',
-      caption: '多图 · 上传中',
+      caption: '多图 · 同时上传',
     },
     {
       id: 'm-upload-2v',
@@ -266,10 +298,25 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       layout: '2-portrait',
       media: [
         { src: M[0], isVideo: true, duration: '0:12', uploadStatus: 'sending', uploadProgress: 42 },
-        { src: M[1], isVideo: true, duration: '0:04', uploadStatus: 'queued', uploadProgress: 0 },
+        { src: M[1], isVideo: true, duration: '0:04', uploadStatus: 'sending', uploadProgress: 28 },
       ],
       sendStatus: 'sending',
-      caption: '双视频 · 上传中',
+      caption: '双视频 · 同时上传',
+    },
+    {
+      id: 'm-album-9-ul',
+      direction: 'sent',
+      time: '22:26',
+      read: false,
+      layout: '5-plus',
+      media: pickPhotos(9, 2).map((item, index) => ({
+        ...item,
+        uploadStatus: index < 3 ? 'sent' : 'sending',
+        uploadProgress: index < 3 ? 100 : [52, 48, 36, 40, 28, 18][index - 3] ?? 20,
+      })),
+      extraCount: 5,
+      sendStatus: 'sending',
+      caption: '9 张 · 同时上传',
     },
     {
       id: 'm-fail',
@@ -302,6 +349,21 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
       layout: '4-grid',
       media: pick(4, 1).map((item) => ({ ...item, downloadStatus: 'pending' as const })),
       caption: '多图 · 进入可视区自动下载',
+    },
+    {
+      id: 'm-album-9-dl',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:27',
+      layout: '5-plus',
+      media: pickPhotos(9, 3).map((item, index) => ({
+        ...item,
+        downloadStatus: (index < 2 ? 'done' : 'downloading') as ChatMediaItem['downloadStatus'],
+        downloadProgress: index < 2 ? 100 : 30 + (index % 5) * 7,
+      })),
+      extraCount: 5,
+      caption: '9 张 · 进入可视区自动下载',
     },
     {
       id: 'm-video-dl',
@@ -353,6 +415,43 @@ export const CHAT_ROOM_GROUP_DEMO: ChatRoomDemo = {
         },
       ],
       caption: '双视频 · 分别进度',
+    },
+    {
+      id: 'm-video-9',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:30',
+      layout: '5-plus',
+      media: pickVideos(9, 0).map((item, index) => ({
+        ...item,
+        downloadStatus: index < 3 ? 'done' : index === 3 ? 'downloading' : 'pending',
+        downloadProgress: index === 3 ? 48 : index < 3 ? 100 : 0,
+      })),
+      extraCount: 5,
+      caption: '9 视频 · 收起进度',
+    },
+    {
+      id: 'm-mixed-9',
+      direction: 'received',
+      senderName: '刘世豪5122',
+      avatar: CHAT_ROOM_ASSETS.avatar,
+      time: '22:31',
+      layout: '5-plus',
+      media: [
+        ...pickPhotos(4, 1).map((item, index) => ({
+          ...item,
+          downloadStatus: (index < 2 ? 'done' : 'downloading') as ChatMediaItem['downloadStatus'],
+          downloadProgress: index < 2 ? 100 : 48,
+        })),
+        ...pickVideos(5, 2).map((item, index) => ({
+          ...item,
+          downloadStatus: (index < 2 ? 'done' : index === 2 ? 'downloading' : 'pending') as ChatMediaItem['downloadStatus'],
+          downloadProgress: index < 2 ? 100 : index === 2 ? 40 : 0,
+        })),
+      ],
+      extraCount: 5,
+      caption: '图+视频 · 收起进度',
     },
     {
       id: 'm-file',

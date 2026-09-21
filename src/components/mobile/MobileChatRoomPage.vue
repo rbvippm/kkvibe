@@ -5,10 +5,12 @@ import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
   CHAT_ROOM_REACTIONS,
+  albumExtraCount,
   attachChatUnreadHistory,
   formatUnreadJumpLabel,
   getChatRoomDemo,
   layoutForMediaCount,
+  visibleAlbumMedia,
   type ChatMediaItem,
   type ChatRoomMessage,
 } from '../../constants/mobileChatRoom'
@@ -989,8 +991,9 @@ function albumHasActiveDownload(msg: ChatRoomMessage) {
   )
 }
 
-function showMediaChip(msg: ChatRoomMessage, item: ChatMediaItem) {
+function showMediaChip(msg: ChatRoomMessage, item: ChatMediaItem, index?: number) {
   if (!item.isVideo) return false
+  if (index != null && showPlusOverlay(msg, index)) return false
   if (msg.direction === 'received') {
     return Boolean(item.downloadStatus && item.downloadStatus !== 'done')
   }
@@ -1013,7 +1016,8 @@ function isMediaUploadingItem(item: ChatMediaItem, msg?: ChatRoomMessage) {
   return item.uploadStatus === 'queued' || item.uploadStatus === 'sending' || item.uploadStatus === 'paused'
 }
 
-function showCellXfer(msg: ChatRoomMessage, item: ChatMediaItem) {
+function showCellXfer(msg: ChatRoomMessage, item: ChatMediaItem, index?: number) {
+  if (index != null && showPlusOverlay(msg, index)) return false
   if (item.isVideo) return false
   if (msg.direction === 'sent') return isMediaUploadingItem(item, msg)
   return item.downloadStatus === 'failed'
@@ -1035,16 +1039,6 @@ function syncAlbumSendStatus(msgId: string) {
     return
   }
   patchMessage(msgId, { sendStatus: 'sending', read: false })
-}
-
-function nextUploadIndex(msg: ChatRoomMessage, fromIndex: number) {
-  for (let i = fromIndex + 1; i < msg.media.length; i += 1) {
-    if (msg.media[i]?.uploadStatus === 'queued') return i
-  }
-  for (let i = 0; i <= fromIndex; i += 1) {
-    if (msg.media[i]?.uploadStatus === 'queued') return i
-  }
-  return -1
 }
 
 function nextDownloadIndex(msg: ChatRoomMessage, fromIndex: number) {
@@ -1195,9 +1189,6 @@ function startMediaItemUpload(msgId: string, index: number) {
       patchMediaItem(msgId, index, { uploadStatus: 'sent', uploadProgress: 100 })
       stopMediaUpload(msgId, index)
       syncAlbumSendStatus(msgId)
-      const latest = messages.value.find((row) => row.id === msgId)
-      const following = latest ? nextUploadIndex(latest, index) : -1
-      if (following >= 0) startMediaItemUpload(msgId, following)
       return
     }
     patchMediaItem(msgId, index, { uploadProgress: next })
@@ -1240,11 +1231,11 @@ function cancelMediaItem(msg: ChatRoomMessage, index: number) {
 function startAlbumUpload(msgId: string) {
   const msg = messages.value.find((item) => item.id === msgId)
   if (!msg) return
-  const sending = msg.media.findIndex((item) => item.uploadStatus === 'sending')
-  const queued = msg.media.findIndex((item) => item.uploadStatus === 'queued')
-  const idx = sending >= 0 ? sending : queued
-  if (idx < 0) return
-  startMediaItemUpload(msgId, idx)
+  msg.media.forEach((item, index) => {
+    if (item.uploadStatus === 'sending' || item.uploadStatus === 'queued') {
+      startMediaItemUpload(msgId, index)
+    }
+  })
 }
 
 function onMediaChipClick(msg: ChatRoomMessage, index: number) {
@@ -1545,13 +1536,13 @@ function startUpload(id: string) {
     return
   }
   if (msg?.media.length && !msg.file) {
-    const media = msg.media.map((item, index) => ({
+    const media = msg.media.map((item) => ({
       ...item,
-      uploadStatus: (index === 0 ? 'sending' : 'queued') as ChatMediaItem['uploadStatus'],
-      uploadProgress: index === 0 ? Math.max(8, item.uploadProgress ?? msg.uploadProgress ?? 8) : item.uploadProgress ?? 0,
+      uploadStatus: 'sending' as ChatMediaItem['uploadStatus'],
+      uploadProgress: Math.max(8, item.uploadProgress ?? msg.uploadProgress ?? 8),
     }))
     patchMessage(id, { media, sendStatus: 'sending', read: false })
-    startMediaItemUpload(id, 0)
+    startAlbumUpload(id)
     return
   }
   stopUpload(id)
@@ -1597,16 +1588,11 @@ function confirmResend() {
   closeResend()
   if (!msg) return
   if (msg.media.length && !msg.file) {
-    let started = false
     const media = msg.media.map((item) => {
       if (item.uploadStatus === 'sent') return item
       const kept = item.uploadProgress ?? msg.uploadProgress ?? 0
       const progress = kept > 0 && kept < 100 ? kept : 8
-      if (!started) {
-        started = true
-        return { ...item, uploadStatus: 'sending' as const, uploadProgress: progress }
-      }
-      return { ...item, uploadStatus: 'queued' as const, uploadProgress: item.uploadProgress ?? 0 }
+      return { ...item, uploadStatus: 'sending' as const, uploadProgress: progress }
     })
     patchMessage(msg.id, {
       media,
@@ -1614,8 +1600,7 @@ function confirmResend() {
       read: false,
       time: nowTimeLabel(),
     })
-    const idx = media.findIndex((item) => item.uploadStatus === 'sending')
-    if (idx >= 0) startMediaItemUpload(msg.id, idx)
+    startAlbumUpload(msg.id)
     showToast('正在重新发送（原型）')
     return
   }
@@ -1797,7 +1782,7 @@ function mediaClass(layout: ChatRoomMessage['layout'], index: number, total: num
     `mh5-chat-room-media__cell--${layout}`,
     index === 0 ? 'mh5-chat-room-media__cell--first' : '',
     total === 1 ? 'mh5-chat-room-media__cell--solo' : '',
-    item && msg && showCellXfer(msg, item) && !showPhotoReveal(item) ? 'mh5-chat-room-media__cell--xfer' : '',
+    item && msg && showCellXfer(msg, item, index) && !showPhotoReveal(item) ? 'mh5-chat-room-media__cell--xfer' : '',
     item && showPhotoReveal(item) ? 'mh5-chat-room-media__cell--photo-reveal' : '',
   ]
 }
@@ -1809,11 +1794,98 @@ function showMediaHdBadge(msg: ChatRoomMessage, index: number) {
   return true
 }
 
-function showPlus(msg: ChatRoomMessage, index: number) {
-  if (msg.layout !== '5-plus' || index !== msg.media.length - 1 || (msg.extraCount ?? 0) <= 0) return false
-  if (hasPerItemUpload(msg) && isUploadingUi(msg)) return false
-  if (hasPerItemDownload(msg)) return false
-  return true
+function showPlusOverlay(msg: ChatRoomMessage, index: number) {
+  if (isDownloadFailed(msg) || isPhotoDownloading(msg)) return false
+  return albumExtraCount(msg) > 0 && index === visibleAlbumMedia(msg).length - 1
+}
+
+function plusVideoItems(msg: ChatRoomMessage) {
+  return msg.media.filter((item) => item.isVideo)
+}
+
+function videoItemProgress(item: ChatMediaItem, direction: ChatRoomMessage['direction']) {
+  if (direction === 'sent') {
+    if (!item.uploadStatus || item.uploadStatus === 'sent') return 100
+    return Math.min(100, Math.max(0, item.uploadProgress ?? 0))
+  }
+  if (!item.downloadStatus || item.downloadStatus === 'done') return 100
+  if (item.downloadStatus === 'failed') return 0
+  return Math.min(100, Math.max(0, item.downloadProgress ?? 0))
+}
+
+function plusVideoHasXfer(msg: ChatRoomMessage) {
+  if (needsResend(msg)) return false
+  return plusVideoItems(msg).some((item) => {
+    if (msg.direction === 'sent') {
+      return item.uploadStatus === 'sending' || item.uploadStatus === 'queued'
+    }
+    return (
+      item.downloadStatus === 'downloading' ||
+      item.downloadStatus === 'pending' ||
+      item.downloadStatus === 'failed'
+    )
+  })
+}
+
+function plusFailedVideoIndex(msg: ChatRoomMessage) {
+  if (msg.direction !== 'received') return -1
+  if (plusVideoItems(msg).some((item) => item.downloadStatus === 'downloading')) return -1
+  return msg.media.findIndex((item) => item.isVideo && item.downloadStatus === 'failed')
+}
+
+function showPlusXfer(msg: ChatRoomMessage, index: number) {
+  return showPlusOverlay(msg, index) && plusVideoHasXfer(msg)
+}
+
+function plusRingProgress(msg: ChatRoomMessage) {
+  const videos = plusVideoItems(msg)
+  if (!videos.length) return 0
+  const sum = videos.reduce((total, item) => total + videoItemProgress(item, msg.direction), 0)
+  return Math.round(sum / videos.length)
+}
+
+function plusShowPercent(msg: ChatRoomMessage) {
+  return (
+    plusRingProgress(msg) > 0 &&
+    plusVideoItems(msg).some(
+      (item) => item.uploadStatus === 'sending' || item.downloadStatus === 'downloading',
+    )
+  )
+}
+
+function plusXferSpinning(msg: ChatRoomMessage) {
+  return plusVideoItems(msg).some(
+    (item) =>
+      item.uploadStatus === 'sending' ||
+      item.uploadStatus === 'queued' ||
+      item.downloadStatus === 'downloading' ||
+      item.downloadStatus === 'pending',
+  )
+}
+
+function plusXferFailed(msg: ChatRoomMessage) {
+  return plusFailedVideoIndex(msg) >= 0
+}
+
+function plusXferAria(msg: ChatRoomMessage) {
+  const summary = `视频总进度 ${plusRingProgress(msg)}%`
+  if (msg.direction === 'sent') return `取消发送，${summary}`
+  if (plusXferFailed(msg)) return `重新下载失败视频，${summary}`
+  return summary
+}
+
+function onPlusXferClick(msg: ChatRoomMessage) {
+  if (msg.direction === 'sent') {
+    if (plusVideoHasXfer(msg) || msg.media.some((item) => item.uploadStatus === 'sending' || item.uploadStatus === 'queued')) {
+      failOutgoingUpload(msg)
+    }
+    return
+  }
+  const failed = plusFailedVideoIndex(msg)
+  if (failed >= 0) {
+    const item = msg.media[failed]
+    if (item) startMediaItemDownload(msg.id, failed, true, false)
+  }
 }
 
 function isVideo(item: ChatMediaItem) {
@@ -1837,9 +1909,14 @@ function onDraftFocus() {
 }
 
 function onMediaSend(payload: ChatMediaSendPayload) {
-  const count = payload.items.length
-  const visible = payload.items.slice(0, 4)
-  const extraCount = count > 4 ? count - 4 : undefined
+  const items = payload.items.map((item, index) => ({
+    src: item.src,
+    isVideo: item.type === 'video',
+    duration: item.duration,
+    uploadStatus: 'sending' as const,
+    uploadProgress: 8 + (index % 5),
+  }))
+  const extraCount = items.length > 4 ? items.length - 4 : undefined
 
   messages.value = [
     ...messages.value,
@@ -1848,14 +1925,8 @@ function onMediaSend(payload: ChatMediaSendPayload) {
       direction: 'sent',
       time: nowTimeLabel(),
       read: false,
-      layout: layoutForMediaCount(count),
-      media: visible.map((item, index) => ({
-        src: item.src,
-        isVideo: item.type === 'video',
-        duration: item.duration,
-        uploadStatus: index === 0 ? 'sending' : 'queued',
-        uploadProgress: index === 0 ? 8 : 0,
-      })),
+      layout: layoutForMediaCount(items.length),
+      media: items,
       extraCount,
       text: payload.caption || undefined,
       hd: payload.hd,
@@ -2077,7 +2148,7 @@ onBeforeUnmount(() => {
         <p v-if="msg.caption" class="mh5-chat-room-caption">
           {{ msg.caption }}
           <Mh5SpecAnnot
-            v-if="msg.id === 'm-video-dl' || msg.id === 'm-photo-dl'"
+            v-if="msg.id === 'm-video-dl' || msg.id === 'm-photo-dl' || msg.id === 'm-video-9' || msg.id === 'm-album-9-ul' || msg.id === 'm-mixed-9'"
             :spec="CHAT_VIDEO_DOWNLOAD_SPEC"
             placement="bottom"
           />
@@ -2214,9 +2285,9 @@ onBeforeUnmount(() => {
               ]"
             >
               <div
-                v-for="(item, index) in msg.media"
+                v-for="(item, index) in visibleAlbumMedia(msg)"
                 :key="`${msg.id}-${index}`"
-                :class="mediaClass(msg.layout, index, msg.media.length, msg)"
+                :class="mediaClass(msg.layout, index, visibleAlbumMedia(msg).length, msg)"
                 @click.stop="onMediaCellClick(msg, item, index)"
               >
                 <img
@@ -2226,7 +2297,10 @@ onBeforeUnmount(() => {
                   :src="item.src"
                   alt=""
                 />
-                <div v-if="isVideo(item) && !isMediaUploadingItem(item, msg)" class="mh5-chat-room-media__video">
+                <div
+                  v-if="isVideo(item) && !isMediaUploadingItem(item, msg) && !showPlusOverlay(msg, index)"
+                  class="mh5-chat-room-media__video"
+                >
                   <span
                     class="mh5-chat-room-media__play-hit"
                     role="button"
@@ -2245,7 +2319,7 @@ onBeforeUnmount(() => {
                   >{{ item.duration }}</span>
                 </div>
                 <span
-                  v-if="showMediaChip(msg, item)"
+                  v-if="showMediaChip(msg, item, index)"
                   role="button"
                   class="mh5-chat-room-media__dlchip"
                   :aria-label="mediaChipAria(msg, item)"
@@ -2314,7 +2388,7 @@ onBeforeUnmount(() => {
                   </span>
                 </span>
                 <span
-                  v-if="showCellXfer(msg, item)"
+                  v-if="showCellXfer(msg, item, index)"
                   role="button"
                   class="mh5-chat-room-media__cellxfer"
                   :aria-label="mediaChipAria(msg, item)"
@@ -2371,11 +2445,60 @@ onBeforeUnmount(() => {
                   </span>
                 </span>
                 <span v-if="showMediaHdBadge(msg, index)" class="mh5-chat-room-media__hd" aria-hidden="true">HD</span>
-                <div
-                  v-if="showPlus(msg, index) && !isDownloadFailed(msg) && !isPhotoDownloading(msg)"
-                  class="mh5-chat-room-media__plus"
-                >
-                  +{{ msg.extraCount }}
+                <div v-if="showPlusOverlay(msg, index)" class="mh5-chat-room-media__plus">
+                  <span
+                    v-if="showPlusXfer(msg, index)"
+                    role="button"
+                    class="mh5-chat-room-media__dlchip"
+                    :aria-label="plusXferAria(msg)"
+                    @pointerdown.stop
+                    @click.stop="onPlusXferClick(msg)"
+                  >
+                    <span
+                      class="mh5-chat-room-media__dlchip-ring"
+                      :class="{ 'mh5-chat-room-media__dlchip-ring--spin': plusXferSpinning(msg) }"
+                    >
+                      <svg
+                        v-if="plusShowPercent(msg) || plusXferSpinning(msg)"
+                        viewBox="0 0 16 16"
+                        aria-hidden="true"
+                      >
+                        <circle cx="8" cy="8" r="6.4" class="mh5-chat-room-media__dlchip-disk" />
+                        <circle
+                          cx="8"
+                          cy="8"
+                          :r="VIDEO_CHIP_RING_R"
+                          class="mh5-chat-room-media__dlchip-bar"
+                          :stroke-dasharray="VIDEO_CHIP_RING"
+                          :stroke-dashoffset="
+                            plusXferSpinning(msg) && !plusShowPercent(msg)
+                              ? VIDEO_CHIP_RING * 0.72
+                              : videoChipDashoffset(plusRingProgress(msg))
+                          "
+                        />
+                      </svg>
+                      <svg
+                        v-if="plusXferFailed(msg)"
+                        class="mh5-chat-room-media__dlchip-arrow"
+                        width="9"
+                        height="9"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        aria-hidden="true"
+                      >
+                        <path d="M12.4 8A4.4 4.4 0 1 1 10.6 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                        <path d="M10 3.2h2.6V5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                      </svg>
+                      <span
+                        v-else-if="plusShowPercent(msg)"
+                        class="mh5-chat-room-media__dlchip-stop"
+                      />
+                    </span>
+                    <span class="mh5-chat-room-media__dlchip-copy">
+                      <b>{{ plusRingProgress(msg) }}%</b>
+                    </span>
+                  </span>
+                  <span class="mh5-chat-room-media__plus-n">+{{ albumExtraCount(msg) }}</span>
                 </div>
               </div>
               <div
