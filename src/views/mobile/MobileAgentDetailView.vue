@@ -85,6 +85,7 @@ import {
   AGENT_DETAIL_CREDIT_CURRENCY_SPEC,
   AGENT_DETAIL_GAME_DATA_SPEC,
 } from '../../constants/agentDetailSpec'
+import { ACCOUNT_SECURITY_COPY_ICON } from '../../constants/accountSecurity'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -127,6 +128,32 @@ const reportCategory = ref<ReportCategoryKey>('all')
 const reportVendor = ref<ReportVendorKey>('all')
 
 const agent = computed(() => findAgentDetail(String(route.query.id ?? 'self')))
+const kingkongIdText = computed(() => agent.value?.kingkongId?.trim() || '')
+const copyToast = ref('')
+let copyToastTimer = 0
+
+function showCopyToast(message: string) {
+  copyToast.value = message
+  window.clearTimeout(copyToastTimer)
+  copyToastTimer = window.setTimeout(() => {
+    if (copyToast.value === message) copyToast.value = ''
+  }, 1600)
+}
+
+async function copyKingkongId() {
+  const id = kingkongIdText.value
+  if (!id) {
+    showCopyToast('暂无金刚号可复制')
+    return
+  }
+  try {
+    await navigator.clipboard.writeText(id)
+    showCopyToast('已复制金刚号')
+  } catch {
+    showCopyToast('复制失败，请手动长按复制')
+  }
+}
+
 const isCredited = computed(() => Boolean(agent.value?.isCredited))
 const detailTabs = computed(() =>
   getAgentDetailTabs(isCredited.value, isRebateAgent.value),
@@ -443,6 +470,17 @@ function closeProfitFormulaTips() {
               <h2 class="mh5-agent-detail-profile__name">{{ agent.nickname }}</h2>
               <span class="mh5-agent-detail-profile__badge">{{ agent.levelBadge }}</span>
             </div>
+            <p v-if="kingkongIdText" class="mh5-agent-detail-profile__id">
+              <span>金刚号：{{ kingkongIdText }}</span>
+              <button
+                type="button"
+                class="mh5-agent-detail-profile__copy"
+                aria-label="复制金刚号"
+                @click.stop="copyKingkongId"
+              >
+                <img :src="ACCOUNT_SECURITY_COPY_ICON" alt="" width="14" height="14" />
+              </button>
+            </p>
             <p class="mh5-agent-detail-profile__login">最近登陆 {{ agent.lastLogin }}</p>
           </div>
         </div>
@@ -1321,5 +1359,7 @@ function closeProfitFormulaTips() {
       @close="filterDateOpen = false"
       @confirm="confirmFilterDate"
     />
+
+    <p v-if="copyToast" class="mh5-bet-order-copy-tip" role="status">{{ copyToast }}</p>
   </div>
 </template>

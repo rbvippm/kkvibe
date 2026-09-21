@@ -106,6 +106,7 @@ export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
     nickname: '小红来了EZ1',
     kind: 'credit_agent',
     avatarEmoji: '🧔🏻‍♂️',
+    kingkongId: 'EZ188888',
     subordinateCount: 3,
     memberCount: 8,
     vipLevel: 2,

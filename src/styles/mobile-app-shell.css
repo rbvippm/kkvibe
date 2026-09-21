@@ -22931,6 +22931,7 @@ div.agent-home__profit-tab--ratio {
 .mh5-agent-detail-profile__info {
   flex: 1;
   min-width: 0;
+  letter-spacing: -0.02em;
 }
 
 .mh5-agent-detail-profile__name-row {
@@ -22944,7 +22945,7 @@ div.agent-home__profit-tab--ratio {
   margin: 0;
   font-size: 18px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.2;
   color: #1a1a1a;
 }
 
@@ -22959,9 +22960,40 @@ div.agent-home__profit-tab--ratio {
   white-space: nowrap;
 }
 
-.mh5-agent-detail-profile__login {
-  margin: 6px 0 0;
+.mh5-agent-detail-profile__id {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin: 2px 0 0;
   font-size: 12px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: #999;
+}
+
+.mh5-agent-detail-profile__copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mh5-agent-detail-profile__copy img {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.mh5-agent-detail-profile__login {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.1;
   color: #999;
 }
 
@@ -24844,6 +24876,8 @@ div.agent-home__profit-tab--ratio {
   background: rgb(0 0 0 / 78%);
   font-size: 13px;
   color: #fff;
+  white-space: nowrap;
+  width: max-content;
   pointer-events: none;
 }
 

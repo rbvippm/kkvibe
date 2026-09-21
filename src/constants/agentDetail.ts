@@ -369,7 +369,7 @@ function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
     lastLogin: '2小时前',
     levelBadge: isAgent ? `${level}级代理` : '直属会员',
     remark: item.id === 'ca1' ? '小红' : undefined,
-    kingkongId: `kk_${item.id}`,
+    kingkongId: item.kingkongId?.trim() || `kk_${item.id}`,
     isCredited: isCreditAgent,
     stats: {
       agents: item.subordinateCount,
