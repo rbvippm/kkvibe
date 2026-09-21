@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <meta name="description" content="基于声网 RTC、RTM、Media Gateway 与 OBS 的 PC 视频直播及语聊房双轨技术方案。" />
+  <title>PC + OBS 直播与语聊房双轨技术方案</title>
+  <style>
+    :root {
+      --bg: #f3f5f8;
+      --paper: #ffffff;
+      --ink: #182230;
+      --muted: #687386;
+      --line: #dde3eb;
+      --nav: #111827;
+      --nav-muted: #9ca7b8;
+      --orange: #f47721;
+      --orange-soft: #fff2e8;
+      --blue: #2878e3;
+      --blue-soft: #edf5ff;
+      --green: #16875b;
+      --green-soft: #eaf8f1;
+      --purple: #7656d8;
+      --purple-soft: #f2efff;
+      --red: #c94242;
+      --red-soft: #fff0f0;
+      --yellow: #946200;
+      --yellow-soft: #fff7dc;
+      --shadow: 0 16px 44px rgba(34, 49, 68, .08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    code {
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: #eef1f5;
+      color: #334155;
+      font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 276px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 18px 34px;
+      background: var(--nav);
+      color: #fff;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 22px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      background: var(--orange);
+      color: #fff;
+      font-weight: 900;
+    }
+    .brand strong { display: block; font-size: 14px; }
+    .brand small { display: block; color: var(--nav-muted); font-size: 11px; }
+    .nav-label {
+      margin: 20px 10px 7px;
+      color: #78869a;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+    }
+    .sidebar nav { display: grid; gap: 3px; }
+    .sidebar nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      color: #dbe1ea;
+      text-decoration: none;
+      font-size: 12px;
+      transition: background .18s ease, color .18s ease;
+    }
+    .sidebar nav a:hover,
+    .sidebar nav a:focus {
+      background: rgba(255,255,255,.09);
+      color: #fff;
+    }
+    .nav-no {
+      display: grid;
+      place-items: center;
+      width: 21px;
+      height: 21px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 6px;
+      color: #98a5b7;
+      font-size: 10px;
+    }
+    .sidebar-actions {
+      display: grid;
+      gap: 8px;
+      margin-top: 24px;
+      padding: 16px 8px 0;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .print-btn {
+      padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 9px;
+      background: rgba(255,255,255,.07);
+      color: #fff;
+      cursor: pointer;
+    }
+    .print-btn:hover { background: rgba(255,255,255,.13); }
+    .sidebar-note { color: var(--nav-muted); font-size: 10px; }
+
+    .main { min-width: 0; padding: 34px 40px 90px; }
+    .content { width: min(1160px, 100%); margin: 0 auto; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 38px 40px;
+      border: 1px solid #dce4ec;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 92% 12%, rgba(244,119,33,.12), transparent 27%),
+        linear-gradient(140deg, #fff 0%, #fbfcfe 58%, #f4f8ff 100%);
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -44px;
+      bottom: -74px;
+      width: 210px;
+      height: 210px;
+      border: 28px solid rgba(40,120,227,.07);
+      border-radius: 50%;
+    }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--orange);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .16em;
+    }
+    h1, h2, h3, h4, p { margin-top: 0; }
+    h1 {
+      max-width: 760px;
+      margin-bottom: 10px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.18;
+      letter-spacing: -.025em;
+    }
+    .lead {
+      max-width: 780px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .chips {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .chip {
+      padding: 5px 10px;
+      border: 1px solid #e2e7ed;
+      border-radius: 999px;
+      background: rgba(255,255,255,.9);
+      color: #506073;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .hero-stats {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 26px;
+    }
+    .hero-stat {
+      padding: 13px 15px;
+      border: 1px solid #e4e8ee;
+      border-radius: 12px;
+      background: rgba(255,255,255,.82);
+    }
+    .hero-stat b { display: block; font-size: 18px; line-height: 1.3; }
+    .hero-stat span { color: var(--muted); font-size: 11px; }
+
+    .section { margin-top: 48px; }
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      margin-bottom: 18px;
+    }
+    .section-no {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-weight: 900;
+    }
+    .section-head h2 { margin: 1px 0 2px; font-size: 23px; line-height: 1.3; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 12px; }
+    h3 { margin: 28px 0 12px; font-size: 18px; }
+    h4 { margin-bottom: 7px; font-size: 14px; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 16px;
+    }
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    .card p:last-child,
+    .card ul:last-child { margin-bottom: 0; }
+    .card-accent {
+      border-color: #ffd2b3;
+      background: var(--orange-soft);
+    }
+    .verdict {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .verdict-icon {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--orange);
+      color: #fff;
+      font-weight: 900;
+    }
+    .verdict strong { display: block; margin-bottom: 3px; font-size: 16px; }
+    .verdict p { margin: 0; color: #6f4a31; }
+    .goal-list { display: grid; gap: 10px; }
+    .goal {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 8px;
+      align-items: start;
+    }
+    .goal b {
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 11px;
+    }
+    .goal span { color: #4f5c6d; font-size: 13px; }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    table { width: 100%; min-width: 820px; border-collapse: collapse; }
+    th, td {
+      padding: 12px 13px;
+      border-bottom: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 12px;
+    }
+    th:last-child, td:last-child { border-right: 0; }
+    tr:last-child td { border-bottom: 0; }
+    th {
+      background: #f6f8fa;
+      color: #536174;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    td:first-child { color: #354255; font-weight: 700; }
+    .winner { background: #f7fbff; }
+    .good { color: var(--green); font-weight: 800; }
+    .warn-text { color: var(--yellow); font-weight: 800; }
+    .bad { color: var(--red); font-weight: 800; }
+
+    .notice {
+      margin: 16px 0;
+      padding: 13px 15px;
+      border-left: 4px solid var(--yellow);
+      border-radius: 0 11px 11px 0;
+      background: var(--yellow-soft);
+      color: #604d22;
+      font-size: 12px;
+    }
+    .notice strong { color: #715000; }
+    .notice.info {
+      border-left-color: var(--blue);
+      background: var(--blue-soft);
+      color: #345474;
+    }
+    .notice.danger {
+      border-left-color: var(--red);
+      background: var(--red-soft);
+      color: #744040;
+    }
+
+    .architecture {
+      display: grid;
+      gap: 18px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+    .lane {
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 18px;
+      align-items: center;
+    }
+    .lane + .lane {
+      padding-top: 18px;
+      border-top: 1px dashed #d7dee8;
+    }
+    .lane-title {
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+    .lane-video { background: var(--orange-soft); color: #a84c0c; }
+    .lane-audio { background: var(--purple-soft); color: #5e42b8; }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+    }
+    .node {
+      min-width: 100px;
+      padding: 8px 11px;
+      border: 1px solid #dce3eb;
+      border-radius: 9px;
+      background: #fbfcfd;
+      color: #405066;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .node-cloud { border-color: #bcd8ff; background: var(--blue-soft); color: #245f9f; }
+    .node-output { border-color: #bfe3d1; background: var(--green-soft); color: var(--green); }
+    .arrow { color: #9ca7b5; font-weight: 900; }
+    .split {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 23px;
+      margin-bottom: 9px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+    .tag-video { background: var(--orange-soft); color: #a54a0c; }
+    .tag-audio { background: var(--purple-soft); color: #5d44b7; }
+    .tag-server { background: var(--blue-soft); color: #245f9f; }
+    .tag-safe { background: var(--green-soft); color: var(--green); }
+    ul, ol { margin: 7px 0 0; padding-left: 19px; }
+    li + li { margin-top: 5px; }
+    .muted { color: var(--muted); }
+
+    .steps { display: grid; gap: 0; }
+    .step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 13px;
+      padding-bottom: 17px;
+    }
+    .step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 32px;
+      bottom: 0;
+      left: 18px;
+      width: 1px;
+      background: #d9e0e8;
+    }
+    .step-no {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid #cfd9e5;
+      border-radius: 11px;
+      background: #fff;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .step h4 { margin: 2px 0 2px; }
+    .step p { margin: 0; color: var(--muted); font-size: 12px; }
+
+    .console {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 14px;
+    }
+    .control-list { display: grid; gap: 10px; }
+    .control {
+      display: grid;
+      grid-template-columns: 34px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 11px;
+      border: 1px solid #e1e6ed;
+      border-radius: 11px;
+      background: #fff;
+    }
+    .control-icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--purple-soft);
+      color: var(--purple);
+      font-weight: 900;
+      font-size: 11px;
+    }
+    .control strong { display: block; font-size: 12px; }
+    .control small { display: block; color: var(--muted); font-size: 10px; }
+    .control-value {
+      padding: 4px 8px;
+      border-radius: 7px;
+      background: #f1f3f6;
+      color: #536174;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .meter {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 26px;
+    }
+    .meter i {
+      display: block;
+      width: 4px;
+      border-radius: 3px;
+      background: var(--green);
+    }
+    .meter i:nth-child(1) { height: 7px; }
+    .meter i:nth-child(2) { height: 13px; }
+    .meter i:nth-child(3) { height: 21px; }
+    .meter i:nth-child(4) { height: 17px; }
+    .meter i:nth-child(5) { height: 10px; }
+
+    .state-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      margin-top: 10px;
+    }
+    .state {
+      padding: 6px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #566376;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .state.active { border-color: #a9d5be; background: var(--green-soft); color: var(--green); }
+    .state.error { border-color: #efc2c2; background: var(--red-soft); color: var(--red); }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+    .check {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      font-size: 12px;
+    }
+    .check::before {
+      content: "✓";
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 900;
+    }
+
+    .footer {
+      margin-top: 54px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        padding: 14px;
+      }
+      .brand { padding-bottom: 12px; }
+      .nav-label, .sidebar-note { display: none; }
+      .sidebar nav {
+        display: flex;
+        overflow-x: auto;
+        padding-top: 10px;
+      }
+      .sidebar nav a { flex: 0 0 auto; }
+      .sidebar-actions { display: none; }
+      .main { padding: 24px 18px 70px; }
+      .hero { padding: 30px 26px; }
+      .hero-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .main { padding: 18px 12px 52px; }
+      .hero { padding: 24px 20px; border-radius: 18px; }
+      .summary, .grid-2, .grid-3, .console, .checklist { grid-template-columns: 1fr; }
+      .lane { grid-template-columns: 1fr; gap: 10px; }
+      .lane-title { text-align: left; }
+      .section { margin-top: 38px; }
+      .section-head h2 { font-size: 20px; }
+    }
+
+    @media print {
+      body { background: #fff; font-size: 11px; }
+      .layout { display: block; }
+      .sidebar { display: none; }
+      .main { padding: 0; }
+      .content { width: 100%; }
+      .hero { box-shadow: none; }
+      .section { break-inside: avoid; margin-top: 30px; }
+      .card, .table-wrap, .architecture { break-inside: avoid; }
+      a { text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">双轨</span>
+        <div>
+          <strong>PC 专业开播改造</strong>
+          <small>技术选型与落地方案</small>
+        </div>
+      </div>
+      <p class="nav-label">DOCUMENT OUTLINE</p>
+      <nav>
+        <a href="#summary"><span class="nav-no">01</span>结论摘要</a>
+        <a href="#comparison"><span class="nav-no">02</span>候选方案对比</a>
+        <a href="#architecture"><span class="nav-no">03</span>双轨总体架构</a>
+        <a href="#agora-services"><span class="nav-no">04</span>声网服务明细</a>
+        <a href="#video"><span class="nav-no">05</span>视频直播链路</a>
+        <a href="#voice"><span class="nav-no">06</span>语聊房链路</a>
+        <a href="#security"><span class="nav-no">07</span>安全与稳定性</a>
+        <a href="#plan"><span class="nav-no">08</span>实施计划</a>
+        <a href="#acceptance"><span class="nav-no">09</span>验收标准</a>
+      </nav>
+      <div class="sidebar-actions">
+        <button class="print-btn" type="button" onclick="window.print()">打印 / 导出 PDF</button>
+        <span class="sidebar-note">本文为架构评审稿，声网具体产品名、API、区域能力与计费方式需在立项前复核。</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="content">
+        <header class="hero">
+          <p class="eyebrow">AGORA RTC · RTM · MEDIA GATEWAY · OBS</p>
+          <h1>PC + OBS 视频直播与语聊房双轨技术方案</h1>
+          <p class="lead">
+            在保留现有 App / H5 看播链路的前提下，将“专业内容生产”和“超低延时互动”拆成两条最适合各自场景的技术轨道。
+          </p>
+          <div class="chips">
+            <span class="chip">视频直播：OBS + 云端媒体网关</span>
+            <span class="chip">语聊房：PC Web + Agora Web SDK</span>
+            <span class="chip">本期范围：不做第三方分发</span>
+            <span class="chip">既有观众端：尽量零改动</span>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat"><b>双轨落地</b><span>专业生产与互动能力分离</span></div>
+            <div class="hero-stat"><b>200–400ms</b><span>纯 RTC 语聊目标体验值</span></div>
+            <div class="hero-stat"><b>RTMP / SRT</b><span>OBS 标准推流入口</span></div>
+            <div class="hero-stat"><b>复用现有端</b><span>App / H5 继续走 RTC 看播</span></div>
+          </div>
+        </header>
+
+        <section class="section" id="summary">
+          <div class="section-head">
+            <span class="section-no">01</span>
+            <div><h2>结论摘要</h2><p>先明确场景，再选择传输链路，不追求用一个方案覆盖全部需求。</p></div>
+          </div>
+          <div class="summary">
+            <div class="card card-accent">
+              <div class="verdict">
+                <span class="verdict-icon">✓</span>
+                <div>
+                  <strong>推荐：“视频走 OBS 网关，语聊走 WebRTC”</strong>
+                  <p>视频直播优先保障画质和 OBS 编排；语聊房优先保障低延时、设备控制和主持交互。</p>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="goal-list">
+                <div class="goal"><b>1</b><span>PC 后台生成推流任务与 OBS 推流凭证。</span></div>
+                <div class="goal"><b>2</b><span>OBS 通过媒体网关注入现有 RTC 直播频道。</span></div>
+                <div class="goal"><b>3</b><span>PC Web 完成语聊房主持、连麦和音频设备闭环。</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="notice">
+            <strong>本期范围：</strong>只增加 PC 视频开播和 PC 语聊主持能力，不建设第三方标准拉流、CDN 外推和外部页面嵌入。
+          </div>
+        </section>
+
+        <section class="section" id="comparison">
+          <div class="section-head">
+            <span class="section-no">02</span>
+            <div><h2>PC 开播候选方案对比</h2><p>两个方案都成立，但适用场景不同，不建议互相替代。</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:16%">评估维度</th>
+                  <th style="width:42%">方案一：声网云端媒体网关</th>
+                  <th style="width:42%">方案二：PC Web + Web SDK</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>核心路径</td>
+                  <td>OBS 原生推流（RTMP/SRT）→ 云端网关 → 注入指定 RTC 频道</td>
+                  <td>浏览器采集 OBS 虚拟摄像头/声卡 → <code>agora-rtc-sdk-ng</code> → RTC 频道</td>
+                </tr>
+                <tr>
+                  <td>研发工作量</td>
+                  <td><span class="good">极低</span>：后端创建网关任务、生成推流凭证，后台展示配置</td>
+                  <td><span class="good">较低</span>：建设 Web 开播台，复用现有 Token 与频道机制</td>
+                </tr>
+                <tr>
+                  <td>目标延时</td>
+                  <td><span class="warn-text">约 800ms–2s</span>：受推流协议、缓存和云端处理影响</td>
+                  <td><span class="good">约 200–400ms</span>：纯 WebRTC，适合高频对话</td>
+                </tr>
+                <tr>
+                  <td>OBS 专业编排</td>
+                  <td><span class="good">完整发挥</span>：多场景、贴片、字幕、采集卡、导播</td>
+                  <td>依赖虚拟摄像头和虚拟声卡，配置成本更高</td>
+                </tr>
+                <tr>
+                  <td>实时连麦</td>
+                  <td><span class="bad">弱</span>：OBS 是单向生产端，远端画面回采与混流复杂</td>
+                  <td><span class="good">强</span>：原生订阅远端轨道，可同屏审核、控麦和互动</td>
+                </tr>
+                <tr>
+                  <td>未来分发扩展</td>
+                  <td><span class="good">便利</span>：OBS 流已进入 RTC，后续可在云端增加旁路推流，不需要主播重新配置多路上行</td>
+                  <td>同样可复用 RTC 频道增加云端分发；该能力明确不纳入本期</td>
+                </tr>
+                <tr>
+                  <td>主要成本</td>
+                  <td>现有 RTC + 新增媒体网关/转码费用</td>
+                  <td>常规 RTC/RTM；前端兼容与设备支持成本较高</td>
+                </tr>
+                <tr>
+                  <td>推荐场景</td>
+                  <td class="winner"><strong>视频直播、赛事、活动、买量投流</strong></td>
+                  <td class="winner"><strong>语聊房、主持连麦、多人互动、PK</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="muted" style="margin-top:9px;font-size:11px">
+            延时数据为方案评估目标值，不是 SLA；最终结果取决于主播网络、地区、协议、转码档位和观众接入方式。
+          </p>
+        </section>
+
+        <section class="section" id="architecture">
+          <div class="section-head">
+            <span class="section-no">03</span>
+            <div><h2>双轨总体架构</h2><p>复用频道、Token、房间状态和审核体系，媒体生产端按场景拆分。</p></div>
+          </div>
+          <div class="architecture">
+            <div class="lane">
+              <div class="lane-title lane-video">轨道 A · 视频直播</div>
+              <div class="flow">
+                <span class="node">PC 运营后台</span><span class="arrow">→</span>
+                <span class="node">创建直播任务</span><span class="arrow">→</span>
+                <span class="node">OBS RTMP / SRT</span><span class="arrow">→</span>
+                <span class="node node-cloud">Media Gateway</span><span class="arrow">→</span>
+                <span class="node node-output">Agora RTC 频道</span>
+              </div>
+            </div>
+            <div class="lane">
+              <div class="lane-title lane-audio">轨道 B · 互动语聊</div>
+              <div class="flow">
+                <span class="node">PC Web 主持台</span><span class="arrow">→</span>
+                <span class="node">麦克风 / 声卡</span><span class="arrow">→</span>
+                <span class="node node-cloud">Agora Web SDK</span><span class="arrow">→</span>
+                <span class="node node-output">Agora RTC 语聊房</span>
+                <span class="arrow">+</span>
+                <div class="split"><span class="node">RTM 控制信令</span><span class="node">运营审核后台</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top:14px">
+            <div class="card"><span class="tag tag-server">共享底座</span><h4>统一业务身份</h4><p class="muted">频道 ID、主播 UID、Token、直播场次和审核权限由同一服务端生成。</p></div>
+            <div class="card"><span class="tag tag-safe">保持兼容</span><h4>观众端尽量不改</h4><p class="muted">App/H5 继续订阅现有 RTC 频道，只需兼容新增的 PC 开播来源。</p></div>
+            <div class="card"><span class="tag tag-video">职责隔离</span><h4>媒体与控制分层</h4><p class="muted">RTC 传输音视频；RTM/业务 WebSocket 传递举手、禁言、席位和任务状态。</p></div>
+          </div>
+        </section>
+
+        <section class="section" id="agora-services">
+          <div class="section-head">
+            <span class="section-no">04</span>
+            <div><h2>本期涉及的声网服务明细</h2><p>区分既有能力复用、必须新增接入和本期明确不需要的服务。</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:18%">声网服务 / 能力</th>
+                  <th style="width:13%">本期状态</th>
+                  <th style="width:28%">具体用途</th>
+                  <th style="width:23%">接入位置</th>
+                  <th style="width:18%">商务与技术核验</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Agora RTC</td>
+                  <td><span class="good">复用 · 必须</span></td>
+                  <td>承载视频直播频道和语聊房音频频道；App/H5 继续订阅，PC Web 主持人发布和订阅音频。</td>
+                  <td>复用现有 App ID、Channel、UID、主播/观众角色和看播链路。</td>
+                  <td>确认 PC Web 新增分钟数及现有套餐并发。</td>
+                </tr>
+                <tr>
+                  <td>Agora Media Gateway</td>
+                  <td><span class="warn-text">新增 · 必须</span></td>
+                  <td>接收 OBS 的 RTMP/SRT 流，将专业制作流注入指定 RTC 频道。</td>
+                  <td>PC 后台触发；服务端通过 REST API 创建、查询和停止网关任务。</td>
+                  <td>确认账号开通、区域、输入协议、分辨率、并发配额和增值计费。</td>
+                </tr>
+                <tr>
+                  <td>Agora Web SDK NG</td>
+                  <td><span class="warn-text">新增 · 必须</span></td>
+                  <td>PC 语聊主持人入房、发布麦克风、订阅连麦用户、切换设备、控制音量和音效。</td>
+                  <td>运营后台集成 <code>agora-rtc-sdk-ng</code>，推荐限定 Chrome / Edge。</td>
+                  <td>确认目标版本的变声、美音和输出设备 API 支持矩阵。</td>
+                </tr>
+                <tr>
+                  <td>Agora RTM / Signaling</td>
+                  <td><span class="good">复用 · 必须</span></td>
+                  <td>传递举手、上麦审核、静音、踢下麦、麦位状态和主持操作信令。</td>
+                  <td>复用现有语聊房业务协议，在 PC Web 补齐 RTM 客户端接入。</td>
+                  <td>确认消息量、登录并发、Token 续期和断线恢复策略。</td>
+                </tr>
+                <tr>
+                  <td>AccessToken2 / Token 服务</td>
+                  <td><span class="good">复用 · 必须</span></td>
+                  <td>为 OBS 注入任务、PC 主持人和现有观众签发短时 RTC/RTM 权限。</td>
+                  <td>继续由现有服务端持有 App Certificate 并签发 Token。</td>
+                  <td>无需新建账号体系，仅增加 PC 来源和对应权限校验。</td>
+                </tr>
+                <tr>
+                  <td>Media Gateway REST API / 回调</td>
+                  <td><span class="warn-text">新增 · 必须</span></td>
+                  <td>控制网关任务生命周期，获得连接、首帧、断流、失败和停止状态。</td>
+                  <td>作为现有开播服务的增量适配层，不新增独立直播业务模型。</td>
+                  <td>确认鉴权方式、回调签名、幂等规则、限流和错误码。</td>
+                </tr>
+                <tr>
+                  <td>旁路推流 / Media Push / CDN</td>
+                  <td><span class="bad">本期不使用</span></td>
+                  <td>后续需要买量投流或外部嵌入时，再将 RTC 频道流推送到 CDN 或第三方平台。</td>
+                  <td>本期不开发、不配置、不产生对应 CDN 分发链路。</td>
+                  <td>仅保留架构扩展位，不纳入本期报价和排期。</td>
+                </tr>
+                <tr>
+                  <td>云端录制</td>
+                  <td><span class="bad">本期不新增</span></td>
+                  <td>本次 PC 开播改造不依赖云端录制；如现有业务已使用则保持原逻辑。</td>
+                  <td>不因 PC 开播重复建设。</td>
+                  <td>不纳入本次增量范围。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="grid-3" style="margin-top:14px">
+            <div class="card"><span class="tag tag-safe">继续复用</span><h4>RTC、RTM、Token</h4><p class="muted">频道、用户身份、房间状态和 App/H5 看播链路不重做，只补齐 PC 端角色。</p></div>
+            <div class="card"><span class="tag tag-video">本期新增</span><h4>Media Gateway + Web SDK</h4><p class="muted">新增成本集中在 OBS 入流网关和 PC Web 主持端开发，不扩建整套直播后端。</p></div>
+            <div class="card"><span class="tag tag-server">本期排除</span><h4>旁路推流、CDN、云录制</h4><p class="muted">第三方标准拉流和外部嵌入留到后续独立版本评审。</p></div>
+          </div>
+          <div class="notice">
+            <strong>产品名称提示：</strong>声网控制台中的“Media Gateway、Signaling、Media Push”等名称、能力入口和计费口径可能随区域及版本调整，正式采购前需由声网技术支持和商务按当前账号确认。
+          </div>
+        </section>
+
+        <section class="section" id="video">
+          <div class="section-head">
+            <span class="section-no">05</span>
+            <div><h2>视频直播：OBS + 云端媒体网关</h2><p>重画质、重导播，本期只注入现有 RTC 频道，不建设第三方分发。</p></div>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <span class="tag tag-video">主播闭环</span>
+              <div class="steps">
+                <div class="step"><span class="step-no">01</span><div><h4>后台创建场次</h4><p>复用现有直播场次，选择频道、主播、清晰度和 PC-OBS 开播来源。</p></div></div>
+                <div class="step"><span class="step-no">02</span><div><h4>服务端创建网关任务</h4><p>调用声网 REST API，绑定 RTC Channel / UID，生成推流地址和 Stream Key。</p></div></div>
+                <div class="step"><span class="step-no">03</span><div><h4>OBS 配置与预检</h4><p>完成编码、码率、关键帧、音频采样率和网络上行测试。</p></div></div>
+                <div class="step"><span class="step-no">04</span><div><h4>首帧确认后开播</h4><p>服务端收到网关回调并确认 RTC 首帧，场次才切换为“直播中”。</p></div></div>
+                <div class="step"><span class="step-no">05</span><div><h4>停止与资源回收</h4><p>停止 OBS、关闭网关任务，并复用现有直播结束与房间回收逻辑。</p></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <span class="tag tag-server">OBS 推荐模板</span>
+              <div class="table-wrap" style="border-radius:10px">
+                <table style="min-width:0">
+                  <thead><tr><th>配置</th><th>建议值</th></tr></thead>
+                  <tbody>
+                    <tr><td>输出编码</td><td>H.264 + AAC，优先硬件编码</td></tr>
+                    <tr><td>分辨率</td><td>720p / 1080p，禁止无意义上采样</td></tr>
+                    <tr><td>帧率</td><td>25/30fps；赛事类视需求评估 50/60fps</td></tr>
+                    <tr><td>关键帧</td><td>建议 2 秒，需与 Media Gateway 输入要求一致</td></tr>
+                    <tr><td>码率</td><td>按声网网关注入 RTC 的推荐档位配置</td></tr>
+                    <tr><td>音频</td><td>48kHz、AAC，避免多重增益和重复降噪</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="notice info" style="margin-bottom:0">
+                SRT 更抗弱网、延时通常更低，但需确认当前声网区域、网关版本和主播 OBS 版本是否完整支持；首期可优先 RTMP，再灰度 SRT。
+              </div>
+            </div>
+          </div>
+
+          <h3>后续扩展第三方分发的便利优势</h3>
+          <div class="grid-3">
+            <div class="card">
+              <span class="tag tag-video">无需改 OBS</span>
+              <h4>主播只保持一路上行</h4>
+              <p class="muted">OBS 流已经通过网关进入声网云端，后续增加第三方分发时，可由云端分流，无需主播电脑多路推流。</p>
+            </div>
+            <div class="card">
+              <span class="tag tag-safe">无需改观众端</span>
+              <h4>现有 RTC 主链路保持稳定</h4>
+              <p class="muted">App/H5 继续看 RTC；未来的 CDN 或外部平台只是云端新增出口，不影响现有看播和 PC 开播流程。</p>
+            </div>
+            <div class="card">
+              <span class="tag tag-server">统一控制</span>
+              <h4>后台按场次开关</h4>
+              <p class="muted">后续可独立增加分发任务、权限、计费和状态监控，不需要重做直播房间、主播身份和 OBS 配置。</p>
+            </div>
+          </div>
+          <div class="notice">
+            <strong>本期不实施：</strong>不开发旁路推流、CDN 输出、标准拉流地址、外部播放器或广告平台适配；这里只说明双轨架构为后续扩展保留的便利性。
+          </div>
+        </section>
+
+        <section class="section" id="voice">
+          <div class="section-head">
+            <span class="section-no">06</span>
+            <div><h2>互动语聊房：PC Web + Agora Web SDK + RTM</h2><p>完全剥离 OBS，由主持人在浏览器中完成入房、控麦、连麦与音效操作。</p></div>
+          </div>
+
+          <div class="console">
+            <div class="card">
+              <span class="tag tag-audio">音频控制台规格</span>
+              <div class="control-list">
+                <div class="control"><span class="control-icon">MIC</span><div><strong>输入设备</strong><small><code>AgoraRTC.getMicrophones()</code> · 支持 USB 麦克风与外置声卡</small></div><span class="control-value">动态切换</span></div>
+                <div class="control"><span class="control-icon">OUT</span><div><strong>输出设备</strong><small><code>getPlaybackDevices()</code> + <code>setPlaybackDevice()</code></small></div><span class="control-value">耳机优先</span></div>
+                <div class="control"><span class="control-icon">VOL</span><div><strong>推流增益</strong><small><code>audioTrack.setVolume(0–200)</code> · 100 为基准</small></div><span class="control-value">防削顶提示</span></div>
+                <div class="control"><span class="control-icon">FX</span><div><strong>变声与美音</strong><small>大叔音、萝莉音、空灵、KTV 等经过审核的预设</small></div><span class="control-value">互斥校验</span></div>
+                <div class="control"><span class="control-icon">AEC</span><div><strong>音频处理</strong><small>AEC / ANS / AGC 默认开启，按设备与浏览器降级</small></div><span class="control-value">默认开启</span></div>
+                <div class="control"><span class="control-icon">VU</span><div><strong>输入电平</strong><small><code>audioTrack.getVolumeLevel()</code> · 静音和爆音实时反馈</small></div><span class="meter" aria-label="音量电平"><i></i><i></i><i></i><i></i><i></i></span></div>
+              </div>
+            </div>
+            <div class="card">
+              <span class="tag tag-audio">主持人流程</span>
+              <div class="steps">
+                <div class="step"><span class="step-no">01</span><div><h4>设备授权</h4><p>先获取权限，再枚举带名称的设备。</p></div></div>
+                <div class="step"><span class="step-no">02</span><div><h4>入房前检测</h4><p>麦克风电平、扬声器试听、网络质量。</p></div></div>
+                <div class="step"><span class="step-no">03</span><div><h4>主持人入房</h4><p>服务端签发短时 RTC/RTM Token。</p></div></div>
+                <div class="step"><span class="step-no">04</span><div><h4>运营控制</h4><p>审核上麦、静音、踢下麦、锁麦位。</p></div></div>
+                <div class="step"><span class="step-no">05</span><div><h4>异常恢复</h4><p>断网重连、设备拔插和 Token 续期。</p></div></div>
+              </div>
+            </div>
+          </div>
+
+          <h3>浏览器兼容边界</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>能力</th><th>实现要点</th><th>边界与降级</th></tr></thead>
+              <tbody>
+                <tr><td>设备名称</td><td>首次 <code>getUserMedia</code> 授权后再枚举设备</td><td>未授权时浏览器可能只返回空名称或默认设备</td></tr>
+                <tr><td>扬声器切换</td><td>遍历远端音轨调用 <code>setPlaybackDevice(deviceId)</code></td><td>依赖浏览器 <code>setSinkId</code>；建议生产后台限定最新版 Chrome / Edge + HTTPS</td></tr>
+                <tr><td>设备热插拔</td><td>监听媒体设备变化，保留设备 ID 与回退顺序</td><td>设备拔出后自动切默认设备并提示主持人</td></tr>
+                <tr><td>变声与美音</td><td>对本地音频轨调用声网预设 API</td><td>不同预设可能互斥，浏览器与 SDK 版本支持需 POC 验证</td></tr>
+                <tr><td>数字增益</td><td>0–200 UI 映射到 <code>setVolume</code></td><td>超过 100 可能削顶失真，必须提供红区和实时电平提示</td></tr>
+                <tr><td>BGM 混音</td><td>Web Audio 合成后发布自定义音轨</td><td>首期建议只做本地文件；防止重复 AEC/AGC 和版权风险</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="security">
+          <div class="section-head">
+            <span class="section-no">07</span>
+            <div><h2>安全、稳定性与监控</h2><p>推流码、Token、设备权限和供应商回调都属于敏感控制面。</p></div>
+          </div>
+          <div class="grid-3">
+            <div class="card">
+              <span class="tag tag-safe">安全</span>
+              <ul>
+                <li>声网 App Certificate 仅保存在服务端。</li>
+                <li>RTC/RTM Token 短时有效并支持续期。</li>
+                <li>推流码按场次生成，停播立即失效。</li>
+                <li>复制和查看推流码写入后台审计日志。</li>
+                <li>回调校验签名、时间戳并防重放。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="tag tag-server">监控</span>
+              <ul>
+                <li>OBS 是否连接、首帧耗时和断流次数。</li>
+                <li>RTC 入会成功率、网络质量和音频卡顿。</li>
+                <li>网关创建成功率、RTC 首帧和状态回调延迟。</li>
+                <li>麦克风静音、爆音、无声和设备切换失败。</li>
+                <li>网关任务时长、并发占用和增量费用。</li>
+              </ul>
+            </div>
+            <div class="card">
+              <span class="tag tag-video">容灾</span>
+              <ul>
+                <li>OBS 短断流保留任务并限次自动恢复。</li>
+                <li>网关任务失败允许重新创建，不复用脏状态。</li>
+                <li>PC-OBS 开播异常不影响既有 App 开播能力。</li>
+                <li>语聊设备拔插自动回退系统默认设备。</li>
+                <li>运营后台刷新后恢复当前场次上下文。</li>
+              </ul>
+            </div>
+          </div>
+          <div class="notice">
+            <strong>费用防护：</strong>媒体网关任务必须设置最大运行时长、结束兜底定时器和异常费用告警，避免主播关闭后台但云端任务持续计费。
+          </div>
+        </section>
+
+        <section class="section" id="plan">
+          <div class="section-head">
+            <span class="section-no">08</span>
+            <div><h2>实施计划</h2><p>先用 POC 消除供应商能力和浏览器兼容的不确定性，再进入正式研发。</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>阶段</th><th>目标</th><th>主要交付</th><th>退出条件</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>阶段 0 · POC</td>
+                  <td>验证关键链路</td>
+                  <td>OBS RTMP/SRT 入 RTC、Chrome/Edge 设备切换、变声美音兼容</td>
+                  <td>延时、稳定性、区域能力和计费均有实测结论</td>
+                </tr>
+                <tr>
+                  <td>阶段 1 · 视频直播</td>
+                  <td>专业开播上线</td>
+                  <td>场次管理、推流码、网关任务、首帧确认、停播回收、基础监控</td>
+                  <td>App/H5 正常看播，异常任务可追踪与回收</td>
+                </tr>
+                <tr>
+                  <td>阶段 2 · 语聊主持台</td>
+                  <td>PC 主持闭环</td>
+                  <td>RTC/RTM 入房、麦位管理、设备控制、电平、音效、重连、Token 续期</td>
+                  <td>多人连麦稳定，设备异常有明确降级和提示</td>
+                </tr>
+                <tr>
+                  <td>阶段 3 · 增强</td>
+                  <td>提升生产效率</td>
+                  <td>BGM 混音、场景模板、SRT 灰度、质量评分、自动化巡检</td>
+                  <td>不影响首期稳定性，具备灰度和回滚能力</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="acceptance">
+          <div class="section-head">
+            <span class="section-no">09</span>
+            <div><h2>上线验收清单</h2><p>覆盖正常态、权限态、弱网态、异常态和费用回收。</p></div>
+          </div>
+          <div class="checklist">
+            <div class="check">后台可创建场次并生成一次性 OBS 推流配置。</div>
+            <div class="check">OBS 推流后可在目标 RTC 频道稳定产生首帧。</div>
+            <div class="check">App 与 H5 观众端无需重构即可正常看播。</div>
+            <div class="check">本期后台不出现第三方分发、CDN 输出或外部播放器配置。</div>
+            <div class="check">主持人可切换麦克风、耳机和 USB 声卡。</div>
+            <div class="check">扬声器切换在支持浏览器生效，不支持时有提示。</div>
+            <div class="check">0–200 增益具有爆音红区、电平与恢复默认能力。</div>
+            <div class="check">变声、美音、AEC/ANS/AGC 的组合经过矩阵验证。</div>
+            <div class="check">断网、刷新、设备拔插、Token 过期均可恢复。</div>
+            <div class="check">媒体网关任务支持幂等回调、人工停止和超时自动回收。</div>
+            <div class="check">媒体网关增量成本可按场次追踪并告警。</div>
+          </div>
+          <div class="notice" style="margin-top:18px">
+            <strong>立项前必须复核：</strong>声网 Media Gateway、RTC Web SDK 和 RTM/Signaling 在目标账号、目标区域和当前套餐中的开放状态；REST API 名称、并发配额、回调签名、输入协议与计费单价以声网当前官方文档和商务确认为准。
+          </div>
+        </section>
+
+        <footer class="footer">
+          <strong>文档定位：</strong>架构评审与研发输入稿 ·
+          <strong>现有底座：</strong>Agora RTC + RTM ·
+          <strong>目标终端：</strong>PC Web 运营后台 / OBS / iOS / Android / H5
+        </footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
