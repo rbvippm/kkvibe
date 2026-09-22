@@ -133,6 +133,24 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['运营管理', '活动明细', '文档说明'],
   },
   {
+    path: '/pc/live-super-group-manage/doc',
+    routeName: 'pc-live-super-group-manage-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '群组管理', '超级群管理', '文档说明'],
+  },
+  {
+    path: '/pc/game-module/doc',
+    routeName: 'pc-game-module-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '小程序管理', '通用模块管理', '文档说明'],
+  },
+  {
+    path: '/pc/game-product/doc',
+    routeName: 'pc-game-product-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '小程序管理', '通用产品管理', '文档说明'],
+  },
+  {
     path: '/pc/vip-hall-module/doc',
     routeName: 'pc-vip-hall-module-doc',
     title: '文档说明',
@@ -367,6 +385,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/live-super-group-manage',
         routeName: 'pc-live-super-group-manage',
         pagePath: ['管理后台', '群组管理', '超级群管理'],
+        docRouteName: 'pc-live-super-group-manage-doc',
       },
     ],
   },
@@ -381,6 +400,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/game-module',
         routeName: 'pc-game-module',
         pagePath: ['管理后台', '小程序管理', '通用模块管理'],
+        docRouteName: 'pc-game-module-doc',
       },
       {
         key: 'game-product',
@@ -388,6 +408,7 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/game-product',
         routeName: 'pc-game-product',
         pagePath: ['管理后台', '小程序管理', '通用产品管理'],
+        docRouteName: 'pc-game-product-doc',
       },
     ],
   },

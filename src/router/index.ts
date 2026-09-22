@@ -625,16 +625,34 @@ export const router = createRouter({
           meta: { title: '超级群管理' },
         },
         {
+          path: 'live-super-group-manage/doc',
+          name: 'pc-live-super-group-manage-doc',
+          component: () => import('../views/pc/PcSuperGroupDocView.vue'),
+          meta: { title: '超级群管理-文档说明' },
+        },
+        {
           path: 'game-module',
           name: 'pc-game-module',
           component: () => import('../views/pc/PcGameModuleView.vue'),
           meta: { title: '通用模块管理' },
         },
         {
+          path: 'game-module/doc',
+          name: 'pc-game-module-doc',
+          component: () => import('../views/pc/PcGameModuleDocView.vue'),
+          meta: { title: '通用模块管理-文档说明' },
+        },
+        {
           path: 'game-product',
           name: 'pc-game-product',
           component: () => import('../views/pc/PcGameProductView.vue'),
           meta: { title: '通用产品管理' },
+        },
+        {
+          path: 'game-product/doc',
+          name: 'pc-game-product-doc',
+          component: () => import('../views/pc/PcGameProductDocView.vue'),
+          meta: { title: '通用产品管理-文档说明' },
         },
         {
           path: 'activity-center',

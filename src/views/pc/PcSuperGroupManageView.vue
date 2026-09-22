@@ -2,8 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import WfGamePickerBox from '../../components/wireframe/WfGamePickerBox.vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import { anchorGameName } from '../../constants/gameProduct'
+import { SUPER_GROUP_ANNOT_MAP } from '../../constants/superGroupSpec'
 import '../../styles/pc-wireframe.css'
 
 type SuperGroupStatus = 'normal' | 'frozen' | 'dissolved'
@@ -49,6 +51,9 @@ type SuperGroupRow = {
   createdAt: string
   edit: SuperGroupEditConfig
 }
+
+const pinnedAnnot = SUPER_GROUP_ANNOT_MAP.pinnedGame
+const floatingAnnot = SUPER_GROUP_ANNOT_MAP.floatingGame
 
 const CONFIG_ITEM_OPTIONS: { value: ConfigItemKey; label: string }[] = [
   { value: 'pinned_game', label: '置顶游戏' },
@@ -620,16 +625,39 @@ function confirmEdit() {
 
               <div v-if="visibleConfigTabs.length" class="super-group-config-tabs">
                 <div class="wf-tabs super-group-config-tabs__bar">
-                  <button
-                    v-for="tab in visibleConfigTabs"
-                    :key="tab.value"
-                    type="button"
-                    class="wf-tab"
-                    :class="{ 'wf-tab--active': editConfigTab === tab.value }"
-                    @click="editConfigTab = tab.value"
-                  >
-                    {{ tab.label }}
-                  </button>
+                  <template v-for="tab in visibleConfigTabs" :key="tab.value">
+                    <div v-if="tab.value === 'pinned_game' || tab.value === 'floating_game'" class="wf-tab-item">
+                      <button
+                        type="button"
+                        class="wf-tab"
+                        :class="{ 'wf-tab--active': editConfigTab === tab.value }"
+                        @click="editConfigTab = tab.value"
+                      >
+                        {{ tab.label }}
+                      </button>
+                      <WfSpecAnnot
+                        v-if="tab.value === 'pinned_game'"
+                        :no="pinnedAnnot.no"
+                        :title="pinnedAnnot.title"
+                        :items="[...pinnedAnnot.items]"
+                      />
+                      <WfSpecAnnot
+                        v-else
+                        :no="floatingAnnot.no"
+                        :title="floatingAnnot.title"
+                        :items="[...floatingAnnot.items]"
+                      />
+                    </div>
+                    <button
+                      v-else
+                      type="button"
+                      class="wf-tab"
+                      :class="{ 'wf-tab--active': editConfigTab === tab.value }"
+                      @click="editConfigTab = tab.value"
+                    >
+                      {{ tab.label }}
+                    </button>
+                  </template>
                 </div>
 
                 <div class="super-group-config-tabs__panel super-group-panel-form">

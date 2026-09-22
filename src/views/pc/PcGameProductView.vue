@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import {
   GAME_PRODUCT_CATALOG,
@@ -31,6 +32,7 @@ import {
   type GameProductOrientation,
   type GameProductRow,
 } from '../../constants/gameProduct'
+import { GAME_PRODUCT_ANNOT_MAP } from '../../constants/gameProductSpec'
 import { ANCHOR_CHANNEL_PAGE_SIZE, filterAnchorChannels } from '../../constants/liveAnchorMetric'
 import '../../styles/pc-wireframe.css'
 
@@ -53,6 +55,12 @@ const defaultFilter = (): ListFilter => ({
   currency: '',
   orientation: '',
 })
+
+const filterAnnot = GAME_PRODUCT_ANNOT_MAP.filter
+const addAnnot = GAME_PRODUCT_ANNOT_MAP.addButton
+const listAnnot = GAME_PRODUCT_ANNOT_MAP.list
+const modalAnnot = GAME_PRODUCT_ANNOT_MAP.modal
+const channelAuthAnnot = GAME_PRODUCT_ANNOT_MAP.channelAuth
 
 const filter = ref<ListFilter>(defaultFilter())
 const appliedFilter = ref<ListFilter>(defaultFilter())
@@ -346,7 +354,15 @@ function joinLabels(items: string[]) {
       <h1 class="gpp-title">通用产品管理</h1>
 
       <div class="wf-toolbar wf-toolbar--filters">
-        <label class="wf-label">渠道：</label>
+        <label class="wf-label wf-label--with-spec">
+          渠道：
+          <WfSpecAnnot
+            :no="filterAnnot.no"
+            :title="filterAnnot.title"
+            :items="[...filterAnnot.items]"
+            placement="bottom"
+          />
+        </label>
         <WfSearchSelect
           v-model="filter.channel"
           :options="GAME_PRODUCT_CHANNEL_OPTIONS"
@@ -399,10 +415,14 @@ function joinLabels(items: string[]) {
           <button type="button" class="wf-btn wf-btn--primary" @click="applyFilter">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="resetFilter">清除</button>
           <button type="button" class="wf-btn wf-btn--add" @click="openAdd">新增</button>
+          <WfSpecAnnot :no="addAnnot.no" :title="addAnnot.title" :items="[...addAnnot.items]" />
         </span>
       </div>
 
       <div class="wf-table-wrap">
+        <div class="gpp-list-head">
+          <WfSpecAnnot :no="listAnnot.no" :title="listAnnot.title" :items="[...listAnnot.items]" />
+        </div>
         <table class="wf-table">
           <thead>
             <tr>
@@ -502,9 +522,10 @@ function joinLabels(items: string[]) {
           <div class="wf-modal__header">
             <h3
               :id="modalMode === 'add' ? 'gpp-add-title' : 'gpp-edit-title'"
-              class="wf-modal__title"
+              class="wf-modal__title wf-modal__title--with-spec"
             >
               {{ modalTitle }}
+              <WfSpecAnnot :no="modalAnnot.no" :title="modalAnnot.title" :items="[...modalAnnot.items]" />
             </h3>
             <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeModal">
               ×
@@ -718,7 +739,14 @@ function joinLabels(items: string[]) {
           aria-labelledby="gpp-auth-title"
         >
           <div class="wf-modal__header">
-            <h3 id="gpp-auth-title" class="wf-modal__title">授权渠道</h3>
+            <h3 id="gpp-auth-title" class="wf-modal__title wf-modal__title--with-spec">
+              授权渠道
+              <WfSpecAnnot
+                :no="channelAuthAnnot.no"
+                :title="channelAuthAnnot.title"
+                :items="[...channelAuthAnnot.items]"
+              />
+            </h3>
             <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeChannelAuth">
               ×
             </button>
@@ -835,6 +863,12 @@ function joinLabels(items: string[]) {
 </template>
 
 <style scoped>
+.gpp-list-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 .gpp-title {
   margin: 0 0 12px;
   font-size: 16px;
