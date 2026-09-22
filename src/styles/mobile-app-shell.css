@@ -4363,6 +4363,16 @@
   color: var(--mh5-app-text-secondary);
 }
 
+.mh5-pip-settings__desc + .mh5-pip-settings__desc {
+  margin-top: 2px;
+}
+
+.mh5-pip-settings__desc-label {
+  margin-right: 6px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
 .mh5-live-pip-host {
   position: absolute;
   inset: 0;

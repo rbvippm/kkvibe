@@ -47,7 +47,8 @@ export const DEFAULT_LIVE_PIP_SETTINGS: LivePipSettings = {
 export const LIVE_PIP_SETTING_ITEMS: {
   key: keyof LivePipSettings
   title: string
-  desc: string
+  desc?: string
+  notes?: { label: string; text: string }[]
 }[] = [
   {
     key: 'inAppAuto',
@@ -57,7 +58,10 @@ export const LIVE_PIP_SETTING_ITEMS: {
   {
     key: 'externalAuto',
     title: '切出应用开小窗',
-    desc: '离开 App 后用系统画中画继续播，需先在系统设置开启「自动开启画中画」',
+    notes: [
+      { label: 'APP', text: '先在小窗点置顶，才能自动开启画中画' },
+      { label: 'H5', text: '开关打开后即可继续播' },
+    ],
   },
 ]
 

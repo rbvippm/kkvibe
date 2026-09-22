@@ -26,7 +26,17 @@ function toggle(key: (typeof LIVE_PIP_SETTING_ITEMS)[number]['key']) {
         <div v-for="item in LIVE_PIP_SETTING_ITEMS" :key="item.key" class="mh5-pip-settings__row">
           <div class="mh5-pip-settings__copy">
             <p class="mh5-pip-settings__title">{{ $t(item.title) }}</p>
-            <p class="mh5-pip-settings__desc">{{ $t(item.desc) }}</p>
+            <template v-if="item.notes?.length">
+              <p
+                v-for="note in item.notes"
+                :key="note.label"
+                class="mh5-pip-settings__desc"
+              >
+                <span class="mh5-pip-settings__desc-label">{{ note.label }}</span>
+                {{ $t(note.text) }}
+              </p>
+            </template>
+            <p v-else-if="item.desc" class="mh5-pip-settings__desc">{{ $t(item.desc) }}</p>
           </div>
           <button
             type="button"
