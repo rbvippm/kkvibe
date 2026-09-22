@@ -158,11 +158,11 @@ import '../../styles/pc-wireframe.css'
 
 ### 4.3 v2 账变类页面
 
-适用：`pcMenuV2Children` 下的用户详情、账变管理、账变记录、账变审核、提现流水、对账相关。
+适用：财务管理下的账变管理、账变记录、账变审核、提现流水变更记录。侧栏不展示的需求简介、用户详情、风控账变审核、对账相关仍保留路由。
 
 要求：
 
-- 菜单只改 `src/config/pcMenu.ts` 的 `pcMenuV2Children`。
+- 侧栏分组在 `src/config/pcMenu.ts` 的财务管理；隐藏项在 `pcMenuHiddenLeaves`。
 - 页面路径条来自 `pagePath`，不要在页面内写死路径数组。
 - 路由注册在 `/pc` children 下，`meta.title` 与菜单 `title` 保持一致。
 - 功能清单和页面标注优先维护在 `src/constants/versionRecordV2.ts`。

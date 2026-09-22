@@ -12,6 +12,8 @@ export type PcMenuItem = {
   pagePath?: string[]
   /** 关联「文档说明」页路由名（路径条展示【文档说明】入口） */
   docRouteName?: string
+  /** 不进侧栏，路由仍可直达 */
+  hidden?: boolean
   children?: PcMenuItem[]
 }
 
@@ -173,13 +175,14 @@ export const pcAnchorDocRoutes: PcDocRoute[] = [
   },
 ]
 
-/** v2.x.x 账变细化和流水调整 · 子菜单（单一数据源） */
-export const pcMenuV2Children: PcMenuItem[] = [
+/** 侧栏不展示，页面路由仍保留 */
+export const pcMenuHiddenLeaves: PcMenuItem[] = [
   {
     key: 'version-record-v2-intro',
     title: '需求简介',
     path: '/pc/version-record/v2-account-turnover/intro',
     routeName: 'pc-version-record-v2-intro',
+    hidden: true,
   },
   {
     key: 'user-manage',
@@ -187,36 +190,51 @@ export const pcMenuV2Children: PcMenuItem[] = [
     path: '/pc/user-manage',
     routeName: 'pc-user-manage',
     icon: '👤',
+    hidden: true,
     pagePath: ['用户管理', '用户列表', '用户资产详情'],
-  },
-  {
-    key: 'account-change-manage',
-    title: '账变管理',
-    path: '/pc/account-change-manage',
-    routeName: 'pc-account-change-manage',
-    icon: '💳',
-    pagePath: ['账变管理', '账变管理'],
-  },
-  {
-    key: 'account-change-record',
-    title: '账变记录',
-    path: '/pc/account-change-record',
-    routeName: 'pc-account-change-record',
-    pagePath: ['账变管理', '账变记录'],
-  },
-  {
-    key: 'account-change-audit',
-    title: '账变审核',
-    path: '/pc/account-change-audit',
-    routeName: 'pc-account-change-audit',
-    icon: '🧾',
-    pagePath: ['风控审核', '账变审核'],
   },
   {
     key: 'turnover-audit',
     title: '账变审核',
     path: '/pc/turnover-audit',
     routeName: 'pc-turnover-audit',
+    icon: '🧾',
+    hidden: true,
+    pagePath: ['财务管理', '账变审核'],
+  },
+  {
+    key: 'reconciliation-related',
+    title: '对账相关',
+    path: '/pc/reconciliation-related',
+    routeName: 'pc-reconciliation-related',
+    icon: '📊',
+    hidden: true,
+    pagePath: ['后台', '对账', '对账相关'],
+  },
+]
+
+const pcMenuFinanceChildren: PcMenuItem[] = [
+  {
+    key: 'account-change-manage',
+    title: '账变管理',
+    path: '/pc/account-change-manage',
+    routeName: 'pc-account-change-manage',
+    icon: '💳',
+    pagePath: ['财务管理', '账变管理'],
+  },
+  {
+    key: 'account-change-record',
+    title: '账变记录',
+    path: '/pc/account-change-record',
+    routeName: 'pc-account-change-record',
+    icon: '📋',
+    pagePath: ['财务管理', '账变记录'],
+  },
+  {
+    key: 'account-change-audit',
+    title: '账变审核',
+    path: '/pc/account-change-audit',
+    routeName: 'pc-account-change-audit',
     icon: '🧾',
     pagePath: ['财务管理', '账变审核'],
   },
@@ -227,14 +245,6 @@ export const pcMenuV2Children: PcMenuItem[] = [
     routeName: 'pc-withdraw-turnover-record',
     icon: '💰',
     pagePath: ['财务管理', '提现流水变更记录'],
-  },
-  {
-    key: 'reconciliation-related',
-    title: '对账相关',
-    path: '/pc/reconciliation-related',
-    routeName: 'pc-reconciliation-related',
-    icon: '📊',
-    pagePath: ['后台', '对账', '对账相关'],
   },
 ]
 
@@ -248,10 +258,10 @@ export const pcMenuTree: PcMenuItem[] = [
     affix: true,
   },
   {
-    key: 'version-record-v2',
-    title: 'v2.x.x 账变细化和流水调整',
-    icon: '📋',
-    children: pcMenuV2Children,
+    key: 'finance',
+    title: '财务管理',
+    icon: '💰',
+    children: pcMenuFinanceChildren,
   },
   {
     key: 'user',
@@ -560,6 +570,7 @@ export function findPcDocRoute(routeName: string): PcDocRoute | undefined {
 export function findPcMenuByRouteName(routeName: string): PcMenuLeaf | undefined {
   return (
     flattenPcMenuLeaves(pcMenuTree).find((item) => item.routeName === routeName) ??
+    flattenPcMenuLeaves(pcMenuHiddenLeaves).find((item) => item.routeName === routeName) ??
     flattenPcMenuLeaves(pcAnchorMenuTree).find((item) => item.routeName === routeName)
   )
 }

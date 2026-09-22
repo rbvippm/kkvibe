@@ -39,6 +39,10 @@ function isMenuActive(item: PcMenuItem) {
   return item.routeName === activeRouteName.value
 }
 
+function visibleChildren(group: PcMenuItem) {
+  return (group.children ?? []).filter((child) => !child.hidden)
+}
+
 const anchorName = computed(() => session.value?.nickname || session.value?.account || '主播')
 const anchorInitial = computed(() => anchorName.value.slice(0, 1))
 
@@ -84,12 +88,12 @@ function confirmLogout() {
           </RouterLink>
 
           <!-- 分组菜单 -->
-          <div v-else-if="group.children?.length" class="pc-admin-menu-group">
+          <div v-else-if="visibleChildren(group).length" class="pc-admin-menu-group">
             <p v-show="!sidebarCollapsed" class="pc-admin-menu-group__title">
               {{ group.title }}
             </p>
             <RouterLink
-              v-for="child in group.children"
+              v-for="child in visibleChildren(group)"
               :key="child.key"
               :to="child.path!"
               class="pc-admin-menu-item"
