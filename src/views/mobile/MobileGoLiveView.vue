@@ -86,6 +86,11 @@ const applyingSchedule = ref(false)
 const restoreLinkedId = ref<string | null>(null)
 const posterItem = ref<GoLiveSchedule | null>(null)
 const hourRow = ref<HTMLElement | null>(null)
+const editingScheduleId = ref<string | null>(null)
+const editTitle = ref('')
+const editCategory = ref<string>(GO_LIVE_DEFAULT_CATEGORY)
+const editCover = ref('')
+const editError = ref('')
 
 let tickTimer = 0
 
@@ -222,6 +227,8 @@ function closeSheet() {
     restoreLinkedId.value = null
     if (previous && previous.status === 'pending') applySchedule(previous)
   }
+  editingScheduleId.value = null
+  editError.value = ''
   sheet.value = null
 }
 
@@ -367,10 +374,63 @@ function switchToSchedule(item: GoLiveSchedule) {
   showToast('已切换为该场预告')
 }
 
-function editSchedule(item: GoLiveSchedule) {
-  applySchedule(item)
-  sheet.value = null
-  showToast('已载入该场预告，可修改后开播')
+function startScheduleCardEdit(item: GoLiveSchedule) {
+  editingScheduleId.value = item.id
+  editTitle.value = item.title
+  editCategory.value = (GO_LIVE_CATEGORIES as readonly string[]).includes(item.category)
+    ? item.category
+    : GO_LIVE_DEFAULT_CATEGORY
+  editCover.value = item.cover
+  const parts = splitGoLiveScheduleTime(item.startAt, nowMs.value)
+  timeDay.value = parts.offset
+  timeHour.value = parts.hour
+  timeMinute.value = parts.minute
+  editError.value = ''
+  void nextTick(() => {
+    document.querySelector(`[data-schedule="${item.id}"]`)?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function cancelScheduleCardEdit() {
+  editingScheduleId.value = null
+  editError.value = ''
+}
+
+function onEditHourChange(event: Event) {
+  timeHour.value = Number((event.target as HTMLSelectElement).value)
+}
+
+function changeEditCover() {
+  editCover.value = nextGoLiveCover(editCover.value)
+}
+
+function saveScheduleCardEdit() {
+  const titleText = editTitle.value.trim()
+  if (!titleText) {
+    editError.value = '请填写直播标题'
+    return
+  }
+  const id = editingScheduleId.value
+  if (!id) return
+  const ts = combineGoLiveScheduleTime(timeDay.value, timeHour.value, timeMinute.value, nowMs.value)
+  const error = validateGoLiveScheduleTime(ts, id, nowMs.value)
+  if (error) {
+    editError.value = t(error)
+    return
+  }
+  const item = findGoLiveSchedule(id)
+  if (!item) {
+    cancelScheduleCardEdit()
+    return
+  }
+  item.title = titleText
+  item.category = editCategory.value
+  item.cover = editCover.value
+  item.startAt = ts
+  if (linkedId.value === item.id) applySchedule(item)
+  cancelScheduleCardEdit()
+  tickSchedules()
+  showToast('预告已更新')
 }
 
 async function removeSchedule(item: GoLiveSchedule) {
@@ -992,8 +1052,77 @@ onUnmounted(() => {
             v-for="item in activeSchedules"
             :key="item.id"
             class="mh5-golive-scard"
-            :class="{ 'is-linked': linkedId === item.id }"
+            :class="{ 'is-linked': linkedId === item.id, 'is-editing': editingScheduleId === item.id }"
+            :data-schedule="item.id"
           >
+            <template v-if="editingScheduleId === item.id">
+              <div class="mh5-golive-scard__edit">
+                <div class="mh5-golive-scard__edit-top">
+                  <button type="button" class="mh5-golive-scard__cover-btn" @click="changeEditCover">
+                    <img :src="editCover" alt="" />
+                    <span>更换</span>
+                  </button>
+                  <label class="mh5-golive-scard__field">
+                    <span>标题</span>
+                    <input
+                      v-model="editTitle"
+                      class="mh5-golive-scard__input"
+                      :maxlength="GO_LIVE_TITLE_MAX"
+                      placeholder="请输入直播标题"
+                    />
+                  </label>
+                </div>
+                <label class="mh5-golive-scard__field">
+                  <span>分类</span>
+                  <select v-model="editCategory" class="mh5-golive-scard__select">
+                    <option v-for="cat in GO_LIVE_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
+                  </select>
+                </label>
+                <div class="mh5-golive-scard__field">
+                  <span>预计开播 {{ pickingTimeLabel }}</span>
+                  <div class="mh5-golive-scard__chips" role="radiogroup" aria-label="日期">
+                    <button
+                      v-for="day in dayOptions"
+                      :key="`${item.id}-d-${day.offset}`"
+                      type="button"
+                      class="mh5-golive-chip"
+                      :class="{ 'is-active': timeDay === day.offset }"
+                      @click="timeDay = day.offset"
+                    >
+                      {{ day.label }}
+                    </button>
+                  </div>
+                  <div class="mh5-golive-scard__clock">
+                    <label class="mh5-golive-scard__hour">
+                      <span>时</span>
+                      <select class="mh5-golive-scard__select" :value="timeHour" aria-label="时" @change="onEditHourChange">
+                        <option v-for="hour in GO_LIVE_SCHEDULE_HOURS" :key="`${item.id}-h-${hour}`" :value="hour">
+                          {{ pad2(hour) }}
+                        </option>
+                      </select>
+                    </label>
+                    <div class="mh5-golive-scard__chips" role="radiogroup" aria-label="分">
+                      <button
+                        v-for="minute in GO_LIVE_SCHEDULE_MINUTES"
+                        :key="`${item.id}-m-${minute}`"
+                        type="button"
+                        class="mh5-golive-chip"
+                        :class="{ 'is-active': timeMinute === minute }"
+                        @click="timeMinute = minute"
+                      >
+                        {{ pad2(minute) }} 分
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p v-if="editError" class="mh5-golive-scard__error">{{ editError }}</p>
+              </div>
+              <div class="mh5-golive-scard__actions">
+                <button type="button" @click="cancelScheduleCardEdit">{{ $t('取消') }}</button>
+                <button type="button" class="is-save" @click="saveScheduleCardEdit">{{ $t('保存') }}</button>
+              </div>
+            </template>
+            <template v-else>
             <div class="mh5-golive-scard__top">
               <p>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1019,13 +1148,14 @@ onUnmounted(() => {
               />
             </div>
             <div class="mh5-golive-scard__actions">
-              <button type="button" @click="editSchedule(item)">{{ $t('编辑') }}</button>
+              <button type="button" @click="startScheduleCardEdit(item)">{{ $t('编辑') }}</button>
               <button type="button" @click="removeSchedule(item)">{{ $t('删除') }}</button>
               <span v-if="linkedId === item.id" class="mh5-golive-scard__current">{{ $t('当前关联') }}</span>
               <button v-else type="button" class="is-switch" @click="switchToSchedule(item)">
                 {{ $t('切换以此开播') }}
               </button>
             </div>
+            </template>
           </article>
         </div>
         <div class="mh5-golive-sheet__foot">
