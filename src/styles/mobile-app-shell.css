@@ -4041,6 +4041,401 @@
   gap: 12px;
 }
 
+.mh5-community-detail__main {
+  padding-bottom: 12px;
+}
+
+.mh5-community-hero,
+.mh5-community-row,
+.mh5-community-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: var(--mh5-app-card, #fff);
+  text-align: left;
+}
+
+.mh5-community-hero {
+  min-height: 76px;
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+
+.mh5-community-hero__avatar,
+.mh5-community-member img,
+.mh5-community-member__ph {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eceff3;
+}
+
+.mh5-community-hero__name {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--mh5-app-text, #222);
+  font-size: 16px;
+}
+
+.mh5-community-hero__name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-community-hero__edit,
+.mh5-community-hero__qr,
+.mh5-community-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #8a8a8a;
+  font-size: 18px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.mh5-community-hero__input,
+.mh5-community-field,
+.mh5-community-searchbar__field input {
+  width: 100%;
+  border: none;
+  background: #f4f5f7;
+  color: var(--mh5-app-text, #222);
+  font-size: 15px;
+}
+
+.mh5-community-hero__input,
+.mh5-community-field {
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.mh5-community-field {
+  resize: none;
+}
+
+.mh5-community-row {
+  min-height: 52px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mh5-app-border, #f0f0f0);
+  cursor: pointer;
+}
+
+.mh5-community-row:last-child {
+  border-bottom: none;
+}
+
+.mh5-community-row__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mh5-community-row__title,
+.mh5-community-member__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--mh5-app-text, #222);
+  font-size: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-community-row__desc,
+.mh5-community-row__hint,
+.mh5-community-section,
+.mh5-community-empty {
+  color: #8a8a8a;
+  font-size: 13px;
+}
+
+.mh5-community-row__hint {
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-community-row--danger .mh5-community-row__title {
+  color: #e5484d;
+}
+
+.mh5-community-detail__footer {
+  flex-shrink: 0;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom));
+  background: var(--mh5-app-bg, #f5f6f8);
+}
+
+.mh5-community-send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 46px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #ffb347 0%, #ff7a2b 100%);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-community-send:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.mh5-community-admin-entry {
+  min-height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: #eef0f3;
+  color: #222;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.mh5-community-admin-entry.is-on {
+  background: #fff1e6;
+  color: #ff7a2b;
+}
+
+.mh5-community-section {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 4px 0;
+}
+
+.mh5-community-empty {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.mh5-community-member {
+  min-height: 72px;
+  padding: 8px 8px 8px 16px;
+  border-bottom: 1px solid var(--mh5-app-border, #f0f0f0);
+}
+
+.mh5-community-member:last-child {
+  border-bottom: none;
+}
+
+.mh5-community-member__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-community-member__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mh5-community-member__line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mh5-community-member__seen {
+  overflow: hidden;
+  color: #8a8a8a;
+  font-size: 12px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-community-member__seen.is-online {
+  color: var(--mh5-app-orange, #ff7a2b);
+}
+
+.mh5-community-member img,
+.mh5-community-member__ph {
+  width: 40px;
+  height: 40px;
+}
+
+.mh5-community-role {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.mh5-community-role.is-owner {
+  background: #ff4d6a;
+}
+
+.mh5-community-role.is-admin {
+  background: #ff8c00;
+}
+
+.mh5-community-searchbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--mh5-app-card, #fff);
+}
+
+.mh5-community-searchbar__field {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 18px;
+  background: #f4f5f7;
+  color: #8a8a8a;
+}
+
+.mh5-community-searchbar__field input {
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.mh5-community-searchbar__field button,
+.mh5-community-searchbar__cancel {
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.mh5-community-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(0 0 0 / 45%);
+}
+
+.mh5-community-sheet,
+.mh5-community-dialog {
+  width: 100%;
+  max-height: 78%;
+  overflow: auto;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  background: #fff;
+}
+
+.mh5-community-sheet h2,
+.mh5-community-dialog strong {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.mh5-community-dialog {
+  align-self: center;
+  width: calc(100% - 48px);
+  margin: 0 auto 40%;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.mh5-community-dialog p {
+  margin: 0 0 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+.mh5-community-dialog__qr {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 8px;
+}
+
+.mh5-community-dialog__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mh5-community-dialog__actions button {
+  flex: 1;
+  min-height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #f4f5f7;
+  cursor: pointer;
+}
+
+.mh5-community-dialog__actions .is-danger {
+  background: #ffecec;
+  color: #e5484d;
+}
+
+.mh5-community-check {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #ccc;
+  border-radius: 50%;
+}
+
+.mh5-community-check.is-on {
+  border-color: #ff7a2b;
+  background: #ff7a2b;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+.mh5-community-toast {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  z-index: 30;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgb(0 0 0 / 78%);
+  color: #fff;
+  font-size: 13px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.mh5-settings-page {
+  position: relative;
+}
+
 .mh5-mine-feedback__hint,
 .mh5-mine-about__hero p {
   margin: 0;
@@ -4217,6 +4612,18 @@
 .mh5-settings-item__locale {
   font-size: 14px;
   color: var(--mh5-app-text-secondary);
+}
+
+.mh5-settings-client {
+  cursor: default;
+}
+
+.mh5-settings-client:active {
+  background: none;
+}
+
+.mh5-settings-client .mh5-asset-detail-segment__item {
+  min-width: 52px;
 }
 
 .mh5-account-security-page {
@@ -7328,6 +7735,172 @@
 .mh5-chat-room-bubble--sent {
   background: linear-gradient(180deg, #fff4d2 0%, #f5e8c1 60%, #fff4d2 100%);
   border-radius: 12px 0 12px 12px;
+}
+
+.mh5-chat-live-card {
+  width: 220px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 1px #e6e6e6;
+}
+
+.mh5-chat-live-card__cover {
+  position: relative;
+  height: 124px;
+  background: #d9d9d9;
+}
+
+.mh5-chat-live-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mh5-chat-live-card__badges {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.mh5-chat-live-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.mh5-chat-live-card__badge.is-live {
+  width: 18px;
+  background: #e53935;
+}
+
+.mh5-chat-live-card__badge.is-preview {
+  padding: 0 4px;
+  background: #22c55e;
+}
+
+.mh5-chat-live-card__badge.is-ended {
+  width: 18px;
+  background: #5c6370;
+}
+
+.mh5-chat-live-card__status {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  max-width: calc(50% - 8px);
+  padding: 2px 6px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-chat-live-card__foot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  max-width: calc(50% - 8px);
+  padding: 2px 6px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-chat-live-card__foot img {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.mh5-chat-live-card__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+}
+
+.mh5-chat-live-card__avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: #f2f2f2;
+}
+
+.mh5-chat-live-card__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-chat-live-card__host,
+.mh5-chat-live-card__title {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-chat-live-card__host {
+  color: #222;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mh5-chat-live-card__title {
+  color: #888;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.mh5-chat-live-card__action {
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ffb347 0%, #ff7a2b 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 26px;
+  cursor: pointer;
+}
+
+.mh5-chat-live-card__action.is-on {
+  height: auto;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #666;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
 }
 
 .mh5-chat-room-msg--active .mh5-chat-room-bubble {
@@ -12469,6 +13042,24 @@
 }
 
 /* ---------- 视频直播间（Figma 1494:53973） ---------- */
+.mh5-livestream-toast {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  z-index: 40;
+  margin: 0;
+  max-width: 86%;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgb(0 0 0 / 78%);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
 .mh5-livestream-page {
   position: relative;
   display: flex;
@@ -12953,6 +13544,34 @@
   max-height: 24px;
 }
 
+.mh5-room-bar__share {
+  display: block;
+  color: #fff;
+}
+
+.mh5-livestream-page--cleared .mh5-voice-room__floats,
+.mh5-livestream-page--cleared .mh5-voice-gc-mask,
+.mh5-livestream-page--cleared .mh5-livestream-page__rotate-hint {
+  display: none;
+}
+
+.mh5-livestream-clear-exit {
+  position: absolute;
+  right: 14px;
+  bottom: calc(36px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 38%);
+  color: #fff;
+  cursor: pointer;
+}
+
 .mh5-livestream-input {
   display: flex;
   flex: 1;
@@ -13068,7 +13687,7 @@
   z-index: 6;
   display: flex;
   flex-direction: column;
-  min-width: 72px;
+  min-width: 128px;
   overflow: hidden;
   border-radius: 10px;
   background: rgb(20 20 20 / 92%);
@@ -13149,8 +13768,15 @@
   width: 100%;
 }
 
-.mh5-live-share__title {
+.mh5-live-share__title-row {
+  display: flex;
   flex: 1;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.mh5-live-share__title {
   margin: 0;
   overflow: hidden;
   color: #4f4f4f;
@@ -13179,6 +13805,19 @@
   height: 24px;
 }
 
+.mh5-live-share__back {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #4f4f4f;
+  cursor: pointer;
+}
+
 .mh5-live-share__friends,
 .mh5-live-share__actions {
   display: flex;
@@ -13187,6 +13826,13 @@
   width: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.mh5-live-share__actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px 0;
+  overflow: visible;
 }
 
 .mh5-live-share__friends::-webkit-scrollbar,
@@ -13249,19 +13895,76 @@
   background: #f0f0f0;
 }
 
+.mh5-live-share__action {
+  width: auto;
+  gap: 6px;
+}
+
+.mh5-live-share__action-label {
+  max-width: 72px;
+  font-size: 12px;
+}
+
 .mh5-live-share__action-icon {
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
+  width: 44px;
+  height: 44px;
   border-radius: 48px;
   background: #fff4ec;
 }
 
 .mh5-live-share__action-icon img {
   display: block;
-  width: 48px;
-  height: 48px;
+  width: 22px;
+  height: 22px;
+}
+
+.mh5-live-share__action-icon.is-plain {
+  width: 52px;
+  height: 52px;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.mh5-live-share__quality-text {
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.mh5-live-share__options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mh5-live-share__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: #4f4f4f;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mh5-live-share__option.is-on {
+  color: #ff8c00;
+  font-weight: 600;
+}
+
+.mh5-live-share__option-mark {
+  color: #ff8c00;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .mh5-live-share__action:active,

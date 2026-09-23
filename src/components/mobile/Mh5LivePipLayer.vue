@@ -138,7 +138,9 @@ function onVideoClick() {
 }
 
 function showPinToast(pinned: boolean) {
-  pinToast.value = pinned ? t('已置顶，切出应用将开画中画') : t('已取消置顶，切出应用仅保留声音')
+  pinToast.value = pinned
+    ? t('已置顶，锁定应用内层级，避免被挡住')
+    : t('已取消置顶，不再锁定层级')
   window.clearTimeout(pinToastTimer)
   pinToastTimer = window.setTimeout(() => {
     pinToast.value = ''
@@ -335,7 +337,7 @@ onBeforeUnmount(() => {
           v-if="!isExternal && !isVoice"
           type="button"
           class="mh5-live-pip__btn mh5-live-pip__btn--pin"
-          :aria-label="pip.state.pinned ? $t('取消置顶') : $t('置顶')"
+          :aria-label="pip.state.pinned ? $t('取消置顶') : $t('置顶，锁定层级防遮挡')"
           @click="onPin"
         >
           <svg

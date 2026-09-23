@@ -13,6 +13,7 @@ import {
   type LivePipSettings,
 } from '../constants/livePip'
 import { voiceSelfMicState } from '../constants/mobileVoiceRoom'
+import { prototypeClient } from '../constants/prototypeClient'
 
 export type LivePipPlacement = 'hidden' | 'in-app' | 'external' | 'audio'
 
@@ -57,7 +58,11 @@ function leaveAppInternal() {
   if (state.placement !== 'in-app') return
   if (Date.now() - state.openedAt < VISIBILITY_GRACE_MS) return
   state.collapsed = false
-  if (state.pinned && state.settings.externalAuto) {
+  if (
+    prototypeClient.value === 'app' &&
+    state.session.kind !== 'voice' &&
+    state.settings.externalAuto
+  ) {
     state.placement = 'external'
     return
   }

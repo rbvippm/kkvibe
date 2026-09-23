@@ -21,6 +21,9 @@ export const LIVE_STREAM_ASSETS = {
     mute: '/images/live-stream/share/icon-mute.svg',
     muteOff: '/images/live-stream/share/icon-mute-off.svg',
     add: '/images/live-stream/share/icon-add.svg',
+    pip: '/images/live-stream/share/icon-pip.svg',
+    quality: '/images/live-stream/share/icon-quality.svg',
+    settings: '/images/live-stream/share/icon-settings.svg',
   },
   /** 横屏舞台封面复用发现页横图素材 */
   landscapeStages: [
@@ -45,7 +48,14 @@ export type LiveShareFriend = {
   avatar: string
 }
 
-export type LiveShareActionKey = 'forward' | 'copy' | 'clear' | 'mute'
+export type LiveShareActionKey =
+  | 'forward'
+  | 'copy'
+  | 'clear'
+  | 'mute'
+  | 'pip'
+  | 'quality'
+  | 'settings'
 
 export type LiveShareAction = {
   key: LiveShareActionKey
@@ -113,6 +123,14 @@ export const LIVE_SHARE_ACTIONS: LiveShareAction[] = [
   { key: 'mute', label: '禁音', icon: LIVE_STREAM_ASSETS.shareSheet.mute },
 ]
 
+/** 视频直播间分享弹框：转发、清晰度、清屏、声音 */
+export const LIVE_ROOM_SHARE_ACTIONS: LiveShareAction[] = [
+  { key: 'forward', label: '转发', icon: LIVE_STREAM_ASSETS.shareSheet.forward },
+  { key: 'quality', label: '清晰度', icon: LIVE_STREAM_ASSETS.shareSheet.quality },
+  { key: 'clear', label: '清屏', icon: LIVE_STREAM_ASSETS.shareSheet.clear },
+  { key: 'mute', label: '已开启', icon: LIVE_STREAM_ASSETS.shareSheet.mute },
+]
+
 export type LiveStreamGiftToast = {
   id: string
   user: string
@@ -127,7 +145,7 @@ export type LiveStreamChatMsg =
   | { id: string; type: 'chat'; user: string; text: string }
   | { id: string; type: 'gift'; user: string; gift: string }
 
-export type LiveStreamQuality = 'sd' | 'hd' | 'uhd'
+export type LiveStreamQuality = 'auto' | 'uhd' | 'fhd' | 'hd' | 'sd'
 
 export type LiveStreamRoom = {
   id: string
@@ -153,15 +171,30 @@ export type LiveStreamRoom = {
   roomTitle?: string
 }
 
+export const LIVE_STREAM_QUALITY_OPTIONS: {
+  key: LiveStreamQuality
+  label: string
+  short: string
+}[] = [
+  { key: 'auto', label: '自动', short: '自动' },
+  { key: 'uhd', label: '蓝光[4K]', short: '蓝光' },
+  { key: 'fhd', label: '超清[1080p]', short: '超清' },
+  { key: 'hd', label: '高清[720p]', short: '高清' },
+  { key: 'sd', label: '流畅[240p]', short: '流畅' },
+]
+
 export const LIVE_STREAM_QUALITY_LABEL: Record<LiveStreamQuality, string> = {
-  sd: '标清',
-  hd: '高清',
+  auto: '自动',
   uhd: '蓝光',
+  fhd: '超清',
+  hd: '高清',
+  sd: '流畅',
 }
 
 export const MOCK_LIVE_STREAM_ROOM: LiveStreamRoom = {
   id: 'ls-demo',
-  hostName: '主播昵称',
+  hostName: '林予安',
+  roomTitle: '睡前闲聊局',
   likeText: '2.4万本场点赞',
   heat: '32.6W',
   viewerCount: '1.2w',

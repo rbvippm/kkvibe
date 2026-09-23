@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5ChatLiveCard from './Mh5ChatLiveCard.vue'
 import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
@@ -34,6 +35,7 @@ import { CHAT_UNREAD_JUMP_SPEC } from '../../constants/mobileChatUnreadSpec'
 import { CHAT_GROUP_GAME_SPEC } from '../../constants/mobileChatGroupGameSpec'
 import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC, CHAT_VIDEO_DOWNLOAD_SPEC } from '../../constants/mobileChatMediaPickerSpec'
+import { liveShareMessagesForRoom, type LiveShareCard } from '../../constants/liveShareChat'
 import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
 import { CHAT_TG_H5_MEDIA_SPEC } from '../../constants/mobileChatTelegramH5Spec'
 import {
@@ -808,7 +810,7 @@ watch(
       room.value.kind,
       unread,
     )
-    messages.value = packed.messages
+    messages.value = [...packed.messages, ...liveShareMessagesForRoom(room.value.id)]
     firstUnreadId.value = packed.firstUnreadId
     historyUnreadCount.value = unread
     showUnreadJump.value = false
@@ -857,6 +859,10 @@ function goBack() {
   persistLocalGameToGlobalDock()
   if (window.history.length > 1) router.back()
   else router.replace({ name: 'mobile-chat' })
+}
+
+function openCommunityDetail() {
+  void router.push({ name: 'mobile-chat-community', params: { id: room.value.id } })
 }
 
 function showToast(text: string) {
@@ -1702,6 +1708,21 @@ function onFileBubbleClick(msg: ChatRoomMessage) {
   openMenu(msg)
 }
 
+function openSharedLive(card?: LiveShareCard) {
+  if (!card) return
+  void router.push({ name: 'mobile-live-stream', query: card.query })
+}
+
+function toggleSharedReserve(card?: LiveShareCard) {
+  if (!card) return
+  card.reserved = !card.reserved
+}
+
+function toggleSharedFollow(card?: LiveShareCard) {
+  if (!card) return
+  card.followed = !card.followed
+}
+
 function onBubbleClick(msg: ChatRoomMessage) {
   if (msg.file) {
     onFileBubbleClick(msg)
@@ -2065,7 +2086,7 @@ onBeforeUnmount(() => {
             <img :src="CHAT_ROOM_ASSETS.phone" alt="" width="26" height="26" />
           </button>
         </template>
-        <button v-else type="button" class="mh5-chat-room-header__icon" aria-label="更多" @click="showToast('更多设置（原型演示）')">
+        <button v-else type="button" class="mh5-chat-room-header__icon" aria-label="更多" @click="openCommunityDetail">
           <img :src="CHAT_ROOM_ASSETS.more" alt="" width="24" height="24" />
         </button>
       </div>
@@ -2171,7 +2192,15 @@ onBeforeUnmount(() => {
           >
             !
           </button>
+          <Mh5ChatLiveCard
+            v-if="msg.liveCard"
+            :card="msg.liveCard"
+            @enter="openSharedLive(msg.liveCard)"
+            @reserve="toggleSharedReserve(msg.liveCard)"
+            @follow="toggleSharedFollow(msg.liveCard)"
+          />
           <button
+            v-else
             type="button"
             class="mh5-chat-room-bubble"
             :class="`mh5-chat-room-bubble--${msg.direction}`"

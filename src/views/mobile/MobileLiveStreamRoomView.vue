@@ -8,13 +8,15 @@ import Mh5LiveOnlineViewers from '../../components/mobile/Mh5LiveOnlineViewers.v
 import Mh5LiveMoreEntry from '../../components/mobile/Mh5LiveMoreEntry.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { LIVE_ROOM_METRICS_SPEC } from '../../constants/liveRoomMetricsSpec'
-import { mh5Alert } from '../../composables/useMh5Confirm'
+import { sendLiveRoomToChats, type LiveShareTarget } from '../../constants/liveShareChat'
 import { useLivePip } from '../../composables/useLivePip'
 import { buildLivePipSession } from '../../constants/livePip'
 import { liveListRouteName } from '../../constants/mobileDiscover'
+import { LIVE_SHARE_SPEC } from '../../constants/liveShareSpec'
 import {
   LIVE_STREAM_ASSETS,
   LIVE_STREAM_QUALITY_LABEL,
+  LIVE_STREAM_QUALITY_OPTIONS,
   buildLiveStreamRoom,
   type LiveShareActionKey,
   type LiveStreamOrientation,
@@ -32,8 +34,11 @@ const muted = ref(false)
 const cleared = ref(false)
 const quality = ref<LiveStreamQuality>('hd')
 const showQualityMenu = ref(false)
+const showQualitySheet = ref(false)
 const showShareSheet = ref(false)
 const showGameCenter = ref(false)
+const shareToast = ref('')
+let shareToastTimer: ReturnType<typeof setTimeout> | null = null
 
 const room = computed(() => {
   const id = String(route.query.id || 'ls-demo')
@@ -87,10 +92,6 @@ const visibleMessages = computed(() => {
 })
 const visibleGifts = computed(() => (cleared.value ? [] : room.value.gifts))
 
-const shareLink = computed(
-  () => `https://kkvibe.app/live/${room.value.id}?host=${encodeURIComponent(room.value.hostName)}`,
-)
-
 function currentPipSession() {
   const from = String(route.query.from || '')
   const query: Record<string, string> = {}
@@ -142,6 +143,11 @@ function toggleOrientation() {
 function pickQuality(next: LiveStreamQuality) {
   quality.value = next
   showQualityMenu.value = false
+  showQualitySheet.value = false
+}
+
+function exitClear() {
+  cleared.value = false
 }
 
 function openShareSheet() {
@@ -153,45 +159,54 @@ function closeShareSheet() {
   showShareSheet.value = false
 }
 
-async function shareToFriend(name: string) {
-  closeShareSheet()
-  await mh5Alert({
-    title: `已分享给「${name}」`,
-    message: '原型演示：会话消息已发送',
-    showCancel: false,
-  })
+function showSharedToast() {
+  shareToast.value = '已分享'
+  if (shareToastTimer) clearTimeout(shareToastTimer)
+  shareToastTimer = setTimeout(() => {
+    shareToast.value = ''
+  }, 1600)
 }
 
-async function handleShareAction(key: LiveShareActionKey) {
-  if (key === 'copy') {
-    try {
-      await navigator.clipboard.writeText(shareLink.value)
-      closeShareSheet()
-      await mh5Alert({
-        title: '链接已复制',
-        message: shareLink.value,
-        showCancel: false,
-      })
-    } catch {
-      closeShareSheet()
-      await mh5Alert({
-        title: '复制失败',
-        message: '请手动长按复制链接',
-        showCancel: false,
-      })
-    }
+function currentLiveQuery() {
+  const query: Record<string, string> = {}
+  for (const [key, value] of Object.entries(route.query)) {
+    if (typeof value === 'string' && value) query[key] = value
+  }
+  if (!query.id) query.id = room.value.id
+  return query
+}
+
+function deliverLiveShare(targets: LiveShareTarget[]) {
+  if (!targets.length) return
+  sendLiveRoomToChats(targets, {
+    hostName: room.value.hostName,
+    hostAvatar: room.value.avatar,
+    title: room.value.roomTitle || '直播标题',
+    cover: room.value.stage,
+    heat: room.value.heat,
+    scheduleText: '9-12 22:00',
+    likeText: room.value.likeText,
+    query: currentLiveQuery(),
+  })
+  closeShareSheet()
+  showSharedToast()
+}
+
+function shareToFriend(target: LiveShareTarget) {
+  deliverLiveShare([target])
+}
+
+function handleShareAction(key: LiveShareActionKey) {
+  if (key === 'quality') {
+    closeShareSheet()
+    showQualitySheet.value = true
     return
   }
 
   if (key === 'clear') {
     cleared.value = true
-    danmakuOn.value = false
+    showGameCenter.value = false
     closeShareSheet()
-    await mh5Alert({
-      title: '已清屏',
-      message: '礼物飘屏与公屏消息已清空',
-      showCancel: false,
-    })
     return
   }
 
@@ -200,12 +215,8 @@ async function handleShareAction(key: LiveShareActionKey) {
   }
 }
 
-async function handleForwarded(names: string[]) {
-  await mh5Alert({
-    title: '转发成功',
-    message: `已转发至：${names.join('、')}`,
-    showCancel: false,
-  })
+function handleForwarded(targets: LiveShareTarget[]) {
+  deliverLiveShare(targets)
 }
 </script>
 
@@ -215,6 +226,7 @@ async function handleForwarded(names: string[]) {
     :class="{
       'mh5-livestream-page--landscape': isLandscape,
       'mh5-livestream-page--muted': muted,
+      'mh5-livestream-page--cleared': cleared,
     }"
   >
     <div class="mh5-livestream-page__stage-frame" :class="stageFrameClass">
@@ -229,9 +241,9 @@ async function handleForwarded(names: string[]) {
         <span class="mh5-livestream-page__rotate-hint-icon" aria-hidden="true" />
       </button>
     </div>
-    <div v-if="muted" class="mh5-livestream-mute-tip" aria-live="polite">{{ $t('已禁音') }}</div>
+    <div v-if="muted && !cleared" class="mh5-livestream-mute-tip" aria-live="polite">{{ $t('已禁音') }}</div>
 
-    <MobileRoomGameCenter v-model:open="showGameCenter" />
+    <MobileRoomGameCenter v-show="!cleared" v-model:open="showGameCenter" />
 
     <header class="mh5-livestream-header">
       <div class="mh5-livestream-header__row">
@@ -252,7 +264,7 @@ async function handleForwarded(names: string[]) {
         </div>
 
         <div class="mh5-livestream-header__right">
-          <Mh5SpecAnnot :spec="LIVE_ROOM_METRICS_SPEC" placement="bottom" />
+          <Mh5SpecAnnot v-if="!cleared" :spec="LIVE_ROOM_METRICS_SPEC" placement="bottom" />
           <Mh5LiveOnlineViewers :room-id="room.id" />
           <button type="button" class="mh5-livestream-close" :aria-label="$t('关闭')" @click="goBack">
             <img :src="LIVE_STREAM_ASSETS.close" alt="" width="24" height="24" />
@@ -265,11 +277,30 @@ async function handleForwarded(names: string[]) {
           <img :src="LIVE_STREAM_ASSETS.fire" alt="" width="24" height="24" />
           <span>{{ room.heat }}</span>
         </div>
-        <Mh5LiveMoreEntry />
+        <Mh5LiveMoreEntry v-if="!cleared" />
       </div>
     </header>
 
-    <div class="mh5-livestream-footer">
+    <button
+      v-if="cleared"
+      type="button"
+      class="mh5-livestream-clear-exit"
+      :aria-label="$t('离开清屏')"
+      @click="exitClear"
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.2" y="5" width="11.2" height="14" rx="2.2" stroke="currentColor" stroke-width="1.6" />
+        <path
+          d="M20.2 12H11.4M11.4 12l2.5-2.5M11.4 12l2.5 2.5"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+
+    <div v-show="!cleared" class="mh5-livestream-footer">
       <div class="mh5-livestream-side">
         <div
           v-for="gift in visibleGifts"
@@ -312,6 +343,7 @@ async function handleForwarded(names: string[]) {
       <MobileRoomBottomBar
         input-label="来个走心的弹幕"
         input-with-emoji
+        share-icon
         @game="showGameCenter = true"
         @share="openShareSheet"
       >
@@ -335,14 +367,14 @@ async function handleForwarded(names: string[]) {
               </button>
               <div v-if="showQualityMenu" class="mh5-livestream-quality__menu">
                 <button
-                  v-for="(label, key) in LIVE_STREAM_QUALITY_LABEL"
-                  :key="key"
+                  v-for="item in LIVE_STREAM_QUALITY_OPTIONS"
+                  :key="item.key"
                   type="button"
                   class="mh5-livestream-quality__item"
-                  :class="{ 'mh5-livestream-quality__item--on': quality === key }"
-                  @click="pickQuality(key as LiveStreamQuality)"
+                  :class="{ 'mh5-livestream-quality__item--on': quality === item.key }"
+                  @click="pickQuality(item.key)"
                 >
-                  {{ label }}
+                  {{ item.label }}
                 </button>
               </div>
             </div>
@@ -353,10 +385,52 @@ async function handleForwarded(names: string[]) {
 
     <MobileRoomShareSheet
       v-model:open="showShareSheet"
+      room-tools
       :muted="muted"
+      :quality="quality"
       @action="handleShareAction"
       @share-friend="shareToFriend"
       @forwarded="handleForwarded"
     />
+
+    <Transition name="mh5-live-share">
+      <div v-if="showQualitySheet" class="mh5-live-share-mask" @click.self="showQualitySheet = false">
+        <section class="mh5-live-share" role="dialog" aria-modal="true" :aria-label="$t('清晰度')" @click.stop>
+          <header class="mh5-live-share__head">
+            <div class="mh5-live-share__title-row">
+              <h2 class="mh5-live-share__title">{{ $t('清晰度') }}</h2>
+              <Mh5SpecAnnot :spec="LIVE_SHARE_SPEC" placement="top" />
+            </div>
+            <button
+              type="button"
+              class="mh5-live-share__close"
+              :aria-label="$t('关闭')"
+              @click="showQualitySheet = false"
+            >
+              <img :src="LIVE_STREAM_ASSETS.shareSheet.close" alt="" width="24" height="24" />
+            </button>
+          </header>
+          <div class="mh5-live-share__options" role="radiogroup" :aria-label="$t('清晰度')">
+            <button
+              v-for="item in LIVE_STREAM_QUALITY_OPTIONS"
+              :key="item.key"
+              type="button"
+              class="mh5-live-share__option"
+              :class="{ 'is-on': quality === item.key }"
+              role="radio"
+              :aria-checked="quality === item.key"
+              @click="pickQuality(item.key)"
+            >
+              <span>{{ item.label }}</span>
+              <span v-if="quality === item.key" class="mh5-live-share__option-mark" aria-hidden="true">✓</span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </Transition>
+
+    <Transition name="mh5-toast">
+      <p v-if="shareToast" class="mh5-livestream-toast">{{ shareToast }}</p>
+    </Transition>
   </div>
 </template>

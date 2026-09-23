@@ -48,7 +48,8 @@ export const LIVE_PIP_SETTING_ITEMS: {
   key: keyof LivePipSettings
   title: string
   desc?: string
-  notes?: { label: string; text: string }[]
+  /** 仅 APP 客户端展示 */
+  appOnly?: boolean
 }[] = [
   {
     key: 'inAppAuto',
@@ -58,10 +59,9 @@ export const LIVE_PIP_SETTING_ITEMS: {
   {
     key: 'externalAuto',
     title: '切出应用开小窗',
-    notes: [
-      { label: 'APP', text: '先在小窗点置顶，才能自动开启画中画' },
-      { label: 'H5', text: '开关打开后即可继续播' },
-    ],
+    desc: '开关打开后，切出应用自动开画中画',
+    /** 仅 APP 展示。H5 没有系统画中画能力，不提供这项 */
+    appOnly: true,
   },
 ]
 

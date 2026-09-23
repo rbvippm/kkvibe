@@ -195,20 +195,9 @@ export function syncConversationAfterMediaSend(
   })
 }
 
-function bumpConversation(
-  roomId: string,
-  previewLine: ChatPreviewLine,
-) {
-  const index = chatConversationsState.findIndex((c) => c.roomId === roomId)
-  if (index < 0) return
-
-  const target = chatConversationsState[index]!
-  target.previewLine = previewLine
-  target.time = nowTimeLabel()
-  target.unread = 0
-  target.highlighted = false
-
-  chatConversationsState.splice(index, 1)
+function placeConversation(target: ChatConversation) {
+  const index = chatConversationsState.indexOf(target)
+  if (index >= 0) chatConversationsState.splice(index, 1)
   if (target.pinned) {
     chatConversationsState.unshift(target)
     return
@@ -216,6 +205,27 @@ function bumpConversation(
   const firstUnpinned = chatConversationsState.findIndex((c) => !c.pinned)
   if (firstUnpinned < 0) chatConversationsState.push(target)
   else chatConversationsState.splice(firstUnpinned, 0, target)
+}
+
+function applyConversationPreview(target: ChatConversation, previewLine: ChatPreviewLine) {
+  target.previewLine = previewLine
+  target.time = nowTimeLabel()
+  target.unread = 0
+  target.highlighted = false
+  placeConversation(target)
+}
+
+function bumpConversation(roomId: string, previewLine: ChatPreviewLine) {
+  const target = chatConversationsState.find((c) => c.roomId === roomId)
+  if (!target) return
+  applyConversationPreview(target, previewLine)
+}
+
+/** 按会话本身更新末条。群聊多条共用同一个房间时，只动被转发的那一条。 */
+export function syncConversationPreview(conversationId: string, text: string) {
+  const target = chatConversationsState.find((c) => c.id === conversationId)
+  if (!target) return
+  applyConversationPreview(target, { fromSelf: true, delivery: 'sent', text })
 }
 
 /** 聊天详情发送文件后，同步会话列表末条（文档图标 + 配文或文件名） */

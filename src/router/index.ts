@@ -131,6 +131,18 @@ export const router = createRouter({
           meta: { title: '会话' },
         },
         {
+          path: 'chat/room/:id/community',
+          name: 'mobile-chat-community',
+          component: () => import('../views/mobile/MobileChatCommunityDetailView.vue'),
+          meta: { title: '群组资料', hideTabBar: true },
+        },
+        {
+          path: 'chat/room/:id/members',
+          name: 'mobile-chat-community-members',
+          component: () => import('../views/mobile/MobileChatCommunityMembersView.vue'),
+          meta: { title: '群组成员', hideTabBar: true },
+        },
+        {
           path: 'chat/room/:id?',
           name: 'mobile-chat-room',
           component: () => import('../views/mobile/MobileChatRoomView.vue'),

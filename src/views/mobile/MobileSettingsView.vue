@@ -4,6 +4,11 @@ import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import { withMineHallFrom } from '../../constants/mineHall'
 import { MINE_SETTINGS_GROUPS, type MineSettingsItem } from '../../constants/mineSettings'
+import {
+  PROTOTYPE_CLIENT_OPTIONS,
+  prototypeClient,
+  setPrototypeClient,
+} from '../../constants/prototypeClient'
 import { appLocaleMeta, t } from '../../i18n'
 import '../../styles/mobile-app-shell.css'
 
@@ -39,6 +44,33 @@ function handleItemClick(item: MineSettingsItem) {
     <Mh5SubPageHeader :title="$t('设置')" />
 
     <main class="mh5-settings-main">
+      <section class="mh5-settings-group">
+        <div class="mh5-settings-item mh5-settings-client">
+          <span class="mh5-settings-item__icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="7" y="3" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6" />
+              <path d="M11 18h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="mh5-settings-item__title">{{ $t('客户端') }}</span>
+          <span class="mh5-settings-item__trail">
+            <span class="mh5-asset-detail-segment" role="radiogroup" :aria-label="$t('客户端')">
+              <button
+                v-for="option in PROTOTYPE_CLIENT_OPTIONS"
+                :key="option.id"
+                type="button"
+                class="mh5-asset-detail-segment__item"
+                :class="{ 'mh5-asset-detail-segment__item--active': prototypeClient === option.id }"
+                role="radio"
+                :aria-checked="prototypeClient === option.id"
+                @click="setPrototypeClient(option.id)"
+              >
+                {{ option.label }}
+              </button>
+            </span>
+          </span>
+        </div>
+      </section>
       <section v-for="group in MINE_SETTINGS_GROUPS" :key="group.key" class="mh5-settings-group">
         <button
           v-for="item in group.items"

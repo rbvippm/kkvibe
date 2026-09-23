@@ -1,12 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import { LIVE_PIP_SETTING_ITEMS } from '../../constants/livePip'
 import { LIVE_PIP_SPEC } from '../../constants/livePipSpec'
+import { prototypeClient } from '../../constants/prototypeClient'
 import { useLivePip } from '../../composables/useLivePip'
 import '../../styles/mobile-app-shell.css'
 
 const pip = useLivePip()
+
+const visibleItems = computed(() =>
+  LIVE_PIP_SETTING_ITEMS.filter((item) => !item.appOnly || prototypeClient.value === 'app'),
+)
 
 function toggle(key: (typeof LIVE_PIP_SETTING_ITEMS)[number]['key']) {
   pip.setSetting(key, !pip.state.settings[key])
@@ -23,20 +29,10 @@ function toggle(key: (typeof LIVE_PIP_SETTING_ITEMS)[number]['key']) {
 
     <main class="mh5-settings-main">
       <section class="mh5-settings-group mh5-pip-settings">
-        <div v-for="item in LIVE_PIP_SETTING_ITEMS" :key="item.key" class="mh5-pip-settings__row">
+        <div v-for="item in visibleItems" :key="item.key" class="mh5-pip-settings__row">
           <div class="mh5-pip-settings__copy">
             <p class="mh5-pip-settings__title">{{ $t(item.title) }}</p>
-            <template v-if="item.notes?.length">
-              <p
-                v-for="note in item.notes"
-                :key="note.label"
-                class="mh5-pip-settings__desc"
-              >
-                <span class="mh5-pip-settings__desc-label">{{ note.label }}</span>
-                {{ $t(note.text) }}
-              </p>
-            </template>
-            <p v-else-if="item.desc" class="mh5-pip-settings__desc">{{ $t(item.desc) }}</p>
+            <p v-if="item.desc" class="mh5-pip-settings__desc">{{ $t(item.desc) }}</p>
           </div>
           <button
             type="button"

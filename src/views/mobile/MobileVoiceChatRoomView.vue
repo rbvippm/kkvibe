@@ -89,10 +89,10 @@ function openShareSheet() {
   showShareSheet.value = true
 }
 
-async function shareToFriend(name: string) {
+async function shareToFriend(target: { name: string }) {
   showShareSheet.value = false
   await mh5Alert({
-    title: `已分享给「${name}」`,
+    title: `已分享给「${target.name}」`,
     message: '原型演示：会话消息已发送',
     showCancel: false,
   })
@@ -134,10 +134,10 @@ async function handleShareAction(key: LiveShareActionKey) {
   }
 }
 
-async function handleForwarded(names: string[]) {
+async function handleForwarded(targets: { name: string }[]) {
   await mh5Alert({
     title: '转发成功',
-    message: `已转发至：${names.join('、')}`,
+    message: `已转发至：${targets.map((item) => item.name).join('、')}`,
     showCancel: false,
   })
 }

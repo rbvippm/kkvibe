@@ -3,6 +3,7 @@ import {
   type ChatFileAttachment,
   type ChatFileDownloadStatus,
 } from './mobileChatFileSend'
+import type { LiveShareCard } from './liveShareChat'
 import { CHAT_ROOM_ASSETS } from './mobileChatRoomAssets'
 
 /** 「+」更多面板入口 · Figma 1290:17404 */
@@ -75,6 +76,8 @@ export type ChatRoomMessage = {
   file?: ChatFileAttachment
   /** 对方文件 / 多图下载态：待下 / 下载中 / 已完成 / 失败 / 超限不可下 */
   downloadStatus?: ChatFileDownloadStatus
+  /** 从直播间转发来的卡片 */
+  liveCard?: LiveShareCard
   /** 下载进度 0–100，仅 downloading */
   downloadProgress?: number
 }
