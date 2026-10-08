@@ -367,6 +367,10 @@ export const router = createRouter({
           meta: { title: '账号与安全', hideTabBar: true },
         },
         {
+          path: 'mine/settings/hidden-mode',
+          redirect: { name: 'mobile-mine-app-lock' },
+        },
+        {
           path: 'mine/settings/language',
           name: 'mobile-mine-language',
           component: () => import('../views/mobile/MobileLanguageSettingsView.vue'),
@@ -377,6 +381,24 @@ export const router = createRouter({
           name: 'mobile-mine-pip-settings',
           component: () => import('../views/mobile/MobilePipSettingsView.vue'),
           meta: { title: '小窗设置', hideTabBar: true },
+        },
+        {
+          path: 'mine/settings/privacy',
+          name: 'mobile-mine-privacy',
+          component: () => import('../views/mobile/MobilePrivacyView.vue'),
+          meta: { title: '隐私设置', hideTabBar: true },
+        },
+        {
+          path: 'mine/settings/privacy/app-lock',
+          name: 'mobile-mine-app-lock',
+          component: () => import('../views/mobile/MobilePrivacySettingsView.vue'),
+          meta: { title: 'App锁定', hideTabBar: true },
+        },
+        {
+          path: 'mine/settings/privacy/blacklist',
+          name: 'mobile-mine-blacklist',
+          component: () => import('../views/mobile/MobileBlacklistView.vue'),
+          meta: { title: '黑名单', hideTabBar: true },
         },
         {
           path: 'mine/more',

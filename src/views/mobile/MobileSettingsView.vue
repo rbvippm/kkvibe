@@ -32,6 +32,10 @@ function handleItemClick(item: MineSettingsItem) {
     void router.push({ name: 'mobile-mine-pip-settings', query: hallQuery() })
     return
   }
+  if (item.key === 'privacy') {
+    void router.push({ name: 'mobile-mine-privacy', query: hallQuery() })
+    return
+  }
   void mh5Alert({
     title: t('「{title}」功能开发中', { title: t(item.title) }),
     message: t('原型占位'),

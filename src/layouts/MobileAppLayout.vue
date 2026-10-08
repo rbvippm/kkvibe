@@ -3,6 +3,8 @@ import { computed, watch } from 'vue'
 import { useMiniAppGame } from '../composables/useMiniAppGame'
 import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Mh5ConfirmDialog from '../components/mobile/Mh5ConfirmDialog.vue'
+import Mh5HiddenCover from '../components/mobile/Mh5HiddenCover.vue'
+import { appLock } from '../constants/appLock'
 import Mh5LivePipLayer from '../components/mobile/Mh5LivePipLayer.vue'
 import Mh5MiniAppGameLayer from '../components/mobile/Mh5MiniAppGameLayer.vue'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
@@ -248,6 +250,7 @@ function isActive(tab: AppTab) {
     </nav>
       <Mh5MiniAppGameLayer />
       <Mh5LivePipLayer />
+      <Mh5HiddenCover v-if="appLock.mode !== 'none' && (appLock.locked || appLock.calculator)" />
     </div>
     <Mh5ConfirmDialog />
   </div>
