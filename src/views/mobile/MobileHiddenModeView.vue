@@ -48,7 +48,12 @@ function beginEntry(next: 'enable' | 'edit') {
 function toggle() {
   if (appLock.hidden) {
     appLock.hidden = false
-    appLock.hiddenCode = ''
+    appLock.calculator = false
+    return
+  }
+  if (/^\d{4,8}$/.test(appLock.hiddenCode)) {
+    appLock.hidden = true
+    appLock.locked = false
     appLock.calculator = false
     return
   }
@@ -87,10 +92,8 @@ function finish() {
   }
   appLock.hiddenCode = entry.value
   appLock.hidden = true
-  if (purpose.value === 'enable') {
-    appLock.locked = false
-    appLock.calculator = true
-  }
+  appLock.locked = false
+  appLock.calculator = false
   stage.value = ''
   entry.value = ''
   draft.value = ''
