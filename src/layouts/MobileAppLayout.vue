@@ -250,7 +250,7 @@ function isActive(tab: AppTab) {
     </nav>
       <Mh5MiniAppGameLayer />
       <Mh5LivePipLayer />
-      <Mh5HiddenCover v-if="appLock.mode !== 'none' && (appLock.locked || appLock.calculator)" />
+      <Mh5HiddenCover v-if="appLock.calculator || (appLock.mode !== 'none' && appLock.locked)" />
     </div>
     <Mh5ConfirmDialog />
   </div>

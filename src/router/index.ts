@@ -395,6 +395,12 @@ export const router = createRouter({
           meta: { title: 'App锁定', hideTabBar: true },
         },
         {
+          path: 'mine/settings/privacy/hidden-mode',
+          name: 'mobile-mine-hidden-mode',
+          component: () => import('../views/mobile/MobileHiddenModeView.vue'),
+          meta: { title: '隐藏模式', hideTabBar: true },
+        },
+        {
           path: 'mine/settings/privacy/blacklist',
           name: 'mobile-mine-blacklist',
           component: () => import('../views/mobile/MobileBlacklistView.vue'),

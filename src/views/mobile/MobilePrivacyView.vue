@@ -24,6 +24,10 @@ function openAppLock() {
   void router.push({ name: 'mobile-mine-app-lock', query: hallQuery() })
 }
 
+function openHiddenMode() {
+  void router.push({ name: 'mobile-mine-hidden-mode', query: hallQuery() })
+}
+
 function openBlacklist() {
   void router.push({ name: 'mobile-mine-blacklist', query: hallQuery() })
 }
@@ -39,6 +43,18 @@ function openBlacklist() {
           <span>{{ $t('App锁定') }}</span>
           <span class="mh5-privacy-trail">
             <span class="mh5-app-lock-choice__value">{{ $t(modeLabel) }}</span>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </button>
+      </section>
+
+      <section class="mh5-app-lock-card">
+        <button type="button" class="mh5-app-lock-choice__hit" @click="openHiddenMode">
+          <span>{{ $t('隐藏模式') }}</span>
+          <span class="mh5-privacy-trail">
+            <span class="mh5-app-lock-choice__value">{{ $t(appLock.hidden ? '开' : '关') }}</span>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
             </svg>

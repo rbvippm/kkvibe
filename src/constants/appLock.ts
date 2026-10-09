@@ -13,6 +13,8 @@ type SavedAppLock = {
   faceId: boolean
   decoyPin: string
   decoyGesture: string
+  hidden: boolean
+  hiddenCode: string
 }
 
 function readSaved(): SavedAppLock {
@@ -23,6 +25,8 @@ function readSaved(): SavedAppLock {
     faceId: false,
     decoyPin: '',
     decoyGesture: '',
+    hidden: false,
+    hiddenCode: '',
   }
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY)
@@ -35,6 +39,7 @@ function readSaved(): SavedAppLock {
     const decoyPin = typeof parsed.decoyPin === 'string' ? parsed.decoyPin : /^\d{6}$/.test(legacy) ? legacy : ''
     const decoyGesture = typeof parsed.decoyGesture === 'string' ? parsed.decoyGesture : legacy.includes('-') ? legacy : ''
     const resolved = mode === 'pin' && !pin ? 'none' : mode === 'gesture' && !gesture ? 'none' : mode
+    const hiddenCode = typeof parsed.hiddenCode === 'string' && /^\d{4,8}$/.test(parsed.hiddenCode) ? parsed.hiddenCode : ''
     return {
       mode: resolved,
       pin,
@@ -42,6 +47,8 @@ function readSaved(): SavedAppLock {
       faceId: Boolean(parsed.faceId),
       decoyPin: resolved === 'none' ? '' : decoyPin,
       decoyGesture: resolved === 'none' ? '' : decoyGesture,
+      hidden: Boolean(parsed.hidden) && Boolean(hiddenCode),
+      hiddenCode,
     }
   } catch {
     return empty
@@ -57,14 +64,18 @@ export const appLock = reactive({
   faceId: saved.faceId,
   decoyPin: saved.decoyPin,
   decoyGesture: saved.decoyGesture,
+  /** 隐藏模式：打开应用直接进入计算器 */
+  hidden: saved.hidden,
+  /** 在计算器中输入这组数字后进入真实应用 */
+  hiddenCode: saved.hiddenCode,
   /** 挡住真实界面，要求重新验证 */
-  locked: saved.mode !== 'none',
-  /** 替身密码进入的计算器 */
-  calculator: false,
+  locked: saved.hidden ? false : saved.mode !== 'none',
+  /** 替身或隐藏模式进入的计算器 */
+  calculator: saved.hidden,
 })
 
 watch(
-  () => [appLock.mode, appLock.pin, appLock.gesture, appLock.faceId, appLock.decoyPin, appLock.decoyGesture],
+  () => [appLock.mode, appLock.pin, appLock.gesture, appLock.faceId, appLock.decoyPin, appLock.decoyGesture, appLock.hidden, appLock.hiddenCode],
   () => {
     try {
       const payload: SavedAppLock = {
@@ -74,6 +85,8 @@ watch(
         faceId: appLock.faceId,
         decoyPin: appLock.decoyPin,
         decoyGesture: appLock.decoyGesture,
+        hidden: appLock.hidden,
+        hiddenCode: appLock.hiddenCode,
       }
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
     } catch {
@@ -83,6 +96,11 @@ watch(
 )
 
 export function lockApp() {
+  if (appLock.hidden && appLock.hiddenCode) {
+    appLock.locked = false
+    appLock.calculator = true
+    return
+  }
   if (appLock.mode === 'none') return
   appLock.locked = true
   appLock.calculator = false

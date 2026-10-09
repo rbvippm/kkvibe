@@ -12,6 +12,8 @@ const showGesture = computed(() => appLock.locked && appLock.mode === 'gesture')
 const accumulator = ref<number | null>(null)
 const operator = ref<string | null>(null)
 const fresh = ref(true)
+/** 当前这串数字的原始按键，保留开头的 0 */
+const typed = ref('')
 
 const pinError = ref('')
 const gestureError = ref('')
@@ -53,9 +55,14 @@ async function onGesture(pattern: string) {
 
 function resetCalc() {
   display.value = '0'
+  typed.value = ''
   accumulator.value = null
   operator.value = null
   fresh.value = true
+}
+
+function matchHiddenCode() {
+  if (appLock.hidden && appLock.hiddenCode && typed.value === appLock.hiddenCode) unlockReal()
 }
 
 function formatNumber(value: number) {
@@ -74,17 +81,22 @@ function compute(left: number, right: number, op: string) {
 
 function inputDigit(digit: string) {
   if (display.value === '错误') resetCalc()
-  if (fresh.value) {
+  if (fresh.value || !typed.value) {
+    typed.value = digit
     display.value = digit
     fresh.value = false
+    matchHiddenCode()
     return
   }
-  if (display.value.replace('-', '').replace('.', '').length >= 9) return
-  display.value = display.value === '0' ? digit : `${display.value}${digit}`
+  if (typed.value.length >= 9) return
+  typed.value += digit
+  display.value = typed.value
+  matchHiddenCode()
 }
 
 function inputDot() {
   if (display.value === '错误') resetCalc()
+  typed.value = ''
   if (fresh.value) {
     display.value = '0.'
     fresh.value = false
@@ -95,7 +107,8 @@ function inputDot() {
 
 function applyOperator(next: string) {
   if (display.value === '错误') return
-  const current = Number(display.value)
+  const current = Number(typed.value || display.value)
+  typed.value = ''
   if (accumulator.value != null && operator.value && !fresh.value) {
     accumulator.value = compute(accumulator.value, current, operator.value)
     display.value = formatNumber(accumulator.value)
@@ -107,12 +120,13 @@ function applyOperator(next: string) {
 }
 
 function equals() {
-  if (operator.value == null && !fresh.value && display.value === '666888') {
+  if (operator.value == null && typed.value === '666888') {
     unlockReal()
     return
   }
   if (operator.value == null || accumulator.value == null || display.value === '错误') return
-  const current = fresh.value ? accumulator.value : Number(display.value)
+  const current = fresh.value ? accumulator.value : Number(typed.value || display.value)
+  typed.value = ''
   accumulator.value = compute(accumulator.value, current, operator.value)
   display.value = formatNumber(accumulator.value)
   operator.value = null
@@ -121,11 +135,13 @@ function equals() {
 
 function toggleSign() {
   if (display.value === '错误' || display.value === '0') return
+  typed.value = ''
   display.value = display.value.startsWith('-') ? display.value.slice(1) : `-${display.value}`
 }
 
 function percent() {
   if (display.value === '错误') return
+  typed.value = ''
   display.value = formatNumber(Number(display.value) / 100)
   fresh.value = true
 }

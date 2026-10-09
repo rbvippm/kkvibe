@@ -31,6 +31,7 @@ const MOBILE_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-mine-pip-settings', platform: 'mobile', routeName: 'mobile-mine-pip-settings', path: '/mobile/mine/settings/pip', title: '小窗设置', group: '我的', pagePath: ['移动端', '我的', '设置', '小窗设置'] },
   { id: 'mobile-mine-privacy', platform: 'mobile', routeName: 'mobile-mine-privacy', path: '/mobile/mine/settings/privacy', title: '隐私设置', group: '我的', pagePath: ['移动端', '我的', '设置', '隐私设置'] },
   { id: 'mobile-mine-app-lock', platform: 'mobile', routeName: 'mobile-mine-app-lock', path: '/mobile/mine/settings/privacy/app-lock', title: 'App锁定', group: '我的', pagePath: ['移动端', '我的', '设置', '隐私设置', 'App锁定'] },
+  { id: 'mobile-mine-hidden-mode', platform: 'mobile', routeName: 'mobile-mine-hidden-mode', path: '/mobile/mine/settings/privacy/hidden-mode', title: '隐藏模式', group: '我的', pagePath: ['移动端', '我的', '设置', '隐私设置', '隐藏模式'] },
   { id: 'mobile-mine-blacklist', platform: 'mobile', routeName: 'mobile-mine-blacklist', path: '/mobile/mine/settings/privacy/blacklist', title: '黑名单', group: '我的', pagePath: ['移动端', '我的', '设置', '隐私设置', '黑名单'] },
   { id: 'mobile-mine-more', platform: 'mobile', routeName: 'mobile-mine-more', path: '/mobile/mine/more', title: '更多功能', group: '我的', pagePath: ['移动端', '我的', '更多功能'] },
   { id: 'mobile-mine-feedback', platform: 'mobile', routeName: 'mobile-mine-feedback', path: '/mobile/mine/feedback', title: '意见反馈', group: '我的', pagePath: ['移动端', '我的', '意见反馈'] },
