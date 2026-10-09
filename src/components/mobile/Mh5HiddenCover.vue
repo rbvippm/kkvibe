@@ -107,6 +107,10 @@ function applyOperator(next: string) {
 }
 
 function equals() {
+  if (operator.value == null && !fresh.value && display.value === '666888') {
+    unlockReal()
+    return
+  }
   if (operator.value == null || accumulator.value == null || display.value === '错误') return
   const current = fresh.value ? accumulator.value : Number(display.value)
   accumulator.value = compute(accumulator.value, current, operator.value)

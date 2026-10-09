@@ -33189,7 +33189,7 @@ div.agent-home__profit-tab--ratio {
   flex: 1;
   min-height: 0;
   height: auto;
-  background: #000;
+  background: transparent;
 }
 
 .mh5-hidden-cover {
@@ -33200,36 +33200,14 @@ div.agent-home__profit-tab--ratio {
   color: var(--mh5-app-text, #1a1a1a);
 }
 
-.mh5-hidden-cover .mh5-pin {
-  background: transparent;
-  color: var(--mh5-app-text, #1a1a1a);
-}
-
-.mh5-hidden-cover .mh5-pin__slots span {
-  background: rgb(26 26 26 / 28%);
-}
-
-.mh5-hidden-cover .mh5-pin__slots span.is-on {
-  background: var(--mh5-app-text, #1a1a1a);
-}
-
-.mh5-hidden-cover .mh5-pin__pad button {
-  background: #fff;
-  color: var(--mh5-app-text, #1a1a1a);
-}
-
-.mh5-hidden-cover .mh5-pin__pad button:active {
-  background: #ececec;
-}
-
 .mh5-pin {
   display: flex;
   flex-direction: column;
   align-items: center;
   height: 100%;
   padding: 22% 24px 28px;
-  background: #000;
-  color: #fff;
+  background: transparent;
+  color: var(--mh5-app-text, #1a1a1a);
 }
 
 .mh5-pin__title {
@@ -33253,13 +33231,13 @@ div.agent-home__profit-tab--ratio {
 .mh5-pin__slots span {
   width: 18px;
   height: 2px;
-  background: rgb(255 255 255 / 55%);
+  background: rgb(26 26 26 / 28%);
 }
 
 .mh5-pin__slots span.is-on {
   height: 10px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--mh5-app-text, #1a1a1a);
 }
 
 .mh5-pin.is-error .mh5-pin__slots {
@@ -33282,14 +33260,14 @@ div.agent-home__profit-tab--ratio {
 .mh5-pin__pad button {
   border: none;
   border-radius: 50%;
-  background: #333;
-  color: #fff;
+  background: #fff;
+  color: var(--mh5-app-text, #1a1a1a);
   font-size: 32px;
   cursor: pointer;
 }
 
 .mh5-pin__pad button:active {
-  background: #666;
+  background: #ececec;
 }
 
 .mh5-pin__delete {
@@ -33302,14 +33280,14 @@ div.agent-home__profit-tab--ratio {
   flex-direction: column;
   height: 100%;
   padding: 18px 12px 24px;
-  background: #000;
+  background: transparent;
 }
 
 .mh5-calc__display {
   margin: auto 8px 12px auto;
   max-width: 100%;
   overflow: hidden;
-  color: #fff;
+  color: var(--mh5-app-text, #1a1a1a);
   font-size: 64px;
   font-weight: 300;
   line-height: 1.1;
@@ -33328,19 +33306,19 @@ div.agent-home__profit-tab--ratio {
   height: 72px;
   border: none;
   border-radius: 36px;
-  background: #333;
-  color: #fff;
+  background: #fff;
+  color: var(--mh5-app-text, #1a1a1a);
   font-size: 28px;
   cursor: pointer;
 }
 
 .mh5-calc__keys button.is-func {
-  background: #a5a5a5;
-  color: #000;
+  background: #e8e8ed;
+  color: var(--mh5-app-text, #1a1a1a);
 }
 
 .mh5-calc__keys button.is-op {
-  background: #ff9f0a;
+  background: var(--mh5-app-orange, #ff7a2b);
   color: #fff;
 }
 
@@ -33613,19 +33591,19 @@ div.agent-home__profit-tab--ratio {
 
 .mh5-gesture__board polyline {
   fill: none;
-  stroke: #ff9f0a;
+  stroke: var(--mh5-app-orange, #ff7a2b);
   stroke-width: 4;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .mh5-gesture__board circle {
-  fill: #3a3a3c;
-  stroke: #8e8e93;
+  fill: #fff;
+  stroke: #d0d0d0;
   stroke-width: 2;
 }
 
 .mh5-gesture__board circle.is-on {
-  fill: #ff9f0a;
-  stroke: #ff9f0a;
+  fill: var(--mh5-app-orange, #ff7a2b);
+  stroke: var(--mh5-app-orange, #ff7a2b);
 }
