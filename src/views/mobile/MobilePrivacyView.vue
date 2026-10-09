@@ -40,7 +40,7 @@ function openBlacklist() {
     <main class="mh5-app-lock-main">
       <section class="mh5-app-lock-card">
         <button type="button" class="mh5-app-lock-choice__hit" @click="openAppLock">
-          <span>{{ $t('App锁定') }}</span>
+          <span>{{ $t('App锁定保护') }}</span>
           <span class="mh5-privacy-trail">
             <span class="mh5-app-lock-choice__value">{{ $t(modeLabel) }}</span>
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">

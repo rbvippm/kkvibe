@@ -35,7 +35,7 @@ export const APP_LOCK_SPEC: MobilePrdSpec = {
       '锁定或计算器期间，安卓和 iOS 走推送通道时，通知都静默丢掉，不能弹出或点亮角标。具体拦截由客户端实现。',
     ],
     routing: [
-      '入口：我的 → 设置 → 隐私设置 → App锁定，路由名 mobile-mine-app-lock，路径 /mobile/mine/settings/privacy/app-lock，页标题「App锁定」。顶栏返回到隐私设置。',
+      '入口：我的 → 设置 → 隐私设置 → App锁定保护，路由名 mobile-mine-app-lock，路径 /mobile/mine/settings/privacy/app-lock，页标题「App锁定」。顶栏返回到隐私设置。隐私设置这一行左侧为「App锁定保护」，右侧为当前方式。',
       '选「密码」「手势」或设置替身时，留在本页内完成，不另开路由。验证页和计算器盖在当前应用之上。真实密码或手势解锁后回到上锁前的页面。替身密码或替身手势进入计算器后，输入 666888 并按等号回到真实应用；其他计算留在计算器。再次离开应用后仍需验证。',
     ],
   }),
