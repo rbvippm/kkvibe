@@ -137,7 +137,7 @@ function finish() {
         <div class="mh5-app-lock-switch-row">
           <div class="mh5-app-lock-copy">
             <p>{{ $t('隐藏模式') }}</p>
-            <span v-if="appLock.hidden">{{ $t('开启隐藏模式后会默认进入计算器，在计算器内输入进入字符') }} {{ appLock.hiddenCode }} {{ $t('打开原有应用') }}</span>
+            <span v-if="appLock.hidden">{{ $t('开启隐藏模式后会默认进入计算器，在计算器内输入进入字符') }} “{{ appLock.hiddenCode }}” {{ $t('打开原有应用') }}</span>
             <span v-else>{{ $t('开启后打开应用直接进入计算器') }}</span>
           </div>
           <button
