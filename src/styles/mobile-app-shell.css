@@ -15874,6 +15874,13 @@
   padding: 20px 20px calc(32px + env(safe-area-inset-bottom));
 }
 
+.mh5-date-range-sheet--inline {
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
 .mh5-date-range-sheet__head {
   display: flex;
   align-items: center;
@@ -16086,6 +16093,11 @@
   background: #161514;
   color: #f5ddb1;
   border: 1px solid rgb(234 183 94 / 28%);
+}
+
+.mh5-date-range-sheet--inline.mh5-date-range-sheet--vip {
+  background: transparent;
+  border: none;
 }
 
 .mh5-date-range-sheet--vip .mh5-date-range-sheet__title,
@@ -16900,8 +16912,23 @@
   color: var(--mh5-app-orange);
 }
 
+.mh5-billing-header__analysis {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 .mh5-billing-header__back:active,
-.mh5-billing-header__icon:active {
+.mh5-billing-header__icon:active,
+.mh5-billing-header__analysis:active {
   opacity: 0.65;
 }
 
@@ -17121,10 +17148,89 @@
 .mh5-billing-filters {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 8px;
   flex-shrink: 0;
-  padding: 4px 16px 12px;
+  padding: 4px 12px 10px 8px;
   background: var(--mh5-app-card);
+}
+
+.mh5-billing-page .mh5-billing-filters {
+  gap: 0;
+  padding: 0;
+}
+
+.mh5-billing-type-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 8px 4px 8px 12px;
+  scrollbar-width: none;
+}
+
+.mh5-billing-type-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-billing-type-chip {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 16px;
+  background: var(--mh5-app-bg);
+  color: var(--mh5-app-text-secondary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-billing-type-chip--active {
+  background: var(--mh5-app-orange-light, rgb(255 122 43 / 14%));
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-billing-type-chip:active {
+  opacity: 0.75;
+}
+
+.mh5-billing-advanced {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 48px;
+  padding: 0 12px 0 10px;
+  border: none;
+  background: var(--mh5-app-card);
+  color: var(--mh5-app-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mh5-billing-advanced::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -16px;
+  width: 16px;
+  background: linear-gradient(90deg, transparent, var(--mh5-app-card));
+  pointer-events: none;
+}
+
+.mh5-billing-advanced--active {
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-billing-advanced:active {
+  opacity: 0.75;
 }
 
 .mh5-billing-filter {
@@ -17258,6 +17364,10 @@
 }
 
 .mh5-billing-item__amount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.3;

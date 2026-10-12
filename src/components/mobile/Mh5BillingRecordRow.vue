@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
+import Mh5BillingTypeIcon from './Mh5BillingTypeIcon.vue'
+import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import {
+  billingIconKindFromType,
   formatBillingAmount,
   formatBillingListTime,
   formatBillingListTypeLabel,
   getBillingAmountUnit,
-  getBillingCurrencySymbol,
   type BillingRecord,
 } from '../../constants/billingList'
 import { withMineHallFrom } from '../../constants/mineHall'
@@ -43,7 +45,7 @@ function openDetail(row: BillingRecord) {
 <template>
   <article class="mh5-billing-item" role="button" tabindex="0" @click="openDetail(row)" @keydown.enter="openDetail(row)">
     <div class="mh5-billing-item__icon" aria-hidden="true">
-      <span class="mh5-billing-item__icon-badge">{{ getBillingCurrencySymbol(row.currency) }}</span>
+      <Mh5BillingTypeIcon :kind="billingIconKindFromType(row.type)" />
     </div>
     <div class="mh5-billing-item__body">
       <div class="mh5-billing-item__title">
@@ -62,7 +64,8 @@ function openDetail(row: BillingRecord) {
         class="mh5-billing-item__amount"
         :class="row.amount >= 0 ? 'mh5-billing-item__amount--plus' : 'mh5-billing-item__amount--minus'"
       >
-        {{ formatBillingAmount(row.amount) }}
+        <Mh5CurrencyIcon :code="row.currency" :size="16" />
+        <span>{{ formatBillingAmount(row.amount) }}</span>
       </div>
       <div class="mh5-billing-item__currency">{{ getBillingAmountUnit(row.currency) }}</div>
     </div>

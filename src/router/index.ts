@@ -471,7 +471,7 @@ export const router = createRouter({
           path: 'mine/billing',
           name: 'mobile-billing-list',
           component: () => import('../views/mobile/MobileBillingListView.vue'),
-          meta: { title: '账单记录', hideTabBar: true },
+          meta: { title: '交易历史', hideTabBar: true },
         },
         {
           path: 'mine/agent-settle',
@@ -519,7 +519,7 @@ export const router = createRouter({
           path: 'mine/billing/stats',
           name: 'mobile-billing-stats',
           component: () => import('../views/mobile/MobileBillingStatsView.vue'),
-          meta: { title: '账单统计', hideTabBar: true },
+          meta: { title: '收支分析', hideTabBar: true },
         },
         {
           path: 'mine/billing/:id',

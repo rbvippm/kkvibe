@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import Mh5BillingTypeIcon from '../../components/mobile/Mh5BillingTypeIcon.vue'
 import {
+  billingIconKindFromLabel,
+  formatBillingDetailTime,
   formatBillingHeroAmount,
   getBillingDetail,
   type BillingDetail,
@@ -20,6 +23,9 @@ const amountUnit = computed(
   () => detail.value?.currencyCode || detail.value?.currencySymbol || '',
 )
 const heroTitle = computed(() => detail.value?.heroTitle || detail.value?.typeLabel || '')
+const heroIcon = computed(() =>
+  detail.value ? billingIconKindFromLabel(detail.value.typeLabel, detail.value.layout) : 'receive',
+)
 const billNo = computed(() => detail.value?.billNo || detail.value?.orderNo || '')
 
 const amountLabel = computed(() => {
@@ -81,31 +87,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
     <main v-if="detail" class="mh5-billing-detail-main">
       <section class="mh5-billing-detail-hero">
         <div class="mh5-billing-detail-hero__logo" aria-hidden="true">
-          <svg v-if="isSystemPayment" width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <circle cx="36" cy="36" r="36" fill="#3b82f6" />
-            <path
-              d="M36 20v24M36 44l-9-9M36 44l9-9"
-              stroke="#fff"
-              stroke-width="3.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path d="M22 50h28" stroke="#fff" stroke-width="3.2" stroke-linecap="round" />
-          </svg>
-          <svg v-else width="72" height="72" viewBox="0 0 72 72" fill="none">
-            <circle cx="36" cy="36" r="36" fill="var(--mh5-app-orange, #ff7a2b)" />
-            <text
-              x="36"
-              y="46"
-              text-anchor="middle"
-              fill="#fff"
-              font-size="34"
-              font-weight="700"
-              font-family="system-ui, -apple-system, sans-serif"
-            >
-              {{ detail.currencySymbol }}
-            </text>
-          </svg>
+          <Mh5BillingTypeIcon :kind="heroIcon" :size="72" />
         </div>
         <h2 class="mh5-billing-detail-hero__title">{{ heroTitle }}</h2>
         <p class="mh5-billing-detail-hero__amount">{{ formatBillingHeroAmount(detail.amount) }}</p>
@@ -137,7 +119,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('打款时间') }}</span>
-          <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
+          <span class="mh5-billing-detail-row__value">{{ formatBillingDetailTime(detail.timeDisplay || '') }}</span>
         </div>
       </section>
 
@@ -155,7 +137,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('时间') }}</span>
-          <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
+          <span class="mh5-billing-detail-row__value">{{ formatBillingDetailTime(detail.timeDisplay || '') }}</span>
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('单号') }}</span>
@@ -183,7 +165,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('时间') }}</span>
-          <span class="mh5-billing-detail-row__value">{{ detail.timeDisplay }}</span>
+          <span class="mh5-billing-detail-row__value">{{ formatBillingDetailTime(detail.timeDisplay || '') }}</span>
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('单号') }}</span>

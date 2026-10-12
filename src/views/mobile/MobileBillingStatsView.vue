@@ -18,7 +18,7 @@ import {
   type BillingStatsRankMode,
 } from '../../constants/billingStats'
 import { billingCurrencyFromCreditCode } from '../../constants/billingList'
-import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
+import { isVipClubMineFrom } from '../../constants/mineHall'
 import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import '../../styles/mobile-app-shell.css'
 
@@ -109,9 +109,6 @@ function selectGame(value: string) {
   closeSheet()
 }
 
-function goList() {
-  router.push({ name: 'mobile-billing-list', query: withMineHallFrom(route.query.from) })
-}
 </script>
 
 <template>
@@ -128,20 +125,7 @@ function goList() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-stats-header__title">{{ $t('账单统计') }}</h1>
-      <button type="button" class="mh5-billing-stats-header__list" :aria-label="$t('账单列表')" @click="goList">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <rect x="5" y="4" width="11" height="14" rx="1.5" stroke="currentColor" stroke-width="1.6" />
-          <path d="M8 8h5M8 11h5M8 14h3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-          <circle cx="17.5" cy="17.5" r="3.2" fill="#fff" stroke="var(--mh5-app-orange)" stroke-width="1.5" />
-          <path
-            d="M17.5 16v1.5l1 0.6"
-            stroke="var(--mh5-app-orange)"
-            stroke-width="1.3"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button>
+      <h1 class="mh5-billing-stats-header__title">{{ $t('收支分析') }}</h1>
     </header>
 
     <main class="mh5-billing-stats-main">

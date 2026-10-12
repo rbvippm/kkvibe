@@ -24,17 +24,21 @@ const props = withDefaults(
     today?: string
     maxMonths?: number
     tone?: 'default' | 'vip'
+    /** 只渲染快捷项、起止日期和滚轮，嵌在其他面板里 */
+    inline?: boolean
   }>(),
   {
     today: MH5_DATE_RANGE_TODAY,
     maxMonths: MH5_DATE_RANGE_MAX_MONTHS,
     tone: 'default',
+    inline: false,
   },
 )
 
 const emit = defineEmits<{
   close: []
   confirm: [start: string, end: string]
+  change: [start: string, end: string]
 }>()
 
 const draftStart = ref(props.start)
@@ -49,20 +53,33 @@ function syncActivePreset() {
   activePreset.value = matchDateRangeSheetPreset(draftStart.value, draftEnd.value, props.today)
 }
 
-function applyRange(start: string, end: string) {
+function publishRange() {
+  if (!props.inline) return
+  emit('change', draftStart.value, draftEnd.value)
+}
+
+function applyRange(start: string, end: string, notify = false) {
   draftStart.value = clampYmd(start, minDate.value, maxDate.value)
   draftEnd.value = clampYmd(end, minDate.value, maxDate.value)
   if (draftEnd.value < draftStart.value) draftEnd.value = draftStart.value
   editing.value = 'start'
   syncActivePreset()
+  if (notify) publishRange()
 }
 
 watch(
-  () => props.open,
-  (open) => {
-    if (!open) return
-    applyRange(props.start || props.today, props.end || props.today)
+  () => [props.open, props.start, props.end] as const,
+  ([open, start, end]) => {
+    if (!props.inline && !open) return
+    const nextStart = start || props.today
+    const nextEnd = end || props.today
+    if (draftStart.value === nextStart && draftEnd.value === nextEnd) {
+      syncActivePreset()
+      return
+    }
+    applyRange(nextStart, nextEnd)
   },
+  { immediate: true },
 )
 
 const editingValue = computed(() => (editing.value === 'start' ? draftStart.value : draftEnd.value))
@@ -78,11 +95,12 @@ function setEditingValue(next: string) {
     if (draftStart.value > clamped) draftStart.value = clamped
   }
   syncActivePreset()
+  publishRange()
 }
 
 function pickPreset(key: DateRangeSheetPreset) {
   const range = dateRangeSheetPresetRange(key, props.today)
-  applyRange(range.start, range.end)
+  applyRange(range.start, range.end, true)
 }
 
 function stepPart(part: DatePart, delta: number) {
@@ -122,7 +140,64 @@ function currentLabel(col: DatePart) {
 </script>
 
 <template>
-  <Teleport to="body">
+  <div
+    v-if="inline"
+    class="mh5-date-range-sheet mh5-date-range-sheet--inline"
+    :class="{ 'mh5-date-range-sheet--vip': tone === 'vip' }"
+  >
+    <div class="mh5-date-range-sheet__body">
+      <div class="mh5-date-range-sheet__presets" role="tablist" aria-label="快捷时间">
+        <button
+          v-for="item in DATE_RANGE_SHEET_PRESETS"
+          :key="item.key"
+          type="button"
+          role="tab"
+          class="mh5-date-range-sheet__preset"
+          :class="{ 'mh5-date-range-sheet__preset--active': activePreset === item.key }"
+          :aria-selected="activePreset === item.key"
+          @click="pickPreset(item.key)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+      <div class="mh5-date-range-sheet__panel">
+        <div class="mh5-date-range-sheet__chips">
+          <button
+            type="button"
+            class="mh5-date-range-sheet__chip"
+            :class="{ 'mh5-date-range-sheet__chip--active': editing === 'start' }"
+            @click="editing = 'start'"
+          >
+            {{ draftStart }}
+          </button>
+          <span class="mh5-date-range-sheet__to">至</span>
+          <button
+            type="button"
+            class="mh5-date-range-sheet__chip"
+            :class="{ 'mh5-date-range-sheet__chip--active': editing === 'end' }"
+            @click="editing = 'end'"
+          >
+            {{ draftEnd }}
+          </button>
+        </div>
+
+        <div class="mh5-date-range-sheet__wheel" aria-label="年月日滚轮">
+          <div class="mh5-date-range-sheet__highlight" aria-hidden="true" />
+          <div v-for="col in wheelCols" :key="col.key" class="mh5-date-range-sheet__col">
+            <button type="button" @click="stepPart(col.key, -1)">
+              {{ neighborLabel(col.key, -1) }}
+            </button>
+            <span>{{ currentLabel(col.key) }}</span>
+            <button type="button" @click="stepPart(col.key, 1)">
+              {{ neighborLabel(col.key, 1) }}
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="mh5-date-range-sheet__hint">仅支持查询近 6 个月的记录</p>
+    </div>
+  </div>
+  <Teleport v-else to="body">
     <Transition name="mh5-agent-report-sheet">
       <div
         v-if="open"

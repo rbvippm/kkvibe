@@ -1,5 +1,7 @@
 /** 账单列表 · 类型与币种（对齐银行账单设计） */
 
+import { addDaysYmd, MH5_DATE_RANGE_TODAY } from './mh5DateRange'
+
 export type BillingType =
   | 'receive'
   | 'withdraw'
@@ -8,6 +10,16 @@ export type BillingType =
   | 'purchase'
   | 'bonus'
   | 'consume'
+  | 'profit'
+  | 'bet'
+  | 'sell'
+  | 'finance'
+  | 'loan'
+  | 'allocate'
+  | 'fx'
+  | 'intl_transfer'
+  | 'cash_delivery'
+  | 'activity'
   | 'xcoin_credit_up'
   | 'xcoin_credit_down'
   | 'system_payment'
@@ -17,6 +29,73 @@ export type BillingType =
   | 'exchange'
 
 export type BillingCurrencyKind = 'crypto' | 'fiat' | 'credit'
+
+/** 列表、详情、快捷筛选共用的账单类型图标 */
+export type BillingIconKind =
+  | 'receive'
+  | 'withdraw'
+  | 'transfer'
+  | 'redpacket'
+  | 'purchase'
+  | 'bonus'
+  | 'consume'
+  | 'xcoin'
+  | 'system'
+
+export function billingIconKindFromFilter(value: string): BillingIconKind {
+  if (value === 'xcoin') return 'xcoin'
+  if (value === 'system') return 'system'
+  if (
+    value === 'receive' ||
+    value === 'withdraw' ||
+    value === 'transfer' ||
+    value === 'redpacket' ||
+    value === 'purchase' ||
+    value === 'bonus' ||
+    value === 'consume'
+  ) {
+    return value
+  }
+  return 'receive'
+}
+
+export function billingIconKindFromType(type: BillingType): BillingIconKind {
+  if (type === 'xcoin_credit_up' || type === 'xcoin_credit_down') return 'xcoin'
+  if (type === 'system_payment' || type === 'system_deduct' || type === 'system_rebate') return 'system'
+  if (type === 'recharge' || type === 'receive' || type === 'loan') return 'receive'
+  if (type === 'profit' || type === 'finance' || type === 'activity' || type === 'bonus') return 'bonus'
+  if (type === 'bet' || type === 'consume') return 'consume'
+  if (type === 'sell' || type === 'withdraw' || type === 'cash_delivery') return 'withdraw'
+  if (
+    type === 'exchange' ||
+    type === 'allocate' ||
+    type === 'fx' ||
+    type === 'intl_transfer' ||
+    type === 'transfer'
+  ) {
+    return 'transfer'
+  }
+  if (type === 'redpacket' || type === 'purchase') return type
+  return 'receive'
+}
+
+export function billingIconKindFromLabel(typeLabel: string, layout?: BillingDetailLayout): BillingIconKind {
+  if (layout === 'system_payment' || typeLabel.startsWith('系统')) return 'system'
+  if (layout === 'xcoin_transfer' || typeLabel.startsWith('上下分')) return 'xcoin'
+  if (typeLabel.startsWith('国际转账') || typeLabel.startsWith('划转') || typeLabel.startsWith('换汇') || typeLabel.startsWith('兑换')) {
+    return 'transfer'
+  }
+  if (typeLabel.startsWith('转账')) return 'transfer'
+  if (typeLabel.startsWith('消费') || typeLabel.startsWith('投注')) return 'consume'
+  if (typeLabel.startsWith('奖金') || typeLabel.startsWith('盈利') || typeLabel.startsWith('理财') || typeLabel.startsWith('活动金')) {
+    return 'bonus'
+  }
+  if (typeLabel.startsWith('收款') || typeLabel.startsWith('充值') || typeLabel.startsWith('借贷')) return 'receive'
+  if (typeLabel.startsWith('提现') || typeLabel.startsWith('出售') || typeLabel.startsWith('全球送现')) return 'withdraw'
+  if (typeLabel.startsWith('红包')) return 'redpacket'
+  if (typeLabel.startsWith('购买')) return 'purchase'
+  return 'receive'
+}
 
 export type BillingRecord = {
   id: string
@@ -79,31 +158,42 @@ export type BillingCurrencyOption = {
 
 /**
  * 类型筛选：
- * - 现金侧：收款 / 提现 / 转账 / 红包 / 购买 / 奖金 / 消费 / 系统
- * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【信用会员退水】
+ * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 收款靠前
+ * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
  */
 export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: '', label: '全部' },
-  { value: 'receive', label: '收款' },
+  { value: 'system', label: '系统' },
+  { value: 'recharge', label: '充值' },
   { value: 'withdraw', label: '提现' },
   { value: 'transfer', label: '转账' },
+  { value: 'receive', label: '收款' },
   { value: 'redpacket', label: '红包' },
-  { value: 'purchase', label: '购买' },
+  { value: 'profit', label: '盈利' },
+  { value: 'bet', label: '投注' },
+  { value: 'sell', label: '出售' },
+  { value: 'exchange', label: '兑换' },
+  { value: 'finance', label: '理财' },
+  { value: 'loan', label: '借贷' },
+  { value: 'allocate', label: '划转' },
+  { value: 'fx', label: '换汇' },
+  { value: 'intl_transfer', label: '国际转账' },
+  { value: 'cash_delivery', label: '全球送现' },
+  { value: 'xcoin', label: '上下分' },
+  { value: 'activity', label: '活动金' },
   { value: 'bonus', label: '奖金' },
   { value: 'consume', label: '消费' },
-  { value: 'xcoin', label: '上下分' },
-  { value: 'system', label: '系统' },
 ]
 
 /** 贵宾厅账单：转账 / 消费 / 奖金（游戏账变）+ 上下分 / 系统 */
 export const BILLING_VIP_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: '', label: '全部' },
+  { value: 'system', label: '系统' },
   { value: 'transfer', label: '转账' },
   { value: 'consume', label: '消费' },
   { value: 'bonus', label: '奖金' },
   { value: 'xcoin', label: '上下分' },
-  { value: 'system', label: '系统' },
 ]
 
 export const BILLING_CURRENCY_TABS: { key: 'all' | BillingCurrencyKind; label: string }[] = [
@@ -145,21 +235,30 @@ export const BILLING_CURRENCY_OPTIONS: BillingCurrencyOption[] = [
 export const MOCK_BILLING_RECORDS: BillingRecord[] = [
   {
     id: 'b16',
-    month: '2026-05',
+    month: '2026-06',
     type: 'system_rebate',
-    typeLabel: '系统【信用会员退水】',
-    createdAt: '2026-05-28 10:20:18',
+    typeLabel: '系统【会员退水】',
+    createdAt: '2026-06-24 10:20:18',
     amount: 36.5,
     currency: 'CNY',
   },
   {
     id: 'b17',
-    month: '2026-05',
+    month: '2026-06',
     type: 'system_rebate',
-    typeLabel: '系统【信用会员退水】',
-    createdAt: '2026-05-27 16:08:42',
+    typeLabel: '系统【VIP退水】',
+    createdAt: '2026-06-23 16:08:42',
     amount: 12.8,
     currency: 'USD',
+  },
+  {
+    id: 'b21',
+    month: '2026-05',
+    type: 'system_rebate',
+    typeLabel: '系统【代理退水】',
+    createdAt: '2026-05-26 09:16:04',
+    amount: 8.6,
+    currency: 'CNY',
   },
   {
     id: 'b18',
@@ -296,6 +395,114 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     amount: 8.88,
     currency: 'KKC',
   },
+  {
+    id: 'b22',
+    month: '2026-05',
+    type: 'recharge',
+    typeLabel: '充值',
+    createdAt: '2026-05-19 15:26:18',
+    amount: 200,
+    currency: 'KKC',
+  },
+  {
+    id: 'b23',
+    month: '2026-05',
+    type: 'profit',
+    typeLabel: '盈利',
+    createdAt: '2026-05-18 11:20:06',
+    amount: 66,
+    currency: 'KKC',
+  },
+  {
+    id: 'b24',
+    month: '2026-05',
+    type: 'bet',
+    typeLabel: '投注',
+    createdAt: '2026-05-17 21:08:41',
+    amount: -32,
+    currency: 'KKC',
+  },
+  {
+    id: 'b25',
+    month: '2026-05',
+    type: 'sell',
+    typeLabel: '出售',
+    createdAt: '2026-05-16 15:42:09',
+    amount: 200,
+    currency: 'USDT-TRON',
+  },
+  {
+    id: 'b26',
+    month: '2026-05',
+    type: 'exchange',
+    typeLabel: '兑换',
+    createdAt: '2026-05-15 10:05:33',
+    amount: -50,
+    currency: 'KKC',
+  },
+  {
+    id: 'b27',
+    month: '2026-05',
+    type: 'finance',
+    typeLabel: '理财',
+    createdAt: '2026-05-14 09:30:22',
+    amount: 18.6,
+    currency: 'KKC',
+  },
+  {
+    id: 'b28',
+    month: '2026-05',
+    type: 'loan',
+    typeLabel: '借贷',
+    createdAt: '2026-05-13 16:18:57',
+    amount: 1000,
+    currency: 'KKC',
+  },
+  {
+    id: 'b29',
+    month: '2026-05',
+    type: 'allocate',
+    typeLabel: '划转',
+    createdAt: '2026-05-12 13:44:11',
+    amount: -30,
+    currency: 'KKV',
+  },
+  {
+    id: 'b30',
+    month: '2026-05',
+    type: 'fx',
+    typeLabel: '换汇',
+    createdAt: '2026-05-11 19:22:40',
+    amount: -80,
+    currency: 'USDT-TRON',
+  },
+  {
+    id: 'b31',
+    month: '2026-05',
+    type: 'intl_transfer',
+    typeLabel: '国际转账',
+    createdAt: '2026-05-10 08:16:05',
+    amount: -260,
+    currency: 'USDT-TRON',
+  },
+  {
+    id: 'b32',
+    month: '2026-05',
+    type: 'cash_delivery',
+    typeLabel: '全球送现',
+    createdAt: '2026-05-09 17:55:28',
+    amount: -500,
+    currency: 'KKC',
+  },
+  {
+    id: 'b33',
+    month: '2026-05',
+    type: 'activity',
+    typeLabel: '活动金',
+    createdAt: '2026-05-08 12:06:14',
+    amount: 28,
+    currency: 'KKC',
+  },
 ]
 
 /** 账单详情 · 上下分 / 系统打款 */
@@ -314,28 +521,41 @@ export const MOCK_BILLING_DETAILS: Record<string, BillingDetail> = {
   b16: {
     id: 'b16',
     layout: 'system_payment',
-    typeLabel: '系统【信用会员退水】',
+    typeLabel: '系统【会员退水】',
     heroTitle: '系统打款',
     amount: 36.5,
     currencySymbol: '¥',
     currencyCode: 'CNY',
-    paymentReason: '信用会员退水',
-    timeDisplay: '2026.05.28 10:20:18',
+    paymentReason: '会员退水',
+    timeDisplay: '2026.06.24 10:20:18',
     billNo: '288823297146609664',
     orderNo: '288823297146609664',
   },
   b17: {
     id: 'b17',
     layout: 'system_payment',
-    typeLabel: '系统【信用会员退水】',
+    typeLabel: '系统【VIP退水】',
     heroTitle: '系统打款',
     amount: 12.8,
     currencySymbol: '$',
     currencyCode: 'USD',
-    paymentReason: '信用会员退水',
-    timeDisplay: '2026.05.27 16:08:42',
+    paymentReason: 'VIP退水',
+    timeDisplay: '2026.06.23 16:08:42',
     billNo: '288823297146609665',
     orderNo: '288823297146609665',
+  },
+  b21: {
+    id: 'b21',
+    layout: 'system_payment',
+    typeLabel: '系统【代理退水】',
+    heroTitle: '系统打款',
+    amount: 8.6,
+    currencySymbol: '¥',
+    currencyCode: 'CNY',
+    paymentReason: '代理退水',
+    timeDisplay: '2026.05.26 09:16:04',
+    billNo: '288823297146609666',
+    orderNo: '288823297146609666',
   },
 }
 
@@ -396,10 +616,10 @@ function buildFallbackBillingDetail(row: BillingRecord): BillingDetail {
 
 export const BILLING_SEARCH_PLACEHOLDER = '搜索账单记录'
 
-export const BILLING_HOT_KEYWORDS = ['信用会员退水', '上下分-上分', '收款', '转账【皇者体育】', '6.88']
+export const BILLING_HOT_KEYWORDS = ['会员退水', '上下分-上分', '收款', '转账【皇者体育】', '6.88']
 
 export const BILLING_VIP_HOT_KEYWORDS = [
-  '信用会员退水',
+  '会员退水',
   '上下分-上分',
   '转账【皇者体育】',
   '消费【电子游艺】',
@@ -418,35 +638,44 @@ export function formatBillingHeroAmount(amount: number) {
   return `${sign}${Math.abs(amount).toFixed(2)}`
 }
 
+/** 详情时间：2026-05-08 10:20:18 */
 export function formatBillingDetailTime(createdAt: string) {
-  const [datePart, timePart = ''] = createdAt.split(' ')
-  const [y, m, d] = datePart.split('-')
-  return `${y}.${m}.${d} ${timePart}`
+  const [datePart, timePart = ''] = createdAt.trim().split(/\s+/)
+  const [y, m, d] = datePart.replace(/\./g, '-').split('-')
+  if (!y || !m || !d) return createdAt
+  const hms = timePart.length >= 8 ? timePart.slice(0, 8) : timePart
+  return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${hms ? ` ${hms}` : ''}`
 }
 
-/** 列表时间：06-22 12:12:35 */
-export function formatBillingListTime(createdAt: string) {
+/** 列表时间：今天 14:16；昨天 01:01；更早为 10-10 14:10 */
+export function formatBillingListTime(createdAt: string, today = MH5_DATE_RANGE_TODAY) {
   const [datePart, timePart = ''] = createdAt.split(' ')
   const [, m, d] = datePart.split('-')
-  return `${m}-${d} ${timePart}`
+  const hm = timePart.slice(0, 5)
+  if (datePart === today) return `今天 ${hm}`
+  if (datePart === addDaysYmd(today, -1)) return `昨天 ${hm}`
+  return `${m}-${d} ${hm}`
 }
 
 /**
- * 列表仅展示一级类型，隐藏二级说明：
- * - 系统【信用会员退水】→ 系统
+ * 列表类型：
+ * - 系统【会员退水】→ 系统-会员退水（详情打款原因放到列表）
  * - 转账【皇者体育】→ 转账
  * - 上下分-上分 / 上下分-下分 → 上下分
  */
 export function formatBillingListTypeLabel(typeLabel: string) {
+  const systemReason = typeLabel.match(/^系统【([^】]+)】/)
+  if (systemReason) return `系统-${systemReason[1]}`
   const withoutBracket = typeLabel.replace(/【[^】]*】/g, '').trim()
   if (withoutBracket.startsWith('上下分')) return '上下分'
   return withoutBracket || typeLabel
 }
 
-/** 分组标题：2025年6月 */
+/** 分组标题：2026-05 */
 export function formatBillingMonthLabel(month: string) {
   const [y, m] = month.split('-')
-  return `${y}年${Number(m)}月`
+  if (!y || !m) return month
+  return `${y}-${m.padStart(2, '0')}`
 }
 
 export function getBillingCurrencySymbol(currency: string) {
@@ -551,12 +780,16 @@ export function matchBillingKeyword(row: BillingRecord, keyword: string) {
 
 export function filterBillingRecords(
   records: BillingRecord[],
-  options: { keyword?: string; type?: string; currency?: string },
+  options: { keyword?: string; type?: string; currency?: string; start?: string; end?: string },
 ) {
   const keyword = options.keyword?.trim() ?? ''
   return records.filter((row) => {
     if (!matchBillingTypeFilter(row, options.type)) return false
     if (options.currency && row.currency !== options.currency) return false
+    if (options.start && options.end) {
+      const day = row.createdAt.slice(0, 10)
+      if (day < options.start || day > options.end) return false
+    }
     if (!keyword) return true
     return matchBillingKeyword(row, keyword)
   })
@@ -597,11 +830,11 @@ export function formatBillingSummaryAmount(amount: number) {
 export function readRecentBillingSearches(): string[] {
   try {
     const raw = sessionStorage.getItem(RECENT_SEARCH_STORAGE_KEY)
-    if (!raw) return ['信用会员退水', '上下分-上分', '收款']
+    if (!raw) return ['会员退水', '上下分-上分', '收款']
     const parsed = JSON.parse(raw) as string[]
-    return Array.isArray(parsed) ? parsed.slice(0, 8) : ['信用会员退水', '上下分-上分', '收款']
+    return Array.isArray(parsed) ? parsed.slice(0, 8) : ['会员退水', '上下分-上分', '收款']
   } catch {
-    return ['信用会员退水', '上下分-上分', '收款']
+    return ['会员退水', '上下分-上分', '收款']
   }
 }
 

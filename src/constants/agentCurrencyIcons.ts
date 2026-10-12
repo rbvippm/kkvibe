@@ -11,6 +11,8 @@ export type AgentCurrencyUnitIcon = {
 }
 
 export const AGENT_CURRENCY_ICON_LAYERS: Record<string, AgentCurrencyIconLayer[]> = {
+  CNY: [{ src: '/images/vip-club/icon-currency.svg', inset: '0' }],
+  USD: [{ src: '/images/vip-club/icon-currency-usd.svg', inset: '0' }],
   KKC: [{ src: '/images/currency/icon-kkc.svg', inset: '0' }],
   KKV: [
     { src: '/images/currency/icon-kkv-hex.svg', inset: '0 4.69% 0 5.08%' },
