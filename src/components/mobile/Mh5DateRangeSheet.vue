@@ -18,7 +18,8 @@ import {
 
 const props = withDefaults(
   defineProps<{
-    open: boolean
+    /** 弹层模式必传；内嵌进其他面板时可不传 */
+    open?: boolean
     start: string
     end: string
     today?: string
@@ -28,6 +29,7 @@ const props = withDefaults(
     inline?: boolean
   }>(),
   {
+    open: false,
     today: MH5_DATE_RANGE_TODAY,
     maxMonths: MH5_DATE_RANGE_MAX_MONTHS,
     tone: 'default',
