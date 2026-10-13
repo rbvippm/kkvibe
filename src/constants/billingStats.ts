@@ -174,7 +174,7 @@ export const BILLING_STATS_DEMO_BY_CURRENCY: Record<
     ],
     incomeRank: [
       { id: 'bonus', name: '奖金', amount: 1280, count: 2 },
-      { id: 'receive', name: '收款', amount: 880, count: 1 },
+      { id: 'recharge', name: '充值', amount: 880, count: 1 },
       { id: 'redpacket', name: '红包', amount: 400, count: 1 },
     ],
   },
@@ -182,8 +182,7 @@ export const BILLING_STATS_DEMO_BY_CURRENCY: Record<
     summary: { expense: 120.5, expenseCount: 1, income: 500, incomeCount: 2, net: 379.5 },
     expenseRank: [{ id: 'withdraw', name: '提现', amount: 120.5, count: 1 }],
     incomeRank: [
-      { id: 'recharge', name: '充值', amount: 300, count: 1 },
-      { id: 'receive', name: '收款', amount: 200, count: 1 },
+      { id: 'recharge', name: '充值', amount: 500, count: 2 },
     ],
   },
   CNY: {

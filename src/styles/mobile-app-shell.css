@@ -16881,6 +16881,9 @@
 }
 
 .mh5-billing-header__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   margin: 0;
   font-size: 17px;
   font-weight: 600;

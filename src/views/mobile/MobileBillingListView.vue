@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import Mh5BillingRecordRow from '../../components/mobile/Mh5BillingRecordRow.vue'
 import Mh5BillingGroupHead from '../../components/mobile/Mh5BillingGroupHead.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
+import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import { BILLING_FLAGSHIP_HISTORY_SPEC } from '../../constants/billingListSpec'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
   BILLING_CURRENCY_OPTIONS,
@@ -150,7 +152,10 @@ function goStats() {
           />
         </svg>
       </button>
-      <h1 class="mh5-billing-header__title">{{ $t('交易历史') }}</h1>
+      <h1 class="mh5-billing-header__title">
+        {{ $t('交易历史') }}
+        <Mh5SpecAnnot v-if="!isVipClubBilling" :spec="BILLING_FLAGSHIP_HISTORY_SPEC" placement="bottom" />
+      </h1>
       <div class="mh5-billing-header__actions">
         <button type="button" class="mh5-billing-header__analysis" @click="goStats">
           <span>{{ $t('收支分析') }}</span>

@@ -158,7 +158,7 @@ export type BillingCurrencyOption = {
 
 /**
  * 类型筛选：
- * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 收款靠前
+ * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账靠前；收款与购买并入充值
  * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
  */
@@ -168,7 +168,6 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'recharge', label: '充值' },
   { value: 'withdraw', label: '提现' },
   { value: 'transfer', label: '转账' },
-  { value: 'receive', label: '收款' },
   { value: 'redpacket', label: '红包' },
   { value: 'profit', label: '盈利' },
   { value: 'bet', label: '投注' },
@@ -237,7 +236,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b16',
     month: '2026-06',
     type: 'system_rebate',
-    typeLabel: '系统【会员退水】',
+    typeLabel: '系统【信用用户退水】',
     createdAt: '2026-06-24 10:20:18',
     amount: 36.5,
     currency: 'CNY',
@@ -246,7 +245,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b17',
     month: '2026-06',
     type: 'system_rebate',
-    typeLabel: '系统【VIP退水】',
+    typeLabel: '系统【现金 VIP 退水】',
     createdAt: '2026-06-23 16:08:42',
     amount: 12.8,
     currency: 'USD',
@@ -255,7 +254,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b21',
     month: '2026-05',
     type: 'system_rebate',
-    typeLabel: '系统【代理退水】',
+    typeLabel: '系统【信用代理退水】',
     createdAt: '2026-05-26 09:16:04',
     amount: 8.6,
     currency: 'CNY',
@@ -335,8 +334,8 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
   {
     id: 'b1',
     month: '2026-05',
-    type: 'receive',
-    typeLabel: '收款',
+    type: 'recharge',
+    typeLabel: '充值【链上充值】',
     createdAt: '2026-05-26 23:11:12',
     amount: 6.88,
     currency: 'KKC',
@@ -344,8 +343,8 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
   {
     id: 'b2',
     month: '2026-05',
-    type: 'receive',
-    typeLabel: '收款',
+    type: 'recharge',
+    typeLabel: '充值【链上充值】',
     createdAt: '2026-05-26 22:01:08',
     amount: 6.88,
     currency: 'KKC',
@@ -362,8 +361,8 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
   {
     id: 'b9',
     month: '2026-04',
-    type: 'receive',
-    typeLabel: '收款',
+    type: 'recharge',
+    typeLabel: '充值【链上充值】',
     createdAt: '2026-04-18 14:22:05',
     amount: 500,
     currency: 'KKC',
@@ -396,10 +395,10 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     currency: 'KKC',
   },
   {
-    id: 'b22',
+    id: 'b34',
     month: '2026-05',
     type: 'recharge',
-    typeLabel: '充值',
+    typeLabel: '充值【三方渠道买币】',
     createdAt: '2026-05-19 15:26:18',
     amount: 200,
     currency: 'KKC',
@@ -521,12 +520,12 @@ export const MOCK_BILLING_DETAILS: Record<string, BillingDetail> = {
   b16: {
     id: 'b16',
     layout: 'system_payment',
-    typeLabel: '系统【会员退水】',
+    typeLabel: '系统【信用用户退水】',
     heroTitle: '系统打款',
     amount: 36.5,
     currencySymbol: '¥',
     currencyCode: 'CNY',
-    paymentReason: '会员退水',
+    paymentReason: '信用用户退水',
     timeDisplay: '2026.06.24 10:20:18',
     billNo: '288823297146609664',
     orderNo: '288823297146609664',
@@ -534,12 +533,12 @@ export const MOCK_BILLING_DETAILS: Record<string, BillingDetail> = {
   b17: {
     id: 'b17',
     layout: 'system_payment',
-    typeLabel: '系统【VIP退水】',
+    typeLabel: '系统【现金 VIP 退水】',
     heroTitle: '系统打款',
     amount: 12.8,
     currencySymbol: '$',
     currencyCode: 'USD',
-    paymentReason: 'VIP退水',
+    paymentReason: '现金 VIP 退水',
     timeDisplay: '2026.06.23 16:08:42',
     billNo: '288823297146609665',
     orderNo: '288823297146609665',
@@ -547,12 +546,12 @@ export const MOCK_BILLING_DETAILS: Record<string, BillingDetail> = {
   b21: {
     id: 'b21',
     layout: 'system_payment',
-    typeLabel: '系统【代理退水】',
+    typeLabel: '系统【信用代理退水】',
     heroTitle: '系统打款',
     amount: 8.6,
     currencySymbol: '¥',
     currencyCode: 'CNY',
-    paymentReason: '代理退水',
+    paymentReason: '信用代理退水',
     timeDisplay: '2026.05.26 09:16:04',
     billNo: '288823297146609666',
     orderNo: '288823297146609666',
@@ -577,6 +576,27 @@ function buildFallbackBillingDetail(row: BillingRecord): BillingDetail {
     row.type === 'system_deduct' ||
     row.type === 'system_rebate' ||
     row.typeLabel.startsWith('系统')
+
+  const rechargeWay = row.typeLabel.match(/^充值【([^】]+)】/)
+  if (row.type === 'recharge' || rechargeWay) {
+    return {
+      id: row.id,
+      layout: 'default',
+      typeLabel: '充值',
+      heroTitle: '充值',
+      amount: row.amount,
+      currencySymbol: getBillingCurrencySymbol(row.currency),
+      currencyCode: getBillingAmountUnit(row.currency),
+      timeDisplay: formatBillingDetailTime(row.createdAt),
+      orderNo: `BL${row.createdAt.replace(/[-:\s]/g, '')}${row.id.toUpperCase()}`,
+      billNo: `BL${row.createdAt.replace(/[-:\s]/g, '')}${row.id.toUpperCase()}`,
+      createdAt: row.createdAt,
+      fields: [
+        { label: '充值方式', value: rechargeWay?.[1] || '链上充值' },
+        { label: '币种', value: row.currency },
+      ],
+    }
+  }
 
   if (isSystem) {
     const reasonMatch = row.typeLabel.match(/【([^】]+)】/)
@@ -616,10 +636,10 @@ function buildFallbackBillingDetail(row: BillingRecord): BillingDetail {
 
 export const BILLING_SEARCH_PLACEHOLDER = '搜索账单记录'
 
-export const BILLING_HOT_KEYWORDS = ['会员退水', '上下分-上分', '收款', '转账【皇者体育】', '6.88']
+export const BILLING_HOT_KEYWORDS = ['信用用户退水', '上下分-上分', '充值', '转账【皇者体育】', '6.88']
 
 export const BILLING_VIP_HOT_KEYWORDS = [
-  '会员退水',
+  '信用用户退水',
   '上下分-上分',
   '转账【皇者体育】',
   '消费【电子游艺】',
@@ -659,7 +679,7 @@ export function formatBillingListTime(createdAt: string, today = MH5_DATE_RANGE_
 
 /**
  * 列表类型：
- * - 系统【会员退水】→ 系统-会员退水（详情打款原因放到列表）
+ * - 系统【信用用户退水】→ 系统-信用用户退水（详情打款原因放到列表）
  * - 转账【皇者体育】→ 转账
  * - 上下分-上分 / 上下分-下分 → 上下分
  */
@@ -692,6 +712,9 @@ export function getBillingAmountUnit(currency: string) {
 export function matchBillingTypeFilter(row: BillingRecord, type?: string) {
   if (!type) return true
   if (type === 'xcoin') return row.type === 'xcoin_credit_up' || row.type === 'xcoin_credit_down'
+  if (type === 'recharge') {
+    return row.type === 'recharge' || row.type === 'receive' || row.typeLabel.startsWith('充值')
+  }
   if (type === 'system') {
     return (
       row.type === 'system_payment' ||
@@ -830,11 +853,11 @@ export function formatBillingSummaryAmount(amount: number) {
 export function readRecentBillingSearches(): string[] {
   try {
     const raw = sessionStorage.getItem(RECENT_SEARCH_STORAGE_KEY)
-    if (!raw) return ['会员退水', '上下分-上分', '收款']
+    if (!raw) return ['信用用户退水', '上下分-上分', '充值']
     const parsed = JSON.parse(raw) as string[]
-    return Array.isArray(parsed) ? parsed.slice(0, 8) : ['会员退水', '上下分-上分', '收款']
+    return Array.isArray(parsed) ? parsed.slice(0, 8) : ['信用用户退水', '上下分-上分', '充值']
   } catch {
-    return ['会员退水', '上下分-上分', '收款']
+    return ['信用用户退水', '上下分-上分', '充值']
   }
 }
 
