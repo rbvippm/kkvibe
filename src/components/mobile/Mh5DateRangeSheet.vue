@@ -27,6 +27,8 @@ const props = withDefaults(
     tone?: 'default' | 'vip'
     /** 只渲染快捷项、起止日期和滚轮，嵌在其他面板里 */
     inline?: boolean
+    /** 不限制最早可查日期，也不展示近 6 个月提示 */
+    unlimited?: boolean
   }>(),
   {
     open: false,
@@ -34,6 +36,7 @@ const props = withDefaults(
     maxMonths: MH5_DATE_RANGE_MAX_MONTHS,
     tone: 'default',
     inline: false,
+    unlimited: false,
   },
 )
 
@@ -48,7 +51,9 @@ const draftEnd = ref(props.end)
 const editing = ref<'start' | 'end'>('start')
 const activePreset = ref<DateRangeSheetPreset | null>(null)
 
-const minDate = computed(() => addMonthsYmd(props.today, -props.maxMonths))
+const minDate = computed(() =>
+  props.unlimited ? '1970-01-01' : addMonthsYmd(props.today, -props.maxMonths),
+)
 const maxDate = computed(() => props.today)
 
 function syncActivePreset() {
@@ -196,7 +201,7 @@ function currentLabel(col: DatePart) {
           </div>
         </div>
       </div>
-      <p class="mh5-date-range-sheet__hint">仅支持查询近 6 个月的记录</p>
+      <p v-if="!unlimited" class="mh5-date-range-sheet__hint">仅支持查询近 6 个月的记录</p>
     </div>
   </div>
   <Teleport v-else to="body">
@@ -278,7 +283,7 @@ function currentLabel(col: DatePart) {
                 </div>
               </div>
             </div>
-            <p class="mh5-date-range-sheet__hint">仅支持查询近 6 个月的记录</p>
+            <p v-if="!unlimited" class="mh5-date-range-sheet__hint">仅支持查询近 6 个月的记录</p>
           </div>
 
           <div class="mh5-date-range-sheet__footer">

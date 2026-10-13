@@ -221,6 +221,7 @@ function goStats() {
                 <h3 class="mh5-xcoin-filter-group__label">{{ $t('时间') }}</h3>
                 <Mh5DateRangeSheet
                   inline
+                  unlimited
                   :tone="isVipClubBilling ? 'vip' : 'default'"
                   :start="draftStart"
                   :end="draftEnd"
