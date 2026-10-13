@@ -158,7 +158,7 @@ export type BillingCurrencyOption = {
 
 /**
  * 类型筛选：
- * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账靠前；收款与购买并入充值
+ * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 兑换 / 红包靠前；收款与购买并入充值
  * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
  */
@@ -168,11 +168,11 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'recharge', label: '充值' },
   { value: 'withdraw', label: '提现' },
   { value: 'transfer', label: '转账' },
+  { value: 'exchange', label: '兑换' },
   { value: 'redpacket', label: '红包' },
   { value: 'profit', label: '盈利' },
   { value: 'bet', label: '投注' },
   { value: 'sell', label: '出售' },
-  { value: 'exchange', label: '兑换' },
   { value: 'finance', label: '理财' },
   { value: 'loan', label: '借贷' },
   { value: 'allocate', label: '划转' },
