@@ -158,7 +158,8 @@ export type BillingCurrencyOption = {
 
 /**
  * 类型筛选：
- * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 兑换 / 红包靠前；收款与购买并入充值
+ * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 兑换 / 红包靠前
+ * - 收款与购买并入充值；提现与出售并入提现
  * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
  */
@@ -172,7 +173,6 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'redpacket', label: '红包' },
   { value: 'profit', label: '盈利' },
   { value: 'bet', label: '投注' },
-  { value: 'sell', label: '出售' },
   { value: 'finance', label: '理财' },
   { value: 'loan', label: '借贷' },
   { value: 'allocate', label: '划转' },
@@ -371,7 +371,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b10',
     month: '2026-04',
     type: 'withdraw',
-    typeLabel: '提现',
+    typeLabel: '提现【链上提现】',
     createdAt: '2026-04-12 09:08:33',
     amount: -120.5,
     currency: 'USDT-TRON',
@@ -424,8 +424,8 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
   {
     id: 'b25',
     month: '2026-05',
-    type: 'sell',
-    typeLabel: '出售',
+    type: 'withdraw',
+    typeLabel: '提现【出售】',
     createdAt: '2026-05-16 15:42:09',
     amount: 200,
     currency: 'USDT-TRON',
@@ -598,6 +598,28 @@ function buildFallbackBillingDetail(row: BillingRecord): BillingDetail {
     }
   }
 
+  const withdrawWay = row.typeLabel.match(/^提现【([^】]+)】/)
+  const isSell = row.type === 'sell' || row.typeLabel.startsWith('出售')
+  if (row.type === 'withdraw' || isSell || withdrawWay) {
+    return {
+      id: row.id,
+      layout: 'default',
+      typeLabel: '提现',
+      heroTitle: '提现',
+      amount: row.amount,
+      currencySymbol: getBillingCurrencySymbol(row.currency),
+      currencyCode: getBillingAmountUnit(row.currency),
+      timeDisplay: formatBillingDetailTime(row.createdAt),
+      orderNo: `BL${row.createdAt.replace(/[-:\s]/g, '')}${row.id.toUpperCase()}`,
+      billNo: `BL${row.createdAt.replace(/[-:\s]/g, '')}${row.id.toUpperCase()}`,
+      createdAt: row.createdAt,
+      fields: [
+        { label: '提现方式', value: withdrawWay?.[1] || (isSell ? '出售' : '链上提现') },
+        { label: '币种', value: row.currency },
+      ],
+    }
+  }
+
   if (isSystem) {
     const reasonMatch = row.typeLabel.match(/【([^】]+)】/)
     return {
@@ -682,12 +704,14 @@ export function formatBillingListTime(createdAt: string, today = MH5_DATE_RANGE_
  * - 系统【信用用户退水】→ 系统-信用用户退水（详情打款原因放到列表）
  * - 转账【皇者体育】→ 转账
  * - 上下分-上分 / 上下分-下分 → 上下分
+ * - 提现【链上提现】/ 提现【出售】/ 出售 → 提现
  */
 export function formatBillingListTypeLabel(typeLabel: string) {
   const systemReason = typeLabel.match(/^系统【([^】]+)】/)
   if (systemReason) return `系统-${systemReason[1]}`
   const withoutBracket = typeLabel.replace(/【[^】]*】/g, '').trim()
   if (withoutBracket.startsWith('上下分')) return '上下分'
+  if (withoutBracket === '出售' || withoutBracket.startsWith('出售')) return '提现'
   return withoutBracket || typeLabel
 }
 
@@ -714,6 +738,14 @@ export function matchBillingTypeFilter(row: BillingRecord, type?: string) {
   if (type === 'xcoin') return row.type === 'xcoin_credit_up' || row.type === 'xcoin_credit_down'
   if (type === 'recharge') {
     return row.type === 'recharge' || row.type === 'receive' || row.typeLabel.startsWith('充值')
+  }
+  if (type === 'withdraw') {
+    return (
+      row.type === 'withdraw' ||
+      row.type === 'sell' ||
+      row.typeLabel.startsWith('提现') ||
+      row.typeLabel.startsWith('出售')
+    )
   }
   if (type === 'system') {
     return (
