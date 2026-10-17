@@ -14,20 +14,24 @@ import {
   AGENT_LEVEL_OPTIONS,
   agentLevelLabel,
   cloneShareAgentProducts,
+  cloneShareAgentRebateCategories,
   creditPercentInputPattern,
   creditPercentRangeLabel,
   CREDIT_AGENT_FILTER_OPTIONS,
   formatCreditField,
+  formatRebateRate,
   getRebateSectionLabel,
   getShareSectionLabel,
   hasCreditAgentCredentials,
-  isShareOnlyProduct,
   MOCK_SHARE_AGENT_ROWS,
-  validateRebatePercent,
+  applyCategoryRebate,
+  validateProductRebate,
+  validateCategoryRebate,
   validateSharePercent,
   type CreditAccountTab,
   type CreditModalMode,
   type PcShareAgentProduct,
+  type PcShareAgentRebateCategory,
   type ShareAgentRow,
 } from '../../constants/pcShareAgent'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
@@ -96,6 +100,8 @@ const creditTarget = ref<ShareAgentRow | null>(null)
 const creditAccountTab = ref<CreditAccountTab>('credit')
 const cashCreditProducts = ref<PcShareAgentProduct[]>([])
 const creditCreditProducts = ref<PcShareAgentProduct[]>([])
+const cashRebateCategories = ref<PcShareAgentRebateCategory[]>([])
+const creditRebateCategories = ref<PcShareAgentRebateCategory[]>([])
 const creditHint = ref('')
 
 const creditTabVisible = computed(() => {
@@ -116,11 +122,12 @@ const activeCreditProducts = computed(() => {
   return creditAccountTab.value === 'cash' ? cashCreditProducts.value : creditCreditProducts.value
 })
 
-/** 占成区含「其他成本」；退水区仅游戏品类 */
+/** 占成区含「其他成本」；退水区按大类展开产品 */
 const activeShareProducts = computed(() => activeCreditProducts.value)
-const activeRebateProducts = computed(() =>
-  activeCreditProducts.value.filter((p) => !isShareOnlyProduct(p)),
-)
+const activeRebateCategories = computed(() => {
+  if (creditModalMode.value === 'grant') return creditRebateCategories.value
+  return creditAccountTab.value === 'cash' ? cashRebateCategories.value : creditRebateCategories.value
+})
 
 const activeCreditFormKey = computed(() =>
   creditModalMode.value === 'grant' ? 'grant' : creditAccountTab.value,
@@ -145,6 +152,8 @@ function resetCreditModalForm(row: ShareAgentRow, mode: CreditModalMode) {
     mode === 'edit' && row.isCreditAgent && hasCreditAgentCredentials(row) ? 'credit' : 'cash'
   cashCreditProducts.value = cloneShareAgentProducts()
   creditCreditProducts.value = cloneShareAgentProducts()
+  cashRebateCategories.value = cloneShareAgentRebateCategories()
+  creditRebateCategories.value = cloneShareAgentRebateCategories()
   creditHint.value = ''
 }
 
@@ -165,6 +174,8 @@ function closeCreditModal() {
   creditAccountTab.value = 'credit'
   cashCreditProducts.value = []
   creditCreditProducts.value = []
+  cashRebateCategories.value = []
+  creditRebateCategories.value = []
   creditHint.value = ''
 }
 
@@ -172,31 +183,55 @@ function shareError(product: PcShareAgentProduct) {
   return validateSharePercent(product.share, product.maxShare, activeShareLabel.value)
 }
 
-function rebateError(product: PcShareAgentProduct) {
-  return validateRebatePercent(product.rebate, product.maxRebate, activeRebateLabel.value)
+function rebateProductError(category: PcShareAgentRebateCategory, productKey: string) {
+  const product = category.products.find((item) => item.key === productKey)
+  if (!product) return ''
+  return validateProductRebate(product, activeRebateLabel.value)
+}
+
+function onCategoryRebateInput(category: PcShareAgentRebateCategory, event: Event) {
+  category.rebate = Number((event.target as HTMLInputElement).value)
+  applyCategoryRebate(category)
+}
+
+function categoriesHaveError(categories: PcShareAgentRebateCategory[], label: string) {
+  return categories.some((category) => {
+    if (validateCategoryRebate(category, label)) return true
+    return category.products.some((product) => validateProductRebate(product, label))
+  })
 }
 
 function productsHaveError(
   products: PcShareAgentProduct[],
+  categories: PcShareAgentRebateCategory[],
   mode: CreditModalMode,
   tab: CreditAccountTab,
 ) {
   const shareLabel = getShareSectionLabel(mode, tab)
   const rebateLabel = getRebateSectionLabel(mode, tab)
-  return products.some((p) => {
-    if (validateSharePercent(p.share, p.maxShare, shareLabel)) return true
-    if (isShareOnlyProduct(p)) return false
-    return Boolean(validateRebatePercent(p.rebate, p.maxRebate, rebateLabel))
-  })
+  const shareHasError = products.some((product) =>
+    Boolean(validateSharePercent(product.share, product.maxShare, shareLabel)),
+  )
+  return shareHasError || categoriesHaveError(categories, rebateLabel)
 }
 
 function hasCreditValidationError() {
   if (creditModalMode.value === 'grant') {
-    return productsHaveError(creditCreditProducts.value, 'grant', 'credit')
+    return productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'grant', 'credit')
   }
-  const cashHasError = productsHaveError(cashCreditProducts.value, 'edit', 'cash')
+  const cashHasError = productsHaveError(
+    cashCreditProducts.value,
+    cashRebateCategories.value,
+    'edit',
+    'cash',
+  )
   if (!showCreditAccountTabs.value) return cashHasError
-  const creditHasError = productsHaveError(creditCreditProducts.value, 'edit', 'credit')
+  const creditHasError = productsHaveError(
+    creditCreditProducts.value,
+    creditRebateCategories.value,
+    'edit',
+    'credit',
+  )
   return cashHasError || creditHasError
 }
 
@@ -506,32 +541,62 @@ function confirmCreditModal() {
                 {{ activeRebateLabel }}
                 <WfShareAgentRebateAnnot :title="activeRebateLabel" placement="bottom" />
               </h4>
-              <div class="wf-share-agent-credit-grid">
-                <div
-                  v-for="product in activeRebateProducts"
-                  :key="`${activeCreditFormKey}-rebate-${product.key}`"
-                  class="wf-share-agent-credit-field"
+              <div class="wf-share-agent-rebate-list">
+                <article
+                  v-for="category in activeRebateCategories"
+                  :key="`${activeCreditFormKey}-rebate-${category.key}`"
+                  class="wf-share-agent-rebate-cat"
                 >
-                  <label class="wf-share-agent-credit-field__label">{{ product.name }}</label>
-                  <div class="wf-modal__pct-row">
-                    <input
-                      v-model.number="product.rebate"
-                      type="text"
-                      inputmode="decimal"
-                      class="wf-input wf-input--pct"
-                      :placeholder="creditPercentRangeLabel(product.maxRebate)"
-                      :pattern="creditPercentInputPattern()"
-                      :title="`${activeRebateLabel}区间 ${creditPercentRangeLabel(product.maxRebate)}%，x 为上级代理该品类最大值`"
-                    />
-                    <span class="wf-pct">%</span>
+                  <div class="wf-share-agent-rebate-cat__head">
+                    <label class="wf-share-agent-rebate-cat__name">{{ category.name }}</label>
+                    <div class="wf-share-agent-rebate-cat__control">
+                      <div class="wf-share-agent-rebate-slider">
+                        <input
+                          :value="category.rebate"
+                          type="range"
+                          min="0"
+                          max="100"
+                          step="1"
+                          :aria-label="`${category.name}退水`"
+                          :title="`${category.name}退水滑块，区间 0-100%`"
+                          @input="onCategoryRebateInput(category, $event)"
+                        />
+                        <span class="wf-share-agent-rebate-slider__value">{{ category.rebate }}%</span>
+                      </div>
+                      <p class="wf-share-agent-credit-field__range">区间 0-100%</p>
+                    </div>
                   </div>
-                  <p class="wf-share-agent-credit-field__range">
-                    区间 {{ creditPercentRangeLabel(product.maxRebate) }}%
-                  </p>
-                  <p v-if="rebateError(product)" class="wf-share-agent-credit-field__error">
-                    {{ rebateError(product) }}
-                  </p>
-                </div>
+                  <div class="wf-share-agent-credit-grid">
+                    <div
+                      v-for="product in category.products"
+                      :key="`${category.key}-${product.key}`"
+                      class="wf-share-agent-credit-field"
+                    >
+                      <label class="wf-share-agent-credit-field__label">{{ product.name }}</label>
+                      <div class="wf-modal__pct-row">
+                        <input
+                          v-model="product.rebate"
+                          type="text"
+                          inputmode="decimal"
+                          class="wf-input wf-input--pct"
+                          :placeholder="`0-${formatRebateRate(product.maxRebate)}`"
+                          :pattern="creditPercentInputPattern()"
+                          :title="`${product.name}退水区间 0-${formatRebateRate(product.maxRebate)}%`"
+                        />
+                        <span class="wf-pct">%</span>
+                      </div>
+                      <p class="wf-share-agent-credit-field__range">
+                        区间 0-{{ formatRebateRate(product.maxRebate) }}%
+                      </p>
+                      <p
+                        v-if="rebateProductError(category, product.key)"
+                        class="wf-share-agent-credit-field__error"
+                      >
+                        {{ rebateProductError(category, product.key) }}
+                      </p>
+                    </div>
+                  </div>
+                </article>
               </div>
             </section>
 

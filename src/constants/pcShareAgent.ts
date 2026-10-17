@@ -79,6 +79,151 @@ export function cloneShareAgentProducts() {
   return PC_SHARE_AGENT_PRODUCTS.map((item) => ({ ...item }))
 }
 
+export type PcShareAgentRebateProduct = {
+  key: string
+  name: string
+  rebate: number | ''
+  /** 该产品退水上限 */
+  maxRebate: number
+}
+
+/** 大类滑块固定 0～100，表示按各产品上限的百分比带出退水 */
+export const REBATE_CATEGORY_PERCENT_MAX = 100
+
+export type PcShareAgentRebateCategory = {
+  key: string
+  name: string
+  /** 大类滑块，0～100 */
+  rebate: number
+  products: PcShareAgentRebateProduct[]
+}
+
+/** 按大类滑块百分比，把每个产品退水设为自身上限的对应比例，保留两位小数 */
+export function applyCategoryRebate(category: PcShareAgentRebateCategory) {
+  const percent = Number(category.rebate)
+  if (!Number.isInteger(percent) || percent < 0 || percent > REBATE_CATEGORY_PERCENT_MAX) return
+  category.products.forEach((product) => {
+    const scaled = Math.round(product.maxRebate * percent) / 100
+    product.rebate = Math.min(product.maxRebate, scaled)
+  })
+}
+
+export function formatRebateRate(value: number) {
+  return value.toFixed(2)
+}
+
+/** 退水大类及下属产品。大类是 0～100 滑块；产品上限是具体退水，如 0.15 表示 0.15% */
+const PC_SHARE_AGENT_REBATE_CATEGORIES: PcShareAgentRebateCategory[] = [
+  {
+    key: 'chess',
+    name: '棋牌',
+    rebate: 0,
+    products: [
+      { key: 'im', name: 'IM棋牌', rebate: 0, maxRebate: 0.15 },
+      { key: 'cdn', name: 'CDN棋牌', rebate: 0, maxRebate: 0.12 },
+      { key: 'niuniu', name: '牛牛大战', rebate: 0, maxRebate: 0.08 },
+    ],
+  },
+  {
+    key: 'fun',
+    name: '趣投',
+    rebate: 0,
+    products: [
+      { key: 'crash', name: '爆点', rebate: 0, maxRebate: 0.2 },
+      { key: 'mini', name: '小游戏', rebate: 0, maxRebate: 0.15 },
+      { key: 'rocket', name: '火箭', rebate: 0, maxRebate: 0.18 },
+    ],
+  },
+  {
+    key: 'esports',
+    name: '电竞',
+    rebate: 0,
+    products: [
+      { key: 'im', name: 'IM电竞', rebate: 0, maxRebate: 0.25 },
+      { key: 'tf', name: '雷火电竞', rebate: 0, maxRebate: 0.16 },
+    ],
+  },
+  {
+    key: 'fishing',
+    name: '捕鱼',
+    rebate: 0,
+    products: [
+      { key: 'master', name: '捕鱼达人', rebate: 0, maxRebate: 0.1 },
+      { key: 'im', name: 'IM捕鱼', rebate: 0, maxRebate: 0.06 },
+    ],
+  },
+  {
+    key: 'scratch',
+    name: '刮刮乐',
+    rebate: 0,
+    products: [
+      { key: 'ggl', name: 'GGL刮乐', rebate: 0, maxRebate: 0.12 },
+      { key: 'lucky', name: '幸运刮刮乐', rebate: 0, maxRebate: 0.08 },
+    ],
+  },
+  {
+    key: 'hot',
+    name: '热门类',
+    rebate: 0,
+    products: [
+      { key: 'slot', name: '热门电子', rebate: 0, maxRebate: 0.18 },
+      { key: 'chess', name: '热门棋牌', rebate: 0, maxRebate: 0.09 },
+    ],
+  },
+  {
+    key: 'sports',
+    name: '体育',
+    rebate: 0,
+    products: [
+      { key: 'im', name: 'IM体育', rebate: 0, maxRebate: 0.22 },
+      { key: 'saba', name: 'SABA体育', rebate: 0, maxRebate: 0.14 },
+    ],
+  },
+  {
+    key: 'live',
+    name: '真人',
+    rebate: 0,
+    products: [
+      { key: 'im', name: 'IM真人', rebate: 0, maxRebate: 0.3 },
+      { key: 'pa', name: 'PA真人', rebate: 0, maxRebate: 0.11 },
+    ],
+  },
+  {
+    key: 'lottery',
+    name: '彩票',
+    rebate: 0,
+    products: [
+      { key: 'saba', name: 'SABA彩票', rebate: 0, maxRebate: 0.16 },
+      { key: 'kuai3', name: '一分快三', rebate: 0, maxRebate: 0.05 },
+    ],
+  },
+  {
+    key: 'marble',
+    name: '弹珠',
+    rebate: 0,
+    products: [
+      { key: 'im', name: 'IM弹珠', rebate: 0, maxRebate: 0.09 },
+      { key: 'magic', name: '魔幻弹珠', rebate: 0, maxRebate: 0.04 },
+    ],
+  },
+  {
+    key: 'slots',
+    name: '老虎机',
+    rebate: 0,
+    products: [
+      { key: 'pp', name: 'PP老虎机', rebate: 0, maxRebate: 0.28 },
+      { key: 'pg', name: 'PG老虎机', rebate: 0, maxRebate: 0.19 },
+    ],
+  },
+]
+
+export function cloneShareAgentRebateCategories() {
+  return PC_SHARE_AGENT_REBATE_CATEGORIES.map((category) => ({
+    ...category,
+    products: category.products.map((product) => ({ ...product })),
+  }))
+}
+
 /** 授信弹框 · 占成/退水比例输入正则（非负数字，最多两位小数） */
 export const CREDIT_PERCENT_INPUT_REGEX = /^\d+(\.\d{1,2})?$/
 
@@ -147,13 +292,33 @@ export const SHARE_AGENT_REBATE_LABEL = '设置退水'
 
 export { SHARE_AGENT_REBATE_SPEC } from './shareAgentConfigSpec'
 
-/** 校验退水比例：区间 0 ~ max（上级代理该品类最大值） */
+/** 校验退水比例：区间 0 ~ max */
 export function validateRebatePercent(
   raw: string | number,
   max: number,
   fieldLabel = '退水比例',
+  maxFieldLabel = '品类',
 ): string {
-  return validateCreditPercentInRange(raw, max, fieldLabel, '品类')
+  return validateCreditPercentInRange(raw, max, fieldLabel, maxFieldLabel)
+}
+
+export function validateCategoryRebate(category: PcShareAgentRebateCategory, fieldLabel = '退水') {
+  const message = validateRebatePercent(
+    category.rebate,
+    REBATE_CATEGORY_PERCENT_MAX,
+    `${category.name}${fieldLabel}`,
+    '大类',
+  )
+  if (message.startsWith('区间为')) return '区间为 0-100%'
+  return message
+}
+
+export function validateProductRebate(product: PcShareAgentRebateProduct, fieldLabel = '退水') {
+  const message = validateRebatePercent(product.rebate, product.maxRebate, `${product.name}${fieldLabel}`, '产品')
+  if (message.startsWith('区间为')) {
+    return `区间为 0-${formatRebateRate(product.maxRebate)}%，为该产品退水上限`
+  }
+  return message
 }
 
 /** 授信弹框 · 信用 Tab 标题 */
