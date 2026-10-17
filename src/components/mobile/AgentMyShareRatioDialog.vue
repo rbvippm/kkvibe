@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { AGENT_MY_SHARE_RATIO_ROWS } from '../../constants/agentMyShareRatio'
+import {
+  AGENT_MY_SHARE_OTHER_COST,
+  AGENT_MY_SHARE_RATIO_CATEGORIES,
+  isAgentMyShareAllZero,
+} from '../../constants/agentMyShareRatio'
+import {
+  formatProfitRatioPercent,
+  getAgentProfitRatioProductIcon,
+} from '../../constants/agentProfitRatio'
 import { t } from '../../i18n'
 import {
   getMatchedRebateTierId,
@@ -31,13 +39,18 @@ const emit = defineEmits<{
 }>()
 
 const isRebate = computed(() => props.mode === 'rebate')
-const shareRows = computed(() => AGENT_MY_SHARE_RATIO_ROWS)
+const shareCategories = computed(() => AGENT_MY_SHARE_RATIO_CATEGORIES)
+const otherCost = AGENT_MY_SHARE_OTHER_COST
+const shareAllZero = computed(() => isAgentMyShareAllZero(shareCategories.value, otherCost.share))
 const rebateTiers = computed(() => getRebateCommissionTiers(props.currency))
 const matchedTierId = computed(() =>
   isRebate.value ? getMatchedRebateTierId(props.currency) : null,
 )
 const chase = computed(() => (isRebate.value ? getRebateTierChase(props.currency) : null))
-const dialogLabel = computed(() => (isRebate.value ? t('返佣条件') : t('占成比例')))
+const dialogLabel = computed(() => {
+  if (isRebate.value) return t('返佣条件')
+  return shareAllZero.value ? t('退水比例') : t('占成比例')
+})
 
 const profitBarPct = computed(() => {
   const next = chase.value?.next
@@ -229,43 +242,69 @@ const chaseLine = computed(() => {
             </div>
           </template>
 
-          <!-- 占成：各游戏类型比例 -->
-          <div
+          <!-- 占成在大类，退水在小类；占成全为 0 时只留退水 -->
+          <section
             v-else
-            class="mh5-agent-my-share-dialog__table"
-            data-node-id="1433:25541"
-            role="table"
+            class="mh5-agent-my-share-dialog__ratios mh5-agent-profit-ratio-list"
+            aria-label="收益比例"
           >
-            <div class="mh5-agent-my-share-dialog__head" role="row">
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
-                role="columnheader"
-              >{{ $t('占成类型') }}</div>
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
-                role="columnheader"
-              >{{ $t('占成比例') }}</div>
-            </div>
-            <div
-              v-for="row in shareRows"
-              :key="row.key"
-              class="mh5-agent-my-share-dialog__row"
-              role="row"
+            <p v-if="shareCategories.length === 0" class="mh5-agent-my-share-dialog__empty">
+              {{ shareAllZero ? $t('暂无退水比例') : $t('暂无占成比例') }}
+            </p>
+            <article
+              v-for="category in shareCategories"
+              :key="category.key"
+              class="mh5-agent-profit-ratio-list__group"
             >
-              <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--type"
-                role="cell"
-              >
-                {{ $t(row.name) }}
+              <div class="mh5-agent-profit-ratio-list__row">
+                <div class="mh5-agent-profit-ratio-list__product">
+                  <span class="mh5-agent-profit-ratio-list__icon" aria-hidden="true">
+                    {{ getAgentProfitRatioProductIcon(category.key) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__name">{{ $t(category.name) }}</span>
+                </div>
+                <div v-if="!shareAllZero" class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                    {{ formatProfitRatioPercent(category.share) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(category.maxShare) }}</span>
+                </div>
               </div>
               <div
-                class="mh5-agent-my-share-dialog__cell mh5-agent-my-share-dialog__cell--ratio"
-                role="cell"
+                v-for="product in category.products"
+                :key="`${category.key}-${product.key}`"
+                class="mh5-agent-profit-ratio-list__row mh5-agent-profit-ratio-list__row--product"
               >
-                {{ row.shareText }}
+                <span class="mh5-agent-profit-ratio-list__name">{{ product.name }}</span>
+                <div class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
+                    {{ formatProfitRatioPercent(product.rebate) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxRebate) }}</span>
+                </div>
               </div>
-            </div>
-          </div>
+            </article>
+            <article
+              v-if="!shareAllZero"
+              class="mh5-agent-profit-ratio-list__group"
+            >
+              <div class="mh5-agent-profit-ratio-list__row">
+                <div class="mh5-agent-profit-ratio-list__product">
+                  <span class="mh5-agent-profit-ratio-list__icon" aria-hidden="true">成</span>
+                  <span class="mh5-agent-profit-ratio-list__name">{{ otherCost.name }}</span>
+                </div>
+                <div class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                    {{ formatProfitRatioPercent(otherCost.share) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(otherCost.maxShare) }}</span>
+                </div>
+              </div>
+            </article>
+          </section>
         </div>
 
         <button

@@ -5,9 +5,10 @@ import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { getAgentProfitRelationLabel } from '../../constants/agentProfitRatio'
 import {
+  formatMemberRebateNumber,
   formatMemberRebatePercent,
+  getMemberRebateCategories,
   getMemberRebateProductIcon,
-  getMemberRebateProducts,
   getMemberRebateUpdatedAt,
   isMemberCreditEnabled,
   MEMBER_REBATE_RATIO_TYPE_TABS,
@@ -41,7 +42,7 @@ watch(showCreditTabs, (enabled) => {
   if (!enabled) ratioType.value = 'cash'
 })
 
-const displayProducts = computed(() => getMemberRebateProducts(ratioType.value).value)
+const displayCategories = computed(() => getMemberRebateCategories(ratioType.value).value)
 const updatedAt = computed(() => getMemberRebateUpdatedAt(ratioType.value).value)
 
 function goEdit() {
@@ -121,19 +122,31 @@ function goEdit() {
       </nav>
 
       <section class="mh5-member-rebate-list" aria-label="产品退水">
-        <div
-          v-for="row in displayProducts"
-          :key="`${ratioType}-${row.key}`"
-          class="mh5-member-rebate-list__row"
+        <article
+          v-for="category in displayCategories"
+          :key="`${ratioType}-${category.key}`"
+          class="mh5-member-rebate-list__group"
         >
-          <div class="mh5-member-rebate-list__product">
-            <span class="mh5-member-rebate-list__icon" aria-hidden="true">
-              {{ getMemberRebateProductIcon(row.key) }}
-            </span>
-            <span class="mh5-member-rebate-list__name">{{ row.name }}</span>
+          <div class="mh5-member-rebate-list__row">
+            <div class="mh5-member-rebate-list__product">
+              <span class="mh5-member-rebate-list__icon" aria-hidden="true">
+                {{ getMemberRebateProductIcon(category.key) }}
+              </span>
+              <span class="mh5-member-rebate-list__name">{{ category.name }}</span>
+            </div>
           </div>
-          <span class="mh5-member-rebate-list__value">{{ formatMemberRebatePercent(row.rebate) }}</span>
-        </div>
+          <div
+            v-for="product in category.products"
+            :key="`${category.key}-${product.key}`"
+            class="mh5-member-rebate-list__row mh5-member-rebate-list__row--product"
+          >
+            <span class="mh5-member-rebate-list__name">{{ product.name }}</span>
+            <div class="mh5-member-rebate-list__meta">
+              <span class="mh5-member-rebate-list__value">{{ formatMemberRebatePercent(product.rebate) }}</span>
+              <span class="mh5-member-rebate-list__max">最高{{ formatMemberRebateNumber(product.maxRebate) }}%</span>
+            </div>
+          </div>
+        </article>
       </section>
 
       <p class="mh5-member-rebate-updated">修改时间 {{ updatedAt }}</p>

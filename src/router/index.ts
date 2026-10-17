@@ -285,6 +285,18 @@ export const router = createRouter({
           meta: { title: '设置会员退水', hideTabBar: true },
         },
         {
+          path: 'agent/member/default-rebate',
+          name: 'mobile-member-default-rebate',
+          component: () => import('../views/mobile/MobileMemberDefaultRebateView.vue'),
+          meta: { title: '会员默认退水', hideTabBar: true },
+        },
+        {
+          path: 'agent/member/default-rebate/edit',
+          name: 'mobile-member-default-rebate-edit',
+          component: () => import('../views/mobile/MobileMemberDefaultRebateEditView.vue'),
+          meta: { title: '设置默认退水', hideTabBar: true },
+        },
+        {
           path: 'agent/member/credit',
           name: 'mobile-member-credit',
           component: () => import('../views/mobile/MobileMemberCreditView.vue'),

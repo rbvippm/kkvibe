@@ -30,12 +30,17 @@ const profitRows = computed(() => {
   )
 })
 
-const CREDIT_MENU_KEYS = new Set(['credit-agent', 'credit-member', 'credit-record'])
+const SHARE_ONLY_MENU_KEYS = new Set([
+  'member-default-rebate',
+  'credit-agent',
+  'credit-member',
+  'credit-record',
+])
 
 /** 返佣代理无上下分 / 信用额度记录入口 */
 const menuItems = computed(() =>
   isRebateAgent.value
-    ? AGENT_ME_MENU_ITEMS.filter((item) => !CREDIT_MENU_KEYS.has(item.key))
+    ? AGENT_ME_MENU_ITEMS.filter((item) => !SHARE_ONLY_MENU_KEYS.has(item.key))
     : AGENT_ME_MENU_ITEMS,
 )
 
@@ -133,6 +138,15 @@ function openMenu(item: AgentMeMenuItem) {
               width="20"
               height="20"
             />
+            <svg v-else-if="item.icon === 'member-rebate'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 17V7M12 17V11M17 17V5"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+              />
+              <path d="M5 17h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
             <svg v-else-if="item.icon === 'credit-record'" width="20" height="20" viewBox="0 0 24 24" fill="none">
               <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.6" />
               <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />

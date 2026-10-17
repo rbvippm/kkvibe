@@ -11,8 +11,9 @@ import {
   AGENT_PROFIT_RATIO_TYPE_TABS,
   formatProfitRatioPercent,
   getAgentProfitCost,
+  getAgentProfitRatioProductIcon,
   getAgentProfitRelationLabel,
-  getAgentProfitRatioProducts,
+  getAgentProfitRatioCategories,
   isAgentCreditEnabled,
   parseAgentProfitRatioType,
   resolveAgentKindHint,
@@ -45,7 +46,7 @@ watch(showCreditTabs, (enabled) => {
   if (!enabled) ratioType.value = 'cash'
 })
 
-const displayProducts = computed(() => getAgentProfitRatioProducts(ratioType.value).value)
+const displayCategories = computed(() => getAgentProfitRatioCategories(ratioType.value).value)
 const displayCost = computed(() => getAgentProfitCost(ratioType.value).value)
 const maxCost = DEFAULT_AGENT_CREDIT_MAX_COST
 
@@ -139,31 +140,42 @@ function goEdit() {
         </div>
       </section>
 
-      <section class="mh5-agent-profit-ratio-table-wrap">
-        <table class="mh5-agent-profit-ratio-table">
-          <thead>
-            <tr>
-              <th scope="col" />
-              <th scope="col">占成</th>
-              <th scope="col">退水</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in displayProducts" :key="`${ratioType}-${row.key}`">
-              <td class="mh5-agent-profit-ratio-table__product">{{ row.name }}</td>
-              <td>
-                <span class="mh5-agent-profit-ratio-table__value">
-                  {{ formatProfitRatioPercent(row.share) }}
-                </span>
-              </td>
-              <td>
-                <span class="mh5-agent-profit-ratio-table__value">
-                  {{ formatProfitRatioPercent(row.rebate) }}
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <section class="mh5-agent-profit-ratio-list" aria-label="收益比例">
+        <article
+          v-for="category in displayCategories"
+          :key="`${ratioType}-${category.key}`"
+          class="mh5-agent-profit-ratio-list__group"
+        >
+          <div class="mh5-agent-profit-ratio-list__row">
+            <div class="mh5-agent-profit-ratio-list__product">
+              <span class="mh5-agent-profit-ratio-list__icon" aria-hidden="true">
+                {{ getAgentProfitRatioProductIcon(category.key) }}
+              </span>
+              <span class="mh5-agent-profit-ratio-list__name">{{ category.name }}</span>
+            </div>
+            <div class="mh5-agent-profit-ratio-list__meta">
+              <span class="mh5-agent-profit-ratio-list__value">
+                <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                {{ formatProfitRatioPercent(category.share) }}
+              </span>
+              <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(category.maxShare) }}</span>
+            </div>
+          </div>
+          <div
+            v-for="product in category.products"
+            :key="`${category.key}-${product.key}`"
+            class="mh5-agent-profit-ratio-list__row mh5-agent-profit-ratio-list__row--product"
+          >
+            <span class="mh5-agent-profit-ratio-list__name">{{ product.name }}</span>
+            <div class="mh5-agent-profit-ratio-list__meta">
+              <span class="mh5-agent-profit-ratio-list__value">
+                <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
+                {{ formatProfitRatioPercent(product.rebate) }}
+              </span>
+              <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxRebate) }}</span>
+            </div>
+          </div>
+        </article>
       </section>
     </main>
   </div>

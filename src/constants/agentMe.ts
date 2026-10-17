@@ -10,7 +10,7 @@ export type AgentMeProfitRow = {
 export type AgentMeMenuItem = {
   key: string
   title: string
-  icon: 'promo' | 'credit-agent' | 'credit-member' | 'credit-record'
+  icon: 'promo' | 'member-rebate' | 'credit-agent' | 'credit-member' | 'credit-record'
   routeName?: string
 }
 
@@ -56,6 +56,12 @@ export const MOCK_AGENT_ME_UPDATED_AT = '2026-06-18 00:18:58'
 
 export const AGENT_ME_MENU_ITEMS: AgentMeMenuItem[] = [
   { key: 'promo', title: '我的推广', icon: 'promo' },
+  {
+    key: 'member-default-rebate',
+    title: '会员默认退水',
+    icon: 'member-rebate',
+    routeName: 'mobile-member-default-rebate',
+  },
   {
     key: 'credit-agent',
     title: '给代理上下分',

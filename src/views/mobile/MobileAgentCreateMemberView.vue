@@ -1,103 +1,147 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import Mh5AgentCreateIdentityField from '../../components/mobile/Mh5AgentCreateIdentityField.vue'
+import Mh5MemberRebateEditor from '../../components/mobile/Mh5MemberRebateEditor.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
   AGENT_CREATE_MEMBER_DEFAULTS,
-  AGENT_CREATE_MEMBER_DIAL_CODES,
   AGENT_CREATE_MEMBER_KINGKONG_URL,
   AGENT_CREATE_MEMBER_REBATE_STEPS,
+  AGENT_CREATE_MEMBER_SHARE_STEPS,
 } from '../../constants/agentCreateMember'
+import {
+  AGENT_CREATE_PASSWORD_HINT,
+  formatCreateIdentityAccount,
+  validateCreateIdentity,
+  validateCreatePassword,
+  type AgentCreateIdentityMethod,
+} from '../../constants/agentCreateIdentity'
 import { AGENT_CREATE_MEMBER_SPEC } from '../../constants/agentCreateMemberSpec'
 import { addTeamDirectMember } from '../../constants/agentTeam'
+import {
+  createBlankMemberRebateCategories,
+  saveMemberRebateCategories,
+  type MemberRebateCategory,
+} from '../../constants/memberRebateRatio'
 import '../../styles/mobile-app-shell.css'
 
-type CreateMemberStep = 1 | 2
+type CreateMemberStep = 'account' | 'rebate' | 'success'
 
 const router = useRouter()
-const { withAgentQuery } = useAgentIdentity()
+const { isShareAgent, withAgentQuery } = useAgentIdentity()
 
-const step = ref<CreateMemberStep>(1)
+const steps = computed(() =>
+  isShareAgent.value ? AGENT_CREATE_MEMBER_SHARE_STEPS : AGENT_CREATE_MEMBER_REBATE_STEPS,
+)
+
+const step = ref<CreateMemberStep>('account')
+const loginMethod = ref<AgentCreateIdentityMethod>('account')
+const loginAccount = ref('')
+const loginPhone = ref('')
+const loginEmail = ref('')
 const dialCode = ref<string>(AGENT_CREATE_MEMBER_DEFAULTS.dialCode)
-const memberAccount = ref(AGENT_CREATE_MEMBER_DEFAULTS.memberAccount)
 const password = ref(AGENT_CREATE_MEMBER_DEFAULTS.password)
 const confirmPassword = ref(AGENT_CREATE_MEMBER_DEFAULTS.confirmPassword)
 const remark = ref(AGENT_CREATE_MEMBER_DEFAULTS.remark)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const dialPickerOpen = ref(false)
 
 const createdAccountDisplay = ref('')
 const createdPassword = ref('')
+const rebateCategories = ref<MemberRebateCategory[]>(createBlankMemberRebateCategories())
+const rebateEditor = ref<{ firstError: () => string } | null>(null)
 
-const isAccountStep = computed(() => step.value === 1)
-const isSuccessStep = computed(() => step.value === 2)
+const isAccountStep = computed(() => step.value === 'account')
+const isRebateStep = computed(() => step.value === 'rebate')
+const isSuccessStep = computed(() => step.value === 'success')
 const pageTitle = computed(() => (isSuccessStep.value ? '创建成功' : '创建会员账户'))
 
-const fullAccount = computed(() => {
-  const account = memberAccount.value.trim()
-  if (!account) return ''
-  return `${dialCode.value} ${account}`
-})
+function currentLoginAccount() {
+  return formatCreateIdentityAccount({
+    method: loginMethod.value,
+    account: loginAccount.value,
+    phone: loginPhone.value,
+    email: loginEmail.value,
+    dialCode: dialCode.value,
+  })
+}
+
+function stepIndex() {
+  return steps.value.findIndex((item) => item.key === step.value)
+}
 
 function stepStatus(index: number): 'active' | 'done' | 'pending' {
-  if (step.value > index + 1) return 'done'
-  if (step.value === index + 1) return 'active'
+  const current = stepIndex()
+  if (index < current) return 'done'
+  if (index === current) return 'active'
   return 'pending'
 }
 
 function isStepLineDone(index: number) {
-  return step.value > index + 1
+  return stepIndex() > index
 }
 
 function goBack() {
-  if (step.value === 2) {
-    step.value = 1
+  if (step.value === 'success') {
+    step.value = isShareAgent.value ? 'rebate' : 'account'
+    return
+  }
+  if (step.value === 'rebate') {
+    step.value = 'account'
     return
   }
   router.back()
 }
 
-function pickDialCode(code: string) {
-  dialCode.value = code
-  dialPickerOpen.value = false
-}
-
 function resetForm() {
+  loginMethod.value = 'account'
+  loginAccount.value = ''
+  loginPhone.value = ''
+  loginEmail.value = ''
   dialCode.value = AGENT_CREATE_MEMBER_DEFAULTS.dialCode
-  memberAccount.value = ''
   password.value = ''
   confirmPassword.value = ''
   remark.value = ''
   showPassword.value = false
   showConfirmPassword.value = false
-  dialPickerOpen.value = false
   createdAccountDisplay.value = ''
   createdPassword.value = ''
+  rebateCategories.value = createBlankMemberRebateCategories()
 }
 
-async function submitCreate() {
-  if (!memberAccount.value.trim()) {
-    await mh5Alert('请填写会员账号')
-    return
+async function validateAccount() {
+  const identityError = validateCreateIdentity({
+    method: loginMethod.value,
+    account: loginAccount.value,
+    phone: loginPhone.value,
+    email: loginEmail.value,
+  })
+  if (identityError) {
+    await mh5Alert(identityError)
+    return false
   }
-  if (!password.value) {
-    await mh5Alert('请填写设置密码')
-    return
+  const passwordError = validateCreatePassword(password.value)
+  if (passwordError) {
+    await mh5Alert(passwordError)
+    return false
   }
   if (!confirmPassword.value) {
     await mh5Alert('请填写确认密码')
-    return
+    return false
   }
   if (password.value !== confirmPassword.value) {
     await mh5Alert('两次密码不一致')
-    return
+    return false
   }
+  return true
+}
 
-  const display = fullAccount.value
+function finishCreate() {
+  const display = currentLoginAccount()
   createdAccountDisplay.value = display
   createdPassword.value = password.value
 
@@ -111,7 +155,26 @@ async function submitCreate() {
     online: true,
   })
 
-  step.value = 2
+  step.value = 'success'
+}
+
+async function submitAccount() {
+  if (!(await validateAccount())) return
+  if (isShareAgent.value) {
+    step.value = 'rebate'
+    return
+  }
+  finishCreate()
+}
+
+async function submitRebate() {
+  const message = rebateEditor.value?.firstError() ?? ''
+  if (message) {
+    await mh5Alert(message)
+    return
+  }
+  saveMemberRebateCategories('cash', rebateCategories.value)
+  finishCreate()
 }
 
 async function copyInfo() {
@@ -134,7 +197,7 @@ function backToAgentCenter() {
 
 function continueCreate() {
   resetForm()
-  step.value = 1
+  step.value = 'account'
 }
 </script>
 
@@ -147,7 +210,7 @@ function continueCreate() {
     </Mh5SubPageHeader>
 
     <div class="mh5-agent-credit-steps" aria-label="创建进度">
-      <template v-for="(item, index) in AGENT_CREATE_MEMBER_REBATE_STEPS" :key="item.key">
+      <template v-for="(item, index) in steps" :key="item.key">
         <div
           class="mh5-agent-credit-step"
           :class="{
@@ -175,7 +238,7 @@ function continueCreate() {
           <span class="mh5-agent-credit-step__label">{{ item.label }}</span>
         </div>
         <span
-          v-if="index < AGENT_CREATE_MEMBER_REBATE_STEPS.length - 1"
+          v-if="index < steps.length - 1"
           class="mh5-agent-credit-steps__line"
           :class="{ 'mh5-agent-credit-steps__line--done': isStepLineDone(index) }"
           aria-hidden="true"
@@ -184,51 +247,13 @@ function continueCreate() {
     </div>
 
     <main v-if="isAccountStep" class="mh5-agent-credit-main mh5-agent-create-account">
-      <div class="mh5-agent-create-field">
-        <span class="mh5-agent-create-field__label">会员账号</span>
-        <div class="mh5-agent-create-field__combo">
-          <button
-            type="button"
-            class="mh5-agent-create-field__dial"
-            :aria-expanded="dialPickerOpen"
-            aria-label="选择区号"
-            @click="dialPickerOpen = !dialPickerOpen"
-          >
-            {{ dialCode }}
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M3 4.5 6 7.5 9 4.5"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <input
-            v-model="memberAccount"
-            class="mh5-agent-create-field__input mh5-agent-create-field__input--combo"
-            type="text"
-            inputmode="tel"
-            placeholder="请输入会员账号"
-            autocomplete="username"
-          />
-        </div>
-        <div v-if="dialPickerOpen" class="mh5-agent-create-dial-list" role="listbox" aria-label="区号">
-          <button
-            v-for="code in AGENT_CREATE_MEMBER_DIAL_CODES"
-            :key="code"
-            type="button"
-            class="mh5-agent-create-dial-list__item"
-            :class="{ 'mh5-agent-create-dial-list__item--active': dialCode === code }"
-            role="option"
-            :aria-selected="dialCode === code"
-            @click="pickDialCode(code)"
-          >
-            {{ code }}
-          </button>
-        </div>
-      </div>
+      <Mh5AgentCreateIdentityField
+        v-model:method="loginMethod"
+        v-model:account="loginAccount"
+        v-model:phone="loginPhone"
+        v-model:email="loginEmail"
+        v-model:dial-code="dialCode"
+      />
 
       <label class="mh5-agent-create-field">
         <span class="mh5-agent-create-field__label">设置密码</span>
@@ -263,6 +288,7 @@ function continueCreate() {
             </svg>
           </button>
         </div>
+        <p class="mh5-agent-create-identity__hint">{{ AGENT_CREATE_PASSWORD_HINT }}</p>
       </label>
 
       <label class="mh5-agent-create-field">
@@ -309,6 +335,10 @@ function continueCreate() {
           placeholder="选填，如客户备注"
         />
       </label>
+    </main>
+
+    <main v-else-if="isRebateStep" class="mh5-agent-credit-main">
+      <Mh5MemberRebateEditor ref="rebateEditor" :categories="rebateCategories" />
     </main>
 
     <main v-else class="mh5-agent-create-member-success">
@@ -364,7 +394,19 @@ function continueCreate() {
         <button
           type="button"
           class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
-          @click="submitCreate"
+          @click="submitAccount"
+        >
+          {{ isShareAgent ? '下一步' : '创建' }}
+        </button>
+      </template>
+      <template v-else-if="isRebateStep">
+        <button type="button" class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--ghost" @click="goBack">
+          上一步
+        </button>
+        <button
+          type="button"
+          class="mh5-agent-credit-footer__btn mh5-agent-credit-footer__btn--primary"
+          @click="submitRebate"
         >
           创建
         </button>

@@ -670,14 +670,25 @@ export const BILLING_VIP_HOT_KEYWORDS = [
 
 const RECENT_SEARCH_STORAGE_KEY = 'mh5-billing-recent-searches'
 
+/**
+ * 账单金额按原精度展示，不统一收成两位。
+ * 彩票可到三位小数；其余不足两位补 0，第三位为 0 时仍显示两位。
+ */
+export function formatBillingPlainAmount(amount: number) {
+  const abs = Math.abs(amount)
+  if (!Number.isFinite(abs)) return '0.00'
+  const fixed = abs.toFixed(3)
+  return fixed.endsWith('0') ? fixed.slice(0, -1) : fixed
+}
+
 export function formatBillingAmount(amount: number) {
   const sign = amount > 0 ? '+' : amount < 0 ? '-' : ''
-  return `${sign}${Math.abs(amount).toFixed(2)}`
+  return `${sign}${formatBillingPlainAmount(amount)}`
 }
 
 export function formatBillingHeroAmount(amount: number) {
   const sign = amount > 0 ? '+' : amount < 0 ? '-' : ''
-  return `${sign}${Math.abs(amount).toFixed(2)}`
+  return `${sign}${formatBillingPlainAmount(amount)}`
 }
 
 /** 详情时间：2026-05-08 10:20:18 */
@@ -879,7 +890,7 @@ export function summarizeBillingMonth(records: BillingRecord[]) {
 }
 
 export function formatBillingSummaryAmount(amount: number) {
-  return amount.toFixed(2)
+  return formatBillingPlainAmount(amount)
 }
 
 export function readRecentBillingSearches(): string[] {

@@ -8,27 +8,30 @@ import {
   AGENT_CREATE_ACCOUNT_DEFAULTS,
   AGENT_CREATE_ACCOUNT_REBATE_STEPS,
   AGENT_CREATE_ACCOUNT_STEPS,
-  AGENT_CREATE_DIAL_CODES,
   AGENT_CREDIT_STEPS,
   DEFAULT_AGENT_CREDIT_MAX_COST,
-  DEFAULT_AGENT_CREDIT_PRODUCTS,
   formatCreditPercent,
   isValidCostPercent,
-  isValidRebatePercent,
-  isValidSharePercent,
   normalizeCostPercent,
-  normalizeRebatePercent,
-  type AgentCreditProduct,
 } from '../../constants/agentCredit'
 import { AGENT_CREATE_ACCOUNT_SPEC, AGENT_CREDIT_SPEC } from '../../constants/agentCreditSpec'
-import { syncCreditProfitRatioFromCredit } from '../../constants/agentProfitRatio'
+import { syncCreditProfitRatioFromCredit, createBlankAgentShareRebateCategories, type AgentProfitRatioCategory } from '../../constants/agentProfitRatio'
+import Mh5AgentCreateIdentityField from '../../components/mobile/Mh5AgentCreateIdentityField.vue'
+import Mh5AgentShareRebateList from '../../components/mobile/Mh5AgentShareRebateList.vue'
+import {
+  AGENT_CREATE_PASSWORD_HINT,
+  formatCreateIdentityAccount,
+  validateCreateIdentity,
+  validateCreatePassword,
+  type AgentCreateIdentityMethod,
+} from '../../constants/agentCreateIdentity'
 import { createTeamAgentAccount, promoteToCreditAgent } from '../../constants/agentTeam'
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 /** 授信：1 收益比例 / 2 成功；占成创建：1 账号 / 2 比例 / 3 完成；返佣创建：1 账号 / 2 完成 */
 type CreditStep = 1 | 2 | 3
-type EditField = 'share' | 'rebate' | 'cost'
+type EditField = 'cost'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,23 +49,23 @@ const sharePercent = ref(0)
 const rebatePercent = ref(0)
 const costPercent = ref(0)
 const maxCost = DEFAULT_AGENT_CREDIT_MAX_COST
-const products = ref<AgentCreditProduct[]>(
-  DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item })),
-)
+const categories = ref<AgentProfitRatioCategory[]>(createBlankAgentShareRebateCategories())
 const createdNickname = ref('')
 
 const parentAgent = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.parentAgent)
+const loginMethod = ref<AgentCreateIdentityMethod>('account')
+const loginAccount = ref('')
+const loginPhone = ref('')
+const loginEmail = ref('')
 const dialCode = ref<string>(AGENT_CREATE_ACCOUNT_DEFAULTS.dialCode)
-const kingkongAccount = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.kingkongAccount)
 const password = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.password)
 const confirmPassword = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.confirmPassword)
 const remark = ref(AGENT_CREATE_ACCOUNT_DEFAULTS.remark)
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const dialPickerOpen = ref(false)
 
 const editVisible = ref(false)
-const editField = ref<EditField>('share')
+const editField = ref<EditField>('cost')
 const editProductKey = ref('')
 const editDraft = ref('')
 const editError = ref('')
@@ -114,43 +117,25 @@ const primaryActionLabel = computed(() => (isCreateMode.value ? '继续创建' :
 
 const accountPrimaryLabel = computed(() => (isRebateCreate.value ? '创建' : '下一步'))
 
-const editingProduct = computed(() =>
-  products.value.find((item) => item.key === editProductKey.value),
-)
-
-const editMax = computed(() => {
-  if (editField.value === 'cost') return maxCost
-  if (!editingProduct.value) return 0
-  return editField.value === 'share' ? editingProduct.value.maxShare : editingProduct.value.maxRebate
-})
-
-const editTitle = computed(() => {
-  if (editField.value === 'cost') return '编辑其他成本'
-  if (!editingProduct.value) return '编辑比例'
-  const label = editField.value === 'share' ? '占成' : '退水'
-  return `编辑${editingProduct.value.name}${label}`
-})
-
-const editPercentKind = computed(() =>
-  editField.value === 'share' || editField.value === 'cost' ? 'share' : 'rebate',
-)
-
-const editInputMode = computed(() =>
-  editField.value === 'share' || editField.value === 'cost' ? 'numeric' : 'decimal',
-)
+const editMax = computed(() => maxCost)
+const editTitle = computed(() => '编辑其他成本')
+const editPercentKind = computed(() => 'share' as const)
+const editInputMode = computed(() => 'numeric' as const)
 
 watch(sharePercent, (value) => {
   const next = Math.round(Math.min(100, Math.max(0, value)))
-  products.value.forEach((row) => {
-    row.share = Math.min(next, row.maxShare)
+  categories.value.forEach((category) => {
+    category.share = Math.min(next, category.maxShare)
   })
   costPercent.value = Math.min(next, maxCost)
 })
 
 watch(rebatePercent, (value) => {
-  const next = normalizeRebatePercent(Math.min(100, Math.max(0, value)))
-  products.value.forEach((row) => {
-    row.rebate = Math.min(next, row.maxRebate)
+  const next = Math.min(100, Math.max(0, Number(value.toFixed(2))))
+  categories.value.forEach((category) => {
+    category.products.forEach((product) => {
+      product.rebate = Math.min(next, product.maxRebate)
+    })
   })
 })
 
@@ -193,13 +178,30 @@ function goPrevious() {
   router.back()
 }
 
+function currentLoginAccount() {
+  return formatCreateIdentityAccount({
+    method: loginMethod.value,
+    account: loginAccount.value,
+    phone: loginPhone.value,
+    email: loginEmail.value,
+    dialCode: dialCode.value,
+  })
+}
+
 async function goNextFromAccount() {
-  if (!kingkongAccount.value.trim()) {
-    await mh5Alert('请填写金刚账号')
+  const identityError = validateCreateIdentity({
+    method: loginMethod.value,
+    account: loginAccount.value,
+    phone: loginPhone.value,
+    email: loginEmail.value,
+  })
+  if (identityError) {
+    await mh5Alert(identityError)
     return
   }
-  if (!password.value) {
-    await mh5Alert('请填写设置密码')
+  const passwordError = validateCreatePassword(password.value)
+  if (passwordError) {
+    await mh5Alert(passwordError)
     return
   }
   if (!confirmPassword.value) {
@@ -218,10 +220,10 @@ async function goNextFromAccount() {
 }
 
 function submitCreateAccount(options?: { asCredit?: boolean }) {
-  const created = createTeamAgentAccount(kingkongAccount.value.trim(), options)
+  const created = createTeamAgentAccount(currentLoginAccount(), options)
   createdNickname.value = created.nickname
   if (options?.asCredit !== false) {
-    syncCreditProfitRatioFromCredit(products.value, costPercent.value)
+    syncCreditProfitRatioFromCredit(categories.value, costPercent.value)
   }
   step.value = isRebateCreate.value ? 2 : 3
 }
@@ -236,7 +238,7 @@ function confirmCredit() {
   if (targetId) {
     promoteToCreditAgent(targetId, targetName)
   }
-  syncCreditProfitRatioFromCredit(products.value, costPercent.value)
+  syncCreditProfitRatioFromCredit(categories.value, costPercent.value)
   step.value = 2
 }
 
@@ -246,14 +248,16 @@ function backToAgentCenter() {
 
 function resetAccountForm() {
   parentAgent.value = AGENT_CREATE_ACCOUNT_DEFAULTS.parentAgent
+  loginMethod.value = 'account'
+  loginAccount.value = ''
+  loginPhone.value = ''
+  loginEmail.value = ''
   dialCode.value = AGENT_CREATE_ACCOUNT_DEFAULTS.dialCode
-  kingkongAccount.value = ''
   password.value = ''
   confirmPassword.value = ''
   remark.value = ''
   showPassword.value = false
   showConfirmPassword.value = false
-  dialPickerOpen.value = false
 }
 
 function continueCredit() {
@@ -262,13 +266,8 @@ function continueCredit() {
   rebatePercent.value = 0
   costPercent.value = 0
   createdNickname.value = ''
-  products.value = DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item }))
+  categories.value = createBlankAgentShareRebateCategories()
   if (isCreateMode.value) resetAccountForm()
-}
-
-function pickDialCode(code: string) {
-  dialCode.value = code
-  dialPickerOpen.value = false
 }
 
 function validateEditDraft(showEmptyError = false): number | null {
@@ -284,18 +283,8 @@ function validateEditDraft(showEmptyError = false): number | null {
     return null
   }
 
-  if (editField.value === 'share') {
-    if (!isValidSharePercent(next)) {
-      editError.value = '占成须为整数'
-      return null
-    }
-  } else if (editField.value === 'cost') {
-    if (!isValidCostPercent(next)) {
-      editError.value = '其他成本须为整数'
-      return null
-    }
-  } else if (!isValidRebatePercent(next)) {
-    editError.value = '退水最多支持两位小数'
+  if (!isValidCostPercent(next)) {
+    editError.value = '其他成本须为整数'
     return null
   }
 
@@ -312,25 +301,10 @@ function validateEditDraft(showEmptyError = false): number | null {
 function onEditDraftInput(event: Event) {
   const input = event.target as HTMLInputElement
   let value = input.value
-  if (editField.value === 'share' || editField.value === 'cost') {
-    value = value.replace(/[^\d]/g, '')
-  } else {
-    value = value.replace(/[^\d.]/g, '')
-    const parts = value.split('.')
-    if (parts.length > 2) value = `${parts[0]}.${parts.slice(1).join('')}`
-    if (parts[1]?.length > 2) value = `${parts[0]}.${parts[1].slice(0, 2)}`
-  }
+  value = value.replace(/[^\d]/g, '')
   editDraft.value = value
   input.value = value
   validateEditDraft()
-}
-
-function openEdit(row: AgentCreditProduct, field: 'share' | 'rebate') {
-  editField.value = field
-  editProductKey.value = row.key
-  editDraft.value = String(field === 'share' ? row.share : row.rebate)
-  editError.value = ''
-  editVisible.value = true
 }
 
 function openCostEdit() {
@@ -350,20 +324,7 @@ function saveEdit() {
   const next = validateEditDraft(true)
   if (next === null) return
 
-  if (editField.value === 'cost') {
-    costPercent.value = normalizeCostPercent(next)
-    closeEdit()
-    return
-  }
-
-  const product = editingProduct.value
-  if (!product) return
-
-  if (editField.value === 'share') {
-    product.share = next
-  } else {
-    product.rebate = normalizeRebatePercent(next)
-  }
+  costPercent.value = normalizeCostPercent(next)
   closeEdit()
 }
 </script>
@@ -426,51 +387,13 @@ function saveEdit() {
         />
       </label>
 
-      <div class="mh5-agent-create-field">
-        <span class="mh5-agent-create-field__label">金刚账号</span>
-        <div class="mh5-agent-create-field__combo">
-          <button
-            type="button"
-            class="mh5-agent-create-field__dial"
-            :aria-expanded="dialPickerOpen"
-            aria-label="选择区号"
-            @click="dialPickerOpen = !dialPickerOpen"
-          >
-            {{ dialCode }}
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M3 4.5 6 7.5 9 4.5"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <input
-            v-model="kingkongAccount"
-            class="mh5-agent-create-field__input mh5-agent-create-field__input--combo"
-            type="text"
-            inputmode="tel"
-            placeholder="请输入金刚账号"
-            autocomplete="username"
-          />
-        </div>
-        <div v-if="dialPickerOpen" class="mh5-agent-create-dial-list" role="listbox" aria-label="区号">
-          <button
-            v-for="code in AGENT_CREATE_DIAL_CODES"
-            :key="code"
-            type="button"
-            class="mh5-agent-create-dial-list__item"
-            :class="{ 'mh5-agent-create-dial-list__item--active': dialCode === code }"
-            role="option"
-            :aria-selected="dialCode === code"
-            @click="pickDialCode(code)"
-          >
-            {{ code }}
-          </button>
-        </div>
-      </div>
+      <Mh5AgentCreateIdentityField
+        v-model:method="loginMethod"
+        v-model:account="loginAccount"
+        v-model:phone="loginPhone"
+        v-model:email="loginEmail"
+        v-model:dial-code="dialCode"
+      />
 
       <label class="mh5-agent-create-field">
         <span class="mh5-agent-create-field__label">设置密码</span>
@@ -505,6 +428,7 @@ function saveEdit() {
             </svg>
           </button>
         </div>
+        <p class="mh5-agent-create-identity__hint">{{ AGENT_CREATE_PASSWORD_HINT }}</p>
       </label>
 
       <label class="mh5-agent-create-field">
@@ -626,64 +550,7 @@ function saveEdit() {
         </div>
       </section>
 
-      <section class="mh5-agent-credit-table-wrap">
-        <table class="mh5-agent-credit-table">
-          <thead>
-            <tr>
-              <th>产品</th>
-              <th>占成</th>
-              <th>退水</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in products" :key="row.key">
-              <td class="mh5-agent-credit-table__product">{{ row.name }}</td>
-              <td>
-                <div class="mh5-agent-credit-table__cell">
-                  <button
-                    type="button"
-                    class="mh5-agent-credit-table__value-btn"
-                    @click="openEdit(row, 'share')"
-                  >
-                    <span>{{ formatCreditPercent(row.share, 'share') }}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                      />
-                      <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare, 'share') }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="mh5-agent-credit-table__cell">
-                  <button
-                    type="button"
-                    class="mh5-agent-credit-table__value-btn"
-                    @click="openEdit(row, 'rebate')"
-                  >
-                    <span>{{ formatCreditPercent(row.rebate, 'rebate') }}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                      />
-                      <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate, 'rebate') }}</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      <Mh5AgentShareRebateList :categories="categories" />
     </main>
 
     <main v-else-if="isSuccessStep" class="mh5-agent-credit-success">
@@ -763,7 +630,7 @@ function saveEdit() {
               type="text"
               class="mh5-agent-credit-edit-panel__input"
               :inputmode="editInputMode"
-              :placeholder="editField === 'rebate' ? '最多两位小数' : '请输入整数'"
+              :placeholder="'请输入整数'"
               :aria-invalid="!!editError"
               @input="onEditDraftInput"
             />

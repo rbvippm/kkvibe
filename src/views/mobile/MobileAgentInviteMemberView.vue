@@ -5,15 +5,15 @@ import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   DEFAULT_AGENT_CREDIT_MAX_COST,
-  DEFAULT_AGENT_CREDIT_PRODUCTS,
   formatCreditPercent,
   isValidCostPercent,
-  isValidRebatePercent,
-  isValidSharePercent,
   normalizeCostPercent,
-  normalizeRebatePercent,
-  type AgentCreditProduct,
 } from '../../constants/agentCredit'
+import {
+  createBlankAgentShareRebateCategories,
+  type AgentProfitRatioCategory,
+} from '../../constants/agentProfitRatio'
+import Mh5AgentShareRebateList from '../../components/mobile/Mh5AgentShareRebateList.vue'
 import {
   AGENT_INVITE_MEMBER_REBATE_STEPS,
   AGENT_INVITE_MEMBER_STEPS,
@@ -26,7 +26,7 @@ import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 type InviteStep = 1 | 2 | 3
-type EditField = 'share' | 'rebate' | 'cost'
+type EditField = 'cost'
 
 const router = useRouter()
 const { isRebateAgent, withAgentQuery } = useAgentIdentity()
@@ -40,12 +40,10 @@ const sharePercent = ref(30)
 const rebatePercent = ref(30)
 const maxCost = DEFAULT_AGENT_CREDIT_MAX_COST
 const costPercent = ref(Math.min(30, maxCost))
-const products = ref<AgentCreditProduct[]>(
-  DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item })),
-)
+const categories = ref<AgentProfitRatioCategory[]>(createBlankAgentShareRebateCategories())
 
 const editVisible = ref(false)
-const editField = ref<EditField>('share')
+const editField = ref<EditField>('cost')
 const editProductKey = ref('')
 const editDraft = ref('')
 const editError = ref('')
@@ -73,37 +71,17 @@ const invitePrimaryLabel = computed(() =>
 
 const invitedMember = computed(() => (validation.value?.ok ? validation.value.member : null))
 
-const editingProduct = computed(() =>
-  products.value.find((item) => item.key === editProductKey.value),
-)
-
-const editMax = computed(() => {
-  if (editField.value === 'cost') return maxCost
-  if (!editingProduct.value) return 0.1
-  return editField.value === 'share' ? editingProduct.value.maxShare : editingProduct.value.maxRebate
-})
-
-const editTitle = computed(() => {
-  if (editField.value === 'cost') return '编辑其他成本'
-  if (!editingProduct.value) return '编辑比例'
-  const label = editField.value === 'share' ? '占成' : '退水'
-  return `编辑${editingProduct.value.name}${label}`
-})
-
-const editPercentKind = computed(() =>
-  editField.value === 'share' || editField.value === 'cost' ? 'share' : 'rebate',
-)
-
-const editInputMode = computed(() =>
-  editField.value === 'share' || editField.value === 'cost' ? 'numeric' : 'decimal',
-)
+const editMax = computed(() => maxCost)
+const editTitle = computed(() => '编辑其他成本')
+const editPercentKind = computed(() => 'share' as const)
+const editInputMode = computed(() => 'numeric' as const)
 
 watch(
   sharePercent,
   (value) => {
     const next = Math.round(Math.min(100, Math.max(0, value)))
-    products.value.forEach((row) => {
-      row.share = Math.min(next, row.maxShare)
+    categories.value.forEach((category) => {
+      category.share = Math.min(next, category.maxShare)
     })
     costPercent.value = Math.min(next, maxCost)
   },
@@ -113,9 +91,11 @@ watch(
 watch(
   rebatePercent,
   (value) => {
-    const next = normalizeRebatePercent(Math.min(100, Math.max(0, value)))
-    products.value.forEach((row) => {
-      row.rebate = Math.min(next, row.maxRebate)
+    const next = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))
+    categories.value.forEach((category) => {
+      category.products.forEach((product) => {
+        product.rebate = Math.min(next, product.maxRebate)
+      })
     })
   },
   { immediate: true },
@@ -180,10 +160,16 @@ function goInviteRecords() {
 }
 
 function resetProfitRatio() {
+  categories.value = createBlankAgentShareRebateCategories()
   sharePercent.value = 30
   rebatePercent.value = 30
+  categories.value.forEach((category) => {
+    category.share = Math.min(30, category.maxShare)
+    category.products.forEach((product) => {
+      product.rebate = Math.min(30, product.maxRebate)
+    })
+  })
   costPercent.value = Math.min(30, maxCost)
-  products.value = DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({ ...item }))
 }
 
 function continueInvite() {
@@ -207,18 +193,8 @@ function validateEditDraft(showEmptyError = false): number | null {
     return null
   }
 
-  if (editField.value === 'share') {
-    if (!isValidSharePercent(next)) {
-      editError.value = '占成须为整数'
-      return null
-    }
-  } else if (editField.value === 'cost') {
-    if (!isValidCostPercent(next)) {
-      editError.value = '其他成本须为整数'
-      return null
-    }
-  } else if (!isValidRebatePercent(next)) {
-    editError.value = '退水最多支持两位小数'
+  if (!isValidCostPercent(next)) {
+    editError.value = '其他成本须为整数'
     return null
   }
 
@@ -235,32 +211,11 @@ function onEditDraftInput(event: Event) {
   const target = event.target as HTMLInputElement
   const raw = target.value
 
-  if (editField.value === 'share' || editField.value === 'cost') {
-    const next = raw.replace(/[^\d]/g, '')
-    editDraft.value = next
-    if (target.value !== next) target.value = next
-  } else {
-    let next = raw.replace(/[^\d.]/g, '')
-    const firstDot = next.indexOf('.')
-    if (firstDot !== -1) {
-      next = next.slice(0, firstDot + 1) + next.slice(firstDot + 1).replace(/\./g, '')
-      const [intPart, fracPart = ''] = next.split('.')
-      next = `${intPart}.${fracPart.slice(0, 2)}`
-    }
-    editDraft.value = next
-    if (target.value !== next) target.value = next
-  }
+  const next = raw.replace(/[^\d]/g, '')
+  editDraft.value = next
+  if (target.value !== next) target.value = next
 
   validateEditDraft(false)
-}
-
-function openEdit(product: AgentCreditProduct, field: 'share' | 'rebate') {
-  editProductKey.value = product.key
-  editField.value = field
-  editDraft.value =
-    field === 'share' ? String(Math.round(product.share)) : String(Number(product.rebate.toFixed(2)))
-  editError.value = ''
-  editVisible.value = true
 }
 
 function openCostEdit() {
@@ -282,20 +237,7 @@ function saveEdit() {
   const next = validateEditDraft(true)
   if (next === null) return
 
-  if (editField.value === 'cost') {
-    costPercent.value = normalizeCostPercent(next)
-    closeEdit()
-    return
-  }
-
-  const product = editingProduct.value
-  if (!product) return
-
-  if (editField.value === 'share') {
-    product.share = next
-  } else {
-    product.rebate = normalizeRebatePercent(next)
-  }
+  costPercent.value = normalizeCostPercent(next)
   closeEdit()
 }
 </script>
@@ -373,7 +315,7 @@ function saveEdit() {
           <p class="agent-invite-member-card__label">待邀请会员</p>
           <p class="agent-invite-member-card__account">昵称：{{ validation.member.nickname }}</p>
           <p class="agent-invite-member-card__account">金刚号：{{ validation.member.account }}</p>
-          <p class="agent-invite-member-card__desc">当前无上级代理，且不是代理身份</p>
+          <p class="agent-invite-member-card__desc">当前是直属会员或尚无上级，且不是代理身份</p>
         </div>
       </section>
 
@@ -389,7 +331,7 @@ function saveEdit() {
           <li>对方须为已注册会员，且金刚号真实有效</li>
           <li>对方渠道须与当前代理一致</li>
           <li>对方不能已是代理身份</li>
-          <li>对方不能已有上级代理</li>
+          <li>对方若已有上级，只能是当前代理的直属会员</li>
         </ul>
       </section>
     </main>
@@ -464,64 +406,7 @@ function saveEdit() {
         </div>
       </section>
 
-      <section class="mh5-agent-credit-table-wrap">
-        <table class="mh5-agent-credit-table">
-          <thead>
-            <tr>
-              <th>产品</th>
-              <th>占成</th>
-              <th>退水</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in products" :key="row.key">
-              <td class="mh5-agent-credit-table__product">{{ row.name }}</td>
-              <td>
-                <div class="mh5-agent-credit-table__cell">
-                  <button
-                    type="button"
-                    class="mh5-agent-credit-table__value-btn"
-                    @click="openEdit(row, 'share')"
-                  >
-                    <span>{{ formatCreditPercent(row.share, 'share') }}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                      />
-                      <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxShare, 'share') }}</span>
-                </div>
-              </td>
-              <td>
-                <div class="mh5-agent-credit-table__cell">
-                  <button
-                    type="button"
-                    class="mh5-agent-credit-table__value-btn"
-                    @click="openEdit(row, 'rebate')"
-                  >
-                    <span>{{ formatCreditPercent(row.rebate, 'rebate') }}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                      />
-                      <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatCreditPercent(row.maxRebate, 'rebate') }}</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      <Mh5AgentShareRebateList :categories="categories" />
     </main>
 
     <main v-else-if="isSuccessStep" class="mh5-agent-credit-success">
@@ -617,7 +502,7 @@ function saveEdit() {
               type="text"
               class="mh5-agent-credit-edit-panel__input"
               :inputmode="editInputMode"
-              :placeholder="editField === 'rebate' ? '最多两位小数' : '请输入整数'"
+              placeholder="请输入整数"
               :aria-invalid="!!editError"
               @input="onEditDraftInput"
             />

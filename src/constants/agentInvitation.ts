@@ -282,7 +282,7 @@ export function validateInviteMember(account: string): AgentInviteValidationResu
   }
 
   if (normalized === 'lin111' || normalized.includes('bound')) {
-    return { ok: false, message: '该账号已有上级' }
+    return { ok: false, message: '该账号已归属其他代理' }
   }
 
   if (normalized.includes('full')) {

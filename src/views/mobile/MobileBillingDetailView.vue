@@ -6,6 +6,7 @@ import {
   billingIconKindFromLabel,
   formatBillingDetailTime,
   formatBillingHeroAmount,
+  formatBillingPlainAmount,
   getBillingDetail,
   type BillingDetail,
 } from '../../constants/billingList'
@@ -37,7 +38,7 @@ const amountLabel = computed(() => {
 
 const systemAmountText = computed(() => {
   if (!detail.value) return ''
-  return `${Math.abs(detail.value.amount).toFixed(2)} ${amountUnit.value}`
+  return `${formatBillingPlainAmount(detail.value.amount)} ${amountUnit.value}`
 })
 
 function copyText(value: string) {
@@ -127,7 +128,7 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ amountLabel }}</span>
           <div class="mh5-billing-detail-row__value mh5-billing-detail-row__value--stack">
-            <span class="mh5-billing-detail-row__amount">{{ Math.abs(detail.amount).toFixed(2) }}</span>
+            <span class="mh5-billing-detail-row__amount">{{ formatBillingPlainAmount(detail.amount) }}</span>
             <span class="mh5-billing-detail-row__unit">{{ amountUnit }}</span>
           </div>
         </div>

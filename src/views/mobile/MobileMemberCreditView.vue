@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5MemberRebateEditor from '../../components/mobile/Mh5MemberRebateEditor.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
@@ -12,16 +13,17 @@ import {
 } from '../../constants/agentDetail'
 import { AGENT_REPORT_FILTER_ASSETS } from '../../constants/agentReport'
 import {
-  DEFAULT_MEMBER_CREDIT_PRODUCTS,
-  formatMemberCreditPercent,
   lookupMemberCreditByKingkong,
   OTHER_MEMBER_CREDIT_STEPS,
   type MemberCreditKingkongLookupResult,
-  type MemberCreditProduct,
 } from '../../constants/memberCredit'
 import { MEMBER_CREDIT_DIRECT_SPEC, MEMBER_CREDIT_OTHER_SPEC } from '../../constants/memberCreditSpec'
 import { promoteToCreditMember } from '../../constants/agentTeam'
-import { syncCreditRebateFromMemberCredit } from '../../constants/memberRebateRatio'
+import {
+  createBlankMemberRebateCategories,
+  syncCreditRebateFromMemberCredit,
+  type MemberRebateCategory,
+} from '../../constants/memberRebateRatio'
 import {
   MOCK_XCOIN_BALANCES,
   emptySelectableCredits,
@@ -50,14 +52,8 @@ const queryResult = computed(() =>
   lookupResult.value?.ok ? lookupResult.value.member : null,
 )
 
-const rebatePercent = ref(0)
-const products = ref<MemberCreditProduct[]>(
-  DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item })),
-)
-
-const editVisible = ref(false)
-const editProductKey = ref('')
-const editDraft = ref('')
+const categories = ref<MemberRebateCategory[]>(createBlankMemberRebateCategories())
+const rebateEditor = ref<{ firstError: () => string } | null>(null)
 
 const creditAmount = ref('')
 const creditCurrency = ref<XCoinCreditCurrency>(parseXCoinCreditCurrency(route.query.currency))
@@ -74,10 +70,6 @@ const pageTitle = computed(() => {
   if (flowStep.value === 'success') return '授信成功'
   return isOtherMemberFlow.value ? '其他会员授信' : '直属会员授信'
 })
-
-const editingProduct = computed(() =>
-  products.value.find((item) => item.key === editProductKey.value),
-)
 
 const canConfirmMember = computed(() => Boolean(lookupResult.value?.ok && queryResult.value))
 
@@ -139,7 +131,17 @@ function confirmMember() {
   flowStep.value = 'rebate'
 }
 
-function goCreditUpStep() {
+async function ensureRebateValid() {
+  const message = rebateEditor.value?.firstError() ?? ''
+  if (message) {
+    await mh5Alert(message)
+    return false
+  }
+  return true
+}
+
+async function goCreditUpStep() {
+  if (!(await ensureRebateValid())) return
   creditAmount.value = ''
   creditCurrencyMenuOpen.value = false
   flowStep.value = 'credit_up'
@@ -165,12 +167,13 @@ async function confirmCreditUp() {
     nickname: selectedMember.value.nickname,
     avatarEmoji: '👤',
   })
-  syncCreditRebateFromMemberCredit(products.value)
+  syncCreditRebateFromMemberCredit(categories.value)
   flowStep.value = 'success'
 }
 
 /** 直属会员授信：设置退水后直接创建成功（无上分步） */
-function confirmDirectCredit() {
+async function confirmDirectCredit() {
+  if (!(await ensureRebateValid())) return
   if (selectedMember.value) {
     promoteToCreditMember({
       id: selectedMember.value.id,
@@ -178,7 +181,7 @@ function confirmDirectCredit() {
       avatarEmoji: '👤',
     })
   }
-  syncCreditRebateFromMemberCredit(products.value)
+  syncCreditRebateFromMemberCredit(categories.value)
   flowStep.value = 'success'
 }
 
@@ -202,10 +205,9 @@ function backToAgentCenter() {
 
 function resetFlow() {
   flowStep.value = isOtherMemberFlow.value ? 'search' : 'rebate'
-  rebatePercent.value = 0
   creditAmount.value = ''
   creditCurrencyMenuOpen.value = false
-  products.value = DEFAULT_MEMBER_CREDIT_PRODUCTS.map((item) => ({ ...item }))
+  categories.value = createBlankMemberRebateCategories()
   if (isOtherMemberFlow.value) {
     selectedMemberId.value = ''
     selectedMember.value = null
@@ -213,37 +215,6 @@ function resetFlow() {
     lookupTip.value = ''
     lookupResult.value = null
   }
-}
-
-function openEdit(product: MemberCreditProduct) {
-  editProductKey.value = product.key
-  editDraft.value = String(product.rebate)
-  editVisible.value = true
-}
-
-function closeEdit() {
-  editVisible.value = false
-  editProductKey.value = ''
-  editDraft.value = ''
-}
-
-async function saveEdit() {
-  const product = editingProduct.value
-  if (!product) return
-
-  const next = Number(editDraft.value)
-  if (Number.isNaN(next) || next < 0) {
-    await mh5Alert('请输入有效比例')
-    return
-  }
-
-  if (next > product.maxRebate) {
-    await mh5Alert(`不能超过最高 ${formatMemberCreditPercent(product.maxRebate)}`)
-    return
-  }
-
-  product.rebate = next
-  closeEdit()
 }
 
 if (route.query.targetId && route.query.targetName) {
@@ -367,63 +338,7 @@ if (route.query.targetId && route.query.targetName) {
     </main>
 
     <main v-else-if="flowStep === 'rebate'" class="mh5-agent-credit-main">
-      <section class="mh5-agent-credit-slider-card">
-        <span class="mh5-agent-credit-slider-card__label">退水</span>
-        <div class="mh5-agent-credit-slider">
-          <div class="mh5-agent-credit-slider__track">
-            <div class="mh5-agent-credit-slider__fill" :style="{ width: `${rebatePercent}%` }" />
-            <input
-              v-model.number="rebatePercent"
-              class="mh5-agent-credit-slider__input"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              aria-label="退水比例"
-            />
-            <span class="mh5-agent-credit-slider__thumb" :style="{ left: `${rebatePercent}%` }">
-              {{ rebatePercent }}%
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section class="mh5-agent-credit-table-wrap">
-        <table class="mh5-agent-credit-table mh5-agent-credit-table--member">
-          <thead>
-            <tr>
-              <th>产品</th>
-              <th>退水</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in products" :key="row.key">
-              <td class="mh5-agent-credit-table__product">{{ row.name }}</td>
-              <td>
-                <div class="mh5-agent-credit-table__cell">
-                  <button
-                    type="button"
-                    class="mh5-agent-credit-table__value-btn"
-                    @click="openEdit(row)"
-                  >
-                    <span>{{ formatMemberCreditPercent(row.rebate) }}</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path
-                        d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z"
-                        stroke="currentColor"
-                        stroke-width="1.8"
-                        stroke-linejoin="round"
-                      />
-                      <path d="M13.5 6.5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-                    </svg>
-                  </button>
-                  <span class="mh5-agent-credit-table__limit">最高{{ formatMemberCreditPercent(row.maxRebate) }}</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
+      <Mh5MemberRebateEditor ref="rebateEditor" :categories="categories" />
     </main>
 
     <main v-else-if="flowStep === 'credit_up'" class="mh5-member-credit-up">
@@ -594,46 +509,6 @@ if (route.query.targetId && route.query.targetName) {
         </button>
       </template>
     </footer>
-
-    <Teleport to="body">
-      <div v-if="editVisible" class="mh5-agent-credit-edit-mask" @click.self="closeEdit">
-        <div
-          class="mh5-agent-credit-edit-panel"
-          role="dialog"
-          aria-modal="true"
-          :aria-label="editingProduct ? `编辑${editingProduct.name}退水` : '编辑退水'"
-        >
-          <h3 class="mh5-agent-credit-edit-panel__title">
-            {{ editingProduct ? `编辑${editingProduct.name}退水` : '编辑退水' }}
-          </h3>
-          <p v-if="editingProduct" class="mh5-agent-credit-edit-panel__hint">
-            最高 {{ formatMemberCreditPercent(editingProduct.maxRebate) }}
-          </p>
-          <div class="mh5-agent-credit-edit-panel__field">
-            <input
-              v-model="editDraft"
-              type="number"
-              min="0"
-              :max="editingProduct?.maxRebate"
-              step="0.1"
-              class="mh5-agent-credit-edit-panel__input"
-              inputmode="decimal"
-            />
-            <span>%</span>
-          </div>
-          <div class="mh5-agent-credit-edit-panel__actions">
-            <button type="button" class="mh5-agent-credit-edit-panel__btn" @click="closeEdit">取消</button>
-            <button
-              type="button"
-              class="mh5-agent-credit-edit-panel__btn mh5-agent-credit-edit-panel__btn--primary"
-              @click="saveEdit"
-            >
-              保存
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
   </div>
 </template>

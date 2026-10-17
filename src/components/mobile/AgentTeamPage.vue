@@ -528,11 +528,7 @@ async function confirmCreateAccount() {
   }
 
   if (createAccountDraft.value === 'member') {
-    if (isRebateAgent.value) {
-      router.push({ name: 'mobile-agent-create-member', query: withAgentQuery() })
-      return
-    }
-    await mh5Alert('创建会员账户（占成代理原型占位）')
+    router.push({ name: 'mobile-agent-create-member', query: withAgentQuery() })
     return
   }
 

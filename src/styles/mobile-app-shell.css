@@ -22011,6 +22011,48 @@ div.agent-home__profit-tab--ratio {
   padding-top: 8px;
 }
 
+.mh5-agent-create-identity__tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 28px;
+  margin-bottom: 12px;
+}
+
+.mh5-agent-create-identity__tab {
+  position: relative;
+  padding: 0 0 8px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.mh5-agent-create-identity__tab--active {
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.mh5-agent-create-identity__tab--active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 22px;
+  height: 3px;
+  border-radius: 999px;
+  background: #ff7a2b;
+  transform: translateX(-50%);
+}
+
+.mh5-agent-create-identity__hint {
+  margin: 8px 2px 0;
+  color: #9ca3af;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .mh5-agent-create-field {
   display: flex;
   flex-direction: column;
@@ -27300,7 +27342,7 @@ div.agent-home__profit-tab--ratio {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 20px;
+  padding: 16px 20px calc(var(--agent-bottom-nav-offset) + 8px);
   background: rgb(0 0 0 / 25%);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -27313,7 +27355,7 @@ div.agent-home__profit-tab--ratio {
   box-sizing: border-box;
   width: 335px;
   max-width: calc(100vw - 40px);
-  max-height: calc(100vh - 48px);
+  max-height: calc(100% - var(--agent-bottom-nav-offset) - 16px);
   padding: 16px 12.5px 24px;
   border-radius: 16px;
   background: #fff;
@@ -27510,6 +27552,47 @@ div.agent-home__profit-tab--ratio {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.mh5-agent-my-share-dialog__ratios {
+  flex-shrink: 0;
+  margin-top: 0;
+  border-radius: 12px;
+  box-shadow: none;
+  border: 0.5px solid #e8e8e8;
+}
+
+.mh5-agent-my-share-dialog__ratios .mh5-agent-profit-ratio-list__row {
+  min-height: 44px;
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+.mh5-agent-my-share-dialog__ratios .mh5-agent-profit-ratio-list__row--product {
+  padding-left: 42px;
+}
+
+.mh5-agent-my-share-dialog__ratios .mh5-agent-profit-ratio-list__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.mh5-agent-my-share-dialog__ratios .mh5-agent-profit-ratio-list__name {
+  font-size: 13px;
+}
+
+.mh5-agent-my-share-dialog__ratios .mh5-agent-profit-ratio-list__value {
+  font-size: 14px;
+}
+
+.mh5-agent-my-share-dialog__empty {
+  margin: 0;
+  padding: 28px 12px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
 }
 
 .mh5-agent-my-share-dialog__table {
@@ -27815,6 +27898,117 @@ div.agent-home__profit-tab--ratio {
   opacity: 1;
 }
 
+.mh5-agent-profit-ratio-list {
+  margin-top: 12px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 4px 14px rgb(15 23 42 / 6%);
+}
+
+.mh5-agent-profit-ratio-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 14px;
+}
+
+.mh5-agent-profit-ratio-list__group + .mh5-agent-profit-ratio-list__group {
+  border-top: 8px solid #f4f3f8;
+}
+
+.mh5-agent-profit-ratio-list__row + .mh5-agent-profit-ratio-list__row,
+.mh5-agent-profit-ratio-list__group .mh5-agent-profit-ratio-list__row--product {
+  border-top: 1px solid #f0f1f4;
+}
+
+.mh5-agent-profit-ratio-list__row--product {
+  min-height: 52px;
+  padding-left: 56px;
+  background: #fafbfc;
+}
+
+.mh5-agent-profit-ratio-list__row--product .mh5-agent-profit-ratio-list__name {
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.mh5-agent-profit-ratio-list__product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mh5-agent-profit-ratio-list__icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #fff4ec;
+  color: #ff7a2b;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.mh5-agent-profit-ratio-list__name {
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.mh5-agent-profit-ratio-list__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.mh5-agent-profit-ratio-list__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #34c759;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-agent-profit-ratio-list__kind {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.mh5-agent-profit-ratio-list__kind--share {
+  background: #fff4ec;
+  color: #ff7a2b;
+}
+
+.mh5-agent-profit-ratio-list__kind--rebate {
+  background: #eef6ff;
+  color: #3b82f6;
+}
+
+.mh5-agent-profit-ratio-list__max {
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- 代理端 · 设置比例（编辑） ---------- */
 .mh5-agent-profit-ratio-edit-page {
   display: flex;
@@ -27866,15 +28060,39 @@ div.agent-home__profit-tab--ratio {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
-  padding: 0 2px;
+  min-height: 64px;
+  padding: 12px 0 8px;
 }
 
 .mh5-agent-profit-ratio-edit-product__head h3 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: #1f2937;
   font-size: 16px;
   font-weight: 700;
+}
+
+.mh5-agent-profit-ratio-edit-product__field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mh5-agent-profit-ratio-edit-product__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mh5-agent-profit-ratio-edit-product__max {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .mh5-agent-profit-ratio-edit-product__icon {
@@ -27904,8 +28122,15 @@ div.agent-home__profit-tab--ratio {
   min-height: 52px;
 }
 
-.mh5-agent-profit-ratio-edit-product__row + .mh5-agent-profit-ratio-edit-product__row {
+.mh5-agent-profit-ratio-edit-product__row + .mh5-agent-profit-ratio-edit-product__row,
+.mh5-agent-profit-ratio-edit-product__head + .mh5-agent-profit-ratio-edit-product__row {
   border-top: 1px solid #eceef2;
+}
+
+.mh5-agent-profit-ratio-edit-product__row--child {
+  align-items: center;
+  min-height: 64px;
+  padding: 8px 0 8px 44px;
 }
 
 .mh5-agent-profit-ratio-edit-product__row > span {
@@ -28082,8 +28307,25 @@ div.agent-home__profit-tab--ratio {
   padding: 10px 14px;
 }
 
-.mh5-member-rebate-list__row + .mh5-member-rebate-list__row {
+.mh5-member-rebate-list__group + .mh5-member-rebate-list__group {
+  border-top: 8px solid #f4f3f8;
+}
+
+.mh5-member-rebate-list__row + .mh5-member-rebate-list__row,
+.mh5-member-rebate-list__group .mh5-member-rebate-list__row--product {
   border-top: 1px solid #f0f1f4;
+}
+
+.mh5-member-rebate-list__row--product {
+  min-height: 52px;
+  padding-left: 56px;
+  background: #fafbfc;
+}
+
+.mh5-member-rebate-list__row--product .mh5-member-rebate-list__name {
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .mh5-member-rebate-list__product {
@@ -28112,11 +28354,26 @@ div.agent-home__profit-tab--ratio {
   font-weight: 500;
 }
 
+.mh5-member-rebate-list__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .mh5-member-rebate-list__value {
   flex-shrink: 0;
-  color: #6b7280;
+  color: #1f2937;
   font-size: 15px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-member-rebate-list__max {
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 
@@ -28158,15 +28415,25 @@ div.agent-home__profit-tab--ratio {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  padding: 0 2px;
+  padding: 12px 14px 4px;
 }
 
 .mh5-member-rebate-edit-product__head h3 {
+  flex-shrink: 0;
   margin: 0;
   color: #1f2937;
   font-size: 15px;
   font-weight: 600;
+}
+
+.mh5-member-rebate-edit-product__head .mh5-agent-credit-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.mh5-member-rebate-edit-product__head .mh5-agent-credit-slider__track {
+  margin-right: 22px;
+  margin-left: 22px;
 }
 
 .mh5-member-rebate-edit-product__icon {
@@ -28212,7 +28479,7 @@ div.agent-home__profit-tab--ratio {
 }
 
 .mh5-member-rebate-edit-product__input-wrap input {
-  width: 52px;
+  width: 72px;
   border: none;
   background: transparent;
   color: #1f2937;
@@ -28222,11 +28489,47 @@ div.agent-home__profit-tab--ratio {
   outline: none;
 }
 
-.mh5-member-rebate-edit-product__input-wrap em {
+.mh5-member-rebate-edit-product__input-wrap em,
+.mh5-member-rebate-edit-product__input-wrap i {
   color: #9ca3af;
   font-style: normal;
   font-size: 13px;
   font-weight: 600;
+}
+
+.mh5-member-rebate-edit-product__field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.mh5-member-rebate-edit-product__max {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.mh5-member-rebate-edit-product__hint,
+.mh5-member-rebate-edit-product__error {
+  margin: 0;
+  padding: 0 14px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-member-rebate-edit-product__hint {
+  color: #9ca3af;
+}
+
+.mh5-member-rebate-edit-product__error {
+  color: #ef4444;
+}
+
+.mh5-member-rebate-edit-product__child + .mh5-member-rebate-edit-product__child {
+  border-top: 1px solid #f0f1f4;
 }
 
 .mh5-member-rebate-edit-footer {

@@ -1,7 +1,13 @@
-/** 代理中心 · 创建会员账户（返佣两步） */
+/** 代理中心 · 创建会员账户（返佣两步，占成三步含退水） */
 
 export const AGENT_CREATE_MEMBER_REBATE_STEPS = [
   { key: 'account', label: '填写账号' },
+  { key: 'success', label: '完成创建' },
+] as const
+
+export const AGENT_CREATE_MEMBER_SHARE_STEPS = [
+  { key: 'account', label: '填写账号' },
+  { key: 'rebate', label: '设置退水' },
   { key: 'success', label: '完成创建' },
 ] as const
 
