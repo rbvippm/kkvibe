@@ -55,7 +55,7 @@ BUG目录 (Phase)                     ← 与版本计划同级根；子项顺�
 
 OP 树/列表按**创建先后**排子项；同父并发 POST 会 **409**（父级 `lockVersion`）。同一 parent 下**一个建完再下一个**。
 
-1. 邀请本版本要指派的人（见人员）
+1. 邀请本版本要指派的人，以及固定主管（见人员）
 2. `版本计划` → `BUG目录`
 3. 版本计划下：`PM` → `开发` → `QA`
 4. PM 下：`文档原型` → `UI设计` → `上线资料准备`
@@ -169,6 +169,19 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 
 默认角色 **Member（id=4）**。**Ruby 固定用 Project admin（id=3）**，不要降成 Member。已是成员则跳过（Ruby 若已是 Member，PATCH membership 升为 Project admin）。ezreal 一般已是 Project admin，不必再邀。
 
+### 固定主管
+
+每次建版本，除指派人外，必须把下面 4 位主管邀请进项目。角色 **Project admin（id=3）**。已是成员但还是 Member 时，PATCH membership 升为 Project admin，不要留在 Member。默认不指派工作包；排期表写了他们，再按端口规则指派。
+
+| 主管 | OP 用户 | ID |
+|---|---|---|
+| Peter | peter IOS | 29 |
+| Kyrin | kylin Android | 51 |
+| Owen | owen H5 | 44 |
+| TT | tt-kk Go-Payment | 41 |
+
+TT 只邀 **tt-kk**，不要邀 soctt。
+
 指派：
 
 | 工作包 | 指派 |
@@ -182,7 +195,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 
 1. 读 `排期表` + 表底时间；`GET` 项目，确认 Phase/Task；拉已有工作包看缺什么。
 2. **先发中文预览树**（模块合并结果、端口、日期、工时、指派人、待补项），等用户说可以建。用户写「直接建 / 请同步 / 按这个补」可跳过等待。
-3. 先邀请 → 再按「创建顺序」建或补。Phase 必须 `typeId=3`；`create_work_package` 写不出 Phase 时用 `raw_api_call` `POST /api/v3/projects/{id}/work_packages`。
+3. 先邀请（含固定主管 Peter / Kyrin / Owen / TT）→ 再按「创建顺序」建或补。Phase 必须 `typeId=3`；`create_work_package` 写不出 Phase 时用 `raw_api_call` `POST /api/v3/projects/{id}/work_packages`。
 4. `list_work_packages` **必须带项目 filter**，不要拉全站。核对：数量、父子、端口、**QA 四件套**、**BUG 三环境顺序**、日期、叶子工时。
 5. 把待补日期 / 待指派人列给用户，回复项目链接。
 
@@ -195,6 +208,7 @@ BUG / QA 子项顺序错了：**删错位的空 Phase/Task 再按顺序重建**�
 - 直播预告 → 服务端、IOS、安卓、H5
 - 人气热度 → 服务端、IOS、安卓、H5
 QA/BUG 受理人：ruby QA（Project admin）
+主管（Project admin，仅邀请）：Peter、Kyrin、Owen、TT
 ```
 
 ## 工具

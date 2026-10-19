@@ -27,6 +27,19 @@
 
 **Ruby**：建版本时默认进项目，角色 **Project admin（`/api/v3/roles/3`）**；QA / BUG 目录及全部子项受理人一律指派给她。
 
+## 固定主管
+
+每次建版本都要邀请，角色 **Project admin（`/api/v3/roles/3`）**。已在项目里但仍是 Member 时，升为 Project admin。不因为是主管就指派任务。
+
+| 主管 | OpenProject 显示名 | userId |
+|---|---|---|
+| Peter | peter IOS | 29 |
+| Kyrin / Kylin | kylin Android | 51 |
+| Owen | owen H5 | 44 |
+| TT | tt-kk Go-Payment | 41 |
+
+TT 是 tt-kk，不是 soctt H5。
+
 ## 项目里可能出现、禁止自动对花名
 
 这些账号在可指派列表或历史版本里出现过，排期花名未确认时必须问用户：
