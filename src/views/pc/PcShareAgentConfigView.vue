@@ -9,10 +9,12 @@ import WfShareAgentGrantFlowAnnot from '../../components/wireframe/WfShareAgentG
 import WfShareAgentRowActionsAnnot from '../../components/wireframe/WfShareAgentRowActionsAnnot.vue'
 import WfShareAgentCreditTabAnnot from '../../components/wireframe/WfShareAgentCreditTabAnnot.vue'
 import WfShareAgentRebateAnnot from '../../components/wireframe/WfShareAgentRebateAnnot.vue'
+import WfShareAgentP2pAnnot from '../../components/wireframe/WfShareAgentP2pAnnot.vue'
 import WfShareAgentShareAnnot from '../../components/wireframe/WfShareAgentShareAnnot.vue'
 import {
   AGENT_LEVEL_OPTIONS,
   agentLevelLabel,
+  cloneShareAgentP2pItems,
   cloneShareAgentProducts,
   cloneShareAgentRebateCategories,
   creditPercentInputPattern,
@@ -20,6 +22,7 @@ import {
   CREDIT_AGENT_FILTER_OPTIONS,
   formatCreditField,
   formatRebateRate,
+  getP2pSectionLabel,
   getRebateSectionLabel,
   getShareSectionLabel,
   hasCreditAgentCredentials,
@@ -30,6 +33,7 @@ import {
   validateSharePercent,
   type CreditAccountTab,
   type CreditModalMode,
+  type PcShareAgentP2pItem,
   type PcShareAgentProduct,
   type PcShareAgentRebateCategory,
   type ShareAgentRow,
@@ -100,6 +104,8 @@ const creditTarget = ref<ShareAgentRow | null>(null)
 const creditAccountTab = ref<CreditAccountTab>('credit')
 const cashCreditProducts = ref<PcShareAgentProduct[]>([])
 const creditCreditProducts = ref<PcShareAgentProduct[]>([])
+const cashP2pItems = ref<PcShareAgentP2pItem[]>([])
+const creditP2pItems = ref<PcShareAgentP2pItem[]>([])
 const cashRebateCategories = ref<PcShareAgentRebateCategory[]>([])
 const creditRebateCategories = ref<PcShareAgentRebateCategory[]>([])
 const creditHint = ref('')
@@ -141,6 +147,16 @@ const activeRebateLabel = computed(() =>
   getRebateSectionLabel(creditModalMode.value, creditAccountTab.value),
 )
 
+const activeP2pLabel = computed(() =>
+  getP2pSectionLabel(creditModalMode.value, creditAccountTab.value),
+)
+
+/** 现金、信用、授信都在对应占成下方配置，两套数据互不影响 */
+const activeP2pItems = computed(() => {
+  if (creditModalMode.value === 'grant') return creditP2pItems.value
+  return creditAccountTab.value === 'cash' ? cashP2pItems.value : creditP2pItems.value
+})
+
 const creditModalTitle = computed(() =>
   creditModalMode.value === 'grant' ? '代理授信' : '编辑代理',
 )
@@ -152,6 +168,8 @@ function resetCreditModalForm(row: ShareAgentRow, mode: CreditModalMode) {
     mode === 'edit' && row.isCreditAgent && hasCreditAgentCredentials(row) ? 'credit' : 'cash'
   cashCreditProducts.value = cloneShareAgentProducts()
   creditCreditProducts.value = cloneShareAgentProducts()
+  cashP2pItems.value = cloneShareAgentP2pItems()
+  creditP2pItems.value = cloneShareAgentP2pItems()
   cashRebateCategories.value = cloneShareAgentRebateCategories()
   creditRebateCategories.value = cloneShareAgentRebateCategories()
   creditHint.value = ''
@@ -174,6 +192,8 @@ function closeCreditModal() {
   creditAccountTab.value = 'credit'
   cashCreditProducts.value = []
   creditCreditProducts.value = []
+  cashP2pItems.value = []
+  creditP2pItems.value = []
   cashRebateCategories.value = []
   creditRebateCategories.value = []
   creditHint.value = ''
@@ -181,6 +201,10 @@ function closeCreditModal() {
 
 function shareError(product: PcShareAgentProduct) {
   return validateSharePercent(product.share, product.maxShare, activeShareLabel.value)
+}
+
+function p2pError(item: PcShareAgentP2pItem) {
+  return validateSharePercent(item.share, item.maxShare, activeP2pLabel.value)
 }
 
 function rebateProductError(category: PcShareAgentRebateCategory, productKey: string) {
@@ -216,22 +240,20 @@ function productsHaveError(
 }
 
 function hasCreditValidationError() {
+  const p2pHasError = (items: PcShareAgentP2pItem[]) => items.some((item) => Boolean(p2pError(item)))
   if (creditModalMode.value === 'grant') {
-    return productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'grant', 'credit')
+    return (
+      productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'grant', 'credit') ||
+      p2pHasError(creditP2pItems.value)
+    )
   }
-  const cashHasError = productsHaveError(
-    cashCreditProducts.value,
-    cashRebateCategories.value,
-    'edit',
-    'cash',
-  )
+  const cashHasError =
+    productsHaveError(cashCreditProducts.value, cashRebateCategories.value, 'edit', 'cash') ||
+    p2pHasError(cashP2pItems.value)
   if (!showCreditAccountTabs.value) return cashHasError
-  const creditHasError = productsHaveError(
-    creditCreditProducts.value,
-    creditRebateCategories.value,
-    'edit',
-    'credit',
-  )
+  const creditHasError =
+    productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'edit', 'credit') ||
+    p2pHasError(creditP2pItems.value)
   return cashHasError || creditHasError
 }
 
@@ -531,6 +553,40 @@ function confirmCreditModal() {
                   </p>
                   <p v-if="shareError(product)" class="wf-share-agent-credit-field__error">
                     {{ shareError(product) }}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <section class="wf-share-agent-credit-panel">
+              <h4 class="wf-share-agent-credit-panel__title wf-share-agent-credit-panel__title--with-spec">
+                {{ activeP2pLabel }}
+                <WfShareAgentP2pAnnot :title="activeP2pLabel" placement="bottom" />
+              </h4>
+              <div class="wf-share-agent-credit-grid">
+                <div
+                  v-for="item in activeP2pItems"
+                  :key="`${activeCreditFormKey}-p2p-${item.key}`"
+                  class="wf-share-agent-credit-field"
+                >
+                  <label class="wf-share-agent-credit-field__label">{{ item.name }}</label>
+                  <div class="wf-modal__pct-row">
+                    <input
+                      v-model.number="item.share"
+                      type="text"
+                      inputmode="decimal"
+                      class="wf-input wf-input--pct"
+                      :placeholder="creditPercentRangeLabel(item.maxShare)"
+                      :pattern="creditPercentInputPattern()"
+                      :title="`${activeP2pLabel}区间 ${creditPercentRangeLabel(item.maxShare)}%，与${activeShareLabel}一致`"
+                    />
+                    <span class="wf-pct">%</span>
+                  </div>
+                  <p class="wf-share-agent-credit-field__range">
+                    区间 {{ creditPercentRangeLabel(item.maxShare) }}%
+                  </p>
+                  <p v-if="p2pError(item)" class="wf-share-agent-credit-field__error">
+                    {{ p2pError(item) }}
                   </p>
                 </div>
               </div>

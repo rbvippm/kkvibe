@@ -79,6 +79,23 @@ export function cloneShareAgentProducts() {
   return PC_SHARE_AGENT_PRODUCTS.map((item) => ({ ...item }))
 }
 
+/** 游戏占成下方的 P2P 抽水占成，区间规则与对应游戏占成相同 */
+export type PcShareAgentP2pItem = {
+  key: string
+  name: string
+  share: number
+  maxShare: number
+}
+
+export const PC_SHARE_AGENT_P2P_ITEMS: PcShareAgentP2pItem[] = [
+  { key: 'communityChess', name: '社区棋牌', share: 0, maxShare: 10 },
+  { key: 'kingkongSports', name: '金刚体育', share: 0, maxShare: 10 },
+]
+
+export function cloneShareAgentP2pItems() {
+  return PC_SHARE_AGENT_P2P_ITEMS.map((item) => ({ ...item }))
+}
+
 export type PcShareAgentRebateProduct = {
   key: string
   name: string
@@ -255,10 +272,12 @@ export function creditPercentRangeLabel(max: number) {
 }
 
 /** 授信弹框 · 占成/退水区块标题（按模式与 Tab 区分） */
-export const SHARE_AGENT_CASH_SHARE_LABEL = '现金占成'
-export const SHARE_AGENT_CASH_REBATE_LABEL = '现金退水'
-export const SHARE_AGENT_CREDIT_SHARE_LABEL = '信用占成'
-export const SHARE_AGENT_CREDIT_REBATE_LABEL = '信用退水'
+export const SHARE_AGENT_CASH_SHARE_LABEL = '现金游戏占成'
+export const SHARE_AGENT_CASH_P2P_LABEL = '现金P2P抽水占成'
+export const SHARE_AGENT_CASH_REBATE_LABEL = '现金游戏退水'
+export const SHARE_AGENT_CREDIT_SHARE_LABEL = '信用游戏占成'
+export const SHARE_AGENT_CREDIT_P2P_LABEL = '信用P2P抽水占成'
+export const SHARE_AGENT_CREDIT_REBATE_LABEL = '信用游戏退水'
 
 export type CreditModalMode = 'grant' | 'edit'
 export type CreditAccountTab = 'cash' | 'credit'
@@ -273,10 +292,15 @@ export function getRebateSectionLabel(mode: CreditModalMode, tab: CreditAccountT
   return tab === 'cash' ? SHARE_AGENT_CASH_REBATE_LABEL : SHARE_AGENT_CREDIT_REBATE_LABEL
 }
 
+export function getP2pSectionLabel(mode: CreditModalMode, tab: CreditAccountTab) {
+  if (mode === 'grant') return SHARE_AGENT_CREDIT_P2P_LABEL
+  return tab === 'cash' ? SHARE_AGENT_CASH_P2P_LABEL : SHARE_AGENT_CREDIT_P2P_LABEL
+}
+
 /** 授信弹框 · 占成比例区块标题（兼容旧标注组件） */
 export const SHARE_AGENT_SHARE_LABEL = '占成比例'
 
-export { SHARE_AGENT_SHARE_SPEC } from './shareAgentConfigSpec'
+export { SHARE_AGENT_SHARE_SPEC, SHARE_AGENT_P2P_SPEC } from './shareAgentConfigSpec'
 
 /** 校验占成比例：区间 0 ~ max（上级代理该游戏类型最大值） */
 export function validateSharePercent(
