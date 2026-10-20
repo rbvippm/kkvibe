@@ -66,6 +66,7 @@ import {
   formatDateRangeText,
 } from '../../constants/mh5DateRange'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
+import Mh5MemberFundPanel from '../../components/mobile/Mh5MemberFundPanel.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5AgentReportFilter from '../../components/mobile/Mh5AgentReportFilter.vue'
@@ -445,7 +446,8 @@ function toggleCreditCurrencyMenu() {
                 {{ member.memberTag }}
               </span>
             </div>
-            <p class="mh5-member-detail-card__login">最近登陆 {{ member.lastLogin }}</p>
+            <p class="mh5-member-detail-card__login">最近登陆 {{ member.loginLog.lastLoginAt }}</p>
+            <p class="mh5-member-detail-card__login">注册日期 {{ member.loginLog.registeredAt }}</p>
           </div>
         </div>
         <div class="mh5-member-detail-card__divider" aria-hidden="true" />
@@ -1148,21 +1150,7 @@ function toggleCreditCurrencyMenu() {
         </section>
       </template>
 
-      <template v-else-if="activeTab === 'login'">
-        <section class="mh5-member-detail-panel">
-          <div class="mh5-member-detail-panel__head mh5-member-detail-panel__head--plain">
-            <h3 class="mh5-member-detail-panel__title">登录日志</h3>
-          </div>
-          <div class="mh5-member-detail-panel__row">
-            <span class="mh5-member-detail-panel__label">注册时间</span>
-            <span class="mh5-member-detail-panel__value">{{ member.loginLog.registeredAt }}</span>
-          </div>
-          <div class="mh5-member-detail-panel__row">
-            <span class="mh5-member-detail-panel__label">最后登录时间</span>
-            <span class="mh5-member-detail-panel__value">{{ member.loginLog.lastLoginAt }}</span>
-          </div>
-        </section>
-      </template>
+      <Mh5MemberFundPanel v-else-if="activeTab === 'login'" />
     </main>
 
     <main v-else class="mh5-member-detail-body">

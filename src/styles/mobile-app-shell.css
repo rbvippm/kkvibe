@@ -24727,6 +24727,366 @@ div.agent-home__profit-tab--ratio {
   background: #f5f5f5;
 }
 
+.mh5-member-fund {
+  margin: 0 -12px;
+  background: var(--mh5-app-bg, #f5f6f8);
+}
+
+.mh5-member-fund__toolbar {
+  background: #fff;
+}
+
+.mh5-member-fund__summary-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mh5-member-fund .mh5-bet-order-summary__item strong.mh5-member-fund__summary-diff--plus {
+  color: #16a34a;
+}
+
+.mh5-member-fund .mh5-bet-order-summary__item strong.mh5-member-fund__summary-diff--minus {
+  color: #ef4444;
+}
+
+.mh5-member-fund__item {
+  width: 100%;
+  border: none;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: default;
+}
+
+.mh5-member-fund__item:active {
+  background: var(--mh5-app-card);
+}
+
+.mh5-member-fund__title,
+.mh5-member-fund__time {
+  display: block;
+}
+
+.mh5-member-fund__item .mh5-billing-item__amount-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.mh5-member-fund__item .mh5-billing-item__currency {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.mh5-member-fund .mh5-billing-item__amount--plus {
+  color: #16a34a;
+}
+
+.mh5-member-fund__icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.mh5-member-fund__icon--in {
+  background: #22c55e;
+}
+
+.mh5-member-fund__icon--out {
+  background: #fb7185;
+}
+
+.mh5-member-fund-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 45%);
+}
+
+.mh5-member-fund-detail {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.mh5-member-fund-detail--fiat {
+  background: #f5f6f8;
+}
+
+.mh5-member-fund-detail--fiat .mh5-member-fund-detail__nav {
+  background: #fff;
+}
+
+.mh5-member-fund-detail__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 24px;
+}
+
+.mh5-member-fund-detail__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 16px 8px;
+}
+
+.mh5-member-fund-detail__check {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.mh5-member-fund-detail__status {
+  margin: 14px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.mh5-member-fund-detail__hero-amount {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-member-fund-detail__toast {
+  margin: 16px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #16a34a;
+}
+
+.mh5-member-fund-detail--chain {
+  background: #f3f5f7;
+}
+
+.mh5-member-fund-detail--chain .mh5-member-fund-detail__nav {
+  background: #fff;
+}
+
+.mh5-member-fund-detail__check--chain {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  clip-path: polygon(22% 0, 78% 0, 100% 22%, 100% 78%, 78% 100%, 22% 100%, 0 78%, 0 22%);
+}
+
+.mh5-member-fund-chain__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px 8px;
+}
+
+.mh5-member-fund-chain__status {
+  margin: 16px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.mh5-member-fund-chain__time {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.mh5-member-fund-chain__section {
+  margin: 16px 16px 8px;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.mh5-member-fund-chain__card {
+  margin: 0 16px;
+  padding: 14px 14px 6px;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.mh5-member-fund-chain__party,
+.mh5-member-fund-chain__to,
+.mh5-member-fund-chain__coin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mh5-member-fund-chain__avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+
+.mh5-member-fund-chain__avatar--from {
+  background: #22c55e;
+}
+
+.mh5-member-fund-chain__avatar--to {
+  width: 22px;
+  height: 22px;
+  background: #d1d5db;
+}
+
+.mh5-member-fund-chain__addr {
+  min-width: 0;
+  font-size: 13px;
+  color: #374151;
+  word-break: break-all;
+}
+
+.mh5-member-fund-chain__send {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.mh5-member-fund-chain__send strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.mh5-member-fund-chain__to {
+  margin-bottom: 8px;
+}
+
+.mh5-member-fund-chain__to-label {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.mh5-member-fund-chain__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  font-size: 13px;
+  color: #374151;
+}
+
+.mh5-member-fund-chain__move {
+  padding-bottom: 12px;
+}
+
+.mh5-member-fund-chain__coin {
+  margin-top: 8px;
+}
+
+.mh5-member-fund-chain__amt {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh5-member-fund-chain__amt--out {
+  color: #ef4444;
+}
+
+.mh5-member-fund-chain__amt--in {
+  color: #16a34a;
+}
+
+.mh5-member-fund-chain__detail {
+  margin-top: 0;
+}
+
+.mh5-member-fund-chain__network {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.mh5-member-fund-chain__tron {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ef0027;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mh5-member-fund-chain__hash {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.mh5-member-fund-detail__nav {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: max(8px, env(safe-area-inset-top)) 8px 0;
+}
+
+.mh5-member-fund-detail__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: none;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.mh5-member-fund-detail__title {
+  flex: 1;
+  margin: 0 44px 0 0;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.mh5-member-fund-sheet-enter-active,
+.mh5-member-fund-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-member-fund-sheet-enter-active .mh5-xcoin-sheet,
+.mh5-member-fund-sheet-leave-active .mh5-xcoin-sheet {
+  transition: transform 0.25s ease;
+}
+
+.mh5-member-fund-sheet-enter-from,
+.mh5-member-fund-sheet-leave-to {
+  opacity: 0;
+}
+
+.mh5-member-fund-sheet-enter-from .mh5-xcoin-sheet,
+.mh5-member-fund-sheet-leave-to .mh5-xcoin-sheet {
+  transform: translateY(100%);
+}
+
 .mh5-member-detail-panel {
   margin-top: 12px;
   padding: 0 16px;

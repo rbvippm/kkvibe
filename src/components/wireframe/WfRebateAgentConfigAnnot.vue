@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
   REBATE_AGENT_CONFIG_ANNOT_MAP,
   type RebateAgentConfigAnnotContext,
@@ -13,7 +14,7 @@ const props = withDefaults(
   { placement: 'bottom' },
 )
 
-const spec = REBATE_AGENT_CONFIG_ANNOT_MAP[props.context]
+const spec = computed(() => REBATE_AGENT_CONFIG_ANNOT_MAP[props.context])
 </script>
 
 <template>

@@ -7,6 +7,7 @@ import {
   AGENT_MY_PROFIT_NET_PNL_FORMULA,
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
   REBATE_DEFAULT_SECTION_SCALE,
+  REBATE_NET_WIN_FORMULA,
   agentMyProfitDateFilterLabel,
   agentMyProfitDateRangeText,
   agentMyProfitDefaultPreset,
@@ -17,6 +18,7 @@ import {
   agentMyProfitPresets,
   agentMyProfitRebateCostSection,
   agentMyProfitRebateGameSection,
+  agentMyProfitRebateLotteryEarnSection,
   agentMyProfitRebateLevelFormula,
   agentMyProfitRebateMonthKey,
   agentMyProfitRebatePresetFromMonthKey,
@@ -95,6 +97,8 @@ const costDetailsExpanded = ref(true)
 const p2pDetailsExpanded = ref(true)
 /** 代理赚水细项默认收起 */
 const earnDetailsExpanded = ref(false)
+/** 返佣彩票赚水细项默认收起，与占成代理赚水一致 */
+const lotteryEarnDetailsExpanded = ref(false)
 
 /** 返佣进入页 / 切身份：强制默认「本月」并同步结算月 */
 function syncRebateDefaultThisMonth() {
@@ -188,6 +192,7 @@ watch(preset, () => {
   costDetailsExpanded.value = true
   p2pDetailsExpanded.value = true
   earnDetailsExpanded.value = false
+  lotteryEarnDetailsExpanded.value = false
   detailProduct.value = null
   detailFormulaTipOpen.value = false
 })
@@ -204,6 +209,9 @@ const costSection = computed(() =>
     : agentMyProfitShareCostSection(preset.value),
 )
 const shareEarnSection = computed(() => agentMyProfitShareEarnSection(preset.value))
+const rebateLotteryEarnSection = computed(() =>
+  agentMyProfitRebateLotteryEarnSection(rebateSectionScale.value),
+)
 const shareP2pSection = computed(() => agentMyProfitShareP2pSection(preset.value))
 const rebateLevelFormula = computed(() =>
   agentMyProfitRebateLevelFormula(
@@ -372,6 +380,7 @@ function pickRebateMonth(month: string) {
   closeNetWinTip()
   closeNetPnlFormulaTip()
   closeNegativeTip()
+  lotteryEarnDetailsExpanded.value = false
 }
 
 function statusClass(status: keyof typeof COMMISSION_STATUS_META) {
@@ -419,6 +428,10 @@ function toggleP2pDetails() {
 
 function toggleEarnDetails() {
   earnDetailsExpanded.value = !earnDetailsExpanded.value
+}
+
+function toggleLotteryEarnDetails() {
+  lotteryEarnDetailsExpanded.value = !lotteryEarnDetailsExpanded.value
 }
 
 onBeforeUnmount(() => {
@@ -966,6 +979,67 @@ onBeforeUnmount(() => {
       </section>
 
       <section
+        v-if="isRebateAgent"
+        class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+        :aria-label="$t('彩票赚水金额')"
+      >
+        <div class="mh5-agent-my-profit-table__head">
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+            {{ rebateLotteryEarnSection.nameHeader }}
+          </span>
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+            {{ rebateLotteryEarnSection.amountHeader }}
+          </span>
+        </div>
+        <div
+          class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+        >
+          <button
+            type="button"
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+            :aria-expanded="lotteryEarnDetailsExpanded"
+            :aria-label="$t('展开或收起彩票赚水细项')"
+            @click="toggleLotteryEarnDetails"
+          >
+            <span>{{ $t(rebateLotteryEarnSection.total.name) }}</span>
+            <span
+              class="mh5-agent-my-profit-table__chevron"
+              :class="{ 'mh5-agent-my-profit-table__chevron--open': lotteryEarnDetailsExpanded }"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
+          <span
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+            :class="agentMyProfitToneClass(rebateLotteryEarnSection.total.tone)"
+          >
+            {{ rebateLotteryEarnSection.total.amountText }}
+          </span>
+        </div>
+        <Transition name="mh5-agent-my-profit-expand">
+          <div v-if="lotteryEarnDetailsExpanded" class="mh5-agent-my-profit-table__details">
+            <div
+              v-for="(row, index) in rebateLotteryEarnSection.rows"
+              :key="row.key"
+              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
+              :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+            >
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ $t(row.name) }}
+              </span>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                :class="agentMyProfitToneClass(row.tone)"
+              >
+                {{ row.amountText }}
+              </span>
+            </div>
+          </div>
+        </Transition>
+      </section>
+
+      <section
         v-if="!isRebateAgent"
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
         :aria-label="$t('代理赚水金额')"
@@ -1058,7 +1132,7 @@ onBeforeUnmount(() => {
                   v-if="netWinTipOpen"
                   class="mh5-agent-commission-tip-bubble"
                   role="tooltip"
-                >{{ $t('净输赢 = 游戏净输赢 - 其他成本') }}</span>
+                >{{ $t(REBATE_NET_WIN_FORMULA) }}</span>
               </span>
             </p>
             <p
