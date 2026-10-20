@@ -252,41 +252,6 @@ const chaseLine = computed(() => {
               {{ shareAllZero ? $t('暂无退水比例') : $t('暂无占成比例') }}
             </p>
             <article
-              v-for="category in shareCategories"
-              :key="category.key"
-              class="mh5-agent-profit-ratio-list__group"
-            >
-              <div class="mh5-agent-profit-ratio-list__row">
-                <div class="mh5-agent-profit-ratio-list__product">
-                  <span class="mh5-agent-profit-ratio-list__icon" aria-hidden="true">
-                    {{ getAgentProfitRatioProductIcon(category.key) }}
-                  </span>
-                  <span class="mh5-agent-profit-ratio-list__name">{{ $t(category.name) }}</span>
-                </div>
-                <div v-if="!shareAllZero" class="mh5-agent-profit-ratio-list__meta">
-                  <span class="mh5-agent-profit-ratio-list__value">
-                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
-                    {{ formatProfitRatioPercent(category.share) }}
-                  </span>
-                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(category.maxShare) }}</span>
-                </div>
-              </div>
-              <div
-                v-for="product in category.products"
-                :key="`${category.key}-${product.key}`"
-                class="mh5-agent-profit-ratio-list__row mh5-agent-profit-ratio-list__row--product"
-              >
-                <span class="mh5-agent-profit-ratio-list__name">{{ product.name }}</span>
-                <div class="mh5-agent-profit-ratio-list__meta">
-                  <span class="mh5-agent-profit-ratio-list__value">
-                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
-                    {{ formatProfitRatioPercent(product.rebate) }}
-                  </span>
-                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxRebate) }}</span>
-                </div>
-              </div>
-            </article>
-            <article
               v-if="!shareAllZero"
               class="mh5-agent-profit-ratio-list__group"
             >
@@ -301,6 +266,48 @@ const chaseLine = computed(() => {
                     {{ formatProfitRatioPercent(otherCost.share) }}
                   </span>
                   <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(otherCost.maxShare) }}</span>
+                </div>
+              </div>
+            </article>
+            <article
+              v-for="category in shareCategories"
+              :key="category.key"
+              class="mh5-agent-profit-ratio-list__group"
+            >
+              <div class="mh5-agent-profit-ratio-list__row">
+                <div class="mh5-agent-profit-ratio-list__product">
+                  <span class="mh5-agent-profit-ratio-list__icon" aria-hidden="true">
+                    {{ getAgentProfitRatioProductIcon(category.key) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__name">{{ $t(category.name) }}</span>
+                </div>
+                <div v-if="!shareAllZero && !category.shareOnProduct" class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                    {{ formatProfitRatioPercent(category.share) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(category.maxShare) }}</span>
+                </div>
+              </div>
+              <div
+                v-for="product in category.products"
+                :key="`${category.key}-${product.key}`"
+                class="mh5-agent-profit-ratio-list__row mh5-agent-profit-ratio-list__row--product"
+              >
+                <span class="mh5-agent-profit-ratio-list__name">{{ product.name }}</span>
+                <div v-if="category.shareOnProduct && !shareAllZero" class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                    {{ formatProfitRatioPercent(product.share ?? 0) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxShare ?? 0) }}</span>
+                </div>
+                <div v-else-if="!category.shareOnProduct" class="mh5-agent-profit-ratio-list__meta">
+                  <span class="mh5-agent-profit-ratio-list__value">
+                    <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
+                    {{ formatProfitRatioPercent(product.rebate) }}
+                  </span>
+                  <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxRebate) }}</span>
                 </div>
               </div>
             </article>

@@ -355,7 +355,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 51,
         name: '总盈亏',
-        biz: '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水（即实占净输赢 + 代理赚水）',
+        biz: '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水（即实占净输赢 + P2P返利 + 代理赚水）',
         dimension: '实占：（直属会员+非直属会员），日期，币种',
         method: '10分钟',
         handler: '现金',
@@ -417,7 +417,7 @@ export const AGENT_FIELD_DEF_MODULES: AgentFieldDefModule[] = [
       {
         no: 53,
         name: '总盈亏',
-        biz: '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水（即实占净输赢 + 代理赚水）',
+        biz: '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水（即实占净输赢 + P2P返利 + 代理赚水）',
         dimension: '实占：代理账号的直属会员+非直属会员+币种',
         method: '10分钟',
         handler: '现金',

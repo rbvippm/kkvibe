@@ -14,7 +14,7 @@ withDefaults(
 <template>
   <WfSpecAnnot
     :no="SHARE_AGENT_SPEC_ANNOT_NO.p2p"
-    :title="title || 'P2P抽水占成'"
+    :title="title || 'P2P返利占成'"
     :items="[...SHARE_AGENT_P2P_SPEC]"
     :placement="placement"
   />

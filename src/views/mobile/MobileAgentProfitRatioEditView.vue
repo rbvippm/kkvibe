@@ -14,6 +14,7 @@ import {
   cloneAgentProfitRatioCategories,
   formatProfitRatioPercent,
   getAgentProfitCost,
+  isProductShareCategory,
   getAgentProfitRatioProductIcon,
   getAgentProfitRatioCategories,
   parseAgentProfitRatioType,
@@ -48,6 +49,12 @@ const pageTitle = computed(() => `设置${ratioTypeLabel.value}比例`)
 watch(sharePercent, (value) => {
   const next = Math.round(Math.min(100, Math.max(0, value)))
   categories.value.forEach((category) => {
+    if (isProductShareCategory(category)) {
+      category.products.forEach((product) => {
+        product.share = clampProductShare(product, next)
+      })
+      return
+    }
     category.share = clampShare(category, next)
   })
   costPercent.value = Math.min(next, maxCost)
@@ -57,7 +64,7 @@ watch(rebatePercent, (value) => {
   const next = Math.min(100, Math.max(0, value))
   categories.value.forEach((category) => {
     category.products.forEach((product) => {
-      product.rebate = clampRebate(product, next)
+      product.rebate = isProductShareCategory(category) ? 0 : clampRebate(product, next)
     })
   })
 })
@@ -78,6 +85,16 @@ function updateCategoryShare(category: AgentProfitRatioCategory, raw: string) {
 
 function updateProductRebate(product: AgentProfitRatioChild, raw: string) {
   product.rebate = clampRebate(product, Number(raw))
+}
+
+function clampProductShare(product: AgentProfitRatioChild, value: number) {
+  if (Number.isNaN(value) || value < 0) return 0
+  return Math.min(Number(value.toFixed(1)), product.maxShare ?? 0)
+}
+
+function updateProductShare(product: AgentProfitRatioChild, raw: string) {
+  product.share = clampProductShare(product, Number(raw))
+  product.rebate = 0
 }
 
 function validateCostDraft(showEmptyError = false): number | null {
@@ -232,7 +249,7 @@ async function saveRatios() {
               {{ getAgentProfitRatioProductIcon(category.key) }}
             </span>
             <h3>{{ $t(category.name) }}</h3>
-            <div class="mh5-agent-profit-ratio-edit-product__field">
+            <div v-if="!isProductShareCategory(category)" class="mh5-agent-profit-ratio-edit-product__field">
               <div class="mh5-agent-profit-ratio-edit-product__value">
                 <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
                 <label class="mh5-agent-profit-ratio-edit-product__input-wrap">
@@ -257,7 +274,25 @@ async function saveRatios() {
             class="mh5-agent-profit-ratio-edit-product__row mh5-agent-profit-ratio-edit-product__row--child"
           >
             <span>{{ $t(product.name) }}</span>
-            <div class="mh5-agent-profit-ratio-edit-product__field">
+            <div v-if="isProductShareCategory(category)" class="mh5-agent-profit-ratio-edit-product__field">
+              <div class="mh5-agent-profit-ratio-edit-product__value">
+                <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                <label class="mh5-agent-profit-ratio-edit-product__input-wrap">
+                  <input
+                    :value="product.share ?? 0"
+                    type="text"
+                    inputmode="decimal"
+                    :aria-label="`${product.name}占成`"
+                    @input="updateProductShare(product, ($event.target as HTMLInputElement).value)"
+                  />
+                  <em>%</em>
+                </label>
+              </div>
+              <p class="mh5-agent-profit-ratio-edit-product__max">
+                最高{{ formatProfitRatioPercent(product.maxShare ?? 0) }}
+              </p>
+            </div>
+            <div v-else class="mh5-agent-profit-ratio-edit-product__field">
               <div class="mh5-agent-profit-ratio-edit-product__value">
                 <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
                 <label class="mh5-agent-profit-ratio-edit-product__input-wrap">

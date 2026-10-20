@@ -18,7 +18,7 @@ export type AgentProfitSummaryRow = {
 }
 
 /** 经典汇总卡 · 总盈亏公式 tip */
-export const AGENT_PROFIT_FORMULA = '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水'
+export const AGENT_PROFIT_FORMULA = '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水'
 
 /** 分区 · 实占净输赢简写（总盈亏卡气泡） */
 export const AGENT_NET_PNL_FORMULA = '实占净输赢 = 游戏净输赢 - 其他成本'
@@ -30,9 +30,9 @@ export const AGENT_NET_PNL_FORMULA = '实占净输赢 = 游戏净输赢 - 其他
 export const AGENT_NET_PNL_DETAIL_FORMULA =
   '实占净输赢 = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 场馆费 - 实占VIP晋级礼金 - 实占VIP额外奖金 - 实占活动金 - 实占充提手续费'
 
-/** 分区新结构 · 总盈亏公式（实占净输赢展开为游戏净输赢 − 其他成本） */
+/** 分区新结构 · 总盈亏公式（实占净输赢 = 游戏净输赢 − 其他成本，P2P返利另加） */
 export const AGENT_PROFIT_SECTION_FORMULA =
-  '总盈亏 = 游戏净输赢 - 其他成本 + 代理赚水'
+  '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水'
 
 /** 加项公式：结果 = 细项1 + 细项2 + …；无细项时不拼公式 */
 export function joinProfitSumFormula(resultLabel: string, itemLabels: string[]) {
@@ -96,6 +96,8 @@ type AgentProfitSummaryMock = {
   activityGold: number
   /** 充提手续费（服务端正数，结算时减去；返佣佣金口径） */
   depositWithdrawFee: number
+  /** P2P返利（正数；不计入实占净输赢，总盈亏时加上） */
+  p2pRebate: number
 }
 
 const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
@@ -109,6 +111,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     vipExtraBonus: 100,
     activityGold: 180,
     depositWithdrawFee: 60,
+    p2pRebate: 920,
   },
   USDT: {
     actualWin: 3740,
@@ -120,6 +123,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     vipExtraBonus: 25,
     activityGold: 50,
     depositWithdrawFee: 18,
+    p2pRebate: 240,
   },
   KKV: {
     actualWin: 9996,
@@ -131,6 +135,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     vipExtraBonus: 65,
     activityGold: 120,
     depositWithdrawFee: 42,
+    p2pRebate: 610,
   },
   '信用额度-CNY': {
     actualWin: 1848,
@@ -142,6 +147,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     vipExtraBonus: 20,
     activityGold: 40,
     depositWithdrawFee: 16,
+    p2pRebate: 150,
   },
   '信用额度-USD': {
     actualWin: 750,
@@ -153,6 +159,7 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     vipExtraBonus: 8,
     activityGold: 15,
     depositWithdrawFee: 8,
+    p2pRebate: 55,
   },
 }
 
@@ -166,6 +173,7 @@ const EMPTY_SUMMARY_MOCK: AgentProfitSummaryMock = {
   vipExtraBonus: 0,
   activityGold: 0,
   depositWithdrawFee: 0,
+  p2pRebate: 0,
 }
 
 function formatProfitAmount(value: number) {
@@ -239,12 +247,17 @@ export function getAgentActualProfitAmount(currency: string) {
   return getAgentNetPnlAmount(currency)
 }
 
-/** 总盈亏 = 实占净输赢 + 代理赚水 */
-export function getAgentGrandTotalAmount(currency: string) {
-  return getAgentNetPnlAmount(currency) + getAgentRebateEarn(currency)
+/** P2P返利合计（正数，总盈亏加项；不计入实占净输赢） */
+export function getAgentP2pRebateAmount(currency: string) {
+  return getAgentProfitSummaryMock(currency).p2pRebate
 }
 
-/** 经典汇总卡 /「我的」总盈亏（实占净输赢 + 代理赚水） */
+/** 总盈亏 = 实占净输赢 + P2P返利 + 代理赚水 */
+export function getAgentGrandTotalAmount(currency: string) {
+  return getAgentNetPnlAmount(currency) + getAgentP2pRebateAmount(currency) + getAgentRebateEarn(currency)
+}
+
+/** 经典汇总卡 /「我的」总盈亏（实占净输赢 + P2P返利 + 代理赚水） */
 export function getAgentTotalProfit(currency: string) {
   const total = getAgentGrandTotalAmount(currency)
   return {
@@ -450,6 +463,47 @@ export function getAgentProfitGameSection(currency: string): AgentProfitSection 
   }
 }
 
+/** P2P返利游戏（enabled=false 不进列表与公式，模拟接口返回） */
+export type P2pRebateGameItem = {
+  key: string
+  name: string
+  weight: number
+  enabled?: boolean
+}
+
+export const AGENT_P2P_REBATE_GAMES: P2pRebateGameItem[] = [
+  { key: 'kk-cards', name: '金刚牌局', weight: 18642.16 },
+  { key: 'kk-sports', name: '金刚体育', weight: 12480.74 },
+]
+
+export function getEnabledP2pRebateGames(): P2pRebateGameItem[] {
+  return AGENT_P2P_REBATE_GAMES.filter((item) => item.enabled !== false)
+}
+
+/** 占成 · P2P返利分区（游戏净输赢下方；合计可展开，细项不可点） */
+export function getAgentProfitP2pSection(currency: string): AgentProfitSection {
+  const games = getEnabledP2pRebateGames()
+  const scaled = scaleWeightsToTarget(
+    games.map((item) => item.weight),
+    getAgentP2pRebateAmount(currency),
+  )
+  const rows: AgentProfitSectionRow[] = games.map((item, index) => {
+    const value = scaled[index] ?? 0
+    return {
+      key: item.key,
+      label: item.name,
+      value: formatProfitAmount(value),
+      tone: profitTone(value),
+    }
+  })
+  return {
+    nameHeader: 'P2P返利',
+    amountHeader: '金额（实占）',
+    rows,
+    total: sumSectionRows(rows, 'p2p_sum'),
+  }
+}
+
 /** 占成 · 其他成本分区（对齐「我的盈亏」，含充提手续费） */
 export function getAgentProfitCostSection(currency: string): AgentProfitSection {
   const stats = getAgentProfitSummaryMock(currency)
@@ -497,10 +551,11 @@ export function agentProfitCurrencyUnit(currency: string) {
   return currency
 }
 
-/** 占成置顶：总盈亏金额 + 实占净输赢 + 代理赚水 */
+/** 占成置顶：总盈亏金额 + 实占净输赢 + P2P返利 + 代理赚水 */
 export function getAgentProfitHero(currency: string) {
   const total = getAgentGrandTotalAmount(currency)
   const net = getAgentNetPnlAmount(currency)
+  const p2p = getAgentP2pRebateAmount(currency)
   const earn = getAgentRebateEarn(currency)
   const totalAbs = Math.abs(total).toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -515,14 +570,17 @@ export function getAgentProfitHero(currency: string) {
     tone: profitTone(total),
     netAmountText: formatProfitAmount(net),
     netTone: profitTone(net),
+    p2pAmountText: formatProfitAmount(p2p),
+    p2pTone: profitTone(p2p),
     earnAmountText: formatProfitAmount(earn),
     earnTone: profitTone(earn),
   }
 }
 
-/** 占成公式卡：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
+/** 占成公式条：实占净输赢 + P2P返利 + 代理赚水 */
 export function getAgentProfitFormula(currency: string) {
   const game = getAgentProfitGameSection(currency).total
+  const p2p = getAgentP2pRebateAmount(currency)
   const costAbs = getAgentOtherCostAbs(currency)
   const net = getAgentSectionNetPnl(currency)
   const earn = getAgentRebateEarn(currency)
@@ -537,6 +595,8 @@ export function getAgentProfitFormula(currency: string) {
     }),
     netAmountText: net.value,
     netTone: net.tone,
+    p2pAmountText: formatProfitAmount(p2p),
+    p2pTone: profitTone(p2p),
     earnAmountText: earnCell,
     earnTone: profitTone(earn),
     totalAmountText: total.value,
@@ -767,8 +827,26 @@ export function getAgentProfitDialogDetail(
     ]
   }
 
+  if (kind === 'p2p_rebate') {
+    const section = getAgentProfitP2pSection(currency)
+    return [
+      ...section.rows.map(mapRow),
+      {
+        label: 'P2P返利',
+        amountText: section.total.value,
+        tone: section.total.tone,
+        emphasize: true,
+        formulaTip: joinProfitSumFormula(
+          'P2P返利',
+          section.rows.map((row) => row.label),
+        ),
+      },
+    ]
+  }
+
   if (kind === 'total') {
     const game = getAgentProfitGameSection(currency).total
+    const p2p = getAgentProfitP2pSection(currency).total
     const costCell = formatCostAmount(getAgentOtherCostAbs(currency))
     const earn = getAgentRebateEarn(currency)
     const total = getAgentSectionTotalProfit(currency)
@@ -777,6 +855,11 @@ export function getAgentProfitDialogDetail(
         label: '游戏净输赢',
         amountText: game.value,
         tone: game.tone,
+      },
+      {
+        label: 'P2P返利',
+        amountText: p2p.value,
+        tone: p2p.tone,
       },
       {
         label: '其他成本',
@@ -805,6 +888,7 @@ export function agentProfitDialogTitle(kind: AgentProfitDialogKind, currency = '
   if (kind === 'total') return '总盈亏明细'
   if (kind === 'net_pnl') return '实占净输赢明细'
   if (kind === 'rebate_earn') return '代理赚水明细'
+  if (kind === 'p2p_rebate') return 'P2P返利明细'
   const earnCategory = parseEarnCategoryKey(kind)
   if (earnCategory) {
     const row = getAgentRebateEarnCategoryRows(currency).find((item) => item.key === kind)
@@ -861,6 +945,11 @@ export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryR
     {
       label: '充提手续费',
       ...formatCostAmount(stats.depositWithdrawFee),
+    },
+    {
+      label: 'P2P返利',
+      value: formatProfitAmount(stats.p2pRebate),
+      tone: profitTone(stats.p2pRebate),
     },
     {
       label: '代理赚水',

@@ -79,7 +79,7 @@ export function cloneShareAgentProducts() {
   return PC_SHARE_AGENT_PRODUCTS.map((item) => ({ ...item }))
 }
 
-/** 游戏占成下方的 P2P 抽水占成，区间规则与对应游戏占成相同 */
+/** 游戏占成下方的 P2P 返利占成，区间规则与对应游戏占成相同 */
 export type PcShareAgentP2pItem = {
   key: string
   name: string
@@ -273,10 +273,10 @@ export function creditPercentRangeLabel(max: number) {
 
 /** 授信弹框 · 占成/退水区块标题（按模式与 Tab 区分） */
 export const SHARE_AGENT_CASH_SHARE_LABEL = '现金游戏占成'
-export const SHARE_AGENT_CASH_P2P_LABEL = '现金P2P抽水占成'
+export const SHARE_AGENT_CASH_P2P_LABEL = '现金P2P返利占成'
 export const SHARE_AGENT_CASH_REBATE_LABEL = '现金游戏退水'
 export const SHARE_AGENT_CREDIT_SHARE_LABEL = '信用游戏占成'
-export const SHARE_AGENT_CREDIT_P2P_LABEL = '信用P2P抽水占成'
+export const SHARE_AGENT_CREDIT_P2P_LABEL = '信用P2P返利占成'
 export const SHARE_AGENT_CREDIT_REBATE_LABEL = '信用游戏退水'
 
 export type CreditModalMode = 'grant' | 'edit'

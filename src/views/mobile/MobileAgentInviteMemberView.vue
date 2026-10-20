@@ -11,6 +11,7 @@ import {
 } from '../../constants/agentCredit'
 import {
   createBlankAgentShareRebateCategories,
+  isProductShareCategory,
   type AgentProfitRatioCategory,
 } from '../../constants/agentProfitRatio'
 import Mh5AgentShareRebateList from '../../components/mobile/Mh5AgentShareRebateList.vue'
@@ -81,6 +82,12 @@ watch(
   (value) => {
     const next = Math.round(Math.min(100, Math.max(0, value)))
     categories.value.forEach((category) => {
+      if (isProductShareCategory(category)) {
+        category.products.forEach((product) => {
+          product.share = Math.min(next, product.maxShare ?? 0)
+        })
+        return
+      }
       category.share = Math.min(next, category.maxShare)
     })
     costPercent.value = Math.min(next, maxCost)
@@ -94,7 +101,7 @@ watch(
     const next = Math.min(100, Math.max(0, Number(Number(value).toFixed(2))))
     categories.value.forEach((category) => {
       category.products.forEach((product) => {
-        product.rebate = Math.min(next, product.maxRebate)
+        product.rebate = isProductShareCategory(category) ? 0 : Math.min(next, product.maxRebate)
       })
     })
   },
@@ -164,6 +171,13 @@ function resetProfitRatio() {
   sharePercent.value = 30
   rebatePercent.value = 30
   categories.value.forEach((category) => {
+    if (isProductShareCategory(category)) {
+      category.products.forEach((product) => {
+        product.share = Math.min(30, product.maxShare ?? 0)
+        product.rebate = 0
+      })
+      return
+    }
     category.share = Math.min(30, category.maxShare)
     category.products.forEach((product) => {
       product.rebate = Math.min(30, product.maxRebate)

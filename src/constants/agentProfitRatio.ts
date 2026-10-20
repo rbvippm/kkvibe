@@ -10,21 +10,29 @@ import { teamCreditAgents, teamDirectAgents } from './agentTeam'
 
 export { DEFAULT_AGENT_CREDIT_MAX_COST as AGENT_PROFIT_RATIO_MAX_COST }
 
-/** 大类下的具体产品：只挂退水 */
+/** 大类下的具体产品：通常只挂退水；P2P 的占成挂在小类上 */
 export type AgentProfitRatioChild = {
   key: string
   name: string
   rebate: number
   maxRebate: number
+  share?: number
+  maxShare?: number
 }
 
-/** 游戏大类：占成在大类上，退水在下属产品上 */
+/** 游戏大类：占成在大类上，退水在下属产品上。P2P 相反：大类不设占成 */
 export type AgentProfitRatioCategory = {
   key: string
   name: string
   share: number
   maxShare: number
+  /** 为 true 时占成在小类，大类不可设占成，小类退水固定为 0 */
+  shareOnProduct?: boolean
   products: AgentProfitRatioChild[]
+}
+
+export function isProductShareCategory(category: Pick<AgentProfitRatioCategory, 'shareOnProduct'>) {
+  return category.shareOnProduct === true
 }
 
 export type AgentProfitRelation = 'direct' | 'indirect'
@@ -52,6 +60,8 @@ type AgentProfitChildSeed = {
   name: string
   rebate: number
   maxRebate: number
+  share?: number
+  maxShare?: number
 }
 
 /** 趣投与 Fun Game 共用同一套小类 */
@@ -106,9 +116,14 @@ const AGENT_PROFIT_CHILD_SEEDS: Record<string, AgentProfitChildSeed[]> = {
     { key: 'royal', name: '皇家斗鸡', rebate: 0.2, maxRebate: 0.3 },
     { key: 'thai', name: '泰国斗鸡', rebate: 0.1, maxRebate: 0.15 },
   ],
+  p2p: [
+    { key: 'kk-cards', name: '金刚牌局', rebate: 0, maxRebate: 0, share: 1, maxShare: 1 },
+    { key: 'kk-sports', name: '金刚体育', rebate: 0, maxRebate: 0, share: 1, maxShare: 1 },
+  ],
 }
 
 const AGENT_PROFIT_CASH_CATEGORIES: Array<Omit<AgentProfitRatioCategory, 'products'>> = [
+  { key: 'p2p', name: 'P2P返利', share: 0, maxShare: 0, shareOnProduct: true },
   { key: 'fun', name: 'Fun Game', share: 1, maxShare: 1 },
   { key: 'scratch', name: 'Scratch card', share: 1, maxShare: 1 },
   { key: 'social', name: 'Social - P2P', share: 0, maxShare: 0 },
@@ -137,18 +152,37 @@ export function createAgentProfitRatioCategories(): AgentProfitRatioCategory[] {
   }))
 }
 
-/** 信用收益比例默认：清单同授信页；真人占成 1%、其下产品退水 0.1%，其余为 0 */
-export function createAgentCreditProfitRatioCategories(): AgentProfitRatioCategory[] {
-  return DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({
-    key: item.key,
-    name: item.name,
-    share: item.key === 'live' ? 1 : 0,
-    maxShare: item.maxShare,
-    products: createChildren(item.key).map((product) => ({
+function createP2pCategory(productShare: number): AgentProfitRatioCategory {
+  return {
+    key: 'p2p',
+    name: 'P2P返利',
+    share: 0,
+    maxShare: 0,
+    shareOnProduct: true,
+    products: createChildren('p2p').map((product) => ({
       ...product,
-      rebate: item.key === 'live' ? Math.min(0.1, product.maxRebate) : 0,
+      share: productShare,
+      rebate: 0,
+      maxRebate: 0,
     })),
-  }))
+  }
+}
+
+/** 信用收益比例默认：清单同授信页；真人占成 1%、其下产品退水 0.1%，其余为 0。P2P 排在其他成本后的第一组 */
+export function createAgentCreditProfitRatioCategories(): AgentProfitRatioCategory[] {
+  return [
+    createP2pCategory(0),
+    ...DEFAULT_AGENT_CREDIT_PRODUCTS.map((item) => ({
+      key: item.key,
+      name: item.name,
+      share: item.key === 'live' ? 1 : 0,
+      maxShare: item.maxShare,
+      products: createChildren(item.key).map((product) => ({
+        ...product,
+        rebate: item.key === 'live' ? Math.min(0.1, product.maxRebate) : 0,
+      })),
+    })),
+  ]
 }
 
 /** 新增 / 授信 / 邀请：占成与退水从 0 起填，上限沿用信用大类 */
@@ -156,7 +190,11 @@ export function createBlankAgentShareRebateCategories(): AgentProfitRatioCategor
   return createAgentCreditProfitRatioCategories().map((category) => ({
     ...category,
     share: 0,
-    products: category.products.map((product) => ({ ...product, rebate: 0 })),
+    products: category.products.map((product) => ({
+      ...product,
+      rebate: 0,
+      ...(product.share == null ? {} : { share: 0 }),
+    })),
   }))
 }
 
@@ -186,6 +224,7 @@ export const AGENT_PROFIT_RATIO_PRODUCT_ICONS: Record<string, string> = {
   marble: '珠',
   qutou: '趣',
   cockfight: '鸡',
+  p2p: 'P',
 }
 
 export function cloneAgentProfitRatioCategories(categories: AgentProfitRatioCategory[]) {

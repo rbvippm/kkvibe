@@ -5,6 +5,8 @@ export type AgentMyShareRatioProduct = {
   name: string
   rebate: number
   maxRebate: number
+  share?: number
+  maxShare?: number
 }
 
 export type AgentMyShareRatioCategory = {
@@ -12,6 +14,8 @@ export type AgentMyShareRatioCategory = {
   name: string
   share: number
   maxShare: number
+  /** 为 true 时占成在小类，大类不展示占成，小类不展示退水 */
+  shareOnProduct?: boolean
   products: AgentMyShareRatioProduct[]
 }
 
@@ -27,6 +31,17 @@ export const AGENT_MY_SHARE_OTHER_COST = {
  * 占成沿用概况弹框原数值；小类退水对齐收益比例查看页。
  */
 export const AGENT_MY_SHARE_RATIO_CATEGORIES: AgentMyShareRatioCategory[] = [
+  {
+    key: 'p2p',
+    name: 'P2P返利',
+    share: 0,
+    maxShare: 0,
+    shareOnProduct: true,
+    products: [
+      { key: 'kk-cards', name: '金刚牌局', rebate: 0, maxRebate: 0, share: 1, maxShare: 1 },
+      { key: 'kk-sports', name: '金刚体育', rebate: 0, maxRebate: 0, share: 1, maxShare: 1 },
+    ],
+  },
   {
     key: 'scratch',
     name: '刮刮乐游戏',
@@ -121,10 +136,17 @@ export const AGENT_MY_SHARE_RATIO_CATEGORIES: AgentMyShareRatioCategory[] = [
   },
 ]
 
-/** 各大类占成与其他成本都为 0 时，弹框只展示小类退水 */
+function categoryHasShare(category: AgentMyShareRatioCategory) {
+  if (category.shareOnProduct) {
+    return category.products.some((product) => (product.share ?? 0) !== 0)
+  }
+  return category.share !== 0
+}
+
+/** 各大类占成、P2P 小类占成与其他成本都为 0 时，弹框只展示小类退水 */
 export function isAgentMyShareAllZero(
   categories: AgentMyShareRatioCategory[] = AGENT_MY_SHARE_RATIO_CATEGORIES,
   otherCost = AGENT_MY_SHARE_OTHER_COST.share,
 ) {
-  return otherCost === 0 && categories.every((category) => category.share === 0)
+  return otherCost === 0 && categories.every((category) => !categoryHasShare(category))
 }

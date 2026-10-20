@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   AGENT_MY_PROFIT_ASSETS,
   AGENT_MY_PROFIT_FOOTNOTE,
+  AGENT_MY_PROFIT_NET_PNL_FORMULA,
   AGENT_MY_PROFIT_REBATE_FOOTNOTE,
-  AGENT_NET_PNL_FORMULA,
   REBATE_DEFAULT_SECTION_SCALE,
   agentMyProfitDateFilterLabel,
   agentMyProfitDateRangeText,
@@ -24,6 +24,7 @@ import {
   agentMyProfitShareEarnSection,
   agentMyProfitShareFormula,
   agentMyProfitShareGameSection,
+  agentMyProfitShareP2pSection,
   agentMyProfitShareTotalBlock,
   agentMyProfitToneClass,
   type AgentMyProfitProductRow,
@@ -90,6 +91,8 @@ const shareCustomRange = ref<{ start: string; end: string } | null>(null)
 const gameDetailsExpanded = ref(false)
 /** 其他成本细项默认展开 */
 const costDetailsExpanded = ref(true)
+/** P2P返利细项默认展开 */
+const p2pDetailsExpanded = ref(true)
 /** 代理赚水细项默认收起 */
 const earnDetailsExpanded = ref(false)
 
@@ -174,7 +177,7 @@ const rebateSectionScale = computed<RebateSectionScale>(() => {
   }
 })
 const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissionRate ?? '5.00%')
-/** 占成顶部总盈亏 = 实占净输赢 + 代理赚水（与明细同源；随日期快捷变化） */
+/** 占成顶部总盈亏 = 实占净输赢 + P2P返利 + 代理赚水（与明细同源；随日期快捷变化） */
 const totalBlock = computed(() => agentMyProfitShareTotalBlock(preset.value))
 
 watch(preset, () => {
@@ -183,6 +186,7 @@ watch(preset, () => {
   negativeTipOpen.value = false
   gameDetailsExpanded.value = false
   costDetailsExpanded.value = true
+  p2pDetailsExpanded.value = true
   earnDetailsExpanded.value = false
   detailProduct.value = null
   detailFormulaTipOpen.value = false
@@ -200,6 +204,7 @@ const costSection = computed(() =>
     : agentMyProfitShareCostSection(preset.value),
 )
 const shareEarnSection = computed(() => agentMyProfitShareEarnSection(preset.value))
+const shareP2pSection = computed(() => agentMyProfitShareP2pSection(preset.value))
 const rebateLevelFormula = computed(() =>
   agentMyProfitRebateLevelFormula(
     'l1',
@@ -217,7 +222,7 @@ const rebateMonthCommission = computed(() => rebateL1Formula.value.monthCommissi
 /** 总佣金 = 佣金（负盈利累计已在佣金公式中冲减） */
 const rebateTotalCommission = computed(() => rebateMonthCommission.value)
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
-/** 占成公式：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
+/** 占成公式条：实占净输赢 + P2P返利 + 代理赚水 */
 const shareFormula = computed(() => agentMyProfitShareFormula(preset.value))
 const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
@@ -244,6 +249,9 @@ const detailTitle = computed(() => {
   }
   if (detailProduct.value.key === 'rebate_earn') {
     return '代理赚水明细'
+  }
+  if (detailProduct.value.key === 'p2p_rebate') {
+    return 'P2P返利明细'
   }
   if (detailProduct.value.key.startsWith('earn_')) {
     return `${detailProduct.value.name}赚水`
@@ -297,19 +305,17 @@ function closeNegativeTip() {
   negativeTipOpen.value = false
 }
 
-function closeHeroTips() {
-  closeNegativeTip()
-  closeNetPnlFormulaTip()
-}
-
 function toggleNetPnlFormulaTip() {
-  netWinTipOpen.value = false
-  negativeTipOpen.value = false
   netPnlFormulaTipOpen.value = !netPnlFormulaTipOpen.value
 }
 
 function closeNetPnlFormulaTip() {
   netPnlFormulaTipOpen.value = false
+}
+
+function closeHeroTips() {
+  closeNegativeTip()
+  closeNetPnlFormulaTip()
 }
 
 function onNegativeTipClick() {
@@ -364,6 +370,7 @@ function pickRebateMonth(month: string) {
   if (matched) preset.value = matched
   closeMonthSheet()
   closeNetWinTip()
+  closeNetPnlFormulaTip()
   closeNegativeTip()
 }
 
@@ -383,6 +390,7 @@ function goBack() {
   closeDetail()
   closeMonthSheet()
   closeNetWinTip()
+  closeNetPnlFormulaTip()
   closeNegativeTip()
   const from = typeof route.query.from === 'string' ? route.query.from : undefined
   router.push({
@@ -394,7 +402,6 @@ function goBack() {
 function openDetail(row: AgentMyProfitProductRow) {
   if (!agentMyProfitHasDetail(row.key, agentType.value)) return
   closeDetailFormulaTip()
-  closeNetPnlFormulaTip()
   detailProduct.value = row
 }
 
@@ -404,6 +411,10 @@ function toggleGameDetails() {
 
 function toggleCostDetails() {
   costDetailsExpanded.value = !costDetailsExpanded.value
+}
+
+function toggleP2pDetails() {
+  p2pDetailsExpanded.value = !p2pDetailsExpanded.value
 }
 
 function toggleEarnDetails() {
@@ -601,7 +612,7 @@ onBeforeUnmount(() => {
         </p>
         <div
           class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra mh5-agent-detail-profit-hero__formula"
-          :aria-label="$t('实占净输赢加上代理赚水等于总盈亏')"
+          :aria-label="$t('实占净输赢加上P2P返利加上代理赚水')"
         >
           <div class="mh5-agent-commission-cell">
             <p class="mh5-agent-commission-cell__label">
@@ -630,7 +641,7 @@ onBeforeUnmount(() => {
                   role="tooltip"
                   @click.stop
                 >
-                  {{ AGENT_NET_PNL_FORMULA }}
+                  {{ AGENT_MY_PROFIT_NET_PNL_FORMULA }}
                 </span>
               </span>
             </p>
@@ -646,6 +657,19 @@ onBeforeUnmount(() => {
           </div>
           <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
           <div class="mh5-agent-commission-cell">
+            <p class="mh5-agent-commission-cell__label">{{ $t('P2P返利') }}</p>
+            <button
+              type="button"
+              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+              :class="agentMyProfitToneClass(shareFormula.p2pTone)"
+              :aria-label="$t('查看P2P返利明细')"
+              @click="openDetail(shareFormula.p2p)"
+            >
+              {{ shareFormula.p2pAmountText }}
+            </button>
+          </div>
+          <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
+          <div class="mh5-agent-commission-cell">
             <p class="mh5-agent-commission-cell__label">{{ $t('代理赚水') }}</p>
             <button
               type="button"
@@ -657,21 +681,6 @@ onBeforeUnmount(() => {
               {{ shareFormula.earnAmountText }}
             </button>
           </div>
-          <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
-          <button
-            type="button"
-            class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-            :aria-label="`查看${shareFormula.total.name}明细`"
-            @click="openDetail(shareFormula.total)"
-          >
-            <p class="mh5-agent-commission-cell__label">{{ $t(shareFormula.total.name) }}</p>
-            <p
-              class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
-              :class="agentMyProfitToneClass(shareFormula.total.tone)"
-            >
-              {{ shareFormula.total.amountText }}
-            </p>
-          </button>
         </div>
       </section>
 
@@ -822,6 +831,67 @@ onBeforeUnmount(() => {
                 {{ row.amountText }}
               </span>
             </component>
+          </div>
+        </Transition>
+      </section>
+
+      <section
+        v-if="!isRebateAgent"
+        class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+        :aria-label="$t('P2P返利金额')"
+      >
+        <div class="mh5-agent-my-profit-table__head">
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+            {{ shareP2pSection.nameHeader }}
+          </span>
+          <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+            {{ shareP2pSection.amountHeader }}
+          </span>
+        </div>
+        <div
+          class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+        >
+          <button
+            type="button"
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+            :aria-expanded="p2pDetailsExpanded"
+            :aria-label="$t('展开或收起P2P返利细项')"
+            @click="toggleP2pDetails"
+          >
+            <span>{{ $t(shareP2pSection.total.name) }}</span>
+            <span
+              class="mh5-agent-my-profit-table__chevron"
+              :class="{ 'mh5-agent-my-profit-table__chevron--open': p2pDetailsExpanded }"
+              aria-hidden="true"
+            >
+              ▾
+            </span>
+          </button>
+          <span
+            class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+            :class="agentMyProfitToneClass(shareP2pSection.total.tone)"
+          >
+            {{ shareP2pSection.total.amountText }}
+          </span>
+        </div>
+        <Transition name="mh5-agent-my-profit-expand">
+          <div v-if="p2pDetailsExpanded" class="mh5-agent-my-profit-table__details">
+            <div
+              v-for="(row, index) in shareP2pSection.rows"
+              :key="row.key"
+              class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
+              :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+            >
+              <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                {{ $t(row.name) }}
+              </span>
+              <span
+                class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                :class="agentMyProfitToneClass(row.tone)"
+              >
+                {{ row.amountText }}
+              </span>
+            </div>
           </div>
         </Transition>
       </section>

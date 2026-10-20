@@ -135,6 +135,16 @@ export function getRebateMonthPresets(date = new Date()) {
   })
 }
 
+/** 我的盈亏 · 实占净输赢简写（不含 P2P返利，不改代理详情口径） */
+export const AGENT_MY_PROFIT_NET_PNL_FORMULA = '实占净输赢 = 游戏净输赢 - 其他成本'
+
+/** 我的盈亏 · 总盈亏明细展开式（与明细行一致） */
+export const AGENT_MY_PROFIT_TOTAL_FORMULA = '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水'
+
+/** 我的盈亏 · 实占净输赢明细展开式 */
+export const AGENT_MY_PROFIT_NET_PNL_DETAIL_FORMULA =
+  '实占净输赢 = 实占游戏输赢 - 实占退水 - 实占VIP退水 - 场馆费 - 实占VIP晋级礼金 - 实占VIP额外奖金 - 实占活动金 - 实占充提手续费'
+
 /**
  * 占成 · 游戏净输赢细项
  * 合计 = +523,567.88（5×123,567.88 − 4×23,567.88）
@@ -149,6 +159,12 @@ export const AGENT_MY_PROFIT_SHARE_GAME_ROWS: AgentMyProfitProductRow[] = [
   { key: 'live', name: '真人', amountText: '+123,567.88', tone: 'positive' },
   { key: 'slots', name: '老虎机', amountText: '-23,567.88', tone: 'negative' },
   { key: 'fishing', name: '捕鱼', amountText: '+123,567.88', tone: 'positive' },
+]
+
+/** 占成 · P2P返利细项（列表不可点；公式条合计可点进明细，游戏随本列表动态拼接） */
+export const AGENT_MY_PROFIT_SHARE_P2P_ROWS: AgentMyProfitProductRow[] = [
+  { key: 'p2p_cards', name: '金刚牌局', amountText: '+18,642.16', tone: 'positive' },
+  { key: 'p2p_sports', name: '金刚体育', amountText: '+12,480.74', tone: 'positive' },
 ]
 
 /**
@@ -223,6 +239,9 @@ const AGENT_MY_PROFIT_NO_DETAIL_KEYS = new Set([
   'deposit_withdraw_fee',
   'game_sum',
   'cost_sum',
+  'p2p_sum',
+  'p2p_cards',
+  'p2p_sports',
 ])
 
 /** ---------- 返佣代理 · Mock（口径对齐返佣公式） ---------- */
@@ -398,16 +417,16 @@ export type RebateProfitSection = MyProfitSection
 
 /**
  * 占成 · 各日期快捷对应游戏/成本/赚水合计目标（列表等比缩放，切换可见差异）
- * today 对齐默认行合计：游戏 +539,929.38 / 成本 168,370.31 / 赚水 16,361.50
+ * today 对齐默认行合计：游戏 +539,929.38 / P2P返利 +31,122.90 / 成本 168,370.31 / 赚水 16,361.50
  */
 export const SHARE_SECTION_SCALE_BY_PRESET: Record<
   RangePreset,
-  { gameTotal: number; costTotal: number; rebateEarn: number }
+  { gameTotal: number; p2pTotal: number; costTotal: number; rebateEarn: number }
 > = {
-  today: { gameTotal: 539929.38, costTotal: 168370.31, rebateEarn: 16361.5 },
-  yesterday: { gameTotal: 192245.5, costTotal: 52480.2, rebateEarn: 5825 },
-  thisMonth: { gameTotal: 920221.78, costTotal: 245680.4, rebateEarn: 27881.12 },
-  lastMonth: { gameTotal: 423070.7, costTotal: 132890.15, rebateEarn: 12820.37 },
+  today: { gameTotal: 539929.38, p2pTotal: 31122.9, costTotal: 168370.31, rebateEarn: 16361.5 },
+  yesterday: { gameTotal: 192245.5, p2pTotal: 11082.55, costTotal: 52480.2, rebateEarn: 5825 },
+  thisMonth: { gameTotal: 920221.78, p2pTotal: 53043.47, costTotal: 245680.4, rebateEarn: 27881.12 },
+  lastMonth: { gameTotal: 423070.7, p2pTotal: 24386.79, costTotal: 132890.15, rebateEarn: 12820.37 },
 }
 
 function sharePresetKey(preset: ProfitDatePreset = 'today'): RangePreset {
@@ -453,6 +472,18 @@ export function agentMyProfitShareGameSection(preset: ProfitDatePreset = 'today'
   }
 }
 
+/** 占成 · P2P返利分区（游戏净输赢下方；合计与细项均不可点） */
+export function agentMyProfitShareP2pSection(preset: ProfitDatePreset = 'today'): MyProfitSection {
+  const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
+  const rows = shareRowsScaledToTotal(AGENT_MY_PROFIT_SHARE_P2P_ROWS, target.p2pTotal)
+  return {
+    nameHeader: 'P2P返利',
+    amountHeader: '金额（实占）',
+    rows,
+    total: sumRebateRows(rows, 'p2p_sum'),
+  }
+}
+
 /** 占成 · 其他成本分区（结构对齐返佣；金额列带实占；随日期快捷缩放） */
 export function agentMyProfitShareCostSection(preset: ProfitDatePreset = 'today'): MyProfitSection {
   const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
@@ -465,14 +496,15 @@ export function agentMyProfitShareCostSection(preset: ProfitDatePreset = 'today'
   }
 }
 
-/** 占成 · 实占净输赢 = 游戏净输赢合计 − 其他成本合计（原「净盈亏」/「总盈亏」口径） */
+/** 占成 · 实占净输赢 = 游戏净输赢 − 其他成本（P2P返利单独加在总盈亏） */
 export function agentMyProfitShareNetPnlRow(
   preset: ProfitDatePreset = 'today',
 ): AgentMyProfitProductRow {
   const game = agentMyProfitShareGameSection(preset).total
   const cost = agentMyProfitShareCostSection(preset).total
   const sum =
-    parseProfitAmountText(game.amountText) - Math.abs(parseProfitAmountText(cost.amountText))
+    parseProfitAmountText(game.amountText) -
+    Math.abs(parseProfitAmountText(cost.amountText))
   const cell = formatProfitAmountText(sum)
   return {
     key: 'net_pnl',
@@ -487,13 +519,15 @@ export function agentMyProfitShareRebateEarn(preset: ProfitDatePreset = 'today')
   return SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)].rebateEarn
 }
 
-/** 占成 · 总盈亏 = 实占净输赢 + 代理赚水 */
+/** 占成 · 总盈亏 = 实占净输赢 + P2P返利 + 代理赚水 */
 export function agentMyProfitShareSummaryRow(
   preset: ProfitDatePreset = 'today',
 ): AgentMyProfitProductRow {
   const net = agentMyProfitShareNetPnlRow(preset)
+  const p2p = agentMyProfitShareP2pSection(preset).total
   const earn = agentMyProfitShareRebateEarn(preset)
-  const sum = parseProfitAmountText(net.amountText) + earn
+  const sum =
+    parseProfitAmountText(net.amountText) + parseProfitAmountText(p2p.amountText) + earn
   const cell = formatProfitAmountText(sum)
   return {
     key: 'total',
@@ -572,19 +606,29 @@ export function agentMyProfitShareEarnSection(
   }
 }
 
-/** 占成公式：游戏净输赢 − 其他成本 = 实占净输赢；实占净输赢 + 代理赚水 = 总盈亏 */
+/** 占成公式条：实占净输赢 + P2P返利 + 代理赚水（总盈亏在大号金额） */
 export function agentMyProfitShareFormula(preset: ProfitDatePreset = 'today') {
   const game = agentMyProfitShareGameSection(preset).total
+  const p2p = agentMyProfitShareP2pSection(preset).total
   const cost = agentMyProfitShareCostSection(preset).total
   const costAbs = Math.abs(parseProfitAmountText(cost.amountText))
-  const costCell = formatProfitAmountText(costAbs)
+  const costCell = formatCostAmountText(costAbs)
   const earn = agentMyProfitShareRebateEarn(preset)
   const earnCell = formatProfitAmountText(earn)
   return {
     gameAmountText: game.amountText,
     gameTone: game.tone,
-    /** 减数展示绝对值（配合「−」运算符） */
-    costAmountText: costCell.amountText.replace(/^\+/, ''),
+    p2pAmountText: p2p.amountText,
+    p2pTone: p2p.tone,
+    p2p: {
+      key: 'p2p_rebate',
+      name: 'P2P返利',
+      amountText: p2p.amountText,
+      tone: p2p.tone,
+    },
+    /** 减数展示绝对值、粉色（配合「−」运算符） */
+    costAmountText: costCell.amountText,
+    costTone: costCell.tone,
     netPnl: agentMyProfitShareNetPnlRow(preset),
     earnAmountText: earnCell.amountText,
     earnTone: earnCell.tone,
@@ -626,16 +670,17 @@ export function agentMyProfitShareNetPnlDetailRows(
       amountText: summary.amountText,
       tone: summary.tone,
       emphasize: true,
-      formulaTip: AGENT_NET_PNL_DETAIL_FORMULA,
+      formulaTip: AGENT_MY_PROFIT_NET_PNL_DETAIL_FORMULA,
     },
   ]
 }
 
-/** 占成总盈亏明细：游戏净输赢 − 其他成本 + 代理赚水 = 总盈亏 */
+/** 占成总盈亏明细：实占净输赢 + P2P返利 + 代理赚水 = 总盈亏 */
 export function agentMyProfitShareTotalDetailRows(
   preset: ProfitDatePreset = 'today',
 ): AgentMyProfitDetailRow[] {
   const game = agentMyProfitShareGameSection(preset).total
+  const p2p = agentMyProfitShareP2pSection(preset).total
   const cost = agentMyProfitShareCostSection(preset).total
   const costCell = formatCostAmountText(Math.abs(parseProfitAmountText(cost.amountText)))
   const earn = agentMyProfitShareRebateEarn(preset)
@@ -646,6 +691,11 @@ export function agentMyProfitShareTotalDetailRows(
       label: '游戏净输赢',
       amountText: game.amountText,
       tone: game.tone,
+    },
+    {
+      label: 'P2P返利',
+      amountText: p2p.amountText,
+      tone: p2p.tone,
     },
     {
       label: '其他成本',
@@ -662,7 +712,34 @@ export function agentMyProfitShareTotalDetailRows(
       amountText: total.amountText,
       tone: total.tone,
       emphasize: true,
-      formulaTip: AGENT_PROFIT_SECTION_FORMULA,
+      formulaTip: AGENT_MY_PROFIT_TOTAL_FORMULA,
+    },
+  ]
+}
+
+/** P2P返利 = 当前返回的游戏之和（游戏名动态拼接，未返回的不出现） */
+function p2pRebateSumFormula(gameNames: string[]) {
+  return `P2P返利 = ${gameNames.join(' + ')}`
+}
+
+/** 占成 P2P返利明细：细项为当前返回的游戏，末行合计与公式条金额一致 */
+export function agentMyProfitShareP2pDetailRows(
+  preset: ProfitDatePreset = 'today',
+): AgentMyProfitDetailRow[] {
+  const section = agentMyProfitShareP2pSection(preset)
+  const games = section.rows.map((row) => ({
+    label: row.name,
+    amountText: row.amountText,
+    tone: row.tone,
+  }))
+  return [
+    ...games,
+    {
+      label: 'P2P返利',
+      amountText: section.total.amountText,
+      tone: section.total.tone,
+      emphasize: true,
+      formulaTip: p2pRebateSumFormula(games.map((row) => row.label)),
     },
   ]
 }
@@ -1006,6 +1083,7 @@ export function agentMyProfitDetailRows(
   if (rowKey === 'total') return agentMyProfitShareTotalDetailRows(sharePreset)
   if (rowKey === 'net_pnl') return agentMyProfitShareNetPnlDetailRows(sharePreset)
   if (rowKey === 'rebate_earn') return agentMyProfitShareRebateEarnDetailRows(sharePreset)
+  if (rowKey === 'p2p_rebate') return agentMyProfitShareP2pDetailRows(sharePreset)
   const earnCategory = parseEarnCategoryKey(rowKey)
   if (earnCategory) return agentMyProfitShareRebateEarnGameDetailRows(earnCategory, sharePreset)
   return agentMyProfitShareGameDetailRows(rowKey, sharePreset)
@@ -1021,6 +1099,7 @@ export function agentMyProfitDialogLabelHeader(
 ) {
   if (identity === 'rebate') return '佣金细项'
   if (rowKey === 'rebate_earn') return '游戏分类'
+  if (rowKey === 'p2p_rebate') return '游戏名称'
   if (rowKey && parseEarnCategoryKey(rowKey)) return '游戏'
   return '盈亏项'
 }

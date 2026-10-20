@@ -39,10 +39,10 @@ import {
   getAgentProfitFormula,
   getAgentProfitGameSection,
   getAgentProfitHero,
+  getAgentProfitP2pSection,
   getAgentProfitSummaryRows,
   getAgentTotalCommission,
   getAgentTotalProfit,
-  getAgentGrandTotalAmount,
   profitTotalClass,
   profitValueClass,
   type AgentProfitCategoryKey,
@@ -114,6 +114,7 @@ const profitLayoutMode = ref<'classic' | 'sections'>('sections')
 const lastProfitTabTapAt = ref(0)
 const PROFIT_TAB_DOUBLE_TAP_MS = 400
 const profitGameDetailsExpanded = ref(false)
+const profitP2pDetailsExpanded = ref(true)
 const profitCostDetailsExpanded = ref(true)
 const profitEarnDetailsExpanded = ref(false)
 const profitDialogKind = ref<AgentProfitDialogKind | null>(null)
@@ -211,6 +212,7 @@ const agentTotalProfit = computed(() =>
 )
 const profitFlowRows = computed(() => getAgentProfitFlowRows(currency.value))
 const profitGameSection = computed(() => getAgentProfitGameSection(currency.value))
+const profitP2pSection = computed(() => getAgentProfitP2pSection(currency.value))
 const profitEarnSection = computed(() => getAgentProfitEarnSection(currency.value))
 const profitCostSection = computed(() => getAgentProfitCostSection(currency.value))
 const profitFormula = computed(() => getAgentProfitFormula(currency.value))
@@ -234,6 +236,7 @@ const profitDialogLabelHeader = computed(() =>
 
 watch(currency, () => {
   profitGameDetailsExpanded.value = false
+  profitP2pDetailsExpanded.value = true
   profitCostDetailsExpanded.value = true
   profitEarnDetailsExpanded.value = false
   profitFormulaTipOpen.value = false
@@ -289,6 +292,10 @@ function onDetailTabClick(key: AgentDetailTab) {
 
 function toggleProfitGameDetails() {
   profitGameDetailsExpanded.value = !profitGameDetailsExpanded.value
+}
+
+function toggleProfitP2pDetails() {
+  profitP2pDetailsExpanded.value = !profitP2pDetailsExpanded.value
 }
 
 function toggleProfitCostDetails() {
@@ -349,7 +356,6 @@ const creditLimitView = computed(() => {
     agent.value.creditLimits[creditCurrency.value],
     creditCurrency.value,
     creditSettleRangeScale(settleStart.value, settleEnd.value),
-    getAgentGrandTotalAmount(creditCurrency.value),
   )
 })
 
@@ -808,7 +814,7 @@ function closeProfitFormulaTips() {
               </p>
               <div
                 class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra mh5-agent-detail-profit-hero__formula"
-                aria-label="实占净输赢加上代理赚水等于总盈亏"
+                aria-label="实占净输赢加上P2P返利加上代理赚水"
               >
                 <div class="mh5-agent-commission-cell">
                   <p class="mh5-agent-commission-cell__label">
@@ -853,6 +859,19 @@ function closeProfitFormulaTips() {
                 </div>
                 <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
                 <div class="mh5-agent-commission-cell">
+                  <p class="mh5-agent-commission-cell__label">P2P返利</p>
+                  <button
+                    type="button"
+                    class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value mh5-agent-detail-profit-hero__net-amount"
+                    :class="agentMyProfitToneClass(profitFormula.p2pTone)"
+                    aria-label="查看P2P返利明细"
+                    @click="openProfitDialog('p2p_rebate')"
+                  >
+                    {{ profitFormula.p2pAmountText }}
+                  </button>
+                </div>
+                <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
+                <div class="mh5-agent-commission-cell">
                   <p class="mh5-agent-commission-cell__label">代理赚水</p>
                   <button
                     type="button"
@@ -864,21 +883,6 @@ function closeProfitFormulaTips() {
                     {{ profitFormula.earnAmountText }}
                   </button>
                 </div>
-                <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
-                <button
-                  type="button"
-                  class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
-                  aria-label="查看总盈亏明细"
-                  @click="openProfitDialog('total')"
-                >
-                  <p class="mh5-agent-commission-cell__label">总盈亏</p>
-                  <p
-                    class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
-                    :class="agentMyProfitToneClass(profitFormula.totalTone)"
-                  >
-                    {{ profitFormula.totalAmountText }}
-                  </p>
-                </button>
               </div>
             </section>
 
@@ -940,6 +944,66 @@ function closeProfitFormulaTips() {
                       {{ row.value }}
                     </span>
                   </button>
+                </div>
+              </Transition>
+            </section>
+
+            <section
+              class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
+              aria-label="P2P返利金额"
+            >
+              <div class="mh5-agent-my-profit-table__head">
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                  {{ profitP2pSection.nameHeader }}
+                </span>
+                <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount">
+                  {{ profitP2pSection.amountHeader }}
+                </span>
+              </div>
+              <div
+                class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--total mh5-agent-my-profit-table__row--expand"
+              >
+                <button
+                  type="button"
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name mh5-agent-my-profit-table__name-with-chevron mh5-agent-my-profit-table__expand-trigger"
+                  :aria-expanded="profitP2pDetailsExpanded"
+                  aria-label="展开或收起P2P返利细项"
+                  @click="toggleProfitP2pDetails"
+                >
+                  <span>{{ profitP2pSection.total.label }}</span>
+                  <span
+                    class="mh5-agent-my-profit-table__chevron"
+                    :class="{ 'mh5-agent-my-profit-table__chevron--open': profitP2pDetailsExpanded }"
+                    aria-hidden="true"
+                  >
+                    ▾
+                  </span>
+                </button>
+                <span
+                  class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                  :class="agentMyProfitToneClass(profitP2pSection.total.tone)"
+                >
+                  {{ profitP2pSection.total.value }}
+                </span>
+              </div>
+              <Transition name="mh5-agent-my-profit-expand">
+                <div v-if="profitP2pDetailsExpanded" class="mh5-agent-my-profit-table__details">
+                  <div
+                    v-for="(row, index) in profitP2pSection.rows"
+                    :key="row.key"
+                    class="mh5-agent-my-profit-table__row mh5-agent-my-profit-table__row--static"
+                    :class="{ 'mh5-agent-my-profit-table__row--alt': index % 2 === 1 }"
+                  >
+                    <span class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--name">
+                      {{ row.label }}
+                    </span>
+                    <span
+                      class="mh5-agent-my-profit-table__cell mh5-agent-my-profit-table__cell--amount"
+                      :class="agentMyProfitToneClass(row.tone)"
+                    >
+                      {{ row.value }}
+                    </span>
+                  </div>
                 </div>
               </Transition>
             </section>

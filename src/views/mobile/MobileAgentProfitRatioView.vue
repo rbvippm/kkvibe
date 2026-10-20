@@ -11,6 +11,7 @@ import {
   AGENT_PROFIT_RATIO_TYPE_TABS,
   formatProfitRatioPercent,
   getAgentProfitCost,
+  isProductShareCategory,
   getAgentProfitRatioProductIcon,
   getAgentProfitRelationLabel,
   getAgentProfitRatioCategories,
@@ -153,7 +154,7 @@ function goEdit() {
               </span>
               <span class="mh5-agent-profit-ratio-list__name">{{ category.name }}</span>
             </div>
-            <div class="mh5-agent-profit-ratio-list__meta">
+            <div v-if="!isProductShareCategory(category)" class="mh5-agent-profit-ratio-list__meta">
               <span class="mh5-agent-profit-ratio-list__value">
                 <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
                 {{ formatProfitRatioPercent(category.share) }}
@@ -167,7 +168,14 @@ function goEdit() {
             class="mh5-agent-profit-ratio-list__row mh5-agent-profit-ratio-list__row--product"
           >
             <span class="mh5-agent-profit-ratio-list__name">{{ product.name }}</span>
-            <div class="mh5-agent-profit-ratio-list__meta">
+            <div v-if="isProductShareCategory(category)" class="mh5-agent-profit-ratio-list__meta">
+              <span class="mh5-agent-profit-ratio-list__value">
+                <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--share">占成</em>
+                {{ formatProfitRatioPercent(product.share ?? 0) }}
+              </span>
+              <span class="mh5-agent-profit-ratio-list__max">最高{{ formatProfitRatioPercent(product.maxShare ?? 0) }}</span>
+            </div>
+            <div v-else class="mh5-agent-profit-ratio-list__meta">
               <span class="mh5-agent-profit-ratio-list__value">
                 <em class="mh5-agent-profit-ratio-list__kind mh5-agent-profit-ratio-list__kind--rebate">退水</em>
                 {{ formatProfitRatioPercent(product.rebate) }}

@@ -15,7 +15,7 @@ import {
   normalizeCostPercent,
 } from '../../constants/agentCredit'
 import { AGENT_CREATE_ACCOUNT_SPEC, AGENT_CREDIT_SPEC } from '../../constants/agentCreditSpec'
-import { syncCreditProfitRatioFromCredit, createBlankAgentShareRebateCategories, type AgentProfitRatioCategory } from '../../constants/agentProfitRatio'
+import { syncCreditProfitRatioFromCredit, createBlankAgentShareRebateCategories, isProductShareCategory, type AgentProfitRatioCategory } from '../../constants/agentProfitRatio'
 import Mh5AgentCreateIdentityField from '../../components/mobile/Mh5AgentCreateIdentityField.vue'
 import Mh5AgentShareRebateList from '../../components/mobile/Mh5AgentShareRebateList.vue'
 import {
@@ -125,6 +125,12 @@ const editInputMode = computed(() => 'numeric' as const)
 watch(sharePercent, (value) => {
   const next = Math.round(Math.min(100, Math.max(0, value)))
   categories.value.forEach((category) => {
+    if (isProductShareCategory(category)) {
+      category.products.forEach((product) => {
+        product.share = Math.min(next, product.maxShare ?? 0)
+      })
+      return
+    }
     category.share = Math.min(next, category.maxShare)
   })
   costPercent.value = Math.min(next, maxCost)
@@ -134,7 +140,7 @@ watch(rebatePercent, (value) => {
   const next = Math.min(100, Math.max(0, Number(value.toFixed(2))))
   categories.value.forEach((category) => {
     category.products.forEach((product) => {
-      product.rebate = Math.min(next, product.maxRebate)
+      product.rebate = isProductShareCategory(category) ? 0 : Math.min(next, product.maxRebate)
     })
   })
 })

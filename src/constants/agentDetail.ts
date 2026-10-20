@@ -204,14 +204,11 @@ export function formatCreditLimitView(
   stats: AgentCreditLimitStats,
   currency: AgentCreditCurrency,
   rangeScale = 1,
-  actualProfit?: number,
 ): AgentCreditLimitView {
   const settle = scaleCreditSettleStats(stats, rangeScale)
   const quota = Math.max(0, stats.creditQuotaTotal)
   const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
   const net = creditNet(settle)
-  const scaledProfit =
-    actualProfit == null ? null : Number((actualProfit * rangeScale).toFixed(2))
   return {
     availableValue: formatCreditAmount(stats.creditBalance),
     quotaValue: formatCreditAmount(quota),
@@ -237,14 +234,6 @@ export function formatCreditLimitView(
         value: formatSignedCreditAmount(net),
         positive: net >= 0,
       },
-      ...(scaledProfit == null
-        ? []
-        : [
-            {
-              label: '实占净输赢:',
-              value: formatSignedCreditAmount(scaledProfit, 2),
-            },
-          ]),
     ],
   }
 }
