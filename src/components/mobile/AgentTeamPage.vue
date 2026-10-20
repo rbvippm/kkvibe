@@ -49,8 +49,16 @@ const createAccountOptions = computed(() =>
     : CREATE_ACCOUNT_OPTIONS,
 )
 
-/** 占成：完整筛选 Tab；返佣无 Tab，固定只看直属会员 */
+/** 占成：完整筛选 Tab；返佣固定直属会员，顶部用在线状态胶囊 */
 const teamFilterTabs = computed(() => TEAM_FILTER_TABS)
+
+const REBATE_PRESENCE_TABS = [
+  { key: 'all', label: '全部' },
+  { key: 'online', label: '在线' },
+  { key: 'offline', label: '离线' },
+] as const
+
+type RebatePresenceTab = (typeof REBATE_PRESENCE_TABS)[number]['key']
 
 const teamFilterTab = ref<TeamFilterTab>(isRebateAgent.value ? 'direct_member' : 'all')
 const onlineFilter = ref<TeamOnlineFilter | null>(null)
@@ -61,6 +69,13 @@ const onlineFilterWrapRef = ref<HTMLElement | null>(null)
 const effectiveTeamFilterTab = computed<TeamFilterTab>(() =>
   isRebateAgent.value ? 'direct_member' : teamFilterTab.value,
 )
+
+const rebatePresenceTab = computed<RebatePresenceTab>(() => onlineFilter.value ?? 'all')
+
+function pickRebatePresenceTab(key: RebatePresenceTab) {
+  onlineFilter.value = key === 'all' ? null : key
+  applyFilterExpand('direct_member')
+}
 
 watch(isRebateAgent, (rebate) => {
   if (rebate) {
@@ -602,6 +617,23 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div v-if="isRebateAgent" class="agent-team-toolbar">
+      <div class="agent-team-toolbar__tabs" role="tablist" :aria-label="$t('在线状态')">
+        <button
+          v-for="tab in REBATE_PRESENCE_TABS"
+          :key="tab.key"
+          type="button"
+          role="tab"
+          class="agent-team-filter-pill"
+          :class="{ 'agent-team-filter-pill--active': rebatePresenceTab === tab.key }"
+          :aria-selected="rebatePresenceTab === tab.key"
+          @click="pickRebatePresenceTab(tab.key)"
+        >
+          {{ $t(tab.label) }}
+        </button>
+      </div>
+    </div>
+
     <div v-if="!isRebateAgent" class="agent-team-toolbar">
       <div class="agent-team-toolbar__tabs" role="tablist" :aria-label="$t('团队筛选')">
         <button
@@ -673,7 +705,15 @@ onBeforeUnmount(() => {
 
     <main class="agent-team-list">
       <p v-if="!teamTreeRows.length" class="agent-team-empty">
-        {{ onlineFilter === 'offline' ? $t('暂无离线成员') : $t('暂无在线成员') }}
+        {{
+          onlineFilter === 'offline'
+            ? $t('暂无离线成员')
+            : onlineFilter === 'online'
+              ? $t('暂无在线成员')
+              : isRebateAgent
+                ? $t('暂无直属会员')
+                : $t('暂无在线成员')
+        }}
       </p>
       <div v-else class="agent-team-list__track">
         <template v-for="row in teamTreeRows" :key="treeRowKey(row)">
