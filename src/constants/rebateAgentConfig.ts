@@ -1,10 +1,4 @@
-/** 推广返利 · 返佣代理配置 · Mock（单层：仅一级返佣代理；底部配置彩票退水） */
-
-import {
-  applyCategoryRebate,
-  cloneShareAgentRebateCategories,
-  type PcShareAgentRebateCategory,
-} from './pcShareAgent'
+/** 推广返利 · 返佣代理配置 · Mock（单层：仅一级返佣代理，无赚取退水） */
 
 export type RebateAgentLevel = 1
 
@@ -19,32 +13,6 @@ export type RebateAgentRow = {
   backendAccount: string
   backendPassword: string
   disabled: boolean
-  /** 彩票退水，规则与占成代理退水一致 */
-  lotteryRebate: PcShareAgentRebateCategory
-}
-
-/** 彩票退水：复用占成代理「彩票」大类（滑块 0～100，产品上限 SABA彩票 / 一分快三） */
-export function createRebateAgentLotteryRebate(percent = 0): PcShareAgentRebateCategory {
-  const category = cloneShareAgentRebateCategories().find((item) => item.key === 'lottery')
-  const lottery: PcShareAgentRebateCategory = category ?? {
-    key: 'lottery',
-    name: '彩票',
-    rebate: 0,
-    products: [],
-  }
-  const nextPercent = Math.min(100, Math.max(0, Math.round(percent)))
-  lottery.rebate = nextPercent
-  applyCategoryRebate(lottery)
-  return lottery
-}
-
-export function cloneRebateAgentLotteryRebate(
-  category: PcShareAgentRebateCategory,
-): PcShareAgentRebateCategory {
-  return {
-    ...category,
-    products: category.products.map((product) => ({ ...product })),
-  }
 }
 
 /** 可被搜索并新增为返佣代理的用户候选 */
@@ -74,7 +42,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     backendAccount: 'wlqjblfm',
     backendPassword: 'eskvsl7oi',
     disabled: false,
-    lotteryRebate: createRebateAgentLotteryRebate(50),
   },
   {
     id: 'ra-2',
@@ -87,7 +54,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     backendAccount: 'stgkk6000',
     backendPassword: 'stgkk6000',
     disabled: false,
-    lotteryRebate: createRebateAgentLotteryRebate(0),
   },
   {
     id: 'ra-3',
@@ -100,7 +66,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     backendAccount: 'l7ds8yad',
     backendPassword: 'l7ds8ypw',
     disabled: false,
-    lotteryRebate: createRebateAgentLotteryRebate(20),
   },
   {
     id: 'ra-4',
@@ -113,7 +78,6 @@ export const MOCK_REBATE_AGENT_ROWS: RebateAgentRow[] = [
     backendAccount: 'traps02ac',
     backendPassword: 'traps02pw',
     disabled: false,
-    lotteryRebate: createRebateAgentLotteryRebate(0),
   },
 ]
 
