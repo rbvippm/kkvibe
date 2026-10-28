@@ -128,6 +128,8 @@ const showGameCenter = ref(false)
 const showWebview = ref(false)
 const lastGameName = ref('奔驰宝马')
 const playAnchor = ref<ChatGroupFloatKind>('play')
+const dockOnCollapse = ref(false)
+const handoffDock = ref(false)
 const flyChipIcon = ref<string>(CHAT_GROUP_GAME_ASSETS.playFloat)
 const gamePlayName = ref('')
 const gamePlayExpanded = ref(false)
@@ -277,7 +279,12 @@ function gameIconOf(name: string) {
   return name === '奔驰宝马' ? CHAT_GROUP_GAME_ASSETS.playFloat : resolveVoiceGameIcon(name)
 }
 
-function openGamePlay(name: string, mode: ChatGamePlayMode = 'sheet', anchor: ChatGroupFloatKind = 'game') {
+function openGamePlay(
+  name: string,
+  mode: ChatGamePlayMode = 'sheet',
+  anchor: ChatGroupFloatKind = 'game',
+  dockCollapse = false,
+) {
   stopHomeDismiss()
   showGameCenter.value = false
   showGameMenu.value = false
@@ -285,6 +292,8 @@ function openGamePlay(name: string, mode: ChatGamePlayMode = 'sheet', anchor: Ch
   gameStageShift.value = null
   lastGameName.value = name
   playAnchor.value = anchor
+  dockOnCollapse.value = dockCollapse
+  handoffDock.value = false
   gamePlayMode.value = mode
   gamePlayName.value = name
   if (mode === 'full') {
@@ -444,7 +453,7 @@ function persistLocalGameToGlobalDock() {
   if (!name) return
   closeGamePlay()
   if (miniGame.gameName.value) return
-  miniGame.openDock(name, 'sports')
+  miniGame.openDock(name, 'sports', gamePlayMode.value === 'sheet' ? 'sheet' : 'global')
 }
 
 function dismissGameToHome() {
@@ -532,7 +541,31 @@ function toggleGamePlaySize() {
   gamePlayExpanded.value = !gamePlayExpanded.value
 }
 
+function onCenterGameOpen(name: string, anchor: 'game' | 'center' = 'center') {
+  openGamePlay(name, 'sheet', anchor === 'center' ? 'game' : 'play', anchor === 'center')
+}
+
+function collapseCenterToDock() {
+  if (miniGame.homeDismiss.value) return
+  const shell = document.getElementById('mh5-app-shell')
+  const sheet = roomEl.value?.querySelector<HTMLElement>('.mh5-chat-game-play')
+  const roomH = shell?.clientHeight || 812
+  const startH = sheet?.getBoundingClientRect().height || Math.round(roomH * 0.78)
+  const name = gamePlayName.value || lastGameName.value
+  if (!name) {
+    closeGamePlay()
+    return
+  }
+  handoffDock.value = true
+  closeGamePlay()
+  miniGame.collapseSheetToDock(name, 'sports', roomH, startH)
+}
+
 function minimizeGamePlay(ev?: MouseEvent) {
+  if (dockOnCollapse.value) {
+    collapseCenterToDock()
+    return
+  }
   const room = roomEl.value
   const startEl =
     room?.querySelector<HTMLElement>('.mh5-chat-game-play__icon') ??
@@ -2980,7 +3013,7 @@ onBeforeUnmount(() => {
       v-model:open="showGameCenter"
       :show-floats="false"
       intercept-open
-      @open-game="openGamePlay"
+      @open-game="onCenterGameOpen"
     />
 
     <Transition name="mh5-chat-webview">
@@ -3044,7 +3077,7 @@ onBeforeUnmount(() => {
       @click="minimizeGamePlay"
     />
 
-    <Transition :name="flyChip ? '' : 'mh5-chat-game-play'">
+    <Transition :name="flyChip || handoffDock ? '' : 'mh5-chat-game-play'">
       <section
         v-if="gamePlayName && gamePlayMode === 'sheet'"
         class="mh5-chat-game-play"

@@ -5042,10 +5042,20 @@
   pointer-events: none;
 }
 
-.mh5-mini-game-layer--full {
+.mh5-mini-game-layer--full,
+.mh5-mini-game-layer--sheet {
   position: absolute;
   inset: 0;
   z-index: 90;
+  pointer-events: auto;
+}
+
+.mh5-mini-game-layer--sheet {
+  pointer-events: none;
+}
+
+.mh5-mini-game-layer--sheet .mh5-chat-game-play,
+.mh5-mini-game-layer--sheet .mh5-chat-game-play-mask {
   pointer-events: auto;
 }
 
@@ -7092,7 +7102,8 @@
   box-shadow: 0 -4px 16px rgb(15 23 42 / 8%);
 }
 
-.mh5-chat-game-dock__close {
+.mh5-chat-game-dock__close,
+.mh5-chat-game-dock__expand {
   display: grid;
   flex-shrink: 0;
   place-items: center;
@@ -7105,7 +7116,8 @@
   cursor: pointer;
 }
 
-.mh5-chat-game-dock__close svg {
+.mh5-chat-game-dock__close svg,
+.mh5-chat-game-dock__expand svg {
   display: block;
 }
 
@@ -7126,11 +7138,6 @@
   cursor: pointer;
 }
 
-.mh5-chat-game-dock__spacer {
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-}
 
 .mh5-chat-game-dock__play {
   flex-shrink: 0;

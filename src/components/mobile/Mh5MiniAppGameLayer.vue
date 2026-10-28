@@ -7,6 +7,7 @@ import {
   type ChatGameMenuActionId,
 } from '../../constants/mobileChatGroupGame'
 import { VIP_CLUB_ASSETS, VIP_CLUB_SPORTS_ASSETS } from '../../constants/vipClub'
+import { resolveVoiceGameIcon } from '../../constants/mobileVoiceRoom'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5VipSportsDesk from './Mh5VipSportsDesk.vue'
 
@@ -15,6 +16,7 @@ const {
   gameName,
   gameKind,
   mode,
+  sheetExpanded,
   showMenu,
   toast,
   homeDismiss,
@@ -27,7 +29,9 @@ const {
   showToast,
   close,
   dismissToHome,
+  collapseSheetToDock,
   expandFromDock,
+  toggleSheetExpanded,
   collapseToPip,
   onStagePointerDown,
   onStagePointerMove,
@@ -67,6 +71,14 @@ function onMenuCategory(label: string) {
   closeMenu()
   showToast(`已切换到「${label}」`)
 }
+
+function collapseOpenSheet() {
+  const shell = document.getElementById('mh5-app-shell')
+  const sheet = shell?.querySelector<HTMLElement>('.mh5-mini-game-layer .mh5-chat-game-play')
+  const roomH = shell?.clientHeight || 812
+  const startH = sheet?.getBoundingClientRect().height || Math.round(roomH * 0.78)
+  collapseSheetToDock(gameName.value, gameKind.value, roomH, startH)
+}
 </script>
 
 <template>
@@ -75,6 +87,7 @@ function onMenuCategory(label: string) {
     class="mh5-mini-game-layer"
       :class="{
         'mh5-mini-game-layer--full': mode === 'full',
+        'mh5-mini-game-layer--sheet': mode === 'sheet',
         'mh5-mini-game-layer--pip': mode === 'pip',
         'mh5-mini-game-layer--dock': dockOpen,
         'mh5-mini-game-layer--leaving': Boolean(homeDismiss),
@@ -196,12 +209,95 @@ function onMenuCategory(label: string) {
         </button>
       </section>
 
+      <template v-if="mode === 'sheet'">
+        <button
+          v-if="!sheetExpanded"
+          type="button"
+          class="mh5-chat-game-play-mask"
+          :aria-label="$t('收起')"
+          @click="collapseOpenSheet"
+        />
+        <section
+          class="mh5-chat-game-play"
+          :class="{ 'mh5-chat-game-play--expanded': sheetExpanded }"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="gameName"
+        >
+          <header class="mh5-chat-game-play__head">
+            <div class="mh5-chat-game-play__title">
+              <img
+                class="mh5-chat-game-play__icon"
+                :src="resolveVoiceGameIcon(gameName)"
+                alt=""
+                width="28"
+                height="28"
+              />
+              <h2 class="mh5-chat-game-play__name">{{ $t(gameName) }}</h2>
+            </div>
+            <div class="mh5-chat-game-play__actions">
+              <button
+                type="button"
+                class="mh5-chat-game-play__btn"
+                :aria-label="sheetExpanded ? $t('收起') : $t('放大')"
+                @click="toggleSheetExpanded"
+              >
+                <img :src="CHAT_GROUP_GAME_ASSETS.expand" alt="" width="24" height="24" />
+              </button>
+              <button
+                type="button"
+                class="mh5-chat-game-play__btn"
+                :aria-label="$t('收起')"
+                @click="collapseOpenSheet"
+              >
+                <img :src="CHAT_GROUP_GAME_ASSETS.collapse" alt="" width="24" height="24" />
+              </button>
+              <button
+                type="button"
+                class="mh5-chat-game-play__btn"
+                :aria-label="$t('关闭')"
+                @click="close"
+              >
+                <img :src="CHAT_GROUP_GAME_ASSETS.playClose" alt="" width="24" height="24" />
+              </button>
+            </div>
+          </header>
+          <div class="mh5-chat-game-play__body">
+            <Mh5VipSportsDesk embedded />
+          </div>
+        </section>
+      </template>
+
       <div
         v-if="dockOpen"
         class="mh5-chat-game-dock"
         :style="{ height: `${dockSlotH}px` }"
       >
         <div v-if="mode === 'dock'" class="mh5-chat-game-dock__bar">
+          <button
+            type="button"
+            class="mh5-chat-game-dock__expand"
+            :aria-label="$t('打开游戏')"
+            @click="expandFromDock"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3.4 10.2 8 5.6l4.6 4.6"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-chat-game-dock__title"
+            :aria-label="$t('打开游戏')"
+            @click="expandFromDock"
+          >
+            {{ $t(gameName) }}
+          </button>
           <button
             type="button"
             class="mh5-chat-game-dock__close"
@@ -217,15 +313,6 @@ function onMenuCategory(label: string) {
               />
             </svg>
           </button>
-          <button
-            type="button"
-            class="mh5-chat-game-dock__title"
-            :aria-label="$t('打开游戏')"
-            @click="expandFromDock"
-          >
-            {{ $t(gameName) }}
-          </button>
-          <span class="mh5-chat-game-dock__spacer" aria-hidden="true" />
         </div>
       </div>
 

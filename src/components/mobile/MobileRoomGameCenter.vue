@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { CHAT_GROUP_GAME_ASSETS } from '../../constants/mobileChatGroupGame'
+import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5VipSportsDesk from './Mh5VipSportsDesk.vue'
 import {
   listRoomGameCenterGames,
@@ -25,8 +26,9 @@ const props = withDefaults(
   { showFloats: true, showLastGame: true, interceptOpen: false },
 )
 const emit = defineEmits<{
-  openGame: [name: string]
+  openGame: [name: string, anchor: 'game' | 'center']
 }>()
+const miniGame = useMiniAppGame()
 
 const rootEl = ref<HTMLElement | null>(null)
 const showGameFloat = ref(true)
@@ -43,6 +45,7 @@ const gamePlayName = ref('')
 const gamePlayExpanded = ref(false)
 const playAnchor = ref<'game' | 'center'>('game')
 const floatPulse = ref(false)
+const handoffDock = ref(false)
 const flyChip = ref<{ x: number; y: number; scale: number; opacity: number } | null>(null)
 const flyChipIcon = ref<string>(VOICE_ROOM_ASSETS.gameFloat)
 let flyRaf = 0
@@ -72,8 +75,9 @@ function closePanel() {
 function openGame(game: VoiceGameItem | string, anchor: 'game' | 'center' = 'center') {
   const name = typeof game === 'string' ? game : game.name
   if (typeof game !== 'string') markVoiceGameLastOpened(game.id)
-  emit('openGame', name)
+  emit('openGame', name, anchor)
   playAnchor.value = anchor
+  handoffDock.value = false
   lastGameName.value = name
   if (props.interceptOpen) return
   open.value = false
@@ -83,7 +87,7 @@ function openGame(game: VoiceGameItem | string, anchor: 'game' | 'center' = 'cen
 
 function openGameFloat() {
   if (props.interceptOpen) {
-    emit('openGame', lastGameName.value)
+    emit('openGame', lastGameName.value, 'game')
     playAnchor.value = 'game'
     return
   }
@@ -116,7 +120,27 @@ function stopFlyChip() {
   flyChip.value = null
 }
 
+function collapseCenterToDock() {
+  if (miniGame.homeDismiss.value) return
+  const shell = document.getElementById('mh5-app-shell')
+  const sheet = playHost()?.querySelector<HTMLElement>('.mh5-chat-game-play')
+  const roomH = shell?.clientHeight || 812
+  const startH = sheet?.getBoundingClientRect().height || Math.round(roomH * 0.78)
+  const name = gamePlayName.value || lastGameName.value
+  if (!name) {
+    closeGamePlay()
+    return
+  }
+  handoffDock.value = true
+  closeGamePlay()
+  miniGame.collapseSheetToDock(name, 'sports', roomH, startH)
+}
+
 function minimizeGamePlay(ev?: MouseEvent) {
+  if (playAnchor.value === 'center') {
+    collapseCenterToDock()
+    return
+  }
   const host = playHost()
   const startEl =
     host?.querySelector<HTMLElement>('.mh5-chat-game-play__icon') ??
@@ -308,7 +332,7 @@ defineExpose({ openPanel, closePanel })
       @click="minimizeGamePlay"
     />
 
-    <Transition :name="flyChip ? '' : 'mh5-chat-game-play'">
+    <Transition :name="flyChip || handoffDock ? '' : 'mh5-chat-game-play'">
       <section
         v-if="showPlayOverlay"
         class="mh5-chat-game-play"

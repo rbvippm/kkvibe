@@ -8,7 +8,9 @@ import {
 import type { LobbyGamePlay } from '../constants/mobileLobby'
 
 export type MiniAppGameKind = LobbyGamePlay['kind']
-export type MiniAppGameMode = 'full' | 'dock' | 'pip'
+export type MiniAppGameMode = 'full' | 'dock' | 'pip' | 'sheet'
+/** 底条从哪收起来：弹框再打开仍是半屏，全局再打开仍是全屏 */
+export type MiniAppDockSource = 'global' | 'sheet'
 
 type StageDrag = {
   pointerId: number
@@ -33,9 +35,11 @@ function easeInOutCubic(t: number) {
 const gameName = ref('')
 const gameKind = ref<MiniAppGameKind>('sports')
 const mode = ref<MiniAppGameMode>('full')
+const dockSource = ref<MiniAppDockSource>('global')
+const sheetExpanded = ref(false)
 const showMenu = ref(false)
 const toast = ref('')
-const homeDismiss = ref<{ t: number; roomH: number } | null>(null)
+const homeDismiss = ref<{ t: number; roomH: number; startH: number } | null>(null)
 const pipPos = ref<{ x: number; y: number } | null>(null)
 const pipSize = ref<ChatGamePipSize>('small')
 const pipSpringing = ref(false)
@@ -196,7 +200,7 @@ const stageStyle = computed(() => {
   if (dismiss && mode.value === 'full') {
     const t = easeInOutCubic(dismiss.t)
     const endH = CHAT_GAME_DOCK.height
-    const h = dismiss.roomH * (1 - t) + endH * t
+    const h = dismiss.startH * (1 - t) + endH * t
     const inset = CHAT_GAME_DOCK.inset * t
     return {
       top: `${dismiss.roomH - h}px`,
@@ -249,6 +253,8 @@ function open(name: string, kind: MiniAppGameKind = 'sports') {
   resetStageMotion()
   gameName.value = name
   gameKind.value = kind
+  dockSource.value = 'global'
+  sheetExpanded.value = false
   mode.value = 'full'
   showMenu.value = false
 }
@@ -258,6 +264,8 @@ function close() {
   resetStageMotion()
   gameName.value = ''
   mode.value = 'full'
+  dockSource.value = 'global'
+  sheetExpanded.value = false
   showMenu.value = false
   toast.value = ''
   pipPos.value = null
@@ -266,16 +274,14 @@ function close() {
   window.clearTimeout(pipSpringTimer)
 }
 
-function dismissToHome(roomH: number) {
-  if (!gameName.value || mode.value !== 'full' || homeDismiss.value) return
-  showMenu.value = false
-  resetStageMotion()
-  homeDismiss.value = { t: 0, roomH }
+function runHomeDismiss(roomH: number, startH: number) {
+  const start = Math.max(CHAT_GAME_DOCK.height, Math.min(startH, roomH))
+  homeDismiss.value = { t: 0, roomH, startH: start }
   const duration = CHAT_GAME_PIP.homeDismissMs
   const t0 = performance.now()
   const tick = (now: number) => {
     const raw = Math.min(1, (now - t0) / duration)
-    homeDismiss.value = { t: raw, roomH }
+    homeDismiss.value = { t: raw, roomH, startH: start }
     if (raw < 1) {
       homeDismissRaf = requestAnimationFrame(tick)
       return
@@ -288,12 +294,45 @@ function dismissToHome(roomH: number) {
   homeDismissRaf = requestAnimationFrame(tick)
 }
 
+function dismissToHome(roomH: number) {
+  if (!gameName.value || mode.value !== 'full' || homeDismiss.value) return
+  showMenu.value = false
+  resetStageMotion()
+  dockSource.value = 'global'
+  sheetExpanded.value = false
+  runHomeDismiss(roomH, roomH)
+}
+
+/** 半屏对局收成首页同款底条：从当前高度压到 App 底，不从全屏高度起跳 */
+function collapseSheetToDock(name: string, kind: MiniAppGameKind = 'sports', roomH = 812, startH = roomH) {
+  if (homeDismiss.value) return
+  stopHomeDismiss()
+  resetStageMotion()
+  gameName.value = name
+  gameKind.value = kind
+  dockSource.value = 'sheet'
+  sheetExpanded.value = false
+  mode.value = 'full'
+  showMenu.value = false
+  runHomeDismiss(roomH, startH)
+}
+
 function expandFromDock() {
   if (!gameName.value) return
   stopHomeDismiss()
   resetStageMotion()
-  mode.value = 'full'
   showMenu.value = false
+  if (dockSource.value === 'sheet') {
+    sheetExpanded.value = false
+    mode.value = 'sheet'
+    return
+  }
+  mode.value = 'full'
+}
+
+function toggleSheetExpanded() {
+  if (mode.value !== 'sheet') return
+  sheetExpanded.value = !sheetExpanded.value
 }
 
 function collapseToPip() {
@@ -448,11 +487,13 @@ function onStageWheel(ev: WheelEvent) {
 }
 
 /** 离开当前页时直接落到全局底条，避免收起动画被路由卸载打断 */
-function openDock(name: string, kind: MiniAppGameKind = 'sports') {
+function openDock(name: string, kind: MiniAppGameKind = 'sports', source: MiniAppDockSource = 'global') {
   stopHomeDismiss()
   resetStageMotion()
   gameName.value = name
   gameKind.value = kind
+  dockSource.value = source
+  sheetExpanded.value = false
   mode.value = 'dock'
   showMenu.value = false
 }
@@ -462,6 +503,8 @@ export function useMiniAppGame() {
     gameName,
     gameKind,
     mode,
+    dockSource,
+    sheetExpanded,
     showMenu,
     toast,
     homeDismiss,
@@ -478,7 +521,9 @@ export function useMiniAppGame() {
     openDock,
     close,
     dismissToHome,
+    collapseSheetToDock,
     expandFromDock,
+    toggleSheetExpanded,
     collapseToPip,
     expandFromPip,
     onStagePointerDown,
