@@ -160,9 +160,7 @@ function minimizeGamePlay(ev?: MouseEvent) {
   const startScale = Math.max(0.4, startBox.width / 56)
   const icon = gameIconOf(gamePlayName.value || lastGameName.value)
   const anchor = playAnchor.value
-
-  if (anchor === 'center') showGameCenterFloat.value = true
-  else if (props.showLastGame) showGameFloat.value = true
+  if (props.showLastGame) showGameFloat.value = true
   flyChipIcon.value = icon
   flyChip.value = { x: start.x, y: start.y, scale: startScale, opacity: 1 }
   closeGamePlay()
