@@ -72,7 +72,12 @@ function openGame(game: VipClubLotteryGame) {
             :aria-label="game.comingSoon ? '敬请期待' : `进入${game.title}`"
             @click="openGame(game)"
           >
-            <img :src="game.cover" :alt="game.title" width="171" height="112" />
+            <img class="mh5-vip-lottery-tile__art" :src="game.cover" alt="" width="171" height="112" />
+            <span v-if="game.comingSoon" class="mh5-vip-lottery-tile__soon">敬请期待</span>
+            <span v-else class="mh5-vip-lottery-tile__text">
+              <strong><i :class="`is-${game.dot ?? 'live'}`" aria-hidden="true" />{{ game.title }}</strong>
+              <em>{{ game.desc }}</em>
+            </span>
           </button>
         </div>
         <p class="mh5-vip-lottery-more">- 更多彩种，敬请期待 -</p>

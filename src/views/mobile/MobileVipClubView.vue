@@ -136,7 +136,7 @@ const vendorOptions = computed(() =>
         <button type="button" class="mh5-lobby-vip-menu__mask" aria-label="关闭入口" @click="hallMenuOpen = false" />
         <div class="mh5-lobby-vip-menu__panel" role="dialog" aria-modal="true" aria-labelledby="vip-club-hall-menu-title">
           <p id="vip-club-hall-menu-title" class="mh5-lobby-vip-menu__sr">选择入口</p>
-          <button type="button" class="mh5-lobby-vip-menu__item mh5-lobby-vip-menu__item--dark" @click="goFlagshipHall">
+          <button type="button" class="mh5-lobby-vip-menu__item mh5-lobby-vip-menu__item--gold" @click="goFlagshipHall">
             <span class="mh5-lobby-vip-menu__lead">
               <img
                 class="mh5-lobby-vip-menu__icon mh5-lobby-vip-menu__icon--mark"

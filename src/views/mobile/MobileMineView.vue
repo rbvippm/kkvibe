@@ -539,7 +539,7 @@ watch(preferredFiatAmountText, () => {
                 <img :src="ACCOUNT_SECURITY_COPY_ICON" alt="" width="14" height="14" />
               </button>
             </p>
-            <div class="mh5-mine-profile__stats">
+            <div v-if="!isVipClub" class="mh5-mine-profile__stats">
               <div v-for="stat in user.stats" :key="stat.label" class="mh5-mine-profile__stat">
                 <span class="mh5-mine-profile__stat-value">{{ stat.value }}</span>
                 <span class="mh5-mine-profile__stat-label">{{ $t(stat.label) }}</span>

@@ -87,7 +87,7 @@ export function billingIconKindFromLabel(typeLabel: string, layout?: BillingDeta
   }
   if (typeLabel.startsWith('转账')) return 'transfer'
   if (typeLabel.startsWith('消费') || typeLabel.startsWith('投注')) return 'consume'
-  if (typeLabel.startsWith('奖金') || typeLabel.startsWith('盈利') || typeLabel.startsWith('理财') || typeLabel.startsWith('活动金')) {
+  if (typeLabel.startsWith('奖金') || typeLabel.startsWith('结算') || typeLabel.startsWith('盈利') || typeLabel.startsWith('理财') || typeLabel.startsWith('活动金')) {
     return 'bonus'
   }
   if (typeLabel.startsWith('收款') || typeLabel.startsWith('充值') || typeLabel.startsWith('借贷')) return 'receive'
@@ -160,7 +160,7 @@ export type BillingCurrencyOption = {
  * 类型筛选：
  * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 兑换 / 红包靠前
  * - 收款与购买并入充值；提现与出售并入提现
- * - 信用币交易类型：转账【游戏名】/ 消费【游戏名】/ 奖金【游戏名】/ 上下分 / 系统【退水备注】
+ * - 信用币交易类型：转账【游戏名】/ 投注【游戏名】/ 结算【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
  */
 export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
@@ -185,13 +185,13 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'consume', label: '消费' },
 ]
 
-/** 贵宾厅账单：转账 / 消费 / 奖金（游戏账变）+ 上下分 / 系统 */
+/** 贵宾厅账单：转账 / 投注 / 结算（游戏账变）+ 上下分 / 系统 */
 export const BILLING_VIP_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: '', label: '全部' },
   { value: 'system', label: '系统' },
   { value: 'transfer', label: '转账' },
-  { value: 'consume', label: '消费' },
-  { value: 'bonus', label: '奖金' },
+  { value: 'consume', label: '投注' },
+  { value: 'bonus', label: '结算' },
   { value: 'xcoin', label: '上下分' },
 ]
 
@@ -272,7 +272,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b19',
     month: '2026-05',
     type: 'consume',
-    typeLabel: '消费【电子游艺】',
+    typeLabel: '投注【电子游艺】',
     createdAt: '2026-05-24 19:05:21',
     amount: -28.6,
     currency: 'CNY',
@@ -281,7 +281,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     id: 'b20',
     month: '2026-05',
     type: 'bonus',
-    typeLabel: '奖金【真人视讯】',
+    typeLabel: '结算【真人视讯】',
     createdAt: '2026-05-23 21:40:55',
     amount: 88,
     currency: 'CNY',
@@ -664,8 +664,8 @@ export const BILLING_VIP_HOT_KEYWORDS = [
   '信用用户退水',
   '上下分-上分',
   '转账【皇者体育】',
-  '消费【电子游艺】',
-  '奖金【真人视讯】',
+  '投注【电子游艺】',
+  '结算【真人视讯】',
 ]
 
 const RECENT_SEARCH_STORAGE_KEY = 'mh5-billing-recent-searches'
