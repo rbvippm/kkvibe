@@ -1405,3 +1405,184 @@
   line-height: 1.7;
   color: var(--pc-text-secondary, #595959);
 }
+
+/* ---------- App 包下载配置 ---------- */
+.wf-table--app-pkg {
+  min-width: 1280px;
+}
+
+.wf-td--nowrap {
+  white-space: nowrap;
+}
+
+.wf-app-pkg-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wf-app-pkg-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f0f5ff;
+  color: #1677ff;
+  font-size: 13px;
+  font-weight: 600;
+  flex: none;
+}
+
+.wf-app-pkg-terminal,
+.wf-app-pkg-cat,
+.wf-app-pkg-mode {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.wf-app-pkg-terminal--ios {
+  color: #1d1d1f;
+  background: #f5f5f7;
+  border-color: #d2d2d7;
+}
+
+.wf-app-pkg-terminal--android {
+  color: #237804;
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.wf-app-pkg-cat--super {
+  color: #cf1322;
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.wf-app-pkg-cat--chat {
+  color: #389e0d;
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.wf-app-pkg-cat--store {
+  color: #d46b08;
+  background: #fff7e6;
+  border-color: #ffd591;
+}
+
+.wf-app-pkg-mode--force {
+  color: #cf1322;
+  background: #fff1f0;
+  border-color: #ffa39e;
+}
+
+.wf-app-pkg-mode--optional {
+  color: #0958d9;
+  background: #e6f4ff;
+  border-color: #91caff;
+}
+
+.wf-app-pkg-url {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.wf-app-pkg-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wf-app-pkg-filter--grow {
+  flex: 1;
+  min-width: 280px;
+}
+
+.wf-table--app-pkg .wf-app-pkg-url {
+  min-width: 280px;
+}
+
+.wf-app-pkg-url span {
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.wf-app-pkg-url .wf-link-action {
+  flex: none;
+}
+
+.wf-app-pkg-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #d9d9d9;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.wf-app-pkg-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.wf-app-pkg-switch--on {
+  background: #1677ff;
+}
+
+.wf-app-pkg-switch--on::after {
+  transform: translateX(16px);
+}
+
+.wf-app-pkg-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.wf-app-pkg-radios label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-app-pkg-textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+}
+
+.wf-app-pkg-status-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.wf-app-pkg-confirm {
+  max-width: 440px;
+}
+
+.wf-app-pkg-confirm__text {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--pc-text);
+}

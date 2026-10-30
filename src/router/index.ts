@@ -855,6 +855,18 @@ export const router = createRouter({
           meta: { title: '贴图标签管理' },
         },
         {
+          path: 'app-package-download',
+          name: 'pc-app-package-download',
+          component: () => import('../views/pc/PcAppPackageDownloadView.vue'),
+          meta: { title: 'App包下载配置' },
+        },
+        {
+          path: 'app-package-download/doc',
+          name: 'pc-app-package-download-doc',
+          component: () => import('../views/pc/PcAppPackageDownloadDocView.vue'),
+          meta: { title: 'App包下载配置-文档说明' },
+        },
+        {
           path: 'share-agent-config',
           name: 'pc-share-agent-config',
           component: () => import('../views/pc/PcShareAgentConfigView.vue'),

@@ -69,6 +69,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['管理后台', '配置管理', '贴图包管理', '文档说明'],
   },
   {
+    path: '/pc/app-package-download/doc',
+    routeName: 'pc-app-package-download-doc',
+    title: '文档说明',
+    pagePath: ['管理后台', '配置管理', 'App包下载配置', '文档说明'],
+  },
+  {
     path: '/pc/live-broadcast/doc',
     routeName: 'pc-live-broadcast-doc',
     title: '文档说明',
@@ -455,6 +461,14 @@ export const pcMenuTree: PcMenuItem[] = [
         path: '/pc/sticker-tag-manage',
         routeName: 'pc-sticker-tag-manage',
         pagePath: ['管理后台', '配置管理', '贴图标签管理'],
+      },
+      {
+        key: 'app-package-download',
+        title: 'App包下载配置',
+        path: '/pc/app-package-download',
+        routeName: 'pc-app-package-download',
+        pagePath: ['管理后台', '配置管理', 'App包下载配置'],
+        docRouteName: 'pc-app-package-download-doc',
       },
     ],
   },
