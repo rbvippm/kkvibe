@@ -316,7 +316,7 @@ function formatUnblockPhone(row: UserListRow) {
 
 function openUnblock(row: UserListRow) {
   if (row.deleted) {
-    actionHint.value = '已删除用户不可解封'
+    actionHint.value = '已删除用户不可登录解封'
     return
   }
   unblockRow.value = row
@@ -332,7 +332,7 @@ function closeUnblock() {
 function submitUnblock() {
   const userId = unblockRow.value?.userId ?? ''
   const label = UNBLOCK_METHOD_OPTIONS.find((item) => item.value === unblockMethod.value)?.label ?? '全部登录方式'
-  showPcToast(`已解封用户 ${userId}（${label}）`)
+  showPcToast(`已登录解封用户 ${userId}（${label}）`)
   closeUnblock()
 }
 
@@ -528,7 +528,7 @@ function deleteUser(row: UserListRow) {
                   :disabled="row.deleted"
                   @click="openUnblock(row)"
                 >
-                  解封
+                  登录解封
                 </button>
                 <span class="user-list__muted">{{ row.realNameVerified ? '已实名' : '未实名' }}</span>
                 <button
@@ -620,7 +620,7 @@ function deleteUser(row: UserListRow) {
     <div v-if="unblockVisible" class="wf-modal-mask" @click.self="closeUnblock">
       <div class="wf-modal user-list__unblock-modal" role="dialog" aria-modal="true" aria-labelledby="user-unblock-title">
         <header class="wf-modal__header">
-          <h3 id="user-unblock-title" class="wf-modal__title">解封</h3>
+          <h3 id="user-unblock-title" class="wf-modal__title">解封登录锁定</h3>
           <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeUnblock">×</button>
         </header>
         <div class="wf-modal__body">
@@ -720,7 +720,7 @@ function deleteUser(row: UserListRow) {
 }
 
 .user-list__table .wf-td--actions {
-  min-width: 520px;
+  min-width: 560px;
   white-space: nowrap;
 }
 
