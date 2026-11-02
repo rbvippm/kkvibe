@@ -316,7 +316,7 @@ function formatUnblockPhone(row: UserListRow) {
 
 function openUnblock(row: UserListRow) {
   if (row.deleted) {
-    actionHint.value = '已删除用户不可登录解封'
+    actionHint.value = '已删除用户不可解封登录锁定'
     return
   }
   unblockRow.value = row
@@ -332,7 +332,7 @@ function closeUnblock() {
 function submitUnblock() {
   const userId = unblockRow.value?.userId ?? ''
   const label = UNBLOCK_METHOD_OPTIONS.find((item) => item.value === unblockMethod.value)?.label ?? '全部登录方式'
-  showPcToast(`已登录解封用户 ${userId}（${label}）`)
+  showPcToast(`已为用户 ${userId} 解封登录锁定（${label}）`)
   closeUnblock()
 }
 
@@ -528,7 +528,7 @@ function deleteUser(row: UserListRow) {
                   :disabled="row.deleted"
                   @click="openUnblock(row)"
                 >
-                  登录解封
+                  解封登录锁定
                 </button>
                 <span class="user-list__muted">{{ row.realNameVerified ? '已实名' : '未实名' }}</span>
                 <button
@@ -720,7 +720,7 @@ function deleteUser(row: UserListRow) {
 }
 
 .user-list__table .wf-td--actions {
-  min-width: 560px;
+  min-width: 620px;
   white-space: nowrap;
 }
 
