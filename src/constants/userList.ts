@@ -211,8 +211,8 @@ export type SecurityBan = {
   terminal: SecurityTerminal
   /** 最近一次封禁原因，只保留一条 */
   reason: string
-  /** 本次封禁命中的登录方式，四种里只会出现一种 */
-  loginMethod: SecurityLoginMethod
+  /** 本次封禁命中的登录方式，可同时多种，最多四种 */
+  loginMethods: SecurityLoginMethod[]
   blockedAt: string
   risks: SecurityRiskRecord[]
 }
@@ -230,7 +230,7 @@ export function buildSecurityBan(input: {
   reasonIndexes: number[]
   blockedAt: string
   seed: number
-  loginMethod: SecurityLoginMethod
+  loginMethods: SecurityLoginMethod[]
 }): SecurityBan {
   const start = new Date(input.blockedAt.replace(' ', 'T'))
   const risks: SecurityRiskRecord[] = Array.from({ length: 20 }, (_, index) => {
@@ -245,7 +245,7 @@ export function buildSecurityBan(input: {
   return {
     terminal: latest?.terminal ?? 'h5',
     reason: latest?.reason ?? SECURITY_BAN_REASONS[0],
-    loginMethod: input.loginMethod,
+    loginMethods: SECURITY_BAN_LOGIN_METHODS.filter((item) => input.loginMethods.includes(item)).slice(0, 4),
     blockedAt: latest?.at ?? input.blockedAt,
     risks,
   }
@@ -453,7 +453,7 @@ const SECURITY_BAN_PRESETS: Record<
     reasonIndexes: number[]
     blockedAt: string
     seed: number
-    loginMethod: SecurityLoginMethod
+    loginMethods: SecurityLoginMethod[]
   }
 > = {
   u1: {
@@ -461,26 +461,50 @@ const SECURITY_BAN_PRESETS: Record<
     reasonIndexes: [0, 1],
     blockedAt: '2026-11-02 16:42:18',
     seed: 1,
-    loginMethod: '账号',
+    loginMethods: ['账号', '密码', '手机验证码', '邮箱验证码'],
   },
-  u3: { terminals: ['pc'], reasonIndexes: [1], blockedAt: '2026-11-01 22:16:05', seed: 3, loginMethod: '密码' },
+  u3: {
+    terminals: ['pc'],
+    reasonIndexes: [1],
+    blockedAt: '2026-11-01 22:16:05',
+    seed: 3,
+    loginMethods: ['密码', '手机验证码'],
+  },
   u4: {
     terminals: ['app'],
     reasonIndexes: [0, 1],
     blockedAt: '2026-11-01 11:03:47',
     seed: 4,
-    loginMethod: '手机验证码',
+    loginMethods: ['手机验证码'],
   },
-  u5: { terminals: ['h5', 'pc'], reasonIndexes: [0], blockedAt: '2026-11-01 08:21:16', seed: 5, loginMethod: '邮箱验证码' },
+  u5: {
+    terminals: ['h5', 'pc'],
+    reasonIndexes: [0],
+    blockedAt: '2026-11-01 08:21:16',
+    seed: 5,
+    loginMethods: ['账号', '邮箱验证码'],
+  },
   u6: {
     terminals: ['h5', 'app'],
     reasonIndexes: [0, 1],
     blockedAt: '2026-11-02 09:27:51',
     seed: 6,
-    loginMethod: '账号',
+    loginMethods: ['账号', '密码', '邮箱验证码'],
   },
-  u7: { terminals: ['pc', 'app'], reasonIndexes: [1], blockedAt: '2026-10-30 18:40:12', seed: 7, loginMethod: '密码' },
-  u8: { terminals: ['h5'], reasonIndexes: [0], blockedAt: '2026-11-02 13:55:06', seed: 8, loginMethod: '手机验证码' },
+  u7: {
+    terminals: ['pc', 'app'],
+    reasonIndexes: [1],
+    blockedAt: '2026-10-30 18:40:12',
+    seed: 7,
+    loginMethods: ['密码'],
+  },
+  u8: {
+    terminals: ['h5'],
+    reasonIndexes: [0],
+    blockedAt: '2026-11-02 13:55:06',
+    seed: 8,
+    loginMethods: ['账号', '密码', '手机验证码', '邮箱验证码'],
+  },
 }
 
 export const MOCK_USER_LIST_ROWS: UserListRow[] = USER_LIST_ROW_BASE.map((row) => {

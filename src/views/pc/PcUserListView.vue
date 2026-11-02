@@ -285,8 +285,8 @@ const securityVisible = ref(false)
 const securityRow = ref<UserListRow | null>(null)
 
 const securityStatusLabel = computed(() => {
-  const method = securityRow.value?.securityBan?.loginMethod
-  return method ? `封禁中（${method}）` : '未封禁'
+  const methods = securityRow.value?.securityBan?.loginMethods ?? []
+  return methods.length ? `封禁中（${methods.join('，')}）` : '未封禁'
 })
 
 function openSecurityBan(row: UserListRow) {
