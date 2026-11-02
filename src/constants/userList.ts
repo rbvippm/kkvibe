@@ -191,8 +191,8 @@ export function maskEmail(email: string) {
 export type SecurityTerminal = 'h5' | 'pc' | 'app'
 
 export const SECURITY_BAN_REASONS = [
-  '10分钟内登录过于频繁，触发次数阈值5',
-  '10分钟内请求滑块图形验证码频繁，触发次数阈值5',
+  '登录过于频繁，触发限制阀值',
+  '请求滑块图形验证码频繁，触发限制阀值',
 ] as const
 
 export type SecurityRiskRecord = {
