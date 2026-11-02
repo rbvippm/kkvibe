@@ -17,7 +17,11 @@ export type UserListRow = {
   channel: UserChannel
   nickname: string
   inviteCode: string
+  /** 国际区号，未绑定时为空 */
+  dialCode: string
   phone: string
+  /** 绑定邮箱，未绑定时为空 */
+  email: string
   signature: string
   friendCount: number
   lastOnlineAt: string
@@ -170,6 +174,16 @@ export function maskPhone(phone: string) {
   return `${phone.slice(0, 3)}****${phone.slice(-4)}`
 }
 
+export function maskEmail(email: string) {
+  const value = email.trim()
+  const at = value.indexOf('@')
+  if (at <= 0) return '-'
+  const local = value.slice(0, at)
+  const domain = value.slice(at)
+  const head = local.slice(0, 1)
+  return `${head}****${domain}`
+}
+
 export const MOCK_USER_LIST_ROWS: UserListRow[] = [
   {
     id: 'u1',
@@ -180,7 +194,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'platform',
     nickname: 'Link12',
     inviteCode: '103855',
+    dialCode: '+65',
     phone: '9875566122',
+    email: 'p6uw633@kkvibe.com',
     signature: '-',
     friendCount: 12,
     lastOnlineAt: '2026-07-15 20:10:02',
@@ -202,7 +218,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'platform',
     nickname: 'owen666',
     inviteCode: '228401',
+    dialCode: '+86',
     phone: '9123344556',
+    email: 'owen666@gmail.com',
     signature: '-',
     friendCount: 3,
     lastOnlineAt: '2026-07-15 19:42:11',
@@ -224,7 +242,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'platform',
     nickname: '-',
     inviteCode: '551028',
+    dialCode: '+852',
     phone: '9887766554',
+    email: 'k9x2m1@outlook.com',
     signature: '-',
     friendCount: 0,
     lastOnlineAt: '-',
@@ -246,7 +266,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'agent',
     nickname: '小鱼干',
     inviteCode: '776012',
+    dialCode: '+853',
     phone: '9012233445',
+    email: 'fish.dry@qq.com',
     signature: '今天天气不错',
     friendCount: 28,
     lastOnlineAt: '2026-07-14 23:01:55',
@@ -268,7 +290,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'activity',
     nickname: '活动用户01',
     inviteCode: '334455',
+    dialCode: '+86',
     phone: '9654321987',
+    email: 'act01@kkvibe.com',
     signature: '-',
     friendCount: 1,
     lastOnlineAt: '2026-07-13 09:15:00',
@@ -290,7 +314,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'platform',
     nickname: 'KK小助手',
     inviteCode: '102938',
+    dialCode: '+65',
     phone: '9334455667',
+    email: 'helper@kkvibe.com',
     signature: '欢迎来玩',
     friendCount: 56,
     lastOnlineAt: '2026-07-15 21:00:00',
@@ -312,7 +338,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'platform',
     nickname: '游客001',
     inviteCode: '667788',
+    dialCode: '',
     phone: '',
+    email: '',
     signature: '-',
     friendCount: 0,
     lastOnlineAt: '-',
@@ -334,7 +362,9 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     channel: 'agent',
     nickname: 'VIP888',
     inviteCode: '888001',
+    dialCode: '+852',
     phone: '9776655443',
+    email: 'vip888@icloud.com',
     signature: '-',
     friendCount: 120,
     lastOnlineAt: '2026-07-15 16:45:33',

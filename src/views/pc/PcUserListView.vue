@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { showPcToast } from '../../composables/usePcToast'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import {
   channelLabel,
+  maskEmail,
   maskPhone,
   MOCK_USER_LIST_ROWS,
   queryThirdPartyIdMap,
@@ -293,6 +295,47 @@ function unlockUser(row: UserListRow) {
   })
 }
 
+const UNBLOCK_METHOD_OPTIONS = [
+  { value: 'all', label: '全部登录方式' },
+  { value: 'password', label: '账号密码登录方式' },
+  { value: 'sms', label: '手机验证码登录方式' },
+  { value: 'email', label: '邮箱验证码方式' },
+] as const
+
+type UnblockMethod = (typeof UNBLOCK_METHOD_OPTIONS)[number]['value']
+
+const unblockVisible = ref(false)
+const unblockRow = ref<UserListRow | null>(null)
+const unblockMethod = ref<UnblockMethod>('all')
+
+function formatUnblockPhone(row: UserListRow) {
+  if (!row.phone) return '-'
+  const phone = maskPhone(row.phone)
+  return row.dialCode ? `${row.dialCode} ${phone}` : phone
+}
+
+function openUnblock(row: UserListRow) {
+  if (row.deleted) {
+    actionHint.value = '已删除用户不可解封'
+    return
+  }
+  unblockRow.value = row
+  unblockMethod.value = 'all'
+  unblockVisible.value = true
+}
+
+function closeUnblock() {
+  unblockVisible.value = false
+  unblockRow.value = null
+}
+
+function submitUnblock() {
+  const userId = unblockRow.value?.userId ?? ''
+  const label = UNBLOCK_METHOD_OPTIONS.find((item) => item.value === unblockMethod.value)?.label ?? '全部登录方式'
+  showPcToast(`已解封用户 ${userId}（${label}）`)
+  closeUnblock()
+}
+
 function resetSecurityPassword(row: UserListRow) {
   if (row.deleted) {
     actionHint.value = '已删除用户不可重置安全密码'
@@ -479,6 +522,14 @@ function deleteUser(row: UserListRow) {
                 >
                   解锁
                 </button>
+                <button
+                  type="button"
+                  class="wf-link-action"
+                  :disabled="row.deleted"
+                  @click="openUnblock(row)"
+                >
+                  解封
+                </button>
                 <span class="user-list__muted">{{ row.realNameVerified ? '已实名' : '未实名' }}</span>
                 <button
                   type="button"
@@ -566,6 +617,55 @@ function deleteUser(row: UserListRow) {
       </div>
     </Teleport>
 
+    <div v-if="unblockVisible" class="wf-modal-mask" @click.self="closeUnblock">
+      <div class="wf-modal user-list__unblock-modal" role="dialog" aria-modal="true" aria-labelledby="user-unblock-title">
+        <header class="wf-modal__header">
+          <h3 id="user-unblock-title" class="wf-modal__title">解封</h3>
+          <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeUnblock">×</button>
+        </header>
+        <div class="wf-modal__body">
+          <section class="user-list__unblock-section">
+            <h4 class="user-list__unblock-heading">用户基础信息</h4>
+            <dl v-if="unblockRow" class="user-list__unblock-meta">
+              <div class="user-list__unblock-row">
+                <dt>用户ID</dt>
+                <dd>{{ unblockRow.userId }}</dd>
+              </div>
+              <div class="user-list__unblock-row">
+                <dt>金刚号</dt>
+                <dd>{{ unblockRow.kingKongId || '-' }}</dd>
+              </div>
+              <div class="user-list__unblock-row">
+                <dt>区号</dt>
+                <dd>{{ unblockRow.dialCode || '-' }}</dd>
+              </div>
+              <div class="user-list__unblock-row">
+                <dt>手机号</dt>
+                <dd>{{ formatUnblockPhone(unblockRow) }}</dd>
+              </div>
+              <div class="user-list__unblock-row">
+                <dt>邮箱</dt>
+                <dd>{{ maskEmail(unblockRow.email) }}</dd>
+              </div>
+            </dl>
+          </section>
+          <section class="user-list__unblock-section">
+            <h4 id="user-unblock-method-title" class="user-list__unblock-heading">解封登录方式</h4>
+            <div class="user-list__unblock-options" role="radiogroup" aria-labelledby="user-unblock-method-title">
+              <label v-for="opt in UNBLOCK_METHOD_OPTIONS" :key="opt.value" class="user-list__unblock-option">
+                <input v-model="unblockMethod" type="radio" name="unblock-method" :value="opt.value" />
+                <span>{{ opt.label }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
+        <footer class="wf-modal__footer">
+          <button type="button" class="wf-btn wf-btn--default" @click="closeUnblock">取消</button>
+          <button type="button" class="wf-btn wf-btn--primary" @click="submitUnblock">确定</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- 确认弹框 -->
     <div v-if="confirmVisible" class="wf-modal-mask" @click.self="closeConfirm">
       <div class="wf-modal" role="dialog" aria-modal="true" aria-labelledby="user-confirm-title">
@@ -620,7 +720,7 @@ function deleteUser(row: UserListRow) {
 }
 
 .user-list__table .wf-td--actions {
-  min-width: 460px;
+  min-width: 520px;
   white-space: nowrap;
 }
 
@@ -635,6 +735,59 @@ function deleteUser(row: UserListRow) {
 
 .user-list__link--delete {
   color: var(--pc-text-muted);
+}
+
+.user-list__unblock-modal {
+  width: 440px;
+  max-width: calc(100vw - 48px);
+}
+
+.user-list__unblock-section + .user-list__unblock-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.user-list__unblock-heading {
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+  color: var(--pc-text);
+}
+
+.user-list__unblock-meta {
+  margin: 0;
+}
+
+.user-list__unblock-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.user-list__unblock-row dt {
+  margin: 0;
+  color: var(--pc-text-muted);
+}
+
+.user-list__unblock-row dd {
+  margin: 0;
+  word-break: break-all;
+}
+
+.user-list__unblock-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-list__unblock-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
 
 .user-list__muted {
