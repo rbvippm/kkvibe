@@ -284,11 +284,6 @@ function resetPassword(row: UserListRow) {
 const securityVisible = ref(false)
 const securityRow = ref<UserListRow | null>(null)
 
-const securityStatusLabel = computed(() => {
-  const methods = securityRow.value?.securityBan?.loginMethods ?? []
-  return methods.length ? `封禁中（${methods.join('，')}）` : '未封禁'
-})
-
 function openSecurityBan(row: UserListRow) {
   securityRow.value = rows.value.find((item) => item.id === row.id) ?? row
   securityVisible.value = true
@@ -301,7 +296,7 @@ function closeSecurityBan() {
 
 function liftSecurityBan() {
   const current = securityRow.value
-  if (!current?.securityBan) return
+  if (!current) return
   rows.value = rows.value.map((item) =>
     item.id === current.id ? { ...item, locked: false, securityBan: null } : item,
   )
@@ -598,38 +593,6 @@ function deleteUser(row: UserListRow) {
         <div class="wf-modal__body">
           <section class="user-list__security-section">
             <h4 class="user-list__security-heading">
-              当前封禁信息
-              <WfSpecAnnot
-                :no="USER_LIST_ANNOT_MAP.securityBanInfo.no"
-                :title="USER_LIST_ANNOT_MAP.securityBanInfo.title"
-                :items="[...USER_LIST_ANNOT_MAP.securityBanInfo.items]"
-              />
-            </h4>
-            <dl class="user-list__security-meta">
-              <div class="user-list__security-row">
-                <dt>封禁状态</dt>
-                <dd :class="securityRow.securityBan ? 'user-list__security-status--on' : 'user-list__security-status--off'">
-                  {{ securityStatusLabel }}
-                </dd>
-              </div>
-              <template v-if="securityRow.securityBan">
-                <div class="user-list__security-row">
-                  <dt>触发终端</dt>
-                  <dd>{{ securityRow.securityBan.terminal }}</dd>
-                </div>
-                <div class="user-list__security-row">
-                  <dt>封禁原因</dt>
-                  <dd>{{ securityRow.securityBan.reason }}</dd>
-                </div>
-                <div class="user-list__security-row">
-                  <dt>封禁时间</dt>
-                  <dd>{{ securityRow.securityBan.blockedAt }}</dd>
-                </div>
-              </template>
-            </dl>
-          </section>
-          <section class="user-list__security-section">
-            <h4 class="user-list__security-heading">
               近20条封禁历程
               <WfSpecAnnot
                 :no="USER_LIST_ANNOT_MAP.securityRisk.no"
@@ -665,12 +628,7 @@ function deleteUser(row: UserListRow) {
         <footer class="wf-modal__footer">
           <button type="button" class="wf-btn wf-btn--default" @click="closeSecurityBan">取消</button>
           <span class="user-list__security-lift">
-            <button
-              type="button"
-              class="wf-btn wf-btn--primary"
-              :disabled="!securityRow.securityBan"
-              @click="liftSecurityBan"
-            >
+            <button type="button" class="wf-btn wf-btn--primary" @click="liftSecurityBan">
               解除封禁
             </button>
             <WfSpecAnnot
@@ -775,36 +733,6 @@ function deleteUser(row: UserListRow) {
   font-weight: 600;
   line-height: 22px;
   color: var(--pc-text);
-}
-
-.user-list__security-meta {
-  margin: 0;
-}
-
-.user-list__security-row {
-  display: grid;
-  grid-template-columns: 72px 1fr;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.user-list__security-row dt {
-  margin: 0;
-  color: var(--pc-text-muted);
-}
-
-.user-list__security-row dd {
-  margin: 0;
-  word-break: break-word;
-}
-
-.user-list__security-status--on {
-  color: var(--pc-danger);
-  font-weight: 600;
-}
-
-.user-list__security-status--off {
-  color: var(--pc-text-muted);
 }
 
 .user-list__security-lift {
