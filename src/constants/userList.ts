@@ -32,6 +32,10 @@ export type UserListRow = {
   realNameVerified: boolean
   locked: boolean
   deleted: boolean
+  /** 当前安全封禁；解除后或从未封禁时为空 */
+  securityBan: SecurityBan | null
+  /** 是否产生过封禁。第二条原型用户为从未封禁 */
+  securityEverBanned: boolean
   /** 三方登录 ID（列表 Mock 保留，查询弹框走独立映射） */
   thirdPartyId: string
 }
@@ -184,7 +188,70 @@ export function maskEmail(email: string) {
   return `${head}****${domain}`
 }
 
-export const MOCK_USER_LIST_ROWS: UserListRow[] = [
+export type SecurityTerminal = 'h5' | 'pc' | 'app'
+
+export const SECURITY_BAN_REASONS = [
+  '10分钟内登录过于频繁，触发次数阈值5',
+  '10分钟内请求滑块图形验证码频繁，触发次数阈值5',
+] as const
+
+export type SecurityRiskRecord = {
+  at: string
+  terminal: SecurityTerminal
+  reason: (typeof SECURITY_BAN_REASONS)[number]
+}
+
+/** 封禁登录方式，同一次封禁只命中其中一种 */
+export const SECURITY_BAN_LOGIN_METHODS = ['账号', '密码', '手机验证码', '邮箱验证码'] as const
+
+export type SecurityLoginMethod = (typeof SECURITY_BAN_LOGIN_METHODS)[number]
+
+export type SecurityBan = {
+  /** 最近一次触发的终端 */
+  terminal: SecurityTerminal
+  /** 最近一次封禁原因，只保留一条 */
+  reason: string
+  /** 本次封禁命中的登录方式，四种里只会出现一种 */
+  loginMethod: SecurityLoginMethod
+  blockedAt: string
+  risks: SecurityRiskRecord[]
+}
+
+function padSecurityTime(value: number) {
+  return String(value).padStart(2, '0')
+}
+
+function formatSecurityTime(date: Date) {
+  return `${date.getFullYear()}-${padSecurityTime(date.getMonth() + 1)}-${padSecurityTime(date.getDate())} ${padSecurityTime(date.getHours())}:${padSecurityTime(date.getMinutes())}:${padSecurityTime(date.getSeconds())}`
+}
+
+export function buildSecurityBan(input: {
+  terminals: SecurityTerminal[]
+  reasonIndexes: number[]
+  blockedAt: string
+  seed: number
+  loginMethod: SecurityLoginMethod
+}): SecurityBan {
+  const start = new Date(input.blockedAt.replace(' ', 'T'))
+  const risks: SecurityRiskRecord[] = Array.from({ length: 20 }, (_, index) => {
+    const at = new Date(start.getTime() - index * (4 + (input.seed % 3)) * 60 * 1000)
+    return {
+      at: formatSecurityTime(at),
+      terminal: input.terminals[(index + input.seed) % input.terminals.length] ?? 'h5',
+      reason: SECURITY_BAN_REASONS[(index + (input.reasonIndexes[0] ?? 0)) % SECURITY_BAN_REASONS.length] ?? SECURITY_BAN_REASONS[0],
+    }
+  })
+  const latest = risks[0]
+  return {
+    terminal: latest?.terminal ?? 'h5',
+    reason: latest?.reason ?? SECURITY_BAN_REASONS[0],
+    loginMethod: input.loginMethod,
+    blockedAt: latest?.at ?? input.blockedAt,
+    risks,
+  }
+}
+
+const USER_LIST_ROW_BASE: Omit<UserListRow, 'securityBan' | 'securityEverBanned'>[] = [
   {
     id: 'u1',
     userId: '7831562076704421988',
@@ -378,3 +445,49 @@ export const MOCK_USER_LIST_ROWS: UserListRow[] = [
     thirdPartyId: 'tp_apple_888001',
   },
 ]
+
+const SECURITY_BAN_PRESETS: Record<
+  string,
+  {
+    terminals: SecurityTerminal[]
+    reasonIndexes: number[]
+    blockedAt: string
+    seed: number
+    loginMethod: SecurityLoginMethod
+  }
+> = {
+  u1: {
+    terminals: ['h5', 'pc', 'app'],
+    reasonIndexes: [0, 1],
+    blockedAt: '2026-11-02 16:42:18',
+    seed: 1,
+    loginMethod: '账号',
+  },
+  u3: { terminals: ['pc'], reasonIndexes: [1], blockedAt: '2026-11-01 22:16:05', seed: 3, loginMethod: '密码' },
+  u4: {
+    terminals: ['app'],
+    reasonIndexes: [0, 1],
+    blockedAt: '2026-11-01 11:03:47',
+    seed: 4,
+    loginMethod: '手机验证码',
+  },
+  u5: { terminals: ['h5', 'pc'], reasonIndexes: [0], blockedAt: '2026-11-01 08:21:16', seed: 5, loginMethod: '邮箱验证码' },
+  u6: {
+    terminals: ['h5', 'app'],
+    reasonIndexes: [0, 1],
+    blockedAt: '2026-11-02 09:27:51',
+    seed: 6,
+    loginMethod: '账号',
+  },
+  u7: { terminals: ['pc', 'app'], reasonIndexes: [1], blockedAt: '2026-10-30 18:40:12', seed: 7, loginMethod: '密码' },
+  u8: { terminals: ['h5'], reasonIndexes: [0], blockedAt: '2026-11-02 13:55:06', seed: 8, loginMethod: '手机验证码' },
+}
+
+export const MOCK_USER_LIST_ROWS: UserListRow[] = USER_LIST_ROW_BASE.map((row) => {
+  const preset = SECURITY_BAN_PRESETS[row.id]
+  return {
+    ...row,
+    securityEverBanned: Boolean(preset),
+    securityBan: preset ? buildSecurityBan(preset) : null,
+  }
+})

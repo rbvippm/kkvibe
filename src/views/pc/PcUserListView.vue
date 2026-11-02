@@ -3,10 +3,11 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showPcToast } from '../../composables/usePcToast'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
+import { USER_LIST_ANNOT_MAP } from '../../constants/userListSpec'
 import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import {
   channelLabel,
-  maskEmail,
   maskPhone,
   MOCK_USER_LIST_ROWS,
   queryThirdPartyIdMap,
@@ -280,60 +281,32 @@ function resetPassword(row: UserListRow) {
   })
 }
 
-function unlockUser(row: UserListRow) {
-  if (row.deleted) {
-    actionHint.value = '已删除用户不可解锁'
-    return
-  }
-  if (!row.locked) {
-    actionHint.value = `用户 ${row.userId} 未锁定`
-    return
-  }
-  openConfirm('解锁', `确认解锁用户 ${row.userId}？`, () => {
-    rows.value = rows.value.map((item) => (item.id === row.id ? { ...item, locked: false } : item))
-    actionHint.value = `已解锁用户 ${row.userId}`
-  })
+const securityVisible = ref(false)
+const securityRow = ref<UserListRow | null>(null)
+
+const securityStatusLabel = computed(() => {
+  const method = securityRow.value?.securityBan?.loginMethod
+  return method ? `封禁中（${method}）` : '未封禁'
+})
+
+function openSecurityBan(row: UserListRow) {
+  securityRow.value = rows.value.find((item) => item.id === row.id) ?? row
+  securityVisible.value = true
 }
 
-const UNBLOCK_METHOD_OPTIONS = [
-  { value: 'all', label: '全部登录方式' },
-  { value: 'password', label: '账号密码登录方式' },
-  { value: 'sms', label: '手机验证码登录方式' },
-  { value: 'email', label: '邮箱验证码方式' },
-] as const
-
-type UnblockMethod = (typeof UNBLOCK_METHOD_OPTIONS)[number]['value']
-
-const unblockVisible = ref(false)
-const unblockRow = ref<UserListRow | null>(null)
-const unblockMethod = ref<UnblockMethod>('all')
-
-function formatUnblockPhone(row: UserListRow) {
-  if (!row.phone) return '-'
-  const phone = maskPhone(row.phone)
-  return row.dialCode ? `${row.dialCode} ${phone}` : phone
+function closeSecurityBan() {
+  securityVisible.value = false
+  securityRow.value = null
 }
 
-function openUnblock(row: UserListRow) {
-  if (row.deleted) {
-    actionHint.value = '已删除用户不可解封登录锁定'
-    return
-  }
-  unblockRow.value = row
-  unblockMethod.value = 'all'
-  unblockVisible.value = true
-}
-
-function closeUnblock() {
-  unblockVisible.value = false
-  unblockRow.value = null
-}
-
-function submitUnblock() {
-  const userId = unblockRow.value?.userId ?? ''
-  const label = UNBLOCK_METHOD_OPTIONS.find((item) => item.value === unblockMethod.value)?.label ?? '全部登录方式'
-  showPcToast(`已为用户 ${userId} 解封登录锁定（${label}）`)
-  closeUnblock()
+function liftSecurityBan() {
+  const current = securityRow.value
+  if (!current?.securityBan) return
+  rows.value = rows.value.map((item) =>
+    item.id === current.id ? { ...item, locked: false, securityBan: null } : item,
+  )
+  showPcToast(`已解除用户 ${current.userId} 的安全封禁`)
+  closeSecurityBan()
 }
 
 function resetSecurityPassword(row: UserListRow) {
@@ -514,21 +487,8 @@ function deleteUser(row: UserListRow) {
                 >
                   重置密码
                 </button>
-                <button
-                  type="button"
-                  class="wf-link-action"
-                  :disabled="row.deleted"
-                  @click="unlockUser(row)"
-                >
-                  解锁
-                </button>
-                <button
-                  type="button"
-                  class="wf-link-action"
-                  :disabled="row.deleted"
-                  @click="openUnblock(row)"
-                >
-                  解封登录锁定
+                <button type="button" class="wf-link-action" @click="openSecurityBan(row)">
+                  安全封禁
                 </button>
                 <span class="user-list__muted">{{ row.realNameVerified ? '已实名' : '未实名' }}</span>
                 <button
@@ -617,51 +577,109 @@ function deleteUser(row: UserListRow) {
       </div>
     </Teleport>
 
-    <div v-if="unblockVisible" class="wf-modal-mask" @click.self="closeUnblock">
-      <div class="wf-modal user-list__unblock-modal" role="dialog" aria-modal="true" aria-labelledby="user-unblock-title">
+    <div v-if="securityVisible && securityRow" class="wf-modal-mask" @click.self="closeSecurityBan">
+      <div
+        class="wf-modal wf-modal--scroll user-list__security-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="user-security-title"
+      >
         <header class="wf-modal__header">
-          <h3 id="user-unblock-title" class="wf-modal__title">解封登录锁定</h3>
-          <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeUnblock">×</button>
+          <h3 id="user-security-title" class="wf-modal__title wf-modal__title--with-spec">
+            安全封禁
+            <WfSpecAnnot
+              :no="USER_LIST_ANNOT_MAP.securityEntry.no"
+              :title="USER_LIST_ANNOT_MAP.securityEntry.title"
+              :items="[...USER_LIST_ANNOT_MAP.securityEntry.items]"
+            />
+          </h3>
+          <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeSecurityBan">×</button>
         </header>
         <div class="wf-modal__body">
-          <section class="user-list__unblock-section">
-            <h4 class="user-list__unblock-heading">用户基础信息</h4>
-            <dl v-if="unblockRow" class="user-list__unblock-meta">
-              <div class="user-list__unblock-row">
-                <dt>用户ID</dt>
-                <dd>{{ unblockRow.userId }}</dd>
+          <section class="user-list__security-section">
+            <h4 class="user-list__security-heading">
+              当前封禁信息
+              <WfSpecAnnot
+                :no="USER_LIST_ANNOT_MAP.securityBanInfo.no"
+                :title="USER_LIST_ANNOT_MAP.securityBanInfo.title"
+                :items="[...USER_LIST_ANNOT_MAP.securityBanInfo.items]"
+              />
+            </h4>
+            <dl class="user-list__security-meta">
+              <div class="user-list__security-row">
+                <dt>封禁状态</dt>
+                <dd :class="securityRow.securityBan ? 'user-list__security-status--on' : 'user-list__security-status--off'">
+                  {{ securityStatusLabel }}
+                </dd>
               </div>
-              <div class="user-list__unblock-row">
-                <dt>金刚号</dt>
-                <dd>{{ unblockRow.kingKongId || '-' }}</dd>
-              </div>
-              <div class="user-list__unblock-row">
-                <dt>区号</dt>
-                <dd>{{ unblockRow.dialCode || '-' }}</dd>
-              </div>
-              <div class="user-list__unblock-row">
-                <dt>手机号</dt>
-                <dd>{{ formatUnblockPhone(unblockRow) }}</dd>
-              </div>
-              <div class="user-list__unblock-row">
-                <dt>邮箱</dt>
-                <dd>{{ maskEmail(unblockRow.email) }}</dd>
-              </div>
+              <template v-if="securityRow.securityBan">
+                <div class="user-list__security-row">
+                  <dt>触发终端</dt>
+                  <dd>{{ securityRow.securityBan.terminal }}</dd>
+                </div>
+                <div class="user-list__security-row">
+                  <dt>封禁原因</dt>
+                  <dd>{{ securityRow.securityBan.reason }}</dd>
+                </div>
+                <div class="user-list__security-row">
+                  <dt>封禁时间</dt>
+                  <dd>{{ securityRow.securityBan.blockedAt }}</dd>
+                </div>
+              </template>
             </dl>
           </section>
-          <section class="user-list__unblock-section">
-            <h4 id="user-unblock-method-title" class="user-list__unblock-heading">解封登录方式</h4>
-            <div class="user-list__unblock-options" role="radiogroup" aria-labelledby="user-unblock-method-title">
-              <label v-for="opt in UNBLOCK_METHOD_OPTIONS" :key="opt.value" class="user-list__unblock-option">
-                <input v-model="unblockMethod" type="radio" name="unblock-method" :value="opt.value" />
-                <span>{{ opt.label }}</span>
-              </label>
-            </div>
+          <section class="user-list__security-section">
+            <h4 class="user-list__security-heading">
+              近20条封禁历程
+              <WfSpecAnnot
+                :no="USER_LIST_ANNOT_MAP.securityRisk.no"
+                :title="USER_LIST_ANNOT_MAP.securityRisk.title"
+                :items="[...USER_LIST_ANNOT_MAP.securityRisk.items]"
+              />
+            </h4>
+            <table class="user-list__risk-table">
+              <thead>
+                <tr>
+                  <th>序号</th>
+                  <th>时间</th>
+                  <th>终端</th>
+                  <th>封禁原因</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!securityRow.securityBan?.risks.length">
+                  <td colspan="4" class="user-list__security-empty">
+                    {{ securityRow.securityEverBanned ? '暂无风险记录' : '从未产生风险记录' }}
+                  </td>
+                </tr>
+                <tr v-for="(risk, index) in securityRow.securityBan?.risks ?? []" :key="`${risk.at}-${index}`">
+                  <td>{{ index + 1 }}</td>
+                  <td>{{ risk.at }}</td>
+                  <td>{{ risk.terminal }}</td>
+                  <td>{{ risk.reason }}</td>
+                </tr>
+              </tbody>
+            </table>
           </section>
         </div>
         <footer class="wf-modal__footer">
-          <button type="button" class="wf-btn wf-btn--default" @click="closeUnblock">取消</button>
-          <button type="button" class="wf-btn wf-btn--primary" @click="submitUnblock">确定</button>
+          <button type="button" class="wf-btn wf-btn--default" @click="closeSecurityBan">取消</button>
+          <span class="user-list__security-lift">
+            <button
+              type="button"
+              class="wf-btn wf-btn--primary"
+              :disabled="!securityRow.securityBan"
+              @click="liftSecurityBan"
+            >
+              解除封禁
+            </button>
+            <WfSpecAnnot
+              :no="USER_LIST_ANNOT_MAP.securityLift.no"
+              :title="USER_LIST_ANNOT_MAP.securityLift.title"
+              :items="[...USER_LIST_ANNOT_MAP.securityLift.items]"
+              placement="top"
+            />
+          </span>
         </footer>
       </div>
     </div>
@@ -720,7 +738,7 @@ function deleteUser(row: UserListRow) {
 }
 
 .user-list__table .wf-td--actions {
-  min-width: 620px;
+  min-width: 520px;
   white-space: nowrap;
 }
 
@@ -737,18 +755,21 @@ function deleteUser(row: UserListRow) {
   color: var(--pc-text-muted);
 }
 
-.user-list__unblock-modal {
-  width: 440px;
+.user-list__security-modal {
+  width: 720px;
   max-width: calc(100vw - 48px);
 }
 
-.user-list__unblock-section + .user-list__unblock-section {
+.user-list__security-section + .user-list__security-section {
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid #f0f0f0;
 }
 
-.user-list__unblock-heading {
+.user-list__security-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 12px;
   font-size: 14px;
   font-weight: 600;
@@ -756,38 +777,71 @@ function deleteUser(row: UserListRow) {
   color: var(--pc-text);
 }
 
-.user-list__unblock-meta {
+.user-list__security-meta {
   margin: 0;
 }
 
-.user-list__unblock-row {
+.user-list__security-row {
   display: grid;
   grid-template-columns: 72px 1fr;
   gap: 8px;
   margin-bottom: 10px;
 }
 
-.user-list__unblock-row dt {
+.user-list__security-row dt {
   margin: 0;
   color: var(--pc-text-muted);
 }
 
-.user-list__unblock-row dd {
+.user-list__security-row dd {
   margin: 0;
-  word-break: break-all;
+  word-break: break-word;
 }
 
-.user-list__unblock-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.user-list__security-status--on {
+  color: var(--pc-danger);
+  font-weight: 600;
 }
 
-.user-list__unblock-option {
-  display: flex;
+.user-list__security-status--off {
+  color: var(--pc-text-muted);
+}
+
+.user-list__security-lift {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
+}
+
+.user-list__security-empty {
+  margin: 0;
+  color: var(--pc-text-muted);
+  text-align: center;
+}
+
+.user-list__risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.user-list__risk-table th,
+.user-list__risk-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.user-list__risk-table th {
+  color: var(--pc-text-muted);
+  font-weight: 500;
+  background: #fafafa;
+}
+
+.user-list__risk-table td.user-list__security-empty {
+  text-align: center;
 }
 
 .user-list__muted {
