@@ -1,6 +1,7 @@
 /** 贵宾厅管理 · 模块 / 产品 · 公共 Mock */
 
 import { ref } from 'vue'
+import { ANCHOR_CHANNELS, findAnchorChannel } from './liveAnchorMetric'
 
 export type VipHallLang = 'zh' | 'zhHant' | 'en' | 'vi' | 'th'
 export type VipHallCurrency = 'credit-cny' | 'credit-usd'
@@ -16,7 +17,7 @@ export type VipHallAssetPair = {
 
 export type VipHallModuleRow = {
   id: string
-  channel: string
+  channelIds: string[]
   type: VipHallProductType
   names: VipHallI18nMap
   descriptions: VipHallI18nMap
@@ -29,7 +30,7 @@ export type VipHallModuleRow = {
 
 export type VipHallProductRow = {
   id: string
-  channel: string
+  channelIds: string[]
   moduleId: string
   type: VipHallProductType
   names: VipHallI18nMap
@@ -46,7 +47,10 @@ export type VipHallProductRow = {
   enabled: boolean
 }
 
-export const VIP_HALL_CHANNEL_OPTIONS = [{ value: 'self', label: '平台自营' }] as const
+export const VIP_HALL_CHANNEL_OPTIONS = ANCHOR_CHANNELS.map((item) => ({
+  value: item.id,
+  label: item.name,
+}))
 
 export const VIP_HALL_LANG_OPTIONS: { value: VipHallLang; label: string }[] = [
   { value: 'zh', label: '简体中文' },
@@ -127,8 +131,12 @@ export function vipHallLangLabel(lang: VipHallLang) {
   return VIP_HALL_LANG_OPTIONS.find((item) => item.value === lang)?.label ?? lang
 }
 
-export function vipHallChannelLabel(channel: string) {
-  return VIP_HALL_CHANNEL_OPTIONS.find((item) => item.value === channel)?.label ?? channel
+export function vipHallChannelLabel(id: string) {
+  return findAnchorChannel(id)?.name ?? id
+}
+
+export function vipHallChannelLabels(ids: string[]) {
+  return ids.map(vipHallChannelLabel)
 }
 
 export function vipHallCurrencyLabel(currency: VipHallCurrency) {
@@ -162,6 +170,7 @@ function cloneI18nMap(map: VipHallI18nMap): VipHallI18nMap {
 export function cloneModuleRow(row: VipHallModuleRow): VipHallModuleRow {
   return {
     ...row,
+    channelIds: [...row.channelIds],
     names: cloneI18nMap(row.names),
     descriptions: cloneI18nMap(row.descriptions),
     currencies: [...row.currencies],
@@ -173,6 +182,7 @@ export function cloneModuleRow(row: VipHallModuleRow): VipHallModuleRow {
 export function cloneProductRow(row: VipHallProductRow): VipHallProductRow {
   return {
     ...row,
+    channelIds: [...row.channelIds],
     names: cloneI18nMap(row.names),
     descriptions: cloneI18nMap(row.descriptions),
     currencies: [...row.currencies],
@@ -184,8 +194,8 @@ export function cloneProductRow(row: VipHallProductRow): VipHallProductRow {
 
 export function createEmptyModuleRow(sort = 1): VipHallModuleRow {
   return {
-    id: `vhm_${Date.now()}`,
-    channel: 'self',
+    id: '',
+    channelIds: [],
     type: 'game',
     names: {},
     descriptions: {},
@@ -199,8 +209,8 @@ export function createEmptyModuleRow(sort = 1): VipHallModuleRow {
 
 export function createEmptyProductRow(sort = 1, moduleId = ''): VipHallProductRow {
   return {
-    id: `vhp_${Date.now()}`,
-    channel: 'self',
+    id: '',
+    channelIds: [],
     moduleId,
     type: 'game',
     names: {},
@@ -224,8 +234,8 @@ function assetFrom(url: string, fileName: string): VipHallAssetPair {
 
 export const MOCK_VIP_HALL_MODULES: VipHallModuleRow[] = [
   {
-    id: 'vhm-sports',
-    channel: 'self',
+    id: 'M10001',
+    channelIds: ['self', 'kk', 'sea'],
     type: 'game',
     names: { zh: '金刚体育', zhHant: '金剛體育', en: 'King Kong Sports' },
     descriptions: { zh: '顶级赛事盘口', zhHant: '頂級賽事盤口', en: 'Top sports markets' },
@@ -236,8 +246,8 @@ export const MOCK_VIP_HALL_MODULES: VipHallModuleRow[] = [
     enabled: true,
   },
   {
-    id: 'vhm-lottery',
-    channel: 'self',
+    id: 'M10002',
+    channelIds: ['self', 'goodworld'],
     type: 'game',
     names: { zh: '皇者彩票', zhHant: '皇者彩票' },
     descriptions: { zh: '热门彩种精选', zhHant: '熱門彩種精選' },
@@ -248,8 +258,8 @@ export const MOCK_VIP_HALL_MODULES: VipHallModuleRow[] = [
     enabled: true,
   },
   {
-    id: 'vhm-live',
-    channel: 'self',
+    id: 'M10003',
+    channelIds: ['self', 'vn', 'th', 'ph'],
     type: 'game',
     names: { zh: '真人', zhHant: '真人', en: 'Live Casino' },
     descriptions: { zh: '真人荷官桌台', zhHant: '真人荷官桌台', en: 'Live dealer tables' },
@@ -260,8 +270,8 @@ export const MOCK_VIP_HALL_MODULES: VipHallModuleRow[] = [
     enabled: true,
   },
   {
-    id: 'vhm-slot',
-    channel: 'self',
+    id: 'M10004',
+    channelIds: ['self'],
     type: 'game',
     names: { zh: '老虎机', zhHant: '老虎機' },
     descriptions: { zh: '热门电子游艺', zhHant: '熱門電子遊藝' },
@@ -272,8 +282,8 @@ export const MOCK_VIP_HALL_MODULES: VipHallModuleRow[] = [
     enabled: true,
   },
   {
-    id: 'vhm-hall',
-    channel: 'self',
+    id: 'M10005',
+    channelIds: ['self', 'kk'],
     type: 'hall',
     names: { zh: '赌厅服务', zhHant: '賭廳服務', en: 'Casino Service' },
     descriptions: { zh: '线下赌厅预约', zhHant: '線下賭廳預約', en: 'Offline casino booking' },
@@ -312,9 +322,9 @@ export function applyProductTypeFromModule(row: VipHallProductRow, type: VipHall
 
 export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
   {
-    id: 'vhp-sports',
-    channel: 'self',
-    moduleId: 'vhm-sports',
+    id: 'P10001',
+    channelIds: ['self', 'kk', 'sea'],
+    moduleId: 'M10001',
     type: 'game',
     names: { zh: '赛事盘口', zhHant: '賽事盤口', en: 'Sports Board' },
     descriptions: { zh: '即时赔率与滚球盘', zhHant: '即時賠率與滾球盤', en: 'Live odds and in-play markets' },
@@ -330,9 +340,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-racing',
-    channel: 'self',
-    moduleId: 'vhm-lottery',
+    id: 'P10002',
+    channelIds: ['self', 'goodworld'],
+    moduleId: 'M10002',
     type: 'game',
     names: { zh: '联盟赛车', zhHant: '聯盟賽車' },
     descriptions: { zh: '高频竞速彩种', zhHant: '高頻競速彩種' },
@@ -348,9 +358,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-boat',
-    channel: 'self',
-    moduleId: 'vhm-lottery',
+    id: 'P10003',
+    channelIds: ['self'],
+    moduleId: 'M10002',
     type: 'game',
     names: { zh: '联盟飞艇', zhHant: '聯盟飛艇' },
     descriptions: { zh: '飞艇开奖玩法', zhHant: '飛艇開獎玩法' },
@@ -366,9 +376,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-ssc',
-    channel: 'self',
-    moduleId: 'vhm-lottery',
+    id: 'P10004',
+    channelIds: ['self', 'goodworld'],
+    moduleId: 'M10002',
     type: 'game',
     names: { zh: '联盟时时彩' },
     descriptions: { zh: '经典数字彩玩法' },
@@ -384,9 +394,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-db',
-    channel: 'self',
-    moduleId: 'vhm-live',
+    id: 'P10005',
+    channelIds: ['self', 'vn', 'th'],
+    moduleId: 'M10003',
     type: 'game',
     names: { zh: 'DB 真人', zhHant: 'DB 真人' },
     descriptions: { zh: 'DB 真人荷官桌', zhHant: 'DB 真人荷官桌' },
@@ -402,9 +412,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-pp',
-    channel: 'self',
-    moduleId: 'vhm-slot',
+    id: 'P10006',
+    channelIds: ['self'],
+    moduleId: 'M10004',
     type: 'game',
     names: { zh: 'PP 老虎机', zhHant: 'PP 老虎機' },
     descriptions: { zh: '热门电子老虎机', zhHant: '熱門電子老虎機' },
@@ -420,9 +430,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-macau',
-    channel: 'self',
-    moduleId: 'vhm-hall',
+    id: 'P10007',
+    channelIds: ['self', 'kk'],
+    moduleId: 'M10005',
     type: 'hall',
     names: { zh: '澳门赌厅', zhHant: '澳門賭廳', en: 'Macau Casino' },
     descriptions: { zh: '澳门线下赌厅预约', zhHant: '澳門線下賭廳預約', en: 'Macau casino booking' },
@@ -438,9 +448,9 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     enabled: true,
   },
   {
-    id: 'vhp-singapore',
-    channel: 'self',
-    moduleId: 'vhm-hall',
+    id: 'P10008',
+    channelIds: ['self'],
+    moduleId: 'M10005',
     type: 'hall',
     names: { zh: '新加坡赌厅', zhHant: '新加坡賭廳' },
     descriptions: { zh: '新加坡线下赌厅预约', zhHant: '新加坡線下賭廳預約' },
@@ -466,3 +476,18 @@ export function productDisplayName(row: VipHallProductRow) {
 
 export const vipHallModuleStore = ref(MOCK_VIP_HALL_MODULES.map(cloneModuleRow))
 export const vipHallProductStore = ref(MOCK_VIP_HALL_PRODUCTS.map(cloneProductRow))
+
+/** 只在贵宾厅本表内续号，与小程序管理的同格式 ID 互不影响 */
+function nextTableId(prefix: 'M' | 'P', ids: string[]) {
+  const pattern = new RegExp(`^${prefix}(\\d+)$`)
+  const nums = ids.map((id) => Number(pattern.exec(id)?.[1])).filter((n) => Number.isFinite(n))
+  return `${prefix}${(nums.length ? Math.max(...nums) : 10000) + 1}`
+}
+
+export function createVipHallModuleId() {
+  return nextTableId('M', vipHallModuleStore.value.map((row) => row.id))
+}
+
+export function createVipHallProductId() {
+  return nextTableId('P', vipHallProductStore.value.map((row) => row.id))
+}
