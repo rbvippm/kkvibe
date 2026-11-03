@@ -67,7 +67,7 @@ import {
 import '../../styles/mobile-app-shell.css'
 import { appLocale } from '../../i18n'
 
-const { isRebateAgent } = useAgentIdentity()
+const { isRebateAgent, currencyScope } = useAgentIdentity()
 
 const props = withDefaults(
   defineProps<{
@@ -156,8 +156,15 @@ const detailRow = ref<BetOrderRecord | null>(null)
 const foldTraceOpen = ref(false)
 const copyTip = ref('')
 
+/** 代理端：现金代理中心只看现金注单，信用代理中心只看信用额度注单 */
+function scopeAgentRows(rows: BetOrderRecord[]) {
+  if (isMemberRecords.value) return rows
+  const wantCredit = currencyScope.value === 'credit'
+  return rows.filter((row) => isBetOrderCreditCurrency(row.currency) === wantCredit)
+}
+
 const filteredRecords = computed(() => {
-  let rows = filterBetOrders(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
+  let rows = scopeAgentRows(filterBetOrders(MOCK_BET_ORDER_RECORDS, appliedFilter.value))
   if (isVipClubRecords.value) {
     rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
     if (!recordsSelectAll.value && selectedWallet.value?.id) {
@@ -168,7 +175,9 @@ const filteredRecords = computed(() => {
 })
 
 const scopedRecords = computed(() => {
-  let rows = filterBetOrders(MOCK_BET_ORDER_RECORDS, { ...appliedFilter.value, status: '' })
+  let rows = scopeAgentRows(
+    filterBetOrders(MOCK_BET_ORDER_RECORDS, { ...appliedFilter.value, status: '' }),
+  )
   if (isVipClubRecords.value) {
     rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
     if (!recordsSelectAll.value && selectedWallet.value?.id) {
@@ -206,7 +215,7 @@ function statusTabCount(key: BetOrderStatusTabKey) {
 }
 
 const summaryRecords = computed(() => {
-  let rows = filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value)
+  let rows = scopeAgentRows(filterBetOrdersForSummary(MOCK_BET_ORDER_RECORDS, appliedFilter.value))
   if (isVipClubRecords.value) {
     rows = rows.filter((row) => isBetOrderCreditCurrency(row.currency))
     if (!recordsSelectAll.value && selectedWallet.value?.id) {
@@ -220,8 +229,8 @@ const currencyOptions = computed(() => {
   if (isVipClubRecords.value) {
     return [{ value: '' as const, label: '全部' }, ...BET_ORDER_CREDIT_CURRENCY_OPTIONS]
   }
-  /** 占成代理含信用额度；返佣与会员旗舰厅仅现金三币种 */
-  return getBetOrderCurrencyOptions(!isMemberRecords.value && !isRebateAgent.value)
+  /** 会员旗舰厅、现金代理、返佣代理仅现金三币种；信用代理仅信用额度两币种 */
+  return getBetOrderCurrencyOptions(isMemberRecords.value ? 'cash' : currencyScope.value)
 })
 
 const toolbarTimeLabel = computed(() => {
@@ -300,6 +309,13 @@ const currencySummaries = computed(() => {
     }
     return summarizeBetOrdersByCurrency(summaryRecords.value, [ccy])
   }
+  if (!isMemberRecords.value && currencyScope.value === 'credit') {
+    const ccy = appliedFilter.value.gameCurrency
+    return summarizeBetOrdersByCurrency(
+      summaryRecords.value,
+      ccy ? [ccy] : ['信用额度-CNY', '信用额度-USD'],
+    )
+  }
   return summarizeBetOrdersByCurrency(summaryRecords.value, getBetOrderSummaryCashCurrencies())
 })
 
@@ -331,9 +347,10 @@ watch(recordsCurrencyFilter, () => {
   if (isVipClubRecords.value) resetSummaryCarousel()
 })
 
-watch(isRebateAgent, (rebate) => {
-  if (!rebate || isMemberRecords.value) return
-  if (!isBetOrderCreditCurrency(appliedFilter.value.gameCurrency)) return
+watch(currencyScope, (scope) => {
+  if (isMemberRecords.value) return
+  const ccy = appliedFilter.value.gameCurrency
+  if (!ccy || isBetOrderCreditCurrency(ccy) === (scope === 'credit')) return
   appliedFilter.value = { ...appliedFilter.value, gameCurrency: '' }
   filterDraft.value = { ...filterDraft.value, gameCurrency: '' }
 })

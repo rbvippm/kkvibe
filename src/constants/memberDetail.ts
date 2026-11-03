@@ -1,4 +1,5 @@
 import { filterTeamList, type TeamListItem } from './agentTeam'
+import type { AgentLedgerType } from './agentIdentity'
 import {
   formatCashWalletGroups,
   formatCreditReceivable,
@@ -24,11 +25,15 @@ export const MEMBER_DETAIL_CREDIT_TAB: { key: MemberDetailTab; label: string } =
   label: '信用额度',
 }
 
+/** 信用代理中心：「信用额度」替换现金「会员钱包」，不展示现金「充提记录」 */
 export function getMemberDetailTabs(
-  isCredited: boolean,
+  ledger: AgentLedgerType,
 ): { key: MemberDetailTab; label: string }[] {
-  if (!isCredited) return MEMBER_DETAIL_TABS
-  return [MEMBER_DETAIL_TABS[0], MEMBER_DETAIL_CREDIT_TAB, ...MEMBER_DETAIL_TABS.slice(1)]
+  if (ledger !== 'credit') return MEMBER_DETAIL_TABS
+  return [
+    MEMBER_DETAIL_CREDIT_TAB,
+    ...MEMBER_DETAIL_TABS.filter((tab) => tab.key === 'profit' || tab.key === 'game'),
+  ]
 }
 
 /** 游戏数据子 Tab */
@@ -128,23 +133,26 @@ export function formatMemberCreditLimitView(
   const settle = scaleMemberSettle(stats, rangeScale)
   const quota = Math.max(0, stats.creditQuotaTotal)
   const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
-  const net = settle.creditUpTotal - settle.creditDownTotal
+  /** 我方应收会员 = 上分总额 − 下分总额 − 可用额度 */
+  const receivable = settle.creditUpTotal - settle.creditDownTotal - stats.creditBalance
   return {
     availableValue: formatCreditAmount(stats.creditBalance),
     quotaValue: formatCreditAmount(quota),
     usedPercent,
     usedPercentText: `~${usedPercent}%`,
-    receivableValue: formatCreditReceivable(net, currency),
-    receivablePositive: net >= 0,
+    receivableValue: formatCreditReceivable(receivable, currency),
+    receivablePositive: receivable >= 0,
+    receivableFormula: '上分总额 − 下分总额 − 可用额度',
     settleFlowRows: [
       { label: '上分总额:', value: formatCreditAmount(settle.creditUpTotal) },
       { label: '下分总额:', value: formatCreditAmount(settle.creditDownTotal) },
+      { label: '可用额度:', value: formatCreditAmount(stats.creditBalance) },
     ],
     settleResultRows: [
       {
-        label: '上下分净额:',
-        value: `${net >= 0 ? '+' : ''}${formatCreditAmount(net)}`,
-        positive: net >= 0,
+        label: '我方应收:',
+        value: formatCreditAmount(Math.abs(receivable)),
+        positive: receivable >= 0,
       },
     ],
   }

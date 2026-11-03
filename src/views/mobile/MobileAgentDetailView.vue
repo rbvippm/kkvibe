@@ -17,10 +17,8 @@ import {
 import {
   agentAppCreditCurrency,
   agentAppCurrency,
-  isAgentCreditCurrency,
   setAgentAppCreditCurrency,
   setAgentAppCurrencyByUser,
-  fallbackAgentCashCurrency,
 } from '../../constants/agentAppCurrency'
 import {
   AGENT_COMMISSION_FORMULA,
@@ -90,7 +88,7 @@ import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent } = useAgentIdentity()
+const { isRebateAgent, agentLedger, currencyScope } = useAgentIdentity()
 
 function resolveAgentDetailTab(raw: unknown): AgentDetailTab | null {
   const key = String(raw ?? '')
@@ -100,7 +98,9 @@ function resolveAgentDetailTab(raw: unknown): AgentDetailTab | null {
   return null
 }
 
-const activeTab = ref<AgentDetailTab>(resolveAgentDetailTab(route.query.tab) ?? 'wallet')
+const activeTab = ref<AgentDetailTab>(
+  resolveAgentDetailTab(route.query.tab) ?? (route.query.ledger === 'credit' ? 'credit' : 'wallet'),
+)
 const currencyPickerOpen = ref(false)
 const creditCurrencyMenuOpen = ref(false)
 const profitFormulaTipOpen = ref(false)
@@ -155,11 +155,10 @@ async function copyKingkongId() {
   }
 }
 
-const isCredited = computed(() => Boolean(agent.value?.isCredited))
 const detailTabs = computed(() =>
-  getAgentDetailTabs(isCredited.value, isRebateAgent.value),
+  getAgentDetailTabs(agentLedger.value, isRebateAgent.value),
 )
-const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(currencyScope.value))
 const profitTabLabel = computed(() => (isRebateAgent.value ? '代理佣金' : '代理盈亏'))
 const profitTabFormula = computed(() =>
   isRebateAgent.value ? AGENT_COMMISSION_FORMULA : AGENT_PROFIT_FORMULA,
@@ -168,12 +167,14 @@ const useProfitSections = computed(
   () => !isRebateAgent.value && profitLayoutMode.value === 'sections',
 )
 
-watch(isCredited, (credited) => {
-  if (!credited) {
-    if (activeTab.value === 'credit') activeTab.value = 'wallet'
-    if (isAgentCreditCurrency(currency.value)) fallbackAgentCashCurrency()
-  }
-})
+watch(
+  detailTabs,
+  (tabs) => {
+    if (!tabs.some((item) => item.key === activeTab.value)) activeTab.value = tabs[0].key
+  },
+  { immediate: true },
+)
+
 
 watch(activeTab, () => {
   creditCurrencyMenuOpen.value = false

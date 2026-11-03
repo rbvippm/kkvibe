@@ -33,6 +33,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['推广返利', '占成代理配置', '文档说明'],
   },
   {
+    path: '/pc/credit-agent-config/doc',
+    routeName: 'pc-credit-agent-config-doc',
+    title: '文档说明',
+    pagePath: ['推广返利', '信用代理配置', '文档说明'],
+  },
+  {
     path: '/pc/credit-limit-transfer/doc',
     routeName: 'pc-credit-limit-transfer-doc',
     title: '文档说明',
@@ -484,6 +490,14 @@ export const pcMenuTree: PcMenuItem[] = [
         routeName: 'pc-share-agent-config',
         pagePath: ['推广返利', '占成代理配置'],
         docRouteName: 'pc-share-agent-config-doc',
+      },
+      {
+        key: 'credit-agent-config',
+        title: '信用代理配置',
+        path: '/pc/credit-agent-config',
+        routeName: 'pc-credit-agent-config',
+        pagePath: ['推广返利', '信用代理配置'],
+        docRouteName: 'pc-credit-agent-config-doc',
       },
       {
         key: 'rebate-agent-config',

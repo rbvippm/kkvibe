@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { PRD_DIMENSION_HINT, PRD_DIMENSION_LABELS, type PcPrdDimensionKey } from '../../constants/pcPrdSpec'
-import {
-  SHARE_AGENT_CONFIG_BACKGROUND,
-  SHARE_AGENT_CONFIG_FEATURE_LIST,
-  SHARE_AGENT_CONFIG_GOALS,
-  SHARE_AGENT_CONFIG_META,
-} from '../../constants/shareAgentConfigSpec'
+import { getAgentConfigSpec, type AgentConfigLedger } from '../../constants/agentConfigSpec'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import '../../styles/pc-wireframe.css'
 
 type DocTab = 'summary' | 'features'
+
+const props = withDefaults(defineProps<{ ledger?: AgentConfigLedger }>(), { ledger: 'cash' })
+const spec = computed(() => getAgentConfigSpec(props.ledger))
 
 const activeTab = ref<DocTab>('features')
 const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[]
@@ -23,14 +21,14 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
 
     <section class="wf-block">
       <header class="wf-doc-page__header">
-        <p class="wf-doc-page__module">所属模块：{{ SHARE_AGENT_CONFIG_META.module }}</p>
-        <h2 class="wf-doc-page__title">需求名称：{{ SHARE_AGENT_CONFIG_META.title }}</h2>
+        <p class="wf-doc-page__module">所属模块：{{ spec.meta.module }}</p>
+        <h2 class="wf-doc-page__title">需求名称：{{ spec.meta.title }}</h2>
         <p class="wf-doc-page__meta">
-          PRD 版本：{{ SHARE_AGENT_CONFIG_META.prdVersion }} · 最近更新：{{ SHARE_AGENT_CONFIG_META.updatedAt }}
+          PRD 版本：{{ spec.meta.prdVersion }} · 最近更新：{{ spec.meta.updatedAt }}
         </p>
         <p class="wf-doc-page__hint">{{ PRD_DIMENSION_HINT }}</p>
-        <RouterLink :to="{ name: 'pc-share-agent-config' }" class="wf-doc-page__back">
-          ← 返回占成代理配置
+        <RouterLink :to="{ name: spec.routeName }" class="wf-doc-page__back">
+          ← 返回{{ spec.meta.title }}
         </RouterLink>
       </header>
 
@@ -57,14 +55,14 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
         <section class="wf-doc-page__section">
           <h3 class="wf-doc-page__section-title">1. 需求背景</h3>
           <ul class="wf-doc-page__list">
-            <li v-for="(item, index) in SHARE_AGENT_CONFIG_BACKGROUND" :key="index">{{ item }}</li>
+            <li v-for="(item, index) in spec.background" :key="index">{{ item }}</li>
           </ul>
         </section>
 
         <section class="wf-doc-page__section">
           <h3 class="wf-doc-page__section-title">2. 需求目标</h3>
           <ul class="wf-doc-page__list">
-            <li v-for="(item, index) in SHARE_AGENT_CONFIG_GOALS" :key="index">{{ item }}</li>
+            <li v-for="(item, index) in spec.goals" :key="index">{{ item }}</li>
           </ul>
         </section>
 
@@ -81,7 +79,7 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in SHARE_AGENT_CONFIG_FEATURE_LIST" :key="row.id">
+                <tr v-for="row in spec.featureList" :key="row.id">
                   <td class="wf-td wf-td--center">{{ row.id }}</td>
                   <td class="wf-td">{{ row.module }}</td>
                   <td class="wf-td">{{ row.feature }}</td>
@@ -95,7 +93,7 @@ const prdDimensionKeys = Object.keys(PRD_DIMENSION_LABELS) as PcPrdDimensionKey[
 
       <div v-else class="wf-doc-page__features">
         <article
-          v-for="row in SHARE_AGENT_CONFIG_FEATURE_LIST"
+          v-for="row in spec.featureList"
           :key="row.id"
           class="wf-doc-page__feature-card"
         >

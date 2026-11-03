@@ -49,7 +49,7 @@ export type { AgentReportPageTab }
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent, withAgentQuery } = useAgentIdentity()
+const { isRebateAgent, withAgentQuery, currencyScope } = useAgentIdentity()
 
 const pageTab = ref<AgentReportPageTab>(resolveAgentReportPageTab(route.query.reportTab))
 
@@ -78,7 +78,7 @@ const vendor = ref<ReportVendorKey>('all')
 const currencyPickerOpen = ref(false)
 const gameProfitFormulaTipOpen = ref(false)
 const currency = agentAppCurrency
-const currencyOptions = computed(() => getAgentDetailCurrencyOptions(!isRebateAgent.value))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(currencyScope.value))
 
 const dateRangeText = computed(() => formatDateRangeText(filterStart.value, filterEnd.value))
 /** 占成对齐代理详情：标题带「（实占）」；返佣不加 */

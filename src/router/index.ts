@@ -1,7 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import {
   getStoredAgentIdentity,
+  getStoredAgentLedger,
+  parseAgentLedger,
   setStoredAgentIdentity,
+  setStoredAgentLedger,
 } from '../constants/agentIdentity'
 import HomeView from '../views/HomeView.vue'
 import MobileAppLayout from '../layouts/MobileAppLayout.vue'
@@ -879,6 +882,20 @@ export const router = createRouter({
           meta: { title: '占成代理配置-文档说明' },
         },
         {
+          path: 'credit-agent-config',
+          name: 'pc-credit-agent-config',
+          component: () => import('../views/pc/PcShareAgentConfigView.vue'),
+          props: { ledger: 'credit' },
+          meta: { title: '信用代理配置' },
+        },
+        {
+          path: 'credit-agent-config/doc',
+          name: 'pc-credit-agent-config-doc',
+          component: () => import('../views/pc/PcShareAgentConfigDocView.vue'),
+          props: { ledger: 'credit' },
+          meta: { title: '信用代理配置-文档说明' },
+        },
+        {
           path: 'rebate-agent-config',
           name: 'pc-rebate-agent-config',
           component: () => import('../views/pc/PcRebateAgentConfigView.vue'),
@@ -1013,17 +1030,25 @@ router.beforeEach((to) => {
     }
   }
 
+  const rawLedger = parseAgentLedger(to.query.ledger)
+  if (rawLedger) setStoredAgentLedger(rawLedger)
+
   if (!to.path.startsWith('/mobile/agent')) return true
 
   const raw = to.query.agentType
-  if (raw === 'share' || raw === 'rebate') {
-    setStoredAgentIdentity(raw)
-    return true
-  }
+  const agentType = raw === 'share' || raw === 'rebate' ? raw : getStoredAgentIdentity()
+  if (raw === 'share' || raw === 'rebate') setStoredAgentIdentity(raw)
+
+  const needsLedger = agentType === 'share' && !rawLedger
+  if (raw === agentType && !needsLedger) return true
 
   return {
     path: to.path,
-    query: { ...to.query, agentType: getStoredAgentIdentity() },
+    query: {
+      ...to.query,
+      agentType,
+      ...(needsLedger ? { ledger: getStoredAgentLedger() } : {}),
+    },
     hash: to.hash,
     replace: true,
   }

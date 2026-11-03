@@ -13,6 +13,12 @@ const SOURCE_BY_ROUTE: Record<string, WorkspacePageSource> = {
     docPath: 'src/views/pc/PcShareAgentConfigDocView.vue',
     annotComponent: 'WfSpecAnnot',
   },
+  'pc-credit-agent-config': {
+    viewPath: 'src/views/pc/PcShareAgentConfigView.vue',
+    specPath: 'src/constants/creditAgentConfigSpec.ts',
+    docPath: 'src/views/pc/PcShareAgentConfigDocView.vue',
+    annotComponent: 'WfSpecAnnot',
+  },
   'pc-credit-limit-transfer': {
     viewPath: 'src/views/pc/PcCreditLimitTransferView.vue',
     specPath: 'src/constants/creditLimitTransferSpec.ts',

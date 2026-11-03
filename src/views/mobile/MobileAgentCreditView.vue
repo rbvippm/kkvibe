@@ -15,7 +15,14 @@ import {
   normalizeCostPercent,
 } from '../../constants/agentCredit'
 import { AGENT_CREATE_ACCOUNT_SPEC, AGENT_CREDIT_SPEC } from '../../constants/agentCreditSpec'
-import { syncCreditProfitRatioFromCredit, createBlankAgentShareRebateCategories, isProductShareCategory, type AgentProfitRatioCategory } from '../../constants/agentProfitRatio'
+import {
+  syncCreditProfitRatioFromCredit,
+  createBlankAgentShareRebateCategories,
+  isProductShareCategory,
+  saveAgentProfitCost,
+  saveAgentProfitRatioCategories,
+  type AgentProfitRatioCategory,
+} from '../../constants/agentProfitRatio'
 import Mh5AgentCreateIdentityField from '../../components/mobile/Mh5AgentCreateIdentityField.vue'
 import Mh5AgentShareRebateList from '../../components/mobile/Mh5AgentShareRebateList.vue'
 import {
@@ -35,7 +42,7 @@ type EditField = 'cost'
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent } = useAgentIdentity()
+const { isRebateAgent, isCreditLedger } = useAgentIdentity()
 
 const isCreateMode = computed(
   () =>
@@ -230,13 +237,17 @@ function submitCreateAccount(options?: { asCredit?: boolean }) {
   createdNickname.value = created.nickname
   if (options?.asCredit !== false) {
     syncCreditProfitRatioFromCredit(categories.value, costPercent.value)
+  } else if (!isRebateCreate.value) {
+    saveAgentProfitRatioCategories('cash', categories.value)
+    saveAgentProfitCost('cash', costPercent.value)
   }
   step.value = isRebateCreate.value ? 2 : 3
 }
 
 function confirmCredit() {
   if (isCreateMode.value) {
-    submitCreateAccount({ asCredit: true })
+    /** 信用代理中心写入信用比例；现金代理中心写入现金比例与直属代理 */
+    submitCreateAccount({ asCredit: isCreditLedger.value })
     return
   }
   const targetId = String(route.query.targetId || '')

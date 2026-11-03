@@ -1,0 +1,13 @@
+/** 信用代理配置 · PRD 与功能清单（六大核心维度） */
+
+import { CREDIT_AGENT_CONFIG_SPEC_BUNDLE } from './agentConfigSpec'
+
+export { PRD_DIMENSION_LABELS } from './agentConfigSpec'
+
+export const CREDIT_AGENT_CONFIG_META = CREDIT_AGENT_CONFIG_SPEC_BUNDLE.meta
+export const CREDIT_AGENT_CONFIG_BACKGROUND = CREDIT_AGENT_CONFIG_SPEC_BUNDLE.background
+export const CREDIT_AGENT_CONFIG_GOALS = CREDIT_AGENT_CONFIG_SPEC_BUNDLE.goals
+/** 与页面「注」标注一一对应，不含文档入口本身 */
+export const CREDIT_AGENT_CONFIG_FEATURE_LIST = CREDIT_AGENT_CONFIG_SPEC_BUNDLE.featureList
+/** 页面「注」标记编号 · 与 CREDIT_AGENT_CONFIG_FEATURE_LIST.id 一一对应 */
+export const CREDIT_AGENT_SPEC_ANNOT_NO = CREDIT_AGENT_CONFIG_SPEC_BUNDLE.annotNo

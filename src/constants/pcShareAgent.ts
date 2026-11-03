@@ -1,15 +1,12 @@
-/** PC 占成代理配置 · Mock 数据与类型 */
+/** PC 占成代理配置（现金）/ 信用代理配置 · Mock 数据与类型 */
 
-import {
-  SHARE_AGENT_FILTER_AGENT_LEVEL_SPEC,
-  SHARE_AGENT_FILTER_CREDIT_AGENT_SPEC,
-  SHARE_AGENT_SPEC_ANNOT_NO,
-} from './shareAgentConfigSpec'
+import type { AgentConfigLedger } from './agentConfigSpec'
 
 export const AGENT_LEVEL_MAX = 10
 
 export type AgentLevel = number
 
+/** 信用额度记录页上下分对象数据源（含现金 / 信用两套账密） */
 export type ShareAgentRow = {
   id: number
   username: string
@@ -35,12 +32,6 @@ export const AGENT_LEVEL_OPTIONS = [
   }),
 ]
 
-export const CREDIT_AGENT_FILTER_OPTIONS = [
-  { value: '', label: '请选择' },
-  { value: 'yes', label: '是' },
-  { value: 'no', label: '否' },
-] as const
-
 export function agentLevelLabel(level: AgentLevel) {
   return `${level}级代理`
 }
@@ -54,7 +45,7 @@ export type PcShareAgentProduct = {
   maxRebate: number
 }
 
-/** PC 授信弹框 · 产品占成/退水（与后台截图品类对齐） */
+/** PC 编辑代理弹框 · 产品占成/退水（与后台截图品类对齐） */
 export const PC_SHARE_AGENT_PRODUCTS: PcShareAgentProduct[] = [
   { key: 'chess', name: '棋牌', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
   { key: 'fun', name: '趣投', share: 0, rebate: 0, maxShare: 10, maxRebate: 5 },
@@ -241,7 +232,7 @@ export function cloneShareAgentRebateCategories() {
   }))
 }
 
-/** 授信弹框 · 占成/退水比例输入正则（非负数字，最多两位小数） */
+/** 编辑代理弹框 · 占成/退水比例输入正则（非负数字，最多两位小数） */
 export const CREDIT_PERCENT_INPUT_REGEX = /^\d+(\.\d{1,2})?$/
 
 /** 生成比例输入框 pattern（HTML 原生校验，区间由逻辑二次校验） */
@@ -271,37 +262,6 @@ export function creditPercentRangeLabel(max: number) {
   return `0-${max}`
 }
 
-/** 授信弹框 · 占成/退水区块标题（按模式与 Tab 区分） */
-export const SHARE_AGENT_CASH_SHARE_LABEL = '现金游戏占成'
-export const SHARE_AGENT_CASH_P2P_LABEL = '现金P2P返利占成'
-export const SHARE_AGENT_CASH_REBATE_LABEL = '现金游戏退水'
-export const SHARE_AGENT_CREDIT_SHARE_LABEL = '信用游戏占成'
-export const SHARE_AGENT_CREDIT_P2P_LABEL = '信用P2P返利占成'
-export const SHARE_AGENT_CREDIT_REBATE_LABEL = '信用游戏退水'
-
-export type CreditModalMode = 'grant' | 'edit'
-export type CreditAccountTab = 'cash' | 'credit'
-
-export function getShareSectionLabel(mode: CreditModalMode, tab: CreditAccountTab) {
-  if (mode === 'grant') return SHARE_AGENT_CREDIT_SHARE_LABEL
-  return tab === 'cash' ? SHARE_AGENT_CASH_SHARE_LABEL : SHARE_AGENT_CREDIT_SHARE_LABEL
-}
-
-export function getRebateSectionLabel(mode: CreditModalMode, tab: CreditAccountTab) {
-  if (mode === 'grant') return SHARE_AGENT_CREDIT_REBATE_LABEL
-  return tab === 'cash' ? SHARE_AGENT_CASH_REBATE_LABEL : SHARE_AGENT_CREDIT_REBATE_LABEL
-}
-
-export function getP2pSectionLabel(mode: CreditModalMode, tab: CreditAccountTab) {
-  if (mode === 'grant') return SHARE_AGENT_CREDIT_P2P_LABEL
-  return tab === 'cash' ? SHARE_AGENT_CASH_P2P_LABEL : SHARE_AGENT_CREDIT_P2P_LABEL
-}
-
-/** 授信弹框 · 占成比例区块标题（兼容旧标注组件） */
-export const SHARE_AGENT_SHARE_LABEL = '占成比例'
-
-export { SHARE_AGENT_SHARE_SPEC, SHARE_AGENT_P2P_SPEC } from './shareAgentConfigSpec'
-
 /** 校验占成比例：区间 0 ~ max（上级代理该游戏类型最大值） */
 export function validateSharePercent(
   raw: string | number,
@@ -310,11 +270,6 @@ export function validateSharePercent(
 ): string {
   return validateCreditPercentInRange(raw, max, fieldLabel, '游戏类型')
 }
-
-/** 授信弹框 · 设置退水区块标题（兼容旧标注组件） */
-export const SHARE_AGENT_REBATE_LABEL = '设置退水'
-
-export { SHARE_AGENT_REBATE_SPEC } from './shareAgentConfigSpec'
 
 /** 校验退水比例：区间 0 ~ max */
 export function validateRebatePercent(
@@ -345,61 +300,7 @@ export function validateProductRebate(product: PcShareAgentRebateProduct, fieldL
   return message
 }
 
-/** 授信弹框 · 信用 Tab 标题 */
-export const SHARE_AGENT_CREDIT_TAB_LABEL = '信用'
-
-export { SHARE_AGENT_CREDIT_TAB_SPEC } from './shareAgentConfigSpec'
-
-/** 列表操作 · 授信按钮标注 */
-export const SHARE_AGENT_GRANT_ACTION_LABEL = '授信'
-
-export { SHARE_AGENT_GRANT_FLOW_SPEC } from './shareAgentConfigSpec'
-
-export const SHARE_AGENT_GRANT_FLOW_LABEL = '授信流程'
-
-export { SHARE_AGENT_GRANT_ACTION_SPEC } from './shareAgentConfigSpec'
-
-/** 列表 · 信用代理标识标注 */
-export const SHARE_AGENT_CREDIT_BADGE_LABEL = '信用代理标识'
-
-export { SHARE_AGENT_CREDIT_CREDENTIALS_SPEC } from './shareAgentConfigSpec'
-
-export const SHARE_AGENT_CREDIT_CREDENTIALS_LABEL = '信用代理账密与状态'
-
-export { SHARE_AGENT_CREDIT_BADGE_SPEC } from './shareAgentConfigSpec'
-
-export type ShareAgentFilterAnnotContext = 'agentLevel' | 'creditAgent'
-
-/** 列表筛选 · 代理等级标注 */
-export const SHARE_AGENT_FILTER_AGENT_LEVEL_LABEL = '代理等级'
-
-export { SHARE_AGENT_FILTER_AGENT_LEVEL_SPEC } from './shareAgentConfigSpec'
-
-/** 列表筛选 · 信用代理标注 */
-export const SHARE_AGENT_FILTER_CREDIT_AGENT_LABEL = '信用代理'
-
-export { SHARE_AGENT_FILTER_CREDIT_AGENT_SPEC } from './shareAgentConfigSpec'
-
-export { SHARE_AGENT_ROW_ACTIONS_SPEC } from './shareAgentConfigSpec'
-
-export const SHARE_AGENT_ROW_ACTIONS_LABEL = '编辑 / 禁用·启用'
-
-export { SHARE_AGENT_SPEC_ANNOT_NO } from './shareAgentConfigSpec'
-
-export const SHARE_AGENT_FILTER_ANNOT_MAP = {
-  agentLevel: {
-    no: SHARE_AGENT_SPEC_ANNOT_NO.filterAgentLevel,
-    title: SHARE_AGENT_FILTER_AGENT_LEVEL_LABEL,
-    items: SHARE_AGENT_FILTER_AGENT_LEVEL_SPEC,
-  },
-  creditAgent: {
-    no: SHARE_AGENT_SPEC_ANNOT_NO.filterCreditAgent,
-    title: SHARE_AGENT_FILTER_CREDIT_AGENT_LABEL,
-    items: SHARE_AGENT_FILTER_CREDIT_AGENT_SPEC,
-  },
-} as const
-
-/** 是否已生成信用代理账密（可展示信用 Tab） */
+/** 是否已生成信用代理账密（信用额度记录页筛选上下分对象用） */
 export function hasCreditAgentCredentials(
   row: Pick<ShareAgentRow, 'creditAgentAccount' | 'creditAgentPassword'>,
 ) {
@@ -512,3 +413,163 @@ export const MOCK_SHARE_AGENT_ROWS: ShareAgentRow[] = [
     disabled: true,
   },
 ]
+
+/** 占成代理配置（现金）/ 信用代理配置 · 列表行；两套身份独立，只带本体系账密 */
+export type AgentConfigRow = {
+  id: number
+  username: string
+  userId: string
+  kingKongId: string
+  agentLevel: AgentLevel
+  superiorAgent: string
+  superiorAgentId: string
+  agentAccount: string
+  agentPassword: string
+  disabled: boolean
+}
+
+export const MOCK_CASH_AGENT_ROWS: AgentConfigRow[] = [
+  {
+    id: 1,
+    username: '很多呵呵的',
+    userId: '6992885475031612266',
+    kingKongId: 'mid***flp',
+    agentLevel: 1,
+    superiorAgent: '平台',
+    superiorAgentId: '0',
+    agentAccount: 'dvq0drvx',
+    agentPassword: 'gdp0t8a6',
+    disabled: false,
+  },
+  {
+    id: 2,
+    username: '晨风知夏',
+    userId: '6992885475031612272',
+    kingKongId: 'mid***m4q',
+    agentLevel: 1,
+    superiorAgent: '平台',
+    superiorAgentId: '0',
+    agentAccount: 'hkt5wqe2',
+    agentPassword: 'mvz7c1d9',
+    disabled: false,
+  },
+  {
+    id: 3,
+    username: '云端拾光',
+    userId: '6992885475031612269',
+    kingKongId: 'mid***d7e',
+    agentLevel: 2,
+    superiorAgent: '很多呵呵的',
+    superiorAgentId: '6992885475031612266',
+    agentAccount: 'cwp9qrst',
+    agentPassword: 'uvx1n4m8',
+    disabled: false,
+  },
+  {
+    id: 4,
+    username: '青柠微甜',
+    userId: '6992885475031612270',
+    kingKongId: 'mid***f3g',
+    agentLevel: 3,
+    superiorAgent: '云端拾光',
+    superiorAgentId: '6992885475031612269',
+    agentAccount: 'dxy5uvwx',
+    agentPassword: 'abc2d4e6',
+    disabled: false,
+  },
+  {
+    id: 5,
+    username: '山海有约',
+    userId: '6992885475031612275',
+    kingKongId: 'mid***p8w',
+    agentLevel: 2,
+    superiorAgent: '晨风知夏',
+    superiorAgentId: '6992885475031612272',
+    agentAccount: '',
+    agentPassword: '',
+    disabled: true,
+  },
+]
+
+export const MOCK_CREDIT_AGENT_ROWS: AgentConfigRow[] = [
+  {
+    id: 1,
+    username: '南风知意',
+    userId: '6992885475031612267',
+    kingKongId: 'mid***k9a',
+    agentLevel: 1,
+    superiorAgent: '平台',
+    superiorAgentId: '0',
+    agentAccount: 'ens4f9no',
+    agentPassword: 'jxnul0uk',
+    disabled: false,
+  },
+  {
+    id: 2,
+    username: '北辰远航',
+    userId: '6992885475031612273',
+    kingKongId: 'mid***r2t',
+    agentLevel: 1,
+    superiorAgent: '平台',
+    superiorAgentId: '0',
+    agentAccount: 'kdw8r2m6',
+    agentPassword: 'zpq4h7ta',
+    disabled: true,
+  },
+  {
+    id: 3,
+    username: '星河漫游',
+    userId: '6992885475031612268',
+    kingKongId: 'mid***b2c',
+    agentLevel: 2,
+    superiorAgent: '南风知意',
+    superiorAgentId: '6992885475031612267',
+    agentAccount: 'sdo3n8j7',
+    agentPassword: 'b8e9lnma',
+    disabled: false,
+  },
+  {
+    id: 4,
+    username: '暮色流年',
+    userId: '6992885475031612271',
+    kingKongId: 'mid***h5i',
+    agentLevel: 2,
+    superiorAgent: '南风知意',
+    superiorAgentId: '6992885475031612267',
+    agentAccount: 'c3bx4go5',
+    agentPassword: 'qojaijtu',
+    disabled: false,
+  },
+  {
+    id: 5,
+    username: '繁星点点',
+    userId: '6992885475031612274',
+    kingKongId: 'mid***v6n',
+    agentLevel: 3,
+    superiorAgent: '星河漫游',
+    superiorAgentId: '6992885475031612268',
+    agentAccount: 'rmx6t2ye',
+    agentPassword: 'hca9v5nk',
+    disabled: false,
+  },
+]
+
+export function getAgentConfigMockRows(ledger: AgentConfigLedger): AgentConfigRow[] {
+  const source = ledger === 'credit' ? MOCK_CREDIT_AGENT_ROWS : MOCK_CASH_AGENT_ROWS
+  return source.map((row) => ({ ...row }))
+}
+
+/** 新增一级代理 · 按用户ID精准查询的平台用户 Mock（尚未成为代理） */
+export type AgentCandidateUser = Pick<AgentConfigRow, 'username' | 'userId' | 'kingKongId'>
+
+export const MOCK_AGENT_CANDIDATE_USERS: AgentCandidateUser[] = [
+  { username: '春日来信', userId: '6992885475031612301', kingKongId: 'mid***a1s' },
+  { username: '夏夜晚风', userId: '6992885475031612302', kingKongId: 'mid***b2d' },
+  { username: '秋水长天', userId: '6992885475031612303', kingKongId: 'mid***c3f' },
+]
+
+/** 新增成功后生成本体系登录账密（原型随机 8 位） */
+export function generateAgentCredential() {
+  const chars = 'abcdefghijkmnpqrstuvwxyz23456789'
+  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}

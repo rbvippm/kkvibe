@@ -179,7 +179,7 @@ import '../../styles/pc-wireframe.css'
 
 ### 4.5 复杂表单 / 弹框页
 
-适用：占成代理配置、授信、多品类比例、账变发起 / 审核等。
+适用：占成代理配置 / 信用代理配置的编辑弹框、多品类比例、账变发起 / 审核等。
 
 弹框规则：
 
@@ -227,8 +227,8 @@ import '../../styles/pc-wireframe.css'
 
 ```html
 <div class="wf-tab-item">
-  <button type="button" class="wf-tab">信用</button>
-  <WfShareAgentCreditTabAnnot />
+  <button type="button" class="wf-tab">模块 B</button>
+  <WfSpecAnnot :no="3" title="模块 B" :items="['…']" />
 </div>
 ```
 
@@ -296,12 +296,11 @@ showPcToast('复制失败，请手动复制', 'error')
 ```ts
 export const SHARE_AGENT_SPEC_ANNOT_NO = {
   filterAgentLevel: 1,
-  filterCreditAgent: 2,
-  creditBadge: 3,
-  grantAction: 5,
-  creditTab: 7,
-  share: 8,
-  rebate: 9,
+  credentials: 2,
+  rowActions: 3,
+  share: 4,
+  p2p: 5,
+  rebate: 6,
 } as const
 ```
 
@@ -369,5 +368,6 @@ export const SHARE_AGENT_SPEC_ANNOT_NO = {
 | `/pc/live-broadcast` | `PcLiveBroadcastManageView.vue` | 直播中控台 |
 | `/pc/live-commission` | `LiveCommissionConfigView.vue` | Tab + 表格 + 弹框参考页 |
 | `/pc/sticker-pack-manage` | `PcStickerPackManageView.vue` | 配置管理页 |
-| `/pc/share-agent-config` | `PcShareAgentConfigView.vue` | 复杂授信 / PRD 标注页 |
+| `/pc/share-agent-config` | `PcShareAgentConfigView.vue` | 占成代理配置（现金）· 复杂弹框 / PRD 标注页 |
+| `/pc/credit-agent-config` | `PcShareAgentConfigView.vue`（`ledger: 'credit'`） | 信用代理配置 |
 | `/pc/share-agent-config/doc` | `PcShareAgentConfigDocView.vue` | PRD 文档说明页 |

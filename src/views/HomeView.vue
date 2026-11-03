@@ -108,7 +108,7 @@ function submitLabPassword() {
 
       <div class="home-entry__card home-entry__card--agent home-entry__card--split">
         <RouterLink
-          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share' } }"
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share', ledger: 'cash' } }"
           class="home-entry__card-cover"
           aria-label="进入占成代理"
         />
@@ -126,17 +126,52 @@ function submitLabPassword() {
               </RouterLink>
             </div>
             <p class="home-entry__card-text">
-              占成代理身份：概况占成比例、团队授信与占成配置等能力演示。
+              现金占成代理身份：概况占成比例、团队管理与现金收益比例等能力演示（不含信用额度）。
             </p>
             <div class="home-entry__card-tags">
               <span class="home-entry__tag home-entry__tag--agent">占成</span>
-              <span class="home-entry__tag home-entry__tag--agent">授信</span>
+              <span class="home-entry__tag home-entry__tag--agent">现金</span>
               <span class="home-entry__tag home-entry__tag--agent">团队</span>
             </div>
           </div>
         </div>
         <span class="home-entry__card-action home-entry__card-action--agent">
           进入占成代理
+          <span class="ml-1">→</span>
+        </span>
+      </div>
+
+      <div class="home-entry__card home-entry__card--agent home-entry__card--split">
+        <RouterLink
+          :to="{ name: 'mobile-agent', query: { from: 'home', agentType: 'share', ledger: 'credit' } }"
+          class="home-entry__card-cover"
+          aria-label="进入信用代理"
+        />
+        <div class="home-entry__card-top">
+          <span class="home-entry__card-icon home-entry__card-icon--agent">💳</span>
+          <div class="home-entry__card-body">
+            <div class="home-entry__card-title-row">
+              <h2 class="home-entry__card-title">占成代理 H5（信用）</h2>
+              <RouterLink
+                :to="{ name: 'agent-field-definitions' }"
+                class="home-entry__card-title-link"
+              >
+                字段定义
+                <span class="ml-1">→</span>
+              </RouterLink>
+            </div>
+            <p class="home-entry__card-text">
+              信用代理中心独立分包：仅信用额度-CNY / USD，团队上下分、信用额度记录与信用收益比例演示。
+            </p>
+            <div class="home-entry__card-tags">
+              <span class="home-entry__tag home-entry__tag--agent">占成</span>
+              <span class="home-entry__tag home-entry__tag--agent">信用额度</span>
+              <span class="home-entry__tag home-entry__tag--agent">上下分</span>
+            </div>
+          </div>
+        </div>
+        <span class="home-entry__card-action home-entry__card-action--agent">
+          进入信用代理
           <span class="ml-1">→</span>
         </span>
       </div>

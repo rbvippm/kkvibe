@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
@@ -10,13 +10,11 @@ import {
   getMemberRebateCategories,
   getMemberRebateProductIcon,
   getMemberRebateUpdatedAt,
-  isMemberCreditEnabled,
-  MEMBER_REBATE_RATIO_TYPE_TABS,
-  parseMemberRebateRatioType,
   resolveMemberKindHint,
   type MemberRebateRatioType,
 } from '../../constants/memberRebateRatio'
 import { MEMBER_REBATE_RATIO_SPEC } from '../../constants/memberRebateRatioSpec'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -28,19 +26,9 @@ const relationLabel = computed(() => getAgentProfitRelationLabel(String(route.qu
 const kindHint = computed(() =>
   resolveMemberKindHint(targetId.value, String(route.query.kind || '')),
 )
-const creditedHint = computed(() => String(route.query.credited || ''))
-
-const showCreditTabs = computed(() =>
-  isMemberCreditEnabled(targetId.value, kindHint.value, creditedHint.value),
-)
-
-const ratioType = ref<MemberRebateRatioType>(
-  showCreditTabs.value ? parseMemberRebateRatioType(String(route.query.ratioType || 'cash')) : 'cash',
-)
-
-watch(showCreditTabs, (enabled) => {
-  if (!enabled) ratioType.value = 'cash'
-})
+/** 现金 / 信用代理中心分包：只展示当前中心对应的一套比例，不再切换 */
+const { isCreditLedger } = useAgentIdentity()
+const ratioType = computed<MemberRebateRatioType>(() => (isCreditLedger.value ? 'credit' : 'cash'))
 
 const displayCategories = computed(() => getMemberRebateCategories(ratioType.value).value)
 const updatedAt = computed(() => getMemberRebateUpdatedAt(ratioType.value).value)
@@ -53,7 +41,7 @@ function goEdit() {
       targetName: route.query.targetName,
       relation: route.query.relation,
       kind: kindHint.value,
-      credited: showCreditTabs.value ? '1' : '0',
+      credited: isCreditLedger.value ? '1' : '0',
       ratioType: ratioType.value,
     },
   })
@@ -101,25 +89,6 @@ function goEdit() {
         </button>
       </section>
 
-      <nav
-        v-if="showCreditTabs"
-        class="mh5-agent-profit-ratio-seg"
-        role="tablist"
-        aria-label="退水类型"
-      >
-        <button
-          v-for="tab in MEMBER_REBATE_RATIO_TYPE_TABS"
-          :key="tab.key"
-          type="button"
-          role="tab"
-          class="mh5-agent-profit-ratio-seg__item"
-          :class="{ 'mh5-agent-profit-ratio-seg__item--active': ratioType === tab.key }"
-          :aria-selected="ratioType === tab.key"
-          @click="ratioType = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
 
       <section class="mh5-member-rebate-list" aria-label="产品退水">
         <article

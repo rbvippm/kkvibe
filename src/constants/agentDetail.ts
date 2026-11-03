@@ -1,4 +1,5 @@
 import { sortByLocaleCashOrder } from '../i18n'
+import type { AgentCurrencyScope, AgentLedgerType } from './agentIdentity'
 import { filterTeamList, MOCK_TEAM_SELF, type TeamListItem } from './agentTeam'
 
 export type AgentDetailTab = 'wallet' | 'credit' | 'profit' | 'game' | 'login'
@@ -17,15 +18,16 @@ export const AGENT_DETAIL_CREDIT_TAB: { key: AgentDetailTab; label: string } = {
 }
 
 export function getAgentDetailTabs(
-  isCredited: boolean,
+  ledger: AgentLedgerType,
   isRebate = false,
 ): { key: AgentDetailTab; label: string }[] {
   /** 返佣代理不展示「代理盈亏 / 代理佣金」Tab */
   const baseTabs = isRebate
     ? AGENT_DETAIL_TABS.filter((tab) => tab.key !== 'profit')
     : AGENT_DETAIL_TABS
-  if (!isCredited) return baseTabs
-  return [baseTabs[0], AGENT_DETAIL_CREDIT_TAB, ...baseTabs.slice(1)]
+  /** 信用代理中心：「信用额度」替换现金「代理钱包」 */
+  if (ledger === 'credit') return [AGENT_DETAIL_CREDIT_TAB, ...baseTabs.slice(1)]
+  return baseTabs
 }
 
 export const AGENT_DETAIL_CURRENCIES = ['KKC', 'USDT', 'KKV'] as const
@@ -65,6 +67,8 @@ export type AgentCreditLimitView = {
   usedPercentText: string
   receivableValue: string
   receivablePositive: boolean
+  /** 应收金额下方的公式说明，不传则不展示 */
+  receivableFormula?: string
   settleFlowRows: AgentCreditSettleRow[]
   settleResultRows: AgentCreditSettleRow[]
 }
@@ -150,10 +154,11 @@ export function getAgentCashCurrencyOptions(): AgentWalletCurrency[] {
   return sortByLocaleCashOrder([...AGENT_CASH_CURRENCY_OPTIONS], (item) => item)
 }
 
-export function getAgentDetailCurrencyOptions(isCredited: boolean): readonly AgentWalletCurrency[] {
-  return isCredited
-    ? sortByLocaleCashOrder([...AGENT_WALLET_CURRENCY_OPTIONS], (item) => item)
-    : getAgentCashCurrencyOptions()
+/** 现金代理中心只出现金三币种；信用代理中心只出信用额度两币种 */
+export function getAgentDetailCurrencyOptions(
+  scope: AgentCurrencyScope,
+): readonly AgentWalletCurrency[] {
+  return scope === 'credit' ? [...AGENT_CREDIT_CURRENCY_OPTIONS] : getAgentCashCurrencyOptions()
 }
 
 function formatCreditAmount(n: number) {

@@ -10,12 +10,9 @@ import {
   TEAM_TREE_DEFAULT_VISIBLE,
   CREATE_ACCOUNT_OPTIONS,
   DEFAULT_CREATE_ACCOUNT_OPTION,
-  canShowAgentCreditAction,
-  canShowMemberCreditAction,
   collectTeamFullExpandState,
   formatTeamMemberBetSearchKeyword,
   getTeamTreeRows,
-  isCreditTeamKind,
   memberKindLabel,
   buildTeamSearchRoot,
   collectSearchExpandIds,
@@ -41,7 +38,7 @@ import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent, withAgentQuery, agentTypeLabel } = useAgentIdentity()
+const { isRebateAgent, isCreditLedger, withAgentQuery, agentTypeLabel } = useAgentIdentity()
 
 const createAccountOptions = computed(() =>
   isRebateAgent.value
@@ -85,17 +82,16 @@ watch(isRebateAgent, (rebate) => {
     applyFilterExpand('direct_member')
     return
   }
-  if (teamFilterTab.value === 'credit_agent' || teamFilterTab.value === 'credit_member') {
-    teamFilterTab.value = 'all'
-  }
   if (teamFilterTab.value === 'all') applyFilterExpand('all')
 })
 const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
 /** parentId → 该层已展开可见条数（「查看更多」累加） */
 const moreVisibleCount = ref<Record<string, number>>({})
 
+/** 现金代理中心不含信用账号；信用代理中心把信用账号并入直属分类 */
 const teamTreeOptions = computed(() => ({
-  includeCredit: !isRebateAgent.value,
+  includeCredit: isCreditLedger.value,
+  mergeCreditIntoDirect: isCreditLedger.value,
   singleLayer: isRebateAgent.value,
   flatDirectMembers: isRebateAgent.value,
   onlineFilter: onlineFilter.value,
@@ -142,8 +138,6 @@ type TeamQuickAction =
   | 'rebate_ratio'
   | 'remark'
   | 'bet_order'
-  | 'agent_credit'
-  | 'member_credit'
   | 'credit_transfer'
 
 const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
@@ -152,8 +146,6 @@ const TEAM_QUICK_ACTION_ICONS: Record<TeamQuickAction, string> = {
   bet_order: '/images/agent-team/quick-bet.svg',
   profit_ratio: '/images/agent-team/quick-ratio.svg',
   rebate_ratio: '/images/agent-team/quick-ratio.svg',
-  agent_credit: '/images/agent-team/quick-credit.svg',
-  member_credit: '/images/agent-team/quick-credit.svg',
   credit_transfer: '/images/agent-team/quick-credit.svg',
   remark: '/images/agent-team/quick-remark.svg',
 }
@@ -182,12 +174,9 @@ const teamQuickActions = computed(() => {
   } else {
     actions.push({ key: 'profit_ratio', label: '收益比例', icon: TEAM_QUICK_ACTION_ICONS.profit_ratio })
   }
-  if (isCreditTeamKind(row.kind)) {
+  /** 信用代理中心：团队成员均为信用账号，直接上下分；现金代理中心无上下分 */
+  if (isCreditLedger.value && row.kind !== 'me') {
     actions.push({ key: 'credit_transfer', label: '上下分', icon: TEAM_QUICK_ACTION_ICONS.credit_transfer })
-  } else if (canShowMemberCreditAction(row.kind)) {
-    actions.push({ key: 'member_credit', label: '会员授信', icon: TEAM_QUICK_ACTION_ICONS.member_credit })
-  } else if (canShowAgentCreditAction(row.kind)) {
-    actions.push({ key: 'agent_credit', label: '代理授信', icon: TEAM_QUICK_ACTION_ICONS.agent_credit })
   }
   actions.push({ key: 'remark', label: '修改备注', icon: TEAM_QUICK_ACTION_ICONS.remark })
   return actions
@@ -209,7 +198,7 @@ const teamSearchRoot = computed(() => {
   return buildTeamSearchRoot(teamSearchKeyword.value, {
     includeSelf: !isRebateAgent.value,
     flatDirectMembers: isRebateAgent.value,
-    includeCredit: !isRebateAgent.value,
+    includeCredit: isCreditLedger.value,
   })
 })
 
@@ -269,7 +258,7 @@ function submitTeamSearch() {
   const root = buildTeamSearchRoot(q, {
     includeSelf: !isRebateAgent.value,
     flatDirectMembers: isRebateAgent.value,
-    includeCredit: !isRebateAgent.value,
+    includeCredit: isCreditLedger.value,
   })
   teamSearchExpandedIds.value = new Set(collectSearchExpandIds(root))
 }
@@ -395,8 +384,8 @@ async function onTeamQuickAction(action: TeamQuickAction) {
         targetName: row.nickname,
         relation: 'direct',
         kind: row.kind,
-        /** 全部 / 信用代理等任意入口：授信过即带标记，收益比例页展示现金/信用 Tab */
-        credited: row.kind === 'credit_agent' ? '1' : '0',
+        /** 信用代理中心只展示信用比例，现金代理中心只展示现金比例 */
+        credited: isCreditLedger.value ? '1' : '0',
       }),
     })
     return
@@ -415,7 +404,7 @@ async function onTeamQuickAction(action: TeamQuickAction) {
         targetName: row.nickname,
         relation: 'direct',
         kind: row.kind,
-        credited: row.kind === 'credit_member' ? '1' : '0',
+        credited: isCreditLedger.value ? '1' : '0',
       }),
     })
     return
@@ -430,12 +419,8 @@ async function onTeamQuickAction(action: TeamQuickAction) {
   }
 
   if (action === 'credit_transfer') {
-    if (isRebateAgent.value) {
-      await mh5Alert('返佣代理不支持上下分')
-      return
-    }
-    if (!isCreditTeamKind(row.kind)) {
-      await mh5Alert('仅信用会员/代理可上下分')
+    if (!isCreditLedger.value) {
+      await mh5Alert('上下分仅在信用代理中心提供')
       return
     }
     router.push({
@@ -444,40 +429,6 @@ async function onTeamQuickAction(action: TeamQuickAction) {
         targetId: row.id,
         targetName: formatTeamMemberBetSearchKeyword(row),
       }),
-    })
-    return
-  }
-
-  if (action === 'member_credit') {
-    if (isRebateAgent.value) {
-      await mh5Alert('返佣代理不支持会员授信，请使用占成代理入口')
-      return
-    }
-    if (!canShowMemberCreditAction(row.kind)) {
-      await mh5Alert(row.kind === 'credit_member' ? '该会员已授信，无需再次授信' : '会员授信仅支持直属会员')
-      return
-    }
-
-    router.push({
-      name: 'mobile-member-credit',
-      query: withAgentQuery({ targetId: row.id, targetName: row.nickname }),
-    })
-    return
-  }
-
-  if (action === 'agent_credit') {
-    if (isRebateAgent.value) {
-      await mh5Alert('返佣代理不支持代理授信，请使用占成代理入口')
-      return
-    }
-    if (!canShowAgentCreditAction(row.kind)) {
-      await mh5Alert(row.kind === 'credit_agent' ? '该代理已授信，无需再次授信' : '代理授信仅支持代理账号')
-      return
-    }
-
-    router.push({
-      name: 'mobile-agent-credit',
-      query: withAgentQuery({ targetId: row.id, targetName: row.nickname }),
     })
   }
 }
@@ -525,15 +476,6 @@ async function confirmCreateAccount() {
 
   if (createAccountDraft.value === 'invite_existing') {
     router.push({ name: 'mobile-agent-invite-member', query: withAgentQuery() })
-    return
-  }
-
-  if (createAccountDraft.value === 'member_credit') {
-    if (isRebateAgent.value) {
-      await mh5Alert('返佣代理不支持会员授信')
-      return
-    }
-    router.push({ name: 'mobile-member-credit', query: withAgentQuery() })
     return
   }
 
@@ -772,10 +714,6 @@ onBeforeUnmount(() => {
                 </button>
                 <div class="agent-team-row__tags">
                   <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">{{ $t('我') }}</span>
-                  <span
-                    v-if="effectiveTeamFilterTab === 'all' && isCreditTeamKind(row.item.kind)"
-                    class="agent-team-tag agent-team-tag--credit"
-                  >{{ $t('信用') }}</span>
                   <!-- Figma 1433:19549：VIP 钻石切面 + 组织人数图标 + 代/会文案 -->
                   <span
                     v-if="showAgentSubordinateTag(row.item)"
@@ -1052,12 +990,6 @@ onBeforeUnmount(() => {
                         </button>
                         <div class="agent-team-row__tags">
                           <span v-if="row.item.kind === 'me'" class="agent-team-tag agent-team-tag--me">我</span>
-                          <span
-                            v-if="!isRebateAgent && isCreditTeamKind(row.item.kind)"
-                            class="agent-team-tag agent-team-tag--credit"
-                          >
-                            信用
-                          </span>
                           <span
                             v-if="showAgentSubordinateTag(row.item)"
                             class="agent-team-tag agent-team-tag--stats"

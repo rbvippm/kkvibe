@@ -37,6 +37,38 @@ export function setStoredAgentIdentity(type: AgentIdentityType) {
   }
 }
 
+/**
+ * 占成代理分包：现金代理中心 / 信用代理中心（底层身份已区分，不同时展示）。
+ * 返佣代理固定为现金。
+ */
+export type AgentLedgerType = 'cash' | 'credit'
+
+const LEDGER_STORAGE_KEY = 'kkvibe.agentLedger'
+
+export function parseAgentLedger(raw: unknown): AgentLedgerType | null {
+  if (raw === 'cash' || raw === 'credit') return raw
+  return null
+}
+
+export function getStoredAgentLedger(): AgentLedgerType {
+  try {
+    return parseAgentLedger(sessionStorage.getItem(LEDGER_STORAGE_KEY)) ?? 'cash'
+  } catch {
+    return 'cash'
+  }
+}
+
+export function setStoredAgentLedger(ledger: AgentLedgerType) {
+  try {
+    sessionStorage.setItem(LEDGER_STORAGE_KEY, ledger)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** 代理端币种范围：现金代理只看现金三币种，信用代理只看信用额度两币种 */
+export type AgentCurrencyScope = 'cash' | 'credit'
+
 /** 概况币种 → 返佣金设置币种 */
 export function overviewCurrencyToCommissionCurrency(currency: string): CommissionCurrency {
   if (currency === 'KKV') return 'KKV'

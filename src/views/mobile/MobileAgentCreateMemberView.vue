@@ -32,7 +32,7 @@ import '../../styles/mobile-app-shell.css'
 type CreateMemberStep = 'account' | 'rebate' | 'success'
 
 const router = useRouter()
-const { isShareAgent, withAgentQuery } = useAgentIdentity()
+const { isShareAgent, isCreditLedger, withAgentQuery } = useAgentIdentity()
 
 const steps = computed(() =>
   isShareAgent.value ? AGENT_CREATE_MEMBER_SHARE_STEPS : AGENT_CREATE_MEMBER_REBATE_STEPS,
@@ -173,7 +173,7 @@ async function submitRebate() {
     await mh5Alert(message)
     return
   }
-  saveMemberRebateCategories('cash', rebateCategories.value)
+  saveMemberRebateCategories(isCreditLedger.value ? 'credit' : 'cash', rebateCategories.value)
   finishCreate()
 }
 

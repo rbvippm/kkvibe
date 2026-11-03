@@ -38,7 +38,7 @@ import {
 import { useAgentIdentity } from '../../composables/useAgentIdentity'
 
 const router = useRouter()
-const { withAgentQuery } = useAgentIdentity()
+const { withAgentQuery, currencyScope } = useAgentIdentity()
 
 const props = withDefaults(
   defineProps<{
@@ -64,7 +64,7 @@ const props = withDefaults(
 const isRebate = computed(() => props.agentType === 'rebate')
 const ratioTabLabel = computed(() => (isRebate.value ? '返佣比例' : '占成比例'))
 const profitTabLabel = computed(() => (isRebate.value ? '预计佣金' : '我的盈亏'))
-const currencyOptions = computed(() => getAgentDetailCurrencyOptions(!isRebate.value))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(currencyScope.value))
 const walletCurrency = computed(() => overviewCurrencyToWallet(props.currency))
 const currencyLabel = computed(() => formatAgentCurrencyLabel(walletCurrency.value))
 

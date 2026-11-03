@@ -13,7 +13,7 @@ alwaysApply: false
 1. 后台外壳由 `PcAdminLayout` 统一提供，业务页不要重复实现侧栏、顶部面包屑或 Tags。
 2. 菜单、路由、页面路径条、文档说明入口统一维护在 `src/config/pcMenu.ts` 与 `/pc` children 路由中。
 3. 业务页根节点使用 `pc-wireframe-page`，引入 `pc-wireframe.css`；有 `pagePath` 时顶部放 `<WfPagePathMenu />`。
-4. 主要参考 `PcShareAgentConfigView.vue`：筛选工具栏、表格、状态、操作列、授信弹框、Tab 标注、PRD 编号都按它的模式做。
+4. 主要参考 `PcShareAgentConfigView.vue`：筛选工具栏、表格、状态、操作列、编辑弹框、PRD 编号都按它的模式做（同组件通过 `ledger` 承载占成代理配置与信用代理配置）。
 
 ## 线框组件
 
@@ -46,4 +46,4 @@ alwaysApply: false
 - 全局顶部提示：`src/composables/usePcToast.ts` + `src/components/wireframe/PcToastHost.vue`
 - 主样例：`src/views/pc/PcShareAgentConfigView.vue`
 - 文档说明页：`src/views/pc/PcShareAgentConfigDocView.vue`
-- PRD 数据：`src/constants/shareAgentConfigSpec.ts`
+- PRD 数据：`src/constants/agentConfigSpec.ts`（现金 `shareAgentConfigSpec.ts` / 信用 `creditAgentConfigSpec.ts`）

@@ -11,10 +11,8 @@ import {
 import {
   agentAppCreditCurrency,
   agentAppCurrency,
-  isAgentCreditCurrency,
   setAgentAppCreditCurrency,
   setAgentAppCurrencyByUser,
-  fallbackAgentCashCurrency,
 } from '../../constants/agentAppCurrency'
 import {
   MEMBER_GAME_SUB_TABS,
@@ -80,7 +78,7 @@ import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent } = useAgentIdentity()
+const { isRebateAgent, agentLedger, currencyScope } = useAgentIdentity()
 
 function resolveMemberDetailTab(raw: unknown): MemberDetailTab | null {
   const key = String(raw ?? '')
@@ -124,9 +122,8 @@ const profitDialogKind = ref<MemberProfitDialogKind | null>(null)
 const profitDialogFormulaTipOpen = ref(false)
 
 const member = computed(() => findMemberDetail(String(route.query.id ?? '')))
-const isCredited = computed(() => Boolean(member.value?.isCredited))
-const detailTabs = computed(() => getMemberDetailTabs(isCredited.value))
-const currencyOptions = computed(() => getAgentDetailCurrencyOptions(isCredited.value))
+const detailTabs = computed(() => getMemberDetailTabs(agentLedger.value))
+const currencyOptions = computed(() => getAgentDetailCurrencyOptions(currencyScope.value))
 const cashWalletGroups = computed(() => formatMemberCashWalletGroups(member.value?.wallets))
 const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.value])
 /** 返佣会员盈亏不含会员退水，仅 VIP 退水 */
@@ -183,12 +180,13 @@ const rebateGameDetail = computed(() => {
   }
 })
 
-watch(isCredited, (credited) => {
-  if (!credited) {
-    if (activeTab.value === 'credit') activeTab.value = 'manage'
-    if (isAgentCreditCurrency(currency.value)) fallbackAgentCashCurrency()
-  }
-})
+watch(
+  detailTabs,
+  (tabs) => {
+    if (!tabs.some((item) => item.key === activeTab.value)) activeTab.value = tabs[0].key
+  },
+  { immediate: true },
+)
 
 watch(
   () => route.query.tab,
@@ -633,6 +631,12 @@ function toggleCreditCurrencyMenu() {
             <p class="mh5-agent-detail-credit-settle__receivable-label">我方应收会员</p>
             <p class="mh5-agent-detail-credit-settle__receivable-value">
               {{ creditLimitView.receivableValue }}
+            </p>
+            <p
+              v-if="creditLimitView.receivableFormula"
+              class="mh5-agent-detail-credit-settle__receivable-formula"
+            >
+              {{ creditLimitView.receivableFormula }}
             </p>
           </div>
           <div class="mh5-agent-detail-credit-settle__timeline">

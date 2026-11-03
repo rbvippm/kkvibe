@@ -18225,6 +18225,170 @@
   background: #f3f4f6;
 }
 
+.mh5-agent-settle-chip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.mh5-agent-settle-chip-wrap .mh5-agent-settle-chip {
+  margin-left: 0;
+}
+
+.mh5-agent-settle-formula-q {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #c99a4e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.mh5-agent-settle-formula-q::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+}
+
+.mh5-agent-settle-formula-q[aria-expanded='true']::after {
+  content: '';
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 3px;
+  z-index: 9;
+  width: 10px;
+  height: 10px;
+  background: #fffdf8;
+  border-top: 1px solid rgb(201 154 78 / 35%);
+  border-left: 1px solid rgb(201 154 78 / 35%);
+  transform: rotate(45deg);
+}
+
+.mh5-agent-settle-formula {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 8;
+  width: min(248px, 76vw);
+  padding: 12px 14px 10px;
+  border: 1px solid rgb(201 154 78 / 35%);
+  border-radius: 12px;
+  background: #fffdf8;
+  box-shadow: 0 10px 24px rgb(120 86 30 / 16%);
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.mh5-agent-settle-formula p {
+  margin: 0;
+}
+
+.mh5-agent-settle-formula__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b2318;
+}
+
+.mh5-agent-settle-formula__expr {
+  display: inline-block;
+  margin-top: 6px !important;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(220 171 94 / 14%);
+  font-size: 11px;
+  color: #a8762c;
+}
+
+.mh5-agent-settle-formula__rows {
+  margin: 10px 0 0;
+  padding-left: 12px;
+}
+
+.mh5-agent-settle-formula__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.mh5-agent-settle-formula__row dt {
+  display: inline-flex;
+  align-items: center;
+  color: #8c7f6b;
+}
+
+.mh5-agent-settle-formula__row dd {
+  margin: 0;
+  color: #2b2318;
+  font-weight: 600;
+}
+
+.mh5-agent-settle-formula__op {
+  width: 12px;
+  margin-left: -12px;
+  color: #b8873a;
+  font-weight: 700;
+}
+
+.mh5-agent-settle-formula__row--total {
+  margin: 6px 0 0 -12px;
+  padding: 8px 0 3px 12px;
+  border-top: 1px dashed rgb(201 154 78 / 40%);
+}
+
+.mh5-agent-settle-formula__row--total dt {
+  color: #2b2318;
+  font-weight: 600;
+}
+
+.mh5-agent-settle-formula__row--total dd {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mh5-agent-settle-formula__row--pay dd {
+  color: #a8762c;
+}
+
+.mh5-agent-settle-formula__row--receive dd {
+  color: #16a34a;
+}
+
+.mh5-agent-settle-formula__row--cleared dd {
+  color: #8c7f6b;
+}
+
+.mh5-agent-settle-formula__rule {
+  margin-top: 8px !important;
+  font-size: 11px;
+  color: #b3a68f;
+}
+
+.mh5-agent-settle-formula-fade-enter-active,
+.mh5-agent-settle-formula-fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.mh5-agent-settle-formula-fade-enter-from,
+.mh5-agent-settle-formula-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
 .mh5-agent-settle-sheet {
   padding-top: 16px;
 }
@@ -18250,12 +18414,14 @@
 
 .mh5-agent-settle-detail-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 12px;
 }
 
 .mh5-agent-settle-detail-grid p {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
   font-size: 12px;
   color: #8a8a8a;
 }
@@ -24013,6 +24179,16 @@ div.agent-home__profit-tab--ratio {
 
 .mh5-agent-detail-credit-settle__receivable--negative .mh5-agent-detail-credit-settle__receivable-value {
   color: #ef5b7a;
+}
+
+.mh5-agent-detail-credit-settle__receivable-formula {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #6b8f7a;
+}
+
+.mh5-agent-detail-credit-settle__receivable--negative .mh5-agent-detail-credit-settle__receivable-formula {
+  color: #b9808d;
 }
 
 .mh5-agent-detail-credit-settle__timeline {

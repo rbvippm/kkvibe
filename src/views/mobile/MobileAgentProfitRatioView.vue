@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
@@ -8,19 +8,17 @@ import {
   formatCreditPercent,
 } from '../../constants/agentCredit'
 import {
-  AGENT_PROFIT_RATIO_TYPE_TABS,
   formatProfitRatioPercent,
   getAgentProfitCost,
   isProductShareCategory,
   getAgentProfitRatioProductIcon,
   getAgentProfitRelationLabel,
   getAgentProfitRatioCategories,
-  isAgentCreditEnabled,
-  parseAgentProfitRatioType,
   resolveAgentKindHint,
   type AgentProfitRatioType,
 } from '../../constants/agentProfitRatio'
 import { AGENT_PROFIT_RATIO_SPEC } from '../../constants/agentProfitRatioSpec'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -32,20 +30,9 @@ const relationLabel = computed(() => getAgentProfitRelationLabel(String(route.qu
 const kindHint = computed(() =>
   resolveAgentKindHint(targetId.value, String(route.query.kind || '')),
 )
-const creditedHint = computed(() => String(route.query.credited || ''))
-
-/** 任意团队筛选入口（含「全部」）：只要授信过就展示 Tab */
-const showCreditTabs = computed(() =>
-  isAgentCreditEnabled(targetId.value, kindHint.value, creditedHint.value),
-)
-
-const ratioType = ref<AgentProfitRatioType>(
-  showCreditTabs.value ? parseAgentProfitRatioType(String(route.query.ratioType || 'cash')) : 'cash',
-)
-
-watch(showCreditTabs, (enabled) => {
-  if (!enabled) ratioType.value = 'cash'
-})
+/** 现金 / 信用代理中心分包：只展示当前中心对应的一套比例，不再切换 */
+const { isCreditLedger } = useAgentIdentity()
+const ratioType = computed<AgentProfitRatioType>(() => (isCreditLedger.value ? 'credit' : 'cash'))
 
 const displayCategories = computed(() => getAgentProfitRatioCategories(ratioType.value).value)
 const displayCost = computed(() => getAgentProfitCost(ratioType.value).value)
@@ -59,7 +46,7 @@ function goEdit() {
       targetName: route.query.targetName,
       relation: route.query.relation,
       kind: kindHint.value,
-      credited: showCreditTabs.value ? '1' : '0',
+      credited: isCreditLedger.value ? '1' : '0',
       ratioType: ratioType.value,
     },
   })
@@ -107,25 +94,6 @@ function goEdit() {
         </button>
       </section>
 
-      <nav
-        v-if="showCreditTabs"
-        class="mh5-agent-profit-ratio-seg"
-        role="tablist"
-        aria-label="收益类型"
-      >
-        <button
-          v-for="tab in AGENT_PROFIT_RATIO_TYPE_TABS"
-          :key="tab.key"
-          type="button"
-          role="tab"
-          class="mh5-agent-profit-ratio-seg__item"
-          :class="{ 'mh5-agent-profit-ratio-seg__item--active': ratioType === tab.key }"
-          :aria-selected="ratioType === tab.key"
-          @click="ratioType = tab.key"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
 
       <section class="mh5-agent-credit-cost-card mh5-agent-profit-ratio-cost">
         <div class="mh5-agent-credit-cost-card__left">

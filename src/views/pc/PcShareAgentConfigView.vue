@@ -1,71 +1,79 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
-import WfShareAgentFilterAnnot from '../../components/wireframe/WfShareAgentFilterAnnot.vue'
-import WfShareAgentCreditBadgeAnnot from '../../components/wireframe/WfShareAgentCreditBadgeAnnot.vue'
-import WfShareAgentCreditCredentialsAnnot from '../../components/wireframe/WfShareAgentCreditCredentialsAnnot.vue'
-import WfShareAgentGrantAnnot from '../../components/wireframe/WfShareAgentGrantAnnot.vue'
-import WfShareAgentGrantFlowAnnot from '../../components/wireframe/WfShareAgentGrantFlowAnnot.vue'
-import WfShareAgentRowActionsAnnot from '../../components/wireframe/WfShareAgentRowActionsAnnot.vue'
-import WfShareAgentCreditTabAnnot from '../../components/wireframe/WfShareAgentCreditTabAnnot.vue'
-import WfShareAgentRebateAnnot from '../../components/wireframe/WfShareAgentRebateAnnot.vue'
-import WfShareAgentP2pAnnot from '../../components/wireframe/WfShareAgentP2pAnnot.vue'
-import WfShareAgentShareAnnot from '../../components/wireframe/WfShareAgentShareAnnot.vue'
+import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
+import {
+  getAgentConfigLabels,
+  getAgentConfigSpec,
+  type AgentConfigLedger,
+} from '../../constants/agentConfigSpec'
 import {
   AGENT_LEVEL_OPTIONS,
   agentLevelLabel,
+  applyCategoryRebate,
   cloneShareAgentP2pItems,
   cloneShareAgentProducts,
   cloneShareAgentRebateCategories,
   creditPercentInputPattern,
   creditPercentRangeLabel,
-  CREDIT_AGENT_FILTER_OPTIONS,
   formatCreditField,
   formatRebateRate,
-  getP2pSectionLabel,
-  getRebateSectionLabel,
-  getShareSectionLabel,
-  hasCreditAgentCredentials,
-  MOCK_SHARE_AGENT_ROWS,
-  applyCategoryRebate,
-  validateProductRebate,
+  generateAgentCredential,
+  getAgentConfigMockRows,
+  MOCK_AGENT_CANDIDATE_USERS,
   validateCategoryRebate,
+  validateProductRebate,
   validateSharePercent,
-  type CreditAccountTab,
-  type CreditModalMode,
+  type AgentCandidateUser,
+  type AgentConfigRow,
   type PcShareAgentP2pItem,
   type PcShareAgentProduct,
   type PcShareAgentRebateCategory,
-  type ShareAgentRow,
 } from '../../constants/pcShareAgent'
+import { showPcToast } from '../../composables/usePcToast'
 import { useWorkspaceFork } from '../../composables/useWorkspaceFork'
 import '../../styles/pc-wireframe.css'
 
-type ShareFilter = {
+/** 现金占成代理与信用代理分属两个独立页面，本页只承载其中一套 */
+const props = withDefaults(defineProps<{ ledger?: AgentConfigLedger }>(), { ledger: 'cash' })
+
+const labels = computed(() => getAgentConfigLabels(props.ledger))
+const spec = computed(() => getAgentConfigSpec(props.ledger))
+
+type AgentFilter = {
   userId: string
   superiorAgentId: string
   agentLevel: string
-  creditAgent: string
 }
 
-const defaultFilter = (): ShareFilter => ({
+const defaultFilter = (): AgentFilter => ({
   userId: '',
   superiorAgentId: '',
   agentLevel: '',
-  creditAgent: '',
 })
 
 const { patchMock } = useWorkspaceFork()
 
-function buildInitialRows(): ShareAgentRow[] {
-  const base = { rows: MOCK_SHARE_AGENT_ROWS.map((row) => ({ ...row })) }
-  return (patchMock(base) as { rows: ShareAgentRow[] }).rows
+function buildInitialRows(): AgentConfigRow[] {
+  const base = { rows: getAgentConfigMockRows(props.ledger) }
+  return (patchMock(base) as { rows: AgentConfigRow[] }).rows
 }
 
-const filter = ref<ShareFilter>(defaultFilter())
-const appliedFilter = ref<ShareFilter>(defaultFilter())
+const filter = ref<AgentFilter>(defaultFilter())
+const appliedFilter = ref<AgentFilter>(defaultFilter())
 
-const rows = ref<ShareAgentRow[]>(buildInitialRows())
+const rows = ref<AgentConfigRow[]>(buildInitialRows())
+
+/** 两个菜单共用本组件，路由切换时组件实例会被复用 */
+watch(
+  () => props.ledger,
+  () => {
+    filter.value = defaultFilter()
+    appliedFilter.value = defaultFilter()
+    rows.value = buildInitialRows()
+    closeEditModal()
+  },
+)
 
 function applyFilter() {
   appliedFilter.value = { ...filter.value }
@@ -76,141 +84,109 @@ function resetFilter() {
   appliedFilter.value = defaultFilter()
 }
 
-function matchRow(row: ShareAgentRow) {
+function matchRow(row: AgentConfigRow) {
   const f = appliedFilter.value
   if (f.userId && !row.userId.includes(f.userId.trim())) return false
   if (f.superiorAgentId && !row.superiorAgentId.includes(f.superiorAgentId.trim())) return false
   if (f.agentLevel && String(row.agentLevel) !== f.agentLevel) return false
-  if (f.creditAgent === 'yes' && !(row.isCreditAgent && hasCreditAgentCredentials(row))) return false
-  if (f.creditAgent === 'no' && row.isCreditAgent && hasCreditAgentCredentials(row)) return false
   return true
 }
 
 const filteredRows = computed(() => rows.value.filter(matchRow))
 
-function toggleDisabled(row: ShareAgentRow) {
+function toggleDisabled(row: AgentConfigRow) {
   row.disabled = !row.disabled
+  showPcToast(row.disabled ? '已禁用该代理' : '已启用该代理')
 }
 
-/* ---------- 授信弹框 ---------- */
-const CREDIT_ACCOUNT_TABS: { key: CreditAccountTab; label: string }[] = [
-  { key: 'cash', label: '现金' },
-  { key: 'credit', label: '信用' },
-]
+/* ---------- 新增 / 编辑代理弹框 ---------- */
+type AgentModalMode = 'create' | 'edit'
 
-const creditModalVisible = ref(false)
-const creditModalMode = ref<CreditModalMode>('grant')
-const creditTarget = ref<ShareAgentRow | null>(null)
-const creditAccountTab = ref<CreditAccountTab>('credit')
-const cashCreditProducts = ref<PcShareAgentProduct[]>([])
-const creditCreditProducts = ref<PcShareAgentProduct[]>([])
-const cashP2pItems = ref<PcShareAgentP2pItem[]>([])
-const creditP2pItems = ref<PcShareAgentP2pItem[]>([])
-const cashRebateCategories = ref<PcShareAgentRebateCategory[]>([])
-const creditRebateCategories = ref<PcShareAgentRebateCategory[]>([])
-const creditHint = ref('')
+const editVisible = ref(false)
+const modalMode = ref<AgentModalMode>('edit')
+const editTarget = ref<AgentConfigRow | null>(null)
+const createUserId = ref('')
+const createCandidate = ref<AgentCandidateUser | null>(null)
+const shareProducts = ref<PcShareAgentProduct[]>([])
+const p2pItems = ref<PcShareAgentP2pItem[]>([])
+const rebateCategories = ref<PcShareAgentRebateCategory[]>([])
+const editHint = ref('')
 
-const creditTabVisible = computed(() => {
-  if (!creditTarget.value) return false
-  return creditTarget.value.isCreditAgent && hasCreditAgentCredentials(creditTarget.value)
-})
-
-const showCreditAccountTabs = computed(
-  () => creditModalMode.value === 'edit' && creditTabVisible.value,
-)
-
-const visibleCreditAccountTabs = computed(() =>
-  CREDIT_ACCOUNT_TABS.filter((tab) => tab.key === 'cash' || creditTabVisible.value),
-)
-
-const activeCreditProducts = computed(() => {
-  if (creditModalMode.value === 'grant') return creditCreditProducts.value
-  return creditAccountTab.value === 'cash' ? cashCreditProducts.value : creditCreditProducts.value
-})
-
-/** 占成区含「其他成本」；退水区按大类展开产品 */
-const activeShareProducts = computed(() => activeCreditProducts.value)
-const activeRebateCategories = computed(() => {
-  if (creditModalMode.value === 'grant') return creditRebateCategories.value
-  return creditAccountTab.value === 'cash' ? cashRebateCategories.value : creditRebateCategories.value
-})
-
-const activeCreditFormKey = computed(() =>
-  creditModalMode.value === 'grant' ? 'grant' : creditAccountTab.value,
-)
-
-const activeShareLabel = computed(() =>
-  getShareSectionLabel(creditModalMode.value, creditAccountTab.value),
-)
-
-const activeRebateLabel = computed(() =>
-  getRebateSectionLabel(creditModalMode.value, creditAccountTab.value),
-)
-
-const activeP2pLabel = computed(() =>
-  getP2pSectionLabel(creditModalMode.value, creditAccountTab.value),
-)
-
-/** 现金、信用、授信都在对应占成下方配置，两套数据互不影响 */
-const activeP2pItems = computed(() => {
-  if (creditModalMode.value === 'grant') return creditP2pItems.value
-  return creditAccountTab.value === 'cash' ? cashP2pItems.value : creditP2pItems.value
-})
-
-const creditModalTitle = computed(() =>
-  creditModalMode.value === 'grant' ? '代理授信' : '编辑代理',
-)
-
-function resetCreditModalForm(row: ShareAgentRow, mode: CreditModalMode) {
-  creditModalMode.value = mode
-  creditTarget.value = { ...row }
-  creditAccountTab.value =
-    mode === 'edit' && row.isCreditAgent && hasCreditAgentCredentials(row) ? 'credit' : 'cash'
-  cashCreditProducts.value = cloneShareAgentProducts()
-  creditCreditProducts.value = cloneShareAgentProducts()
-  cashP2pItems.value = cloneShareAgentP2pItems()
-  creditP2pItems.value = cloneShareAgentP2pItems()
-  cashRebateCategories.value = cloneShareAgentRebateCategories()
-  creditRebateCategories.value = cloneShareAgentRebateCategories()
-  creditHint.value = ''
+function resetSchemeForm() {
+  shareProducts.value = cloneShareAgentProducts()
+  p2pItems.value = cloneShareAgentP2pItems()
+  rebateCategories.value = cloneShareAgentRebateCategories()
+  editHint.value = ''
 }
 
-function openCreditModal(row: ShareAgentRow) {
-  resetCreditModalForm(row, 'grant')
-  creditModalVisible.value = true
+function openEditModal(row: AgentConfigRow) {
+  modalMode.value = 'edit'
+  editTarget.value = { ...row }
+  resetSchemeForm()
+  editVisible.value = true
 }
 
-function openEditModal(row: ShareAgentRow) {
-  resetCreditModalForm(row, 'edit')
-  creditModalVisible.value = true
+function openCreateModal() {
+  modalMode.value = 'create'
+  editTarget.value = null
+  createUserId.value = ''
+  createCandidate.value = null
+  resetSchemeForm()
+  editVisible.value = true
 }
 
-function closeCreditModal() {
-  creditModalVisible.value = false
-  creditModalMode.value = 'grant'
-  creditTarget.value = null
-  creditAccountTab.value = 'credit'
-  cashCreditProducts.value = []
-  creditCreditProducts.value = []
-  cashP2pItems.value = []
-  creditP2pItems.value = []
-  cashRebateCategories.value = []
-  creditRebateCategories.value = []
-  creditHint.value = ''
+/** 改了用户ID就作废上一次查询结果，必须重新查询 */
+function onCreateUserIdInput() {
+  createCandidate.value = null
+  editHint.value = ''
+}
+
+function queryCreateUser() {
+  const keyword = createUserId.value.trim()
+  createCandidate.value = null
+  if (!keyword) {
+    editHint.value = '请输入用户ID'
+    return
+  }
+  if (rows.value.some((row) => row.userId === keyword)) {
+    editHint.value = `该用户已是${labels.value.agentName}，无需重复新增`
+    return
+  }
+  const user = MOCK_AGENT_CANDIDATE_USERS.find((item) => item.userId === keyword)
+  if (!user) {
+    editHint.value = '未查询到该用户，请核对用户ID'
+    return
+  }
+  createCandidate.value = { ...user }
+  resetSchemeForm()
+}
+
+const modalTitle = computed(() => (modalMode.value === 'create' ? '新增代理' : '编辑代理'))
+const schemeVisible = computed(() => modalMode.value === 'edit' || Boolean(createCandidate.value))
+
+function closeEditModal() {
+  editVisible.value = false
+  editTarget.value = null
+  createUserId.value = ''
+  createCandidate.value = null
+  shareProducts.value = []
+  p2pItems.value = []
+  rebateCategories.value = []
+  editHint.value = ''
 }
 
 function shareError(product: PcShareAgentProduct) {
-  return validateSharePercent(product.share, product.maxShare, activeShareLabel.value)
+  return validateSharePercent(product.share, product.maxShare, labels.value.share)
 }
 
 function p2pError(item: PcShareAgentP2pItem) {
-  return validateSharePercent(item.share, item.maxShare, activeP2pLabel.value)
+  return validateSharePercent(item.share, item.maxShare, labels.value.p2p)
 }
 
 function rebateProductError(category: PcShareAgentRebateCategory, productKey: string) {
   const product = category.products.find((item) => item.key === productKey)
   if (!product) return ''
-  return validateProductRebate(product, activeRebateLabel.value)
+  return validateProductRebate(product, labels.value.rebate)
 }
 
 function onCategoryRebateInput(category: PcShareAgentRebateCategory, event: Event) {
@@ -218,73 +194,50 @@ function onCategoryRebateInput(category: PcShareAgentRebateCategory, event: Even
   applyCategoryRebate(category)
 }
 
-function categoriesHaveError(categories: PcShareAgentRebateCategory[], label: string) {
-  return categories.some((category) => {
-    if (validateCategoryRebate(category, label)) return true
-    return category.products.some((product) => validateProductRebate(product, label))
-  })
-}
-
-function productsHaveError(
-  products: PcShareAgentProduct[],
-  categories: PcShareAgentRebateCategory[],
-  mode: CreditModalMode,
-  tab: CreditAccountTab,
-) {
-  const shareLabel = getShareSectionLabel(mode, tab)
-  const rebateLabel = getRebateSectionLabel(mode, tab)
-  const shareHasError = products.some((product) =>
-    Boolean(validateSharePercent(product.share, product.maxShare, shareLabel)),
-  )
-  return shareHasError || categoriesHaveError(categories, rebateLabel)
-}
-
-function hasCreditValidationError() {
-  const p2pHasError = (items: PcShareAgentP2pItem[]) => items.some((item) => Boolean(p2pError(item)))
-  if (creditModalMode.value === 'grant') {
-    return (
-      productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'grant', 'credit') ||
-      p2pHasError(creditP2pItems.value)
+const hasValidationError = computed(() => {
+  const rebateLabel = labels.value.rebate
+  return (
+    shareProducts.value.some((product) => Boolean(shareError(product))) ||
+    p2pItems.value.some((item) => Boolean(p2pError(item))) ||
+    rebateCategories.value.some(
+      (category) =>
+        Boolean(validateCategoryRebate(category, rebateLabel)) ||
+        category.products.some((product) => Boolean(validateProductRebate(product, rebateLabel))),
     )
-  }
-  const cashHasError =
-    productsHaveError(cashCreditProducts.value, cashRebateCategories.value, 'edit', 'cash') ||
-    p2pHasError(cashP2pItems.value)
-  if (!showCreditAccountTabs.value) return cashHasError
-  const creditHasError =
-    productsHaveError(creditCreditProducts.value, creditRebateCategories.value, 'edit', 'credit') ||
-    p2pHasError(creditP2pItems.value)
-  return cashHasError || creditHasError
-}
+  )
+})
 
 function formatAccountPair(account: string, password: string) {
-  const acc = account.trim() || '-'
-  const pwd = password.trim() || '-'
-  return `账号：${acc}\n密码：${pwd}`
+  return `账号：${account.trim() || '-'}\n密码：${password.trim() || '-'}`
 }
 
-function confirmCreditModal() {
-  if (!creditTarget.value) return
-  if (hasCreditValidationError()) {
-    creditHint.value = '请修正比例后再提交'
+function confirmEditModal() {
+  if (modalMode.value === 'create' && !createCandidate.value) {
+    editHint.value = '请先查询并确认用户'
     return
   }
-
-  if (creditModalMode.value === 'grant') {
-    const targetId = creditTarget.value.id
-    const index = rows.value.findIndex((row) => row.id === targetId)
-    if (index >= 0) {
-      const row = rows.value[index]
-      rows.value[index] = {
-        ...row,
-        isCreditAgent: true,
-        creditAgentAccount: row.cashAgentAccount,
-        creditAgentPassword: row.cashAgentPassword,
-      }
-    }
+  if (hasValidationError.value) {
+    editHint.value = '请修正比例后再提交'
+    return
   }
-
-  closeCreditModal()
+  const candidate = createCandidate.value
+  if (modalMode.value === 'create' && candidate) {
+    rows.value.unshift({
+      id: Math.max(0, ...rows.value.map((row) => row.id)) + 1,
+      ...candidate,
+      agentLevel: 1,
+      superiorAgent: '平台',
+      superiorAgentId: '0',
+      agentAccount: generateAgentCredential(),
+      agentPassword: generateAgentCredential(),
+      disabled: false,
+    })
+    closeEditModal()
+    showPcToast('已新增一级代理，账密已生成')
+    return
+  }
+  closeEditModal()
+  showPcToast('已保存代理配置')
 }
 </script>
 
@@ -307,25 +260,16 @@ function confirmCreditModal() {
 
         <label class="wf-label wf-label--with-spec">
           代理等级：
-          <WfShareAgentFilterAnnot context="agentLevel" placement="bottom" />
+          <WfSpecAnnot
+            :no="spec.annot.filterAgentLevel.no"
+            :title="spec.annot.filterAgentLevel.title"
+            :items="[...spec.annot.filterAgentLevel.items]"
+            placement="bottom"
+          />
         </label>
         <select v-model="filter.agentLevel" class="wf-input wf-input--select">
           <option
             v-for="opt in AGENT_LEVEL_OPTIONS"
-            :key="opt.value || 'all'"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-
-        <label class="wf-label wf-label--with-spec">
-          信用代理：
-          <WfShareAgentFilterAnnot context="creditAgent" placement="bottom" />
-        </label>
-        <select v-model="filter.creditAgent" class="wf-input wf-input--select">
-          <option
-            v-for="opt in CREDIT_AGENT_FILTER_OPTIONS"
             :key="opt.value || 'all'"
             :value="opt.value"
           >
@@ -338,6 +282,13 @@ function confirmCreditModal() {
         <span class="wf-toolbar__actions wf-toolbar__actions--start">
           <button type="button" class="wf-btn wf-btn--primary" @click="applyFilter">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="resetFilter">清除</button>
+          <button type="button" class="wf-btn wf-btn--add" @click="openCreateModal">新增</button>
+          <WfSpecAnnot
+            :no="spec.annot.create.no"
+            :title="spec.annot.create.title"
+            :items="[...spec.annot.create.items]"
+            placement="bottom"
+          />
         </span>
       </div>
 
@@ -349,23 +300,28 @@ function confirmCreditModal() {
               <th class="wf-th">用户名</th>
               <th class="wf-th">用户ID</th>
               <th class="wf-th">金刚号</th>
-              <th class="wf-th wf-th--with-spec">
-                代理级别
-                <WfShareAgentCreditBadgeAnnot placement="bottom" />
-              </th>
+              <th class="wf-th">代理级别</th>
               <th class="wf-th">上级代理</th>
               <th class="wf-th">上级代理ID</th>
-              <th class="wf-th">现金代理账号</th>
-              <th class="wf-th">现金代理密码</th>
               <th class="wf-th wf-th--with-spec">
-                信用代理账号
-                <WfShareAgentCreditCredentialsAnnot placement="bottom" />
+                {{ labels.account }}
+                <WfSpecAnnot
+                  :no="spec.annot.credentials.no"
+                  :title="spec.annot.credentials.title"
+                  :items="[...spec.annot.credentials.items]"
+                  placement="bottom"
+                />
               </th>
-              <th class="wf-th">信用代理密码</th>
+              <th class="wf-th">{{ labels.password }}</th>
               <th class="wf-th wf-th--status">状态</th>
               <th class="wf-th wf-th--op wf-th--with-spec">
                 操作
-                <WfShareAgentRowActionsAnnot placement="top" />
+                <WfSpecAnnot
+                  :no="spec.annot.rowActions.no"
+                  :title="spec.annot.rowActions.title"
+                  :items="[...spec.annot.rowActions.items]"
+                  placement="top"
+                />
               </th>
             </tr>
           </thead>
@@ -375,23 +331,11 @@ function confirmCreditModal() {
               <td class="wf-td">{{ row.username }}</td>
               <td class="wf-td">{{ row.userId }}</td>
               <td class="wf-td">{{ row.kingKongId }}</td>
-              <td class="wf-td">
-                <span class="wf-share-agent-level">
-                  {{ agentLevelLabel(row.agentLevel) }}
-                  <span
-                    v-if="row.isCreditAgent && hasCreditAgentCredentials(row)"
-                    class="wf-credit-badge"
-                    title="信用代理"
-                    aria-label="信用代理"
-                  >信</span>
-                </span>
-              </td>
+              <td class="wf-td">{{ agentLevelLabel(row.agentLevel) }}</td>
               <td class="wf-td">{{ row.superiorAgent }}</td>
               <td class="wf-td">{{ row.superiorAgentId }}</td>
-              <td class="wf-td">{{ row.cashAgentAccount }}</td>
-              <td class="wf-td">{{ row.cashAgentPassword }}</td>
-              <td class="wf-td">{{ formatCreditField(row.creditAgentAccount) }}</td>
-              <td class="wf-td">{{ formatCreditField(row.creditAgentPassword) }}</td>
+              <td class="wf-td">{{ formatCreditField(row.agentAccount) }}</td>
+              <td class="wf-td">{{ formatCreditField(row.agentPassword) }}</td>
               <td class="wf-td wf-td--center wf-td--status">
                 <span
                   class="wf-status-badge"
@@ -401,22 +345,6 @@ function confirmCreditModal() {
                 </span>
               </td>
               <td class="wf-td wf-td--actions">
-                <span
-                  v-if="row.agentLevel === 1 && !row.isCreditAgent"
-                  class="wf-action-with-spec"
-                >
-                  <button
-                    type="button"
-                    class="wf-btn wf-btn--credit"
-                    @click="openCreditModal(row)"
-                  >
-                    授信
-                  </button>
-                  <WfShareAgentGrantAnnot placement="bottom" />
-                </span>
-                <template v-if="row.agentLevel === 1 && !row.isCreditAgent">
-                  <span class="wf-action-sep">|</span>
-                </template>
                 <button type="button" class="wf-link-action" @click="openEditModal(row)">编辑</button>
                 <span class="wf-action-sep">|</span>
                 <button
@@ -429,7 +357,7 @@ function confirmCreditModal() {
               </td>
             </tr>
             <tr v-if="filteredRows.length === 0">
-              <td colspan="13" class="wf-td wf-td--empty">暂无数据</td>
+              <td colspan="11" class="wf-td wf-td--empty">暂无数据</td>
             </tr>
           </tbody>
         </table>
@@ -438,101 +366,106 @@ function confirmCreditModal() {
       <div class="wf-pagination">分页组件</div>
     </section>
 
-    <!-- 代理授信弹框 -->
+    <!-- 编辑代理弹框 -->
     <Teleport to="body">
       <div
-        v-if="creditModalVisible && creditTarget"
+        v-if="editVisible"
         class="wf-modal-mask"
         role="presentation"
-        @click.self="closeCreditModal"
+        @click.self="closeEditModal"
       >
         <div
           class="wf-modal wf-modal--scroll wf-modal--share-agent-credit"
           role="dialog"
-          aria-labelledby="share-agent-credit-title"
+          aria-labelledby="share-agent-edit-title"
           aria-modal="true"
         >
           <div class="wf-modal__header">
-            <h3 id="share-agent-credit-title" class="wf-modal__title wf-modal__title--with-spec">
-              {{ creditModalTitle }}
-              <WfShareAgentGrantFlowAnnot v-if="creditModalMode === 'grant'" placement="bottom" />
-            </h3>
+            <h3 id="share-agent-edit-title" class="wf-modal__title">{{ modalTitle }}</h3>
             <button
               type="button"
               class="wf-modal__close"
               aria-label="关闭"
-              @click="closeCreditModal"
+              @click="closeEditModal"
             >
               ×
             </button>
           </div>
 
           <div class="wf-modal__body">
-            <table class="wf-table wf-table--modal wf-table--share-agent-info">
+            <div v-if="modalMode === 'create'" class="wf-modal__query">
+              <label class="wf-label">用户ID：</label>
+              <input
+                v-model="createUserId"
+                type="text"
+                class="wf-input"
+                placeholder="请输入用户ID（精准查询）"
+                @input="onCreateUserIdInput"
+                @keydown.enter.prevent="queryCreateUser"
+              />
+              <button type="button" class="wf-btn wf-btn--primary" @click="queryCreateUser">查询</button>
+            </div>
+
+            <table
+              v-if="modalMode === 'create' && createCandidate"
+              class="wf-table wf-table--modal wf-table--share-agent-info"
+            >
               <thead>
                 <tr>
                   <th class="wf-th">用户名</th>
                   <th class="wf-th">用户ID</th>
                   <th class="wf-th">金刚号</th>
-                  <th class="wf-th">现金代理账密</th>
-                  <th class="wf-th">信用代理账密</th>
+                  <th class="wf-th">代理级别</th>
+                  <th class="wf-th">{{ labels.credentials }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td class="wf-td">{{ creditTarget.username }}</td>
-                  <td class="wf-td">{{ creditTarget.userId }}</td>
-                  <td class="wf-td">{{ creditTarget.kingKongId }}</td>
+                  <td class="wf-td">{{ createCandidate.username }}</td>
+                  <td class="wf-td">{{ createCandidate.userId }}</td>
+                  <td class="wf-td">{{ createCandidate.kingKongId }}</td>
+                  <td class="wf-td">1级代理（上级：平台）</td>
+                  <td class="wf-td wf-muted">提交后生成</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table v-if="editTarget" class="wf-table wf-table--modal wf-table--share-agent-info">
+              <thead>
+                <tr>
+                  <th class="wf-th">用户名</th>
+                  <th class="wf-th">用户ID</th>
+                  <th class="wf-th">金刚号</th>
+                  <th class="wf-th">{{ labels.credentials }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="wf-td">{{ editTarget.username }}</td>
+                  <td class="wf-td">{{ editTarget.userId }}</td>
+                  <td class="wf-td">{{ editTarget.kingKongId }}</td>
                   <td class="wf-td wf-td--multiline">
-                    {{ formatAccountPair(creditTarget.cashAgentAccount, creditTarget.cashAgentPassword) }}
-                  </td>
-                  <td class="wf-td wf-td--multiline">
-                    {{ formatAccountPair(creditTarget.creditAgentAccount, creditTarget.creditAgentPassword) }}
+                    {{ formatAccountPair(editTarget.agentAccount, editTarget.agentPassword) }}
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            <div v-if="showCreditAccountTabs" class="wf-share-agent-credit-tabs">
-              <div class="wf-tabs" role="tablist" aria-label="代理账密类型">
-                <template v-for="tab in visibleCreditAccountTabs" :key="tab.key">
-                  <div v-if="tab.key === 'credit'" class="wf-tab-item">
-                    <button
-                      type="button"
-                      role="tab"
-                      class="wf-tab"
-                      :class="{ 'wf-tab--active': creditAccountTab === tab.key }"
-                      :aria-selected="creditAccountTab === tab.key"
-                      @click="creditAccountTab = tab.key"
-                    >
-                      {{ tab.label }}
-                    </button>
-                    <WfShareAgentCreditTabAnnot placement="bottom" />
-                  </div>
-                  <button
-                    v-else
-                    type="button"
-                    role="tab"
-                    class="wf-tab"
-                    :class="{ 'wf-tab--active': creditAccountTab === tab.key }"
-                    :aria-selected="creditAccountTab === tab.key"
-                    @click="creditAccountTab = tab.key"
-                  >
-                    {{ tab.label }}
-                  </button>
-                </template>
-              </div>
-            </div>
-
+            <template v-if="schemeVisible">
             <section class="wf-share-agent-credit-panel">
               <h4 class="wf-share-agent-credit-panel__title wf-share-agent-credit-panel__title--with-spec">
-                {{ activeShareLabel }}
-                <WfShareAgentShareAnnot placement="bottom" />
+                {{ labels.share }}
+                <WfSpecAnnot
+                  :no="spec.annot.share.no"
+                  :title="spec.annot.share.title"
+                  :items="[...spec.annot.share.items]"
+                  placement="bottom"
+                />
               </h4>
               <div class="wf-share-agent-credit-grid">
                 <div
-                  v-for="product in activeShareProducts"
-                  :key="`${activeCreditFormKey}-share-${product.key}`"
+                  v-for="product in shareProducts"
+                  :key="`share-${product.key}`"
                   class="wf-share-agent-credit-field"
                 >
                   <label class="wf-share-agent-credit-field__label">{{ product.name }}</label>
@@ -544,7 +477,7 @@ function confirmCreditModal() {
                       class="wf-input wf-input--pct"
                       :placeholder="creditPercentRangeLabel(product.maxShare)"
                       :pattern="creditPercentInputPattern()"
-                      :title="`${activeShareLabel}区间 ${creditPercentRangeLabel(product.maxShare)}%，x 为上级代理该游戏类型最大值`"
+                      :title="`${labels.share}区间 ${creditPercentRangeLabel(product.maxShare)}%，x 为上级代理该游戏类型最大值`"
                     />
                     <span class="wf-pct">%</span>
                   </div>
@@ -560,13 +493,18 @@ function confirmCreditModal() {
 
             <section class="wf-share-agent-credit-panel">
               <h4 class="wf-share-agent-credit-panel__title wf-share-agent-credit-panel__title--with-spec">
-                {{ activeP2pLabel }}
-                <WfShareAgentP2pAnnot :title="activeP2pLabel" placement="bottom" />
+                {{ labels.p2p }}
+                <WfSpecAnnot
+                  :no="spec.annot.p2p.no"
+                  :title="spec.annot.p2p.title"
+                  :items="[...spec.annot.p2p.items]"
+                  placement="bottom"
+                />
               </h4>
               <div class="wf-share-agent-credit-grid">
                 <div
-                  v-for="item in activeP2pItems"
-                  :key="`${activeCreditFormKey}-p2p-${item.key}`"
+                  v-for="item in p2pItems"
+                  :key="`p2p-${item.key}`"
                   class="wf-share-agent-credit-field"
                 >
                   <label class="wf-share-agent-credit-field__label">{{ item.name }}</label>
@@ -578,7 +516,7 @@ function confirmCreditModal() {
                       class="wf-input wf-input--pct"
                       :placeholder="creditPercentRangeLabel(item.maxShare)"
                       :pattern="creditPercentInputPattern()"
-                      :title="`${activeP2pLabel}区间 ${creditPercentRangeLabel(item.maxShare)}%，与${activeShareLabel}一致`"
+                      :title="`${labels.p2p}区间 ${creditPercentRangeLabel(item.maxShare)}%，与${labels.share}一致`"
                     />
                     <span class="wf-pct">%</span>
                   </div>
@@ -594,13 +532,18 @@ function confirmCreditModal() {
 
             <section class="wf-share-agent-credit-panel">
               <h4 class="wf-share-agent-credit-panel__title wf-share-agent-credit-panel__title--with-spec">
-                {{ activeRebateLabel }}
-                <WfShareAgentRebateAnnot :title="activeRebateLabel" placement="bottom" />
+                {{ labels.rebate }}
+                <WfSpecAnnot
+                  :no="spec.annot.rebate.no"
+                  :title="spec.annot.rebate.title"
+                  :items="[...spec.annot.rebate.items]"
+                  placement="bottom"
+                />
               </h4>
               <div class="wf-share-agent-rebate-list">
                 <article
-                  v-for="category in activeRebateCategories"
-                  :key="`${activeCreditFormKey}-rebate-${category.key}`"
+                  v-for="category in rebateCategories"
+                  :key="`rebate-${category.key}`"
                   class="wf-share-agent-rebate-cat"
                 >
                   <div class="wf-share-agent-rebate-cat__head">
@@ -655,19 +598,20 @@ function confirmCreditModal() {
                 </article>
               </div>
             </section>
+            </template>
 
-            <p v-if="creditHint" class="wf-modal__hint">{{ creditHint }}</p>
+            <p v-if="editHint" class="wf-modal__hint">{{ editHint }}</p>
           </div>
 
           <div class="wf-modal__footer">
-            <button type="button" class="wf-btn wf-btn--default" @click="closeCreditModal">取消</button>
+            <button type="button" class="wf-btn wf-btn--default" @click="closeEditModal">取消</button>
             <button
               type="button"
               class="wf-btn wf-btn--primary"
-              :disabled="hasCreditValidationError()"
-              @click="confirmCreditModal"
+              :disabled="!schemeVisible || hasValidationError"
+              @click="confirmEditModal"
             >
-              {{ creditModalMode === 'grant' ? '确认授信' : '保存' }}
+              {{ modalMode === 'create' ? '确定' : '保存' }}
             </button>
           </div>
         </div>

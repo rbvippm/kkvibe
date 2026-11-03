@@ -148,12 +148,13 @@ export const BET_ORDER_CURRENCY_LABEL: Record<Exclude<BetGameCurrency, ''>, stri
   '信用额度-USD': '信用额度-USD',
 }
 
-/** 游戏币种筛选项：全部 + 现金三币种；占成代理另含信用额度-CNY / USD */
-export function getBetOrderCurrencyOptions(includeCredit = false) {
+/** 游戏币种筛选项：全部 + 现金三币种；信用代理中心为全部 + 信用额度-CNY / USD */
+export function getBetOrderCurrencyOptions(scope: 'cash' | 'credit' = 'cash') {
   return [
     { value: '' as const, label: '全部' },
-    ...sortByLocaleCashOrder([...BET_ORDER_CASH_CURRENCY_OPTIONS], (item) => item.value),
-    ...(includeCredit ? [...BET_ORDER_CREDIT_CURRENCY_OPTIONS] : []),
+    ...(scope === 'credit'
+      ? [...BET_ORDER_CREDIT_CURRENCY_OPTIONS]
+      : sortByLocaleCashOrder([...BET_ORDER_CASH_CURRENCY_OPTIONS], (item) => item.value)),
   ]
 }
 

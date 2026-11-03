@@ -15,33 +15,32 @@ import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 
 const router = useRouter()
-const { isRebateAgent, withAgentQuery } = useAgentIdentity()
+const { isRebateAgent, isCreditLedger, withAgentQuery } = useAgentIdentity()
 const profile = MOCK_AGENT_ME_PROFILE
 
 /** 返佣：模块名「我的佣金」；占成：「我的盈亏」 */
 const profitSectionTitle = computed(() => (isRebateAgent.value ? '我的佣金' : '我的盈亏'))
 const profitColumnTitle = computed(() => (isRebateAgent.value ? '总佣金' : '总盈亏'))
 
-/** 返佣代理无信用额度行 */
-const profitRows = computed(() => {
-  if (!isRebateAgent.value) return MOCK_AGENT_ME_PROFIT_ROWS
-  return MOCK_AGENT_ME_PROFIT_ROWS.filter(
-    (row) => row.key !== 'credit-cny' && row.key !== 'credit-usd',
-  )
-})
+const CREDIT_PROFIT_ROW_KEYS = new Set(['credit-cny', 'credit-usd'])
 
-const SHARE_ONLY_MENU_KEYS = new Set([
-  'member-default-rebate',
-  'credit-agent',
-  'credit-member',
-  'credit-record',
-])
+/** 现金 / 返佣只看现金三币种；信用代理只看信用额度两币种 */
+const profitRows = computed(() =>
+  MOCK_AGENT_ME_PROFIT_ROWS.filter(
+    (row) => CREDIT_PROFIT_ROW_KEYS.has(row.key) === isCreditLedger.value,
+  ),
+)
 
-/** 返佣代理无上下分 / 信用额度记录入口 */
+const CREDIT_MENU_KEYS = new Set(['credit-agent', 'credit-member', 'credit-record'])
+const CASH_SHARE_MENU_KEYS = new Set(['member-default-rebate'])
+
+/** 返佣：无会员默认退水与信用入口；现金代理：无信用入口；信用代理：无现金会员默认退水 */
 const menuItems = computed(() =>
-  isRebateAgent.value
-    ? AGENT_ME_MENU_ITEMS.filter((item) => !SHARE_ONLY_MENU_KEYS.has(item.key))
-    : AGENT_ME_MENU_ITEMS,
+  AGENT_ME_MENU_ITEMS.filter((item) => {
+    if (CREDIT_MENU_KEYS.has(item.key)) return isCreditLedger.value
+    if (CASH_SHARE_MENU_KEYS.has(item.key)) return !isRebateAgent.value && !isCreditLedger.value
+    return true
+  }),
 )
 
 function openMenu(item: AgentMeMenuItem) {

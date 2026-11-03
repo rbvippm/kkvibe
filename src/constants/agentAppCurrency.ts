@@ -59,6 +59,16 @@ export function fallbackAgentCashCurrency() {
   agentAppCurrency.value = defaultCashCurrency()
 }
 
+/** 现金代理中心落到现金币种，信用代理中心落到信用额度币种 */
+export function syncAgentAppCurrencyToLedger(ledger: 'cash' | 'credit') {
+  const isCredit = isAgentCreditCurrency(agentAppCurrency.value)
+  if (ledger === 'credit' && !isCredit) {
+    agentAppCurrency.value = agentAppCreditCurrency.value
+    return
+  }
+  if (ledger === 'cash' && isCredit) fallbackAgentCashCurrency()
+}
+
 export function setAgentAppCreditCurrency(currency: AgentCreditCurrency) {
   agentAppCreditCurrency.value = currency
   agentAppCurrency.value = currency

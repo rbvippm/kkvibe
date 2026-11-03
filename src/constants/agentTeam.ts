@@ -61,12 +61,11 @@ export type TeamTreeRow =
       ancestorLastFlags: boolean[]
     }
 
+/** 现金 / 信用代理中心底层身份已区分，不再单列「信用代理 / 信用会员」 */
 export const TEAM_FILTER_TABS: { key: TeamFilterTab; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'direct_agent', label: '直属代理' },
   { key: 'direct_member', label: '直属会员' },
-  { key: 'credit_agent', label: '信用代理' },
-  { key: 'credit_member', label: '信用会员' },
 ]
 
 /** 每层默认展示条数，超出显示「查看更多」（2 即可演示，Mock 更精简） */
@@ -341,8 +340,10 @@ export const TEAM_ONLINE_FILTER_OPTIONS: { key: TeamOnlineFilter; label: string 
 ]
 
 export type BuildTeamTreeOptions = {
-  /** 是否包含信用代理 / 信用会员；返佣代理为 false */
+  /** 是否包含信用代理 / 信用会员；返佣、现金代理中心为 false */
   includeCredit?: boolean
+  /** 信用代理中心：信用代理 / 信用会员直接并入直属代理 / 直属会员，不单独分类 */
+  mergeCreditIntoDirect?: boolean
   /** 是否仅展示本人直属一层；返佣代理为 true */
   singleLayer?: boolean
   /** 返佣：扁平直属会员列表，不展示「我」节点、无树形缩进 */
@@ -384,18 +385,25 @@ function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): 
   const agents = teamDirectAgents.value
   const creditAgents = includeCredit ? teamCreditAgents.value : []
   const creditMembers = includeCredit ? teamCreditMembers.value : []
+  const merge = options.mergeCreditIntoDirect === true
 
   // 直属/信用分类：只展示「我」的直属一级，不展开下级的下级
   if (tab === 'direct_agent') {
     return {
       ...MOCK_TEAM_SELF,
-      children: agents.map((item) => ({ ...item, children: undefined })),
+      children: (merge ? [...creditAgents, ...agents] : agents).map((item) => ({
+        ...item,
+        children: undefined,
+      })),
     }
   }
   if (tab === 'direct_member') {
     return {
       ...MOCK_TEAM_SELF,
-      children: members.map((item) => ({ ...item, children: undefined })),
+      children: (merge ? [...creditMembers, ...members] : members).map((item) => ({
+        ...item,
+        children: undefined,
+      })),
     }
   }
   if (tab === 'credit_agent') {
@@ -747,12 +755,12 @@ export function getTeamChildren(tab: TeamFilterTab): TeamListItem[] {
   return filterTeamList(tab).filter((item) => item.id !== MOCK_TEAM_SELF.id)
 }
 
-export type CreateAccountOption = 'agent' | 'member' | 'member_credit' | 'invite_existing'
+export type CreateAccountOption = 'agent' | 'member' | 'invite_existing'
 
+/** 现金 / 信用代理中心分包后不再有授信入口 */
 export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }[] = [
   { key: 'agent', label: '创建代理账户' },
   { key: 'member', label: '创建会员账户' },
-  { key: 'member_credit', label: '会员账户授信' },
   { key: 'invite_existing', label: '邀请会员为下级代理' },
 ]
 
