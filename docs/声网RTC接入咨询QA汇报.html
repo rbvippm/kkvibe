@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>声网 RTC 接入咨询 QA 汇报</title>
+  <style>
+    :root {
+      --theme: #ff7918;
+      --theme-soft: #fff2e8;
+      --text: #1d2939;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --soft: #f8fafc;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--text);
+      font: 14px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+        "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+    a { color: var(--theme); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .page { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 42px 0 70px; }
+    .hero {
+      position: relative;
+      padding: 0 0 26px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 30px;
+      width: 5px;
+      border-radius: 99px;
+      background: var(--theme);
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--theme);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .14em;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 42px); line-height: 1.2; }
+    .lead { max-width: 850px; margin: 0; color: var(--muted); }
+    .print-btn {
+      position: absolute;
+      top: 2px;
+      right: 0;
+      padding: 8px 13px;
+      border: 1px solid var(--theme);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--theme);
+      cursor: pointer;
+    }
+    .summary { margin-top: 26px; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 34px 0 12px;
+      font-size: 20px;
+    }
+    .section-title span {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: var(--theme);
+      color: #fff;
+      font-size: 11px;
+    }
+    .summary-line {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      border-top: 1px solid var(--line);
+      padding: 12px 10px;
+    }
+    .summary-line:last-child { border-bottom: 1px solid var(--line); }
+    .summary-line strong { color: var(--theme); }
+    .summary-line p { margin: 0; color: var(--muted); }
+    .qa-list { border-top: 1px solid var(--line); }
+    .qa-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 36%) 1fr;
+      border-bottom: 1px solid var(--line);
+    }
+    .question {
+      display: grid;
+      grid-template-columns: 38px 1fr;
+      gap: 10px;
+      align-content: start;
+      padding: 18px 20px 18px 8px;
+      background: #fff;
+    }
+    .q-no {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--theme-soft);
+      color: var(--theme);
+      font-weight: 900;
+    }
+    .question h3 { margin: 4px 0 0; font-size: 14px; line-height: 1.55; }
+    .answer {
+      padding: 18px 10px 18px 24px;
+      border-left: 1px solid var(--line);
+    }
+    .answer p { margin: 0; }
+    .answer ul { margin: 7px 0 0; padding-left: 20px; }
+    .answer li { margin: 3px 0; }
+    .answer strong { color: var(--theme); }
+    .note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid var(--theme);
+      background: var(--theme-soft);
+      color: #7a3a0d;
+      font-size: 12px;
+    }
+    .warning {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-left: 3px solid #d92d20;
+      background: #fff1f0;
+      color: #d92d20;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .actions { border-top: 1px solid var(--line); }
+    .action-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+    }
+    .action-row strong { color: var(--theme); }
+    .action-row span { color: var(--muted); }
+    .footer {
+      margin-top: 34px;
+      padding-top: 15px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+    @media (max-width: 760px) {
+      .page { width: min(100% - 24px, 1120px); padding-top: 24px; }
+      .print-btn { display: none; }
+      .hero { padding-right: 0; }
+      .qa-row { grid-template-columns: 1fr; }
+      .answer { padding: 0 8px 18px 56px; border-left: 0; }
+      .summary-line, .action-row { grid-template-columns: 1fr; gap: 3px; }
+    }
+    @media print {
+      @page { size: A4; margin: 13mm; }
+      .page { width: 100%; padding: 0; }
+      .print-btn { display: none; }
+      .qa-row { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <p class="eyebrow">AGORA RTC · QA SUMMARY</p>
+      <h1>声网 RTC 接入咨询 QA 汇报</h1>
+      <p class="lead">围绕媒体层切换、全球互通、直播与通话并行、媒体加密、Token、计费和 Web/H5 兼容性，整理统一汇报口径。</p>
+      <button class="print-btn" type="button" onclick="window.print()">打印 / 导出 PDF</button>
+    </header>
+
+    <section>
+      <h2 class="section-title"><span>01</span>架构与业务支持</h2>
+      <div class="qa-list">
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q1</span><h3>把 App 上的音视频 RTC 服务切换为声网媒体层，需要申请什么服务、做哪些操作？</h3></div>
+          <div class="answer"><p>需要先明确业务中所指的“媒体层”具体含义与范围（是仅替换传输层、编解码，还是完整的音视频通信组件）。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q2</span><h3>用户以海外为主，但也包含大陆用户，是否只需申请海外业务？大陆与海外用户互通会有问题吗？</h3></div>
+          <div class="answer"><p>声网 RTC 具备全球节点网络，用户会就近连接接入点，支持跨地域通话互通。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q3</span><h3>声网的直播和 RTC 是同一个 SDK 还是分开的？在同一个 App 中同时支持二者是否有冲突？</h3></div>
+          <div class="answer"><p>极速直播与互动直播使用的是同一个 SDK，底层均基于 RTC 技术实现，不存在冲突。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q4</span><h3>用户在看直播时收到 RTC 通话请求，直播和通话是否存在冲突？应该如何处理方案？</h3></div>
+          <div class="answer"><p>底层均属于 RTC 服务；当前建议先验证实际体验，不必一开始就将“多频道”或“自采集”设为刚需方案：</p><ul><li>单频道方案（优先推荐评估）：若业务接受“接听时暂停/离开直播频道，通话挂断后再返回直播”，建议优先采用此方案。</li><li>多频道并行方案：若强诉求通话期间仍需在后台/画中画保持直播收看，再深入讨论并行双频道方案。</li></ul></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q5</span><h3>直播和音视频业务区分不同账号、不同 App ID 是否支持？有什么潜在影响？</h3></div>
+          <div class="answer"><p>不同 App ID 业务不能互通。我们本来就要做业务风险隔离，不需要互通。</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span>02</span>安全性与加密机制</h2>
+      <div class="qa-list">
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q6</span><h3>声网的默认加密方式（如 AES-GCM2）是否安全？推荐 AES-128 还是 AES-256？是否影响通话质量？能否自定义加密？</h3></div>
+          <div class="answer"><p>建议选用 AES-128 或 AES-256。在移动端开启后不影响通话质量，但官方不支持自定义加密算法。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q7</span><h3>国内通话是否也支持加密？</h3></div>
+          <div class="answer"><p>支持，国内通话与海外场景一致，均默认支持 AES-128 / AES-256 加密方式。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q8</span><h3>使用声网官方 SDK 进行 AES 媒体加密传输，后台是否会悄悄上报或泄露密钥（Key / Secret）？</h3></div>
+          <div class="answer"><ul><li>Native 端（iOS / Android）：官方明确声明，媒体端到端加密的密钥不会上传至声网服务器。</li></ul><div class="warning">建议：各个端走查一下声网源码更为稳妥。</div></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span>03</span>Token 与计费规则</h2>
+      <div class="qa-list">
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q9</span><h3>每次通话申请的 Token 是否有限流机制？</h3></div>
+          <div class="answer"><p>Token 本身没有限流机制。</p></div>
+        </article>
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q10</span><h3>RTC 的计费规则是按 Token 申请时长、还是按网络流量（GB）？</h3></div>
+          <div class="answer"><p>既不是按 Token 的有效期，也不是单纯按流量（GB）计费；RTC 基础计费是根据实际通话消耗的人分钟数（User-Minutes）、音视频类型及分辨率档位进行综合计费。</p></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-title"><span>04</span>平台与浏览器兼容性</h2>
+      <div class="qa-list">
+        <article class="qa-row">
+          <div class="question"><span class="q-no">Q11</span><h3>声网 H5/Web SDK 支持哪些浏览器？是否支持 Telegram 内嵌浏览器？兼容性如何？</h3></div>
+          <div class="answer"><ul><li>浏览器官方兼容性列表参考：<a href="https://doc.shengwang.cn/doc/rtc/javascript/overview/browser-compatibility" target="_blank" rel="noopener noreferrer">https://doc.shengwang.cn/doc/rtc/javascript/overview/browser-compatibility</a></li><li>Telegram 内嵌浏览器：官方未进行专项测试，目前无法确保兼容性，需实际联调验证。</li></ul></div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">声网 RTC 接入咨询 QA 汇报 · 技术选型与 POC 输入稿</footer>
+  </main>
+</body>
+</html>

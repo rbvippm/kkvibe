@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>旗舰厅个人中心改版 PRD</title>
+  <style>
+    :root {
+      --bg: #f4f1ec;
+      --ink: #1c1c1e;
+      --muted: #6e6a64;
+      --line: #d8d2c8;
+      --card: #fffdf9;
+      --orange: #ff8c00;
+      --coral: #c45c28;
+      --ok: #2f7d4a;
+      --bad: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    }
+
+    @page board {
+      size: A3 landscape;
+      margin: 10mm;
+    }
+
+    @page prd {
+      size: A4 portrait;
+      margin: 14mm 16mm;
+    }
+
+    .board { page: board; }
+    .prd { page: prd; break-before: page; }
+
+    .print-only-note { display: none; }
+
+    header.hero {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-end;
+      margin-bottom: 14px;
+    }
+
+    header.hero h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      letter-spacing: -0.03em;
+    }
+
+    header.hero p {
+      margin: 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: #fff3e3;
+      color: #b45a00;
+      font-weight: 700;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .compare article {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+
+    .compare h2 {
+      margin: 0 0 8px;
+      font-size: 13px;
+    }
+
+    .compare ol {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .compare--old h2 { color: var(--bad); }
+    .compare--new h2 { color: var(--ok); }
+
+    .stage {
+      position: relative;
+      width: 1180px;
+      height: 820px;
+      margin: 0 auto;
+    }
+
+    .phone {
+      position: absolute;
+      left: 402px;
+      top: 4px;
+      width: 375px;
+      height: 812px;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgb(40 28 12 / 0.16);
+      overflow: hidden;
+    }
+
+    .phone img {
+      display: block;
+      width: 375px;
+      height: 812px;
+    }
+
+    .col {
+      position: absolute;
+      top: 0;
+      width: 330px;
+    }
+
+    .col-left { left: 0; }
+    .col-right { right: 0; }
+
+    .note {
+      position: absolute;
+      width: 330px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px 11px;
+      box-shadow: 0 6px 16px rgb(40 28 12 / 0.05);
+    }
+
+    .note strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .note em {
+      display: inline-block;
+      margin-bottom: 4px;
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--coral);
+    }
+
+    .note p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #3f3b36;
+    }
+
+    .n1 { top: 4px; }
+    .n2 { top: 118px; }
+    .n3 { top: 250px; }
+    .n4 { top: 390px; }
+    .n5 { top: 4px; }
+    .n6 { top: 250px; }
+    .n7 { top: 430px; }
+    .n8 { top: 620px; }
+
+    .wires {
+      position: absolute;
+      inset: 0;
+      width: 1180px;
+      height: 820px;
+      pointer-events: none;
+    }
+
+    .wires path {
+      fill: none;
+      stroke: #c9843d;
+      stroke-width: 1.4;
+    }
+
+    .wires circle {
+      fill: #ff8c00;
+      stroke: #fff;
+      stroke-width: 2;
+    }
+
+    .prd-wrap { max-width: 820px; margin: 0 auto; }
+
+    .prd h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    .prd .lead {
+      margin: 0 0 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .prd h2 {
+      margin: 22px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+    }
+
+    .prd ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .prd li {
+      margin: 0 0 8px;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .prd table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .prd th, .prd td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .prd th { background: #f7f1e8; }
+
+    @media print {
+      body { background: #fff; }
+      .board, .prd { break-inside: avoid; }
+      .note, .compare article, .phone {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="board">
+    <header class="hero">
+      <div>
+        <h1>旗舰厅个人中心改版 PRD</h1>
+        <p>
+          对照旧版 5 弊（定位摇摆、资金双重割裂、留白浪费、纯图标、VIP 弱反馈），
+          新版用「身份 + VIP 成长 + 一张钱包 + 活动条 + 三条增长 Banner」收口。
+          下图为当前原型，Banner 展示招募主播稿；每条线指向对应功能的文案总结。
+        </p>
+      </div>
+      <div class="meta">
+        <span class="badge">H5 · /mobile/mine</span>
+        <span>2026-09-08</span>
+        <span>原型截图 + 功能引线</span>
+      </div>
+    </header>
+
+    <div class="compare">
+      <article class="compare--old">
+        <h2>旧版 5 弊</h2>
+        <ol>
+          <li>定位摇摆：个人中心既不像主页，也不像钱包页。</li>
+          <li>资金双重割裂：总资产和钱包卡两套数字，用户要猜哪笔是真余额。</li>
+          <li>留白浪费：首屏空、信息密度低，增长位被挤出视野。</li>
+          <li>纯图标：宫格难认，常用能力靠猜。</li>
+          <li>VIP 弱反馈：只有等级，没有成长进度和下一档目标。</li>
+        </ol>
+      </article>
+      <article class="compare--new">
+        <h2>新版 5 优</h2>
+        <ol>
+          <li>身份一眼可见：头像、金刚号、社交数据先回答「我是谁」。</li>
+          <li>VIP 成长可视化：VIP1 → VIP2 进度条 + 晋级流水。</li>
+          <li>一张钱包闭环：总资产、冻结额度、充提兑落在同一张卡。</li>
+          <li>活动条前置：运营入口不再藏进宫格。</li>
+          <li>三条增长 Banner：邀请好友 / 招募主播 / 邀请代理，可滑动轮播。</li>
+        </ol>
+      </article>
+    </div>
+
+    <div class="stage">
+      <div class="col col-left">
+        <article class="note n1">
+          <em>对照「定位摇摆」</em>
+          <strong>01 顶栏工具让位给身份</strong>
+          <p>未上滑时左上角扫一扫、右侧客服 / 设置；上滑后头像 + 昵称吸顶，扫一扫挪到客服前。工具不和身份抢第一眼。</p>
+        </article>
+        <article class="note n2">
+          <em>对照「定位摇摆」</em>
+          <strong>02 身份一眼可见</strong>
+          <p>头像、昵称 EZ、金刚号 EZ888888（可复制）、动态 / 收藏 / 关注 / 粉丝横排。点资料卡进个人主页，复制号不跳页。</p>
+        </article>
+        <article class="note n3">
+          <em>对照「VIP 弱反馈」</em>
+          <strong>03 VIP 成长可视化</strong>
+          <p>冰蓝 VIP 卡展示 VIP1 → VIP2、晋级流水 ¥59.00/1,500.00 与「VIP特权」。等级不再是孤立标签，成长路径可见。</p>
+        </article>
+        <article class="note n4">
+          <em>对照「资金双重割裂」</em>
+          <strong>04 一张钱包闭环</strong>
+          <p>总资产、偏好法币、显隐眼睛、全部钱包在上头；卡内只留一笔大金额 + 冻结额度 + 充提兑。浅暖白底不抢戏，充值钮才是重点。</p>
+        </article>
+      </div>
+
+      <div class="phone">
+        <img src="assets/mine-center-current.png" alt="旗舰厅个人中心当前原型，Banner 为招募优质主播" />
+      </div>
+
+      <div class="col col-right">
+        <article class="note n5">
+          <em>对照「留白浪费」</em>
+          <strong>05 活动条前置</strong>
+          <p>「活动中心，尽享福利 / 参与活动」贴在钱包下方，运营入口不再沉到宫格或更多功能。浅杏色底，避免和钱包叠成一块重彩。</p>
+        </article>
+        <article class="note n6">
+          <em>对照「纯图标」</em>
+          <strong>06 八宫格带文字</strong>
+          <p>账单、投注、资产明细、金刚银行、邀请好友、直播中心、意见反馈、关于我们，一律图标 + 中文名，不用猜。</p>
+        </article>
+        <article class="note n7">
+          <em>对照「留白浪费」</em>
+          <strong>07 三条增长 Banner</strong>
+          <p>本图为第 2 张「招募优质主播入住」整图（最高分成 99%）。第 1 张邀请好友、第 3 张邀请代理；右下指示器横排，约 4 秒轮播。</p>
+        </article>
+        <article class="note n8">
+          <em>对照「留白浪费」</em>
+          <strong>08 更多功能下沉</strong>
+          <p>收款方式、直播中心、邀请好友、代理邀请落到 Banner 下方，角标提醒待办。次要能力不占首屏，主路径让给身份、钱包和增长。</p>
+        </article>
+      </div>
+
+      <svg class="wires" viewBox="0 0 1180 820" aria-hidden="true">
+        <!-- 01 顶栏扫一扫 -->
+        <path d="M330 48 C360 48, 380 30, 432 30" />
+        <circle cx="432" cy="30" r="4.5" />
+        <!-- 02 身份 -->
+        <path d="M330 168 C368 168, 388 86, 430 86" />
+        <circle cx="430" cy="86" r="4.5" />
+        <!-- 03 VIP -->
+        <path d="M330 292 C368 292, 386 161, 430 161" />
+        <circle cx="430" cy="161" r="4.5" />
+        <!-- 04 钱包 -->
+        <path d="M330 448 C370 448, 388 309, 430 309" />
+        <circle cx="430" cy="309" r="4.5" />
+        <!-- 05 活动条 -->
+        <path d="M850 48 C820 48, 810 407, 761 407" />
+        <circle cx="761" cy="407" r="4.5" />
+        <!-- 06 宫格 -->
+        <path d="M850 292 C818 292, 808 494, 761 494" />
+        <circle cx="761" cy="494" r="4.5" />
+        <!-- 07 Banner -->
+        <path d="M850 478 C816 478, 806 634, 761 634" />
+        <circle cx="761" cy="634" r="4.5" />
+        <!-- 08 更多 -->
+        <path d="M850 668 C818 668, 806 720, 761 720" />
+        <circle cx="761" cy="720" r="4.5" />
+      </svg>
+    </div>
+  </section>
+
+  <section class="prd">
+    <div class="prd-wrap">
+      <h1>旗舰厅「我的」需求说明</h1>
+      <p class="lead">
+        路由 <strong>mobile-mine</strong>（/mobile/mine）。本页是现金会员的个人中心，与贵宾厅 /mobile/vip-club/mine 共用组件，但钱包与资金能力隔离：本页只讲旗舰厅。
+        改版目标不是再堆入口，而是先让用户看清「我是谁、我什么等级、我有多少钱、我能参加什么、我能拉谁」。
+      </p>
+
+      <h2>一、功能逻辑</h2>
+      <ol>
+        <li>个人中心按「身份 → VIP 成长 → 一张钱包 → 活动条 + 8 宫格 → 三条增长 Banner → 更多功能」组织，解决旧版定位摇摆和首屏留白。</li>
+        <li>资金只保留一套数字：总资产按偏好计价法币展示，冻结额度是各现金钱包冻结金额折合合计；充值 / 提现 / 兑换都从这张卡出发。</li>
+        <li>增长分三条独立路径：邀请好友赚钱、招募优质主播入住、邀请代理拿返佣；活动中心单独一条，不和宫格抢位置。</li>
+        <li>贵宾厅同骨架但不走充提兑，不在本页展开。</li>
+      </ol>
+
+      <h2>二、交互行为</h2>
+      <ol>
+        <li>点扫一扫：无独立扫码页，提示「扫一扫即将开放」。上滑超过约半个头像后，顶栏出缩小头像 + 昵称，扫一扫移到客服前；滑回顶部还原。</li>
+        <li>点资料卡进个人主页；点金刚号旁复制只复制 EZ888888，成功提示「已复制金刚号」，失败提示「复制失败，请手动长按复制」。</li>
+        <li>点 VIP 卡进 VIP 详情。点总资产旁眼睛：总资产与冻结额度一并变为 ****。点刷新转一圈后更新金额。点全部钱包打开钱包 Sheet。</li>
+        <li>点充值 / 提现 / 兑换进入资金页对应 Tab。点活动条提示「活动中心即将开放」。</li>
+        <li>左右滑动或点右下指示器切换 Banner；按住时暂停，默认约 4 秒轮播。第 1 张进邀请页，第 2 张进开播设置，第 3 张：未加入代理进代理邀请，已加入进代理中心。</li>
+        <li>点设置进设置页。底栏大厅 / 社区 / 会话 / 我的只在旗舰厅内切换。</li>
+      </ol>
+
+      <h2>三、视觉表现</h2>
+      <ol>
+        <li>页头浅石香槟过渡到灰底。资料区无独立底色；VIP 卡冰蓝（#f7f7f7 → #dcf2ff），左 VIP1、右 VIP2，不铺橙色。</li>
+        <li>钱包卡极浅暖白到浅杏，拉丝与噪点半透明，几乎不铺橙色；充值为主题橙钮，提现 / 兑换半透明白底。</li>
+        <li>活动条左浅杏底 + 礼盒文案，右浅珊瑚浪形「参与活动 ›」，不铺饱和红金。</li>
+        <li>Banner 指示器在右下角横向排列。第 2 张铺招募主播整图（招募优质主播 / 最高分成可达 99% / 点击报名），不再叠文案。第 1 / 3 张为橙 / 金橙渐变卡。</li>
+        <li>颜色、字号以实际设计稿为准。</li>
+      </ol>
+
+      <h2>四、数据规则</h2>
+      <table>
+        <thead>
+          <tr><th>界面名称</th><th>规则</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>昵称 / 金刚号</td><td>EZ / EZ888888</td></tr>
+          <tr><td>社交统计</td><td>0 动态、2 收藏、2 关注、0 粉丝</td></tr>
+          <tr><td>VIP</td><td>当前 VIP1，下一档 VIP2；晋级流水已达 ¥59.00，目标 ¥1,500.00，还差 ¥1,441.00</td></tr>
+          <tr><td>总资产</td><td>各现金钱包按偏好计价法币折合，默认 CNY ¥625,344.71</td></tr>
+          <tr><td>冻结额度</td><td>各现金钱包冻结金额折合合计，默认 CNY ¥10,930.54；无冻结展示 0.00</td></tr>
+          <tr><td>邀请好友角标</td><td>可领取返利笔数，Mock 为 3</td></tr>
+          <tr><td>代理邀请角标</td><td>待处理邀请数，Mock 为 2；已加入代理后入口改为「代理中心」，不再出角标</td></tr>
+        </tbody>
+      </table>
+
+      <h2>五、异常与边界</h2>
+      <ol>
+        <li>无独立扫码页、活动中心页时，分别提示「扫一扫即将开放」「活动中心即将开放」，不跳空白页。</li>
+        <li>复制金刚号失败时提示手动长按。刷新进行中再次点刷新不重复触发。</li>
+        <li>隐藏余额时总资产与冻结额度同时打码。冻结为 0 时仍展示「冻结额度 0.00」，不隐藏该行。</li>
+        <li>未加入代理不出现「代理中心」；已加入后不出现「代理邀请」。</li>
+      </ol>
+
+      <h2>六、关联与跳转</h2>
+      <ol>
+        <li>本页路由 mobile-mine（/mobile/mine）。入口：旗舰厅底栏「我的」。与贵宾厅「我的」隔离，互不跳转。</li>
+        <li>充值 / 提现 / 兑换 → mobile-wallet-transfer（对应 tab）。账单记录 → mobile-billing-list。投注记录 → mobile-bet-records。资产明细、金刚银行按现有钱包路由。</li>
+        <li>邀请好友、Banner 第 1 张 → mobile-invite-friends。Banner 第 2 张与直播中心 → mobile-go-live。Banner 第 3 张与代理邀请 → mobile-agent-invites；已加入则进 mobile-agent（from=mine）。</li>
+        <li>意见反馈 → mobile-mine-feedback；关于我们 → mobile-mine-about；设置 → mobile-mine-settings；VIP 卡 → mobile-vip；资料卡 → 个人主页。</li>
+        <li>二级页顶栏返回必须回到 /mobile/mine，不得落到贵宾厅「我的」。</li>
+      </ol>
+    </div>
+  </section>
+</body>
+</html>
