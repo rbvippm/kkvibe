@@ -27,6 +27,9 @@ export type BillingType =
   | 'system_rebate'
   | 'recharge'
   | 'exchange'
+  | 'settle'
+  | 'live'
+  | 'trial'
 
 export type BillingCurrencyKind = 'crypto' | 'fiat' | 'credit'
 
@@ -63,8 +66,17 @@ export function billingIconKindFromType(type: BillingType): BillingIconKind {
   if (type === 'xcoin_credit_up' || type === 'xcoin_credit_down') return 'xcoin'
   if (type === 'system_payment' || type === 'system_deduct' || type === 'system_rebate') return 'system'
   if (type === 'recharge' || type === 'receive' || type === 'loan') return 'receive'
-  if (type === 'profit' || type === 'finance' || type === 'activity' || type === 'bonus') return 'bonus'
-  if (type === 'bet' || type === 'consume') return 'consume'
+  if (
+    type === 'profit' ||
+    type === 'finance' ||
+    type === 'activity' ||
+    type === 'bonus' ||
+    type === 'settle' ||
+    type === 'trial'
+  ) {
+    return 'bonus'
+  }
+  if (type === 'bet' || type === 'consume' || type === 'live') return 'consume'
   if (type === 'sell' || type === 'withdraw' || type === 'cash_delivery') return 'withdraw'
   if (
     type === 'exchange' ||

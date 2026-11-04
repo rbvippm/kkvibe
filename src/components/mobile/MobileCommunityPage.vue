@@ -5,11 +5,12 @@ import { useCommunityChannels } from '../../composables/useCommunityChannels'
 import {
   COMMUNITY_BANNER,
   COMMUNITY_TABS,
-  groupsForTab,
+  groupsForHall,
   type CommunityTab,
 } from '../../constants/mobileCommunity'
 import { COMMUNITY_ASSETS } from '../../constants/mobileCommunityAssets'
 import { GO_LIVE_PREVIEW_SPEC } from '../../constants/goLiveSpec'
+import { VIP_CLUB_COMMUNITY_SPEC } from '../../constants/mobileCommunitySpec'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileCommunityLivePanel from './MobileCommunityLivePanel.vue'
 
@@ -29,7 +30,8 @@ function readStoredTab(): CommunityTab {
 
 const route = useRoute()
 const router = useRouter()
-const { visibleTabs } = useCommunityChannels()
+const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
+const { visibleTabs } = useCommunityChannels(() => isVipClub.value)
 const activeTab = ref<CommunityTab>(readStoredTab())
 const joinedIds = ref<Set<string>>(new Set(['brand', 's2']))
 
@@ -52,7 +54,7 @@ watch(activeTab, (tab) => {
   }
 })
 
-const groups = computed(() => groupsForTab(activeTab.value))
+const groups = computed(() => groupsForHall(activeTab.value, isVipClub.value))
 const isLiveTab = computed(() => activeTab.value === 'live')
 
 function toggleJoin(id: string) {
@@ -72,7 +74,7 @@ const showMemberCount = computed(() => activeTab.value !== 'news')
 function openChannelSettings() {
   router.push({
     name: 'mobile-community-channel',
-    query: route.path.startsWith('/mobile/vip-club') ? { from: 'vip-club-community' } : {},
+    query: isVipClub.value ? { from: 'vip-club-community' } : {},
   })
 }
 </script>
@@ -82,7 +84,7 @@ function openChannelSettings() {
     <header class="mh5-community-header">
       <div class="mh5-community-tabs" role="tablist" :aria-label="$t('社区分类')">
         <div
-          v-for="tab in visibleTabs"
+          v-for="(tab, index) in visibleTabs"
           :key="tab.key"
           class="mh5-community-tab-slot"
         >
@@ -99,6 +101,11 @@ function openChannelSettings() {
           <Mh5SpecAnnot
             v-if="tab.key === 'live'"
             :spec="GO_LIVE_PREVIEW_SPEC"
+            placement="bottom"
+          />
+          <Mh5SpecAnnot
+            v-if="isVipClub && index === visibleTabs.length - 1"
+            :spec="VIP_CLUB_COMMUNITY_SPEC"
             placement="bottom"
           />
         </div>
@@ -123,7 +130,8 @@ function openChannelSettings() {
         />
       </section>
 
-      <ul class="mh5-community-list" role="list">
+      <p v-if="!groups.length" class="mh5-community-empty">{{ $t('暂无社群') }}</p>
+      <ul v-else class="mh5-community-list" role="list">
         <li v-for="group in groups" :key="group.id" class="mh5-community-item">
           <img class="mh5-community-item__icon" :src="group.icon" :alt="group.title" width="48" height="48" />
 

@@ -10,7 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const isCommunityMode = computed(() => String(route.name) === 'mobile-community-channel')
 const discoverApi = useDiscoverChannels()
-const communityApi = useCommunityChannels()
+const communityApi = useCommunityChannels(() => String(route.query.from || '') === 'vip-club-community')
 
 const channels = computed(() =>
   isCommunityMode.value ? communityApi.channels.value : discoverApi.channels.value,

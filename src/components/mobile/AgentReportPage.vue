@@ -46,26 +46,39 @@ import {
   type AgentReportPageTab,
 } from '../../constants/agentReportTab'
 import MobileAgentMyProfitView from '../../views/mobile/MobileAgentMyProfitView.vue'
+import MobileAgentSuperiorSettleView from '../../views/mobile/MobileAgentSuperiorSettleView.vue'
 import '../../styles/mobile-app-shell.css'
 
 export type { AgentReportPageTab }
 
 const route = useRoute()
 const router = useRouter()
-const { isRebateAgent, withAgentQuery, currencyScope } = useAgentIdentity()
+const { isRebateAgent, isCreditLedger, withAgentQuery, currencyScope } = useAgentIdentity()
 
-const pageTab = ref<AgentReportPageTab>(resolveAgentReportPageTab(route.query.reportTab))
+/** 交收 Tab 仅信用账本有；现金账本落到 settle 时回退盈亏/佣金 */
+function availablePageTab(tab: AgentReportPageTab): AgentReportPageTab {
+  return tab === 'settle' && !isCreditLedger.value ? 'finance' : tab
+}
+
+const pageTab = ref<AgentReportPageTab>(
+  availablePageTab(resolveAgentReportPageTab(route.query.reportTab)),
+)
 
 watch(
   () => route.query.reportTab,
   (tab) => {
-    pageTab.value = resolveAgentReportPageTab(tab)
+    pageTab.value = availablePageTab(resolveAgentReportPageTab(tab))
   },
 )
 
-const pageTabs = computed(() => [
-  { key: 'finance' as const, label: isRebateAgent.value ? '佣金' : '盈亏' },
-  { key: 'game' as const, label: '游戏' },
+watch(isCreditLedger, () => {
+  pageTab.value = availablePageTab(pageTab.value)
+})
+
+const pageTabs = computed<{ key: AgentReportPageTab; label: string }[]>(() => [
+  { key: 'finance', label: isRebateAgent.value ? '佣金' : '盈亏' },
+  { key: 'game', label: '游戏' },
+  ...(isCreditLedger.value ? [{ key: 'settle' as const, label: '交收' }] : []),
 ])
 
 const financeAnnotSpec = AGENT_MY_PROFIT_SPEC
@@ -171,7 +184,7 @@ function closeGameProfitFormulaTip() {
           placement="bottom"
         />
         <Mh5SpecAnnot
-          v-else-if="isRebateAgent"
+          v-else-if="pageTab === 'game' && isRebateAgent"
           :spec="gameAnnotSpec"
           placement="bottom"
         />
@@ -183,6 +196,12 @@ function closeGameProfitFormulaTip() {
       embedded
       class="mh5-agent-report-finance"
       @open-currency="currencyPickerOpen = true"
+    />
+
+    <MobileAgentSuperiorSettleView
+      v-else-if="pageTab === 'settle'"
+      embedded
+      class="mh5-agent-report-finance"
     />
 
     <main

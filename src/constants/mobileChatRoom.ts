@@ -18,6 +18,9 @@ export const CHAT_ROOM_PLUS_ACTIONS = [
   { key: 'favorite', label: '收藏', icon: CHAT_ROOM_ASSETS.plusActions.favorite },
 ] as const
 
+/** 贵宾厅会话「+」面板不提供的入口 */
+export const VIP_CLUB_HIDDEN_PLUS_ACTIONS = new Set<string>(['transfer', 'gift'])
+
 /** 多图布局类型 · 对齐 Figma Caption */
 export type ChatImageLayout =
   | '1-portrait'

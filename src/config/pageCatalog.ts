@@ -102,6 +102,7 @@ const AGENT_H5_CATALOG: PageCatalogItem[] = [
   { id: 'mobile-agent-settlement', platform: 'agent', routeName: 'mobile-agent-settlement', path: '/mobile/agent/settlement', title: '代理结算对账', group: '结算', pagePath: ['代理端', '结算', '代理结算对账'] },
   { id: 'mobile-agent-settlement-detail', platform: 'agent', routeName: 'mobile-agent-settlement-detail', path: '/mobile/agent/settlement/detail', title: '流水明细', group: '结算', pagePath: ['代理端', '结算', '流水明细'] },
   { id: 'mobile-xcoin-report', platform: 'agent', routeName: 'mobile-xcoin-report', path: '/mobile/agent/xcoin/report', title: 'X币报表', group: '报表', pagePath: ['代理端', '报表', 'X币报表'] },
+  { id: 'mobile-agent-superior-settle', platform: 'agent', routeName: 'mobile-agent-superior-settle', path: '/mobile/agent/superior-settle', title: '上级交收', group: '信用额度', pagePath: ['代理端', '信用额度', '上级交收'] },
   { id: 'mobile-xcoin-records', platform: 'agent', routeName: 'mobile-xcoin-records', path: '/mobile/agent/xcoin/records', title: '信用额度记录', group: '信用额度', pagePath: ['代理端', '信用额度', '信用额度记录'] },
   { id: 'mobile-xcoin-credit-member', platform: 'agent', routeName: 'mobile-xcoin-credit-member', path: '/mobile/agent/xcoin/credit/member', title: '给会员上分', group: '信用额度', pagePath: ['代理端', '信用额度', '给会员上分'] },
   { id: 'mobile-xcoin-credit-agent', platform: 'agent', routeName: 'mobile-xcoin-credit-agent', path: '/mobile/agent/xcoin/credit/agent', title: '给代理上分', group: '信用额度', pagePath: ['代理端', '信用额度', '给代理上分'] },

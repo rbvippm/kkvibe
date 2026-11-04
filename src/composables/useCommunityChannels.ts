@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import {
   MOCK_COMMUNITY_CHANNELS,
+  VIP_CLUB_HIDDEN_COMMUNITY_CHANNELS,
   type CommunityChannelId,
   type CommunityChannelItem,
 } from '../constants/mobileCommunityChannel'
@@ -49,9 +50,15 @@ function persist() {
   }
 }
 
-export function useCommunityChannels() {
+/** isVipClub 为真时隐藏贵宾厅不提供的频道；排序只调整可见项，隐藏项保持原位 */
+export function useCommunityChannels(isVipClub: () => boolean = () => false) {
+  const isHidden = (id: CommunityChannelId) =>
+    isVipClub() && VIP_CLUB_HIDDEN_COMMUNITY_CHANNELS.has(id)
+
+  const shownChannels = computed(() => channels.value.filter((item) => !isHidden(item.id)))
+
   const visibleTabs = computed(() =>
-    channels.value
+    shownChannels.value
       .filter((item) => item.enabled)
       .map((item) => ({
         key: item.id,
@@ -60,7 +67,8 @@ export function useCommunityChannels() {
   )
 
   function setChannelOrder(next: CommunityChannelItem[]) {
-    channels.value = next.map((item) => ({ ...item }))
+    const queue = next.map((item) => ({ ...item }))
+    channels.value = channels.value.map((item) => (isHidden(item.id) ? item : queue.shift() ?? item))
     persist()
   }
 
@@ -72,7 +80,7 @@ export function useCommunityChannels() {
   }
 
   return {
-    channels,
+    channels: shownChannels,
     visibleTabs,
     setChannelOrder,
     toggleChannel,

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { mineHallQuery } from '../../constants/mineHall'
+import { VIP_CLUB_CHAT_SPEC } from '../../constants/vipClubSpec'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   CHAT_FILTERS,
   chatConversationsState,
@@ -11,7 +14,9 @@ import {
 } from '../../constants/mobileChat'
 import { CHAT_ASSETS } from '../../constants/mobileChatAssets'
 
+const route = useRoute()
 const router = useRouter()
+const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
 const activeFilter = ref<ChatFilter>('all')
 
 const conversations = computed(() => conversationsForFilter(activeFilter.value))
@@ -28,6 +33,7 @@ function openRoom(item: ChatConversation) {
   router.push({
     name: 'mobile-chat-room',
     params: { id: item.roomId },
+    query: mineHallQuery(isVipClub.value),
   })
 }
 
@@ -43,7 +49,10 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
   <div class="mh5-chat-page">
     <header class="mh5-chat-header">
       <div class="mh5-chat-header__top">
-        <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" :alt="$t('金刚 KING KONG')" width="120" height="28" />
+        <div class="mh5-chat-header__brand">
+          <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" :alt="$t('金刚 KING KONG')" width="120" height="28" />
+          <Mh5SpecAnnot v-if="isVipClub" :spec="VIP_CLUB_CHAT_SPEC" placement="bottom" />
+        </div>
         <div class="mh5-chat-header__actions">
           <button type="button" class="mh5-chat-header__icon-btn" :aria-label="$t('发现')" @click="goDiscover">
             <img :src="CHAT_ASSETS.explore" alt="" width="22" height="22" />

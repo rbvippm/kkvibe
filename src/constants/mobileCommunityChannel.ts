@@ -19,3 +19,6 @@ export const MOCK_COMMUNITY_CHANNELS: CommunityChannelItem[] = [
   { id: 'news', label: '新闻', icon: COMMUNITY_ASSETS.groupBrand, enabled: true },
   { id: 'live', label: '直播', icon: DISCOVER_CHANNEL_ASSETS.live, enabled: true },
 ]
+
+/** 贵宾厅社区不提供的频道（Tab 与频道设置均不展示） */
+export const VIP_CLUB_HIDDEN_COMMUNITY_CHANNELS = new Set<CommunityChannelId>(['live'])

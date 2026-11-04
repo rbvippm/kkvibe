@@ -317,7 +317,7 @@ export const RELATION_LABEL: Record<AgentRelation, string> = {
 
 /** 当前登录代理（记录中「我」的展示与搜索） */
 export const MOCK_TRANSFER_SELF_PROFILE = {
-  nickname: 'OO1231236789',
+  nickname: '一级代理EZ',
   kingkongId: 'gg12345678',
 }
 

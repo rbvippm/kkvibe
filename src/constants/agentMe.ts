@@ -10,12 +10,12 @@ export type AgentMeProfitRow = {
 export type AgentMeMenuItem = {
   key: string
   title: string
-  icon: 'promo' | 'member-rebate' | 'credit-agent' | 'credit-member' | 'credit-record'
+  icon: 'promo' | 'member-rebate' | 'credit-agent' | 'credit-member' | 'credit-record' | 'credit-settle'
   routeName?: string
 }
 
 export const MOCK_AGENT_ME_PROFILE = {
-  nickname: 'OO1231236789',
+  nickname: '一级代理EZ',
   avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=agent-me&backgroundColor=e8e8e8',
   level: 'V2',
   agentLevelLabel: '晶代',

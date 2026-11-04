@@ -5,6 +5,7 @@ import Mh5ChatLiveCard from './Mh5ChatLiveCard.vue'
 import {
   CHAT_ROOM_MENU_ACTIONS,
   CHAT_ROOM_PLUS_ACTIONS,
+  VIP_CLUB_HIDDEN_PLUS_ACTIONS,
   CHAT_ROOM_REACTIONS,
   albumExtraCount,
   attachChatUnreadHistory,
@@ -54,6 +55,7 @@ import {
 import { resolveVoiceGameDisplay, resolveVoiceGameIcon } from '../../constants/mobileVoiceRoom'
 import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 import { VIP_CLUB_SPORTS_ASSETS } from '../../constants/vipClub'
+import { isVipClubMineFrom } from '../../constants/mineHall'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileChatFileSendFlow from './MobileChatFileSendFlow.vue'
@@ -67,6 +69,13 @@ const route = useRoute()
 const router = useRouter()
 
 const room = computed(() => getChatRoomDemo(String(route.params.id || '')))
+/** 贵宾厅会话：不提供转账 / 送礼与直播分享卡，群聊游戏照常 */
+const isVipClubRoom = computed(() => isVipClubMineFrom(route.query.from))
+const plusActions = computed(() =>
+  isVipClubRoom.value
+    ? CHAT_ROOM_PLUS_ACTIONS.filter((action) => !VIP_CLUB_HIDDEN_PLUS_ACTIONS.has(action.key))
+    : CHAT_ROOM_PLUS_ACTIONS,
+)
 /** 「h5图文入口」走 Telegram Web 系统相册/相机流程 */
 const isTgH5Room = computed(() => room.value.id === TG_H5_ROOM_ID)
 const messages = ref<ChatRoomMessage[]>([])
@@ -843,7 +852,9 @@ watch(
       room.value.kind,
       unread,
     )
-    messages.value = [...packed.messages, ...liveShareMessagesForRoom(room.value.id)]
+    messages.value = isVipClubRoom.value
+      ? packed.messages
+      : [...packed.messages, ...liveShareMessagesForRoom(room.value.id)]
     firstUnreadId.value = packed.firstUnreadId
     historyUnreadCount.value = unread
     showUnreadJump.value = false
@@ -891,7 +902,7 @@ const watchingItem = computed(() => {
 function goBack() {
   persistLocalGameToGlobalDock()
   if (window.history.length > 1) router.back()
-  else router.replace({ name: 'mobile-chat' })
+  else router.replace({ name: isVipClubRoom.value ? 'mobile-vip-club-chat' : 'mobile-chat' })
 }
 
 function openCommunityDetail() {
@@ -2712,7 +2723,7 @@ onBeforeUnmount(() => {
         <div v-if="plusOpen" class="mh5-chat-room-plus" role="menu" aria-label="更多功能">
           <div class="mh5-chat-room-plus__grid">
             <div
-              v-for="action in CHAT_ROOM_PLUS_ACTIONS"
+              v-for="action in plusActions"
               :key="action.key"
               class="mh5-chat-room-plus__cell"
             >

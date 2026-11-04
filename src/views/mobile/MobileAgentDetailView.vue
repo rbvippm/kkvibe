@@ -14,6 +14,7 @@ import {
   type AgentDetailTab,
   type AgentWalletCurrency,
 } from '../../constants/agentDetail'
+import { isCreditDirectSubordinate, isCreditViewerSelf } from '../../constants/agentTeam'
 import {
   agentAppCreditCurrency,
   agentAppCurrency,
@@ -51,6 +52,17 @@ import {
   type AgentProfitVendorKey,
 } from '../../constants/agentDetailProfit'
 import {
+  getAgentCreditProfitDetail,
+  getAgentCreditProfitDialogDetail,
+  getAgentCreditProfitEarnSection,
+  getAgentCreditProfitFlowRows,
+  getAgentCreditProfitGameSection,
+  getAgentCreditProfitHero,
+  getAgentCreditProfitP2pSection,
+  getAgentCreditProfitSummaryRows,
+  getAgentCreditTotalProfit,
+} from '../../constants/agentCreditProfit'
+import {
   AGENT_MY_PROFIT_ASSETS,
   agentMyProfitDialogLabelHeader,
   agentMyProfitToneClass,
@@ -81,12 +93,17 @@ import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5AgentReportFilter from '../../components/mobile/Mh5AgentReportFilter.vue'
+import Mh5CreditSettlePanel from '../../components/mobile/Mh5CreditSettlePanel.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   AGENT_DETAIL_CREDIT_CURRENCY_SPEC,
   AGENT_DETAIL_GAME_DATA_SPEC,
 } from '../../constants/agentDetailSpec'
 import { ACCOUNT_SECURITY_COPY_ICON } from '../../constants/accountSecurity'
+import {
+  AGENT_SUB_SETTLE_SPEC,
+  AGENT_SUPERIOR_SETTLE_SPEC,
+} from '../../constants/agentCreditSettleSpec'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
@@ -174,6 +191,11 @@ const profitTabFormula = computed(() => {
 const gameProfitFormulaText = computed(() =>
   isCreditProfit.value ? AGENT_CREDIT_GAME_PROFIT_FORMULA : AGENT_GAME_PROFIT_FORMULA,
 )
+/** 信用额度看板：代理盈亏 / 游戏数据与对账结算同源，按当前代理取账本 */
+const creditAgentRef = computed(() => ({
+  id: agent.value?.id ?? 'self',
+  name: agent.value ? getAgentDisplayName(agent.value) : '',
+}))
 const useProfitSections = computed(
   () => !isRebateAgent.value && profitLayoutMode.value === 'sections',
 )
@@ -212,35 +234,60 @@ watch(
 
 const profitVendorOptions = computed(() => AGENT_PROFIT_VENDORS[profitCategory.value])
 const profitDetail = computed(() =>
-  getAgentProfitDetail(profitCategory.value, profitVendor.value, currency.value),
+  isCreditProfit.value
+    ? getAgentCreditProfitDetail(creditAgentRef.value, profitCategory.value, profitVendor.value, currency.value)
+    : getAgentProfitDetail(profitCategory.value, profitVendor.value, currency.value),
 )
-const profitSummaryRows = computed(() =>
-  isRebateAgent.value
-    ? getAgentCommissionSummaryRows(currency.value)
-    : getAgentProfitSummaryRows(currency.value),
+const profitSummaryRows = computed(() => {
+  if (isRebateAgent.value) return getAgentCommissionSummaryRows(currency.value)
+  return isCreditProfit.value
+    ? getAgentCreditProfitSummaryRows(creditAgentRef.value, currency.value)
+    : getAgentProfitSummaryRows(currency.value)
+})
+const agentTotalProfit = computed(() => {
+  if (isRebateAgent.value) return getAgentTotalCommission(currency.value)
+  return isCreditProfit.value
+    ? getAgentCreditTotalProfit(creditAgentRef.value, currency.value)
+    : getAgentTotalProfit(currency.value)
+})
+const profitFlowRows = computed(() =>
+  isCreditProfit.value
+    ? getAgentCreditProfitFlowRows(creditAgentRef.value, currency.value)
+    : getAgentProfitFlowRows(currency.value),
 )
-const agentTotalProfit = computed(() =>
-  isRebateAgent.value
-    ? getAgentTotalCommission(currency.value)
-    : getAgentTotalProfit(currency.value),
+const profitGameSection = computed(() =>
+  isCreditProfit.value
+    ? getAgentCreditProfitGameSection(creditAgentRef.value, currency.value)
+    : getAgentProfitGameSection(currency.value),
 )
-const profitFlowRows = computed(() => getAgentProfitFlowRows(currency.value))
-const profitGameSection = computed(() => getAgentProfitGameSection(currency.value))
-const profitP2pSection = computed(() => getAgentProfitP2pSection(currency.value))
-const profitEarnSection = computed(() => getAgentProfitEarnSection(currency.value))
+const profitP2pSection = computed(() =>
+  isCreditProfit.value ? getAgentCreditProfitP2pSection() : getAgentProfitP2pSection(currency.value),
+)
+const profitEarnSection = computed(() =>
+  isCreditProfit.value
+    ? getAgentCreditProfitEarnSection(creditAgentRef.value, currency.value)
+    : getAgentProfitEarnSection(currency.value),
+)
 const profitCostSection = computed(() => getAgentProfitCostSection(currency.value))
-const profitFormula = computed(() => getAgentProfitFormula(currency.value))
-const profitHero = computed(() => getAgentProfitHero(currency.value))
+const profitHero = computed(() =>
+  isCreditProfit.value
+    ? getAgentCreditProfitHero(creditAgentRef.value, currency.value)
+    : getAgentProfitHero(currency.value),
+)
+const profitFormula = computed(() =>
+  isCreditProfit.value ? profitHero.value : getAgentProfitFormula(currency.value),
+)
 const profitDialogTitle = computed(() =>
   profitDialogKind.value
     ? agentProfitDialogTitle(profitDialogKind.value, currency.value)
     : '',
 )
-const profitDialogRows = computed(() =>
-  profitDialogKind.value
-    ? getAgentProfitDialogDetail(profitDialogKind.value, currency.value)
-    : [],
-)
+const profitDialogRows = computed(() => {
+  if (!profitDialogKind.value) return []
+  return isCreditProfit.value
+    ? getAgentCreditProfitDialogDetail(creditAgentRef.value, profitDialogKind.value, currency.value)
+    : getAgentProfitDialogDetail(profitDialogKind.value, currency.value)
+})
 const profitDialogFormulaText = computed(
   () => profitDialogRows.value.find((row) => row.formulaTip)?.formulaTip ?? '',
 )
@@ -370,13 +417,22 @@ const creditLimitView = computed(() => {
     agent.value.creditLimits[creditCurrency.value],
     creditCurrency.value,
     creditSettleRangeScale(settleStart.value, settleEnd.value),
+    { id: agent.value.id, name: getAgentDisplayName(agent.value) },
   )
 })
 
 const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCurrency.value))
 
+/** 查看自己时为交收上级口径 */
+const isViewerSelf = computed(() => (agent.value ? isCreditViewerSelf(agent.value.id) : false))
+
+/** 只能给自己的直属代理上下分；本人与非直属不展示入口 */
+const canCreditTransfer = computed(() =>
+  agent.value ? isCreditDirectSubordinate(agent.value.id) : false,
+)
+
 function goCredit() {
-  if (!agent.value) return
+  if (!agent.value || !canCreditTransfer.value) return
   router.push({
     name: 'mobile-xcoin-credit-agent',
     query: {
@@ -422,10 +478,12 @@ function confirmFilterDate(start: string, end: string) {
   filterDateOpen.value = false
 }
 
-function settleAmountClass(positive?: boolean) {
-  if (positive === true) return 'mh5-agent-detail-wallet__value--positive'
-  if (positive === false) return 'mh5-agent-detail-wallet__value--negative'
-  return 'mh5-agent-detail-credit-settle__value--neutral'
+/** 查看自己时「应收下线」逐条可点，进入对应下线详情 */
+function openSettleLink(link: { kind: 'agent' | 'member'; id: string }) {
+  router.push({
+    name: link.kind === 'agent' ? 'mobile-agent-detail' : 'mobile-member-detail',
+    query: { ...route.query, id: link.id, tab: 'credit' },
+  })
 }
 
 function pickCurrency(value: string) {
@@ -612,6 +670,7 @@ function closeProfitFormulaTips() {
               </div>
             </div>
             <button
+              v-if="canCreditTransfer"
               type="button"
               class="mh5-agent-detail-credit-manage__action mh5-agent-detail-credit-manage__action--primary"
               @click="goCredit"
@@ -665,7 +724,10 @@ function closeProfitFormulaTips() {
           class="mh5-agent-detail-wallet mh5-agent-detail-xcoin mh5-agent-detail-credit-settle"
         >
           <div class="mh5-agent-detail-credit-settle__head">
-            <h3 class="mh5-agent-detail-wallet__title">对账结算</h3>
+            <h3 class="mh5-agent-detail-wallet__title">
+              对账结算
+              <Mh5SpecAnnot :spec="isViewerSelf ? AGENT_SUPERIOR_SETTLE_SPEC : AGENT_SUB_SETTLE_SPEC" placement="bottom" />
+            </h3>
             <button
               type="button"
               class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action mh5-agent-detail-credit-settle__date"
@@ -679,36 +741,7 @@ function closeProfitFormulaTips() {
               </span>
             </button>
           </div>
-          <div
-            class="mh5-agent-detail-credit-settle__receivable"
-            :class="{
-              'mh5-agent-detail-credit-settle__receivable--negative': !creditLimitView.receivablePositive,
-            }"
-          >
-            <p class="mh5-agent-detail-credit-settle__receivable-label">我方应收下级</p>
-            <p class="mh5-agent-detail-credit-settle__receivable-value">
-              {{ creditLimitView.receivableValue }}
-            </p>
-          </div>
-          <div class="mh5-agent-detail-credit-settle__timeline">
-            <div
-              v-for="item in creditLimitView.settleFlowRows"
-              :key="item.label"
-              class="mh5-agent-detail-credit-settle__row"
-            >
-              <span>{{ item.label }}</span>
-              <span :class="settleAmountClass(item.positive)">{{ item.value }}</span>
-            </div>
-            <div class="mh5-agent-detail-credit-settle__divider" />
-            <div
-              v-for="item in creditLimitView.settleResultRows"
-              :key="item.label"
-              class="mh5-agent-detail-credit-settle__row"
-            >
-              <span>{{ item.label }}</span>
-              <span :class="settleAmountClass(item.positive)">{{ item.value }}</span>
-            </div>
-          </div>
+          <Mh5CreditSettlePanel :panel="creditLimitView.settle" @link="openSettleLink" />
           <button
             type="button"
             class="mh5-agent-detail-credit-settle__statement"

@@ -9,6 +9,8 @@ export type CommunityGroup = {
   icon: string
   memberCount: number
   joined: boolean
+  /** 后台「信用额度」开关：打开才在贵宾厅社区展示 */
+  creditEnabled: boolean
 }
 
 export const COMMUNITY_TABS: { key: CommunityTab; label: string }[] = [
@@ -32,6 +34,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupBrand,
     memberCount: 201,
     joined: true,
+    creditEnabled: true,
   },
   {
     id: 'official',
@@ -40,6 +43,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupService,
     memberCount: 1211,
     joined: false,
+    creditEnabled: true,
   },
   {
     id: 'feedback',
@@ -48,6 +52,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupFeedback,
     memberCount: 337,
     joined: false,
+    creditEnabled: false,
   },
   {
     id: 'complaint',
@@ -56,6 +61,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupComplaint,
     memberCount: 263,
     joined: false,
+    creditEnabled: false,
   },
   {
     id: 'lottery',
@@ -64,6 +70,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupLottery,
     memberCount: 40,
     joined: false,
+    creditEnabled: true,
   },
   {
     id: 'marble',
@@ -72,6 +79,7 @@ export const COMMUNITY_SERVICE_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupMarble,
     memberCount: 218,
     joined: false,
+    creditEnabled: false,
   },
 ]
 
@@ -83,6 +91,7 @@ export const COMMUNITY_STRATEGY_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupService,
     memberCount: 156,
     joined: false,
+    creditEnabled: true,
   },
   {
     id: 's2',
@@ -91,6 +100,7 @@ export const COMMUNITY_STRATEGY_GROUPS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupFeedback,
     memberCount: 89,
     joined: true,
+    creditEnabled: false,
   },
 ]
 
@@ -102,6 +112,7 @@ export const COMMUNITY_NEWS_ITEMS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupBrand,
     memberCount: 0,
     joined: false,
+    creditEnabled: false,
   },
   {
     id: 'n2',
@@ -110,8 +121,15 @@ export const COMMUNITY_NEWS_ITEMS: CommunityGroup[] = [
     icon: COMMUNITY_ASSETS.groupMarble,
     memberCount: 0,
     joined: false,
+    creditEnabled: true,
   },
 ]
+
+/** 贵宾厅只展示后台打开「信用额度」开关的社群 */
+export function groupsForHall(tab: CommunityTab, isVipClub: boolean): CommunityGroup[] {
+  const list = groupsForTab(tab)
+  return isVipClub ? list.filter((group) => group.creditEnabled) : list
+}
 
 export function groupsForTab(tab: CommunityTab): CommunityGroup[] {
   if (tab === 'live') return []

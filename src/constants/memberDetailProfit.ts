@@ -14,6 +14,7 @@ import {
   type AgentProfitVendorKey,
   type ProfitValueTone,
 } from './agentDetailProfit'
+import { MEMBER_SETTLE_MOCK, VIP_MEMBER_EZ } from './memberSettleMock'
 
 export type MemberProfitCategoryKey = AgentProfitCategoryKey
 export type MemberProfitVendorKey = AgentProfitVendorKey
@@ -128,10 +129,10 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     activityGold: 120,
     depositWithdrawFee: 42,
   },
-  /** 信用代理中心：无 VIP 奖励 / 活动金 / 充提，相关字段恒为 0 */
+  /** 信用代理中心：取贵宾厅会员 EZ 的钱包数据；无 VIP 奖励 / 活动金 / 充提，相关字段恒为 0 */
   '信用额度-CNY': {
-    gameProfit: 1550,
-    memberRebate: 128,
+    gameProfit: VIP_MEMBER_EZ.winLose.CNY,
+    memberRebate: MEMBER_SETTLE_MOCK.rebate,
     vipRebate: 0,
     vipBonus: 0,
     vipExtraBonus: 0,
@@ -139,8 +140,8 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     depositWithdrawFee: 0,
   },
   '信用额度-USD': {
-    gameProfit: 620,
-    memberRebate: 48,
+    gameProfit: VIP_MEMBER_EZ.winLose.USD,
+    memberRebate: MEMBER_SETTLE_MOCK.rebate,
     vipRebate: 0,
     vipBonus: 0,
     vipExtraBonus: 0,
@@ -192,6 +193,12 @@ function formatRewardAmount(value: number): { amountText: string; tone: ProfitVa
 
 function getMemberProfitSummaryMock(currency: string) {
   return PROFIT_SUMMARY_BY_CURRENCY[currency] ?? EMPTY_SUMMARY_MOCK
+}
+
+/** 信用额度会员盈亏的游戏输赢 / 会员退水，供对账结算复用，保证两处数值一致 */
+export function getMemberCreditProfitBook(currency: string) {
+  const stats = getMemberProfitSummaryMock(currency)
+  return { gameProfit: stats.gameProfit, memberRebate: stats.memberRebate }
 }
 
 /** 游戏净输赢合计：占成含会员退水；返佣仅游戏输赢 + VIP退水 */
@@ -275,6 +282,112 @@ function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
   return scaled
 }
 
+export type MemberCreditGameBook = {
+  key: AgentProfitCategoryKey
+  label: string
+  validBet: number
+  win: number
+  rebate: number
+}
+
+/**
+ * 信用会员按游戏大类拆分（只落在游戏统计有的六个大类）：
+ * 有效投注、退水按投注占比分摊，输赢按权重分摊，合计 = 会员盈亏的游戏输赢 / 会员退水
+ */
+export const MEMBER_CREDIT_GAME_SHARES: { key: AgentProfitCategoryKey; label: string; bet: number; win: number }[] = [
+  { key: 'scratch', label: '刮刮乐', bet: 0.1, win: 0.1 },
+  { key: 'marble', label: '弹珠', bet: 0.1, win: 0.14 },
+  { key: 'chess', label: '棋牌', bet: 0.15, win: -0.12 },
+  { key: 'lottery', label: '彩票', bet: 0.1, win: 0.06 },
+  { key: 'sports', label: '体育', bet: 0.3, win: 0.46 },
+  { key: 'live', label: '真人', bet: 0.25, win: 0.36 },
+]
+
+export function getMemberCreditGameBooks(currency: string): MemberCreditGameBook[] {
+  const { gameProfit, memberRebate } = getMemberProfitSummaryMock(currency)
+  const round = (n: number) => Math.round(n * 100) / 100
+  return MEMBER_CREDIT_GAME_SHARES.map((item) => ({
+    key: item.key,
+    label: item.label,
+    validBet: round(MEMBER_SETTLE_MOCK.validBet * item.bet),
+    win: round(gameProfit * item.win),
+    rebate: round(memberRebate * item.bet),
+  }))
+}
+
+function sumCreditGameBooks(books: MemberCreditGameBook[]) {
+  return books.reduce(
+    (acc, book) => ({
+      validBet: acc.validBet + book.validBet,
+      win: acc.win + book.win,
+      rebate: acc.rebate + book.rebate,
+    }),
+    { validBet: 0, win: 0, rebate: 0 },
+  )
+}
+
+/** 信用 · 游戏净输赢公式卡：游戏输赢 + 退水 = 游戏净输赢 */
+export function getMemberCreditGameFormula(currency: string) {
+  const { gameProfit, memberRebate } = getMemberProfitSummaryMock(currency)
+  const net = gameProfit + memberRebate
+  return {
+    winText: formatProfitAmount(gameProfit),
+    winTone: profitTone(gameProfit),
+    rebateText: formatProfitAmount(memberRebate),
+    rebateTone: profitTone(memberRebate),
+    netText: formatProfitAmount(net),
+    netTone: profitTone(net),
+  }
+}
+
+function creditGameDetail(title: string, book: { validBet: number; win: number; rebate: number }): AgentProfitDetail {
+  const net = book.win + book.rebate
+  return {
+    title,
+    totalProfit: formatProfitAmount(net),
+    totalProfitTone: profitTone(net),
+    rows: [
+      {
+        label: '下注有效金额',
+        value: book.validBet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+        tone: 'neutral',
+      },
+      { label: '输赢', value: formatProfitAmount(book.win), tone: profitTone(book.win) },
+      { label: '会员退水', value: formatProfitAmount(book.rebate), tone: profitTone(book.rebate) },
+    ],
+  }
+}
+
+/** 信用 · 游戏统计：全部 = 会员盈亏合计；大类「全部」= 该大类；场馆只挂在首个场馆上 */
+function getMemberCreditProfitDetail(
+  category: MemberProfitCategoryKey,
+  vendor: MemberProfitVendorKey,
+  currency: string,
+): AgentProfitDetail {
+  const books = getMemberCreditGameBooks(currency)
+  if (category === 'overall') return creditGameDetail('全部', sumCreditGameBooks(books))
+  const vendors = AGENT_PROFIT_VENDORS[category]
+  const vendorLabel = vendors.find((item) => item.key === vendor)?.label ?? '明细'
+  const catLabel = AGENT_PROFIT_CATEGORY_TABS.find((item) => item.key === category)?.label ?? '明细'
+  const book = books.find((item) => item.key === category)
+  const empty = { validBet: 0, win: 0, rebate: 0 }
+  if (vendor === 'all') return creditGameDetail(catLabel, book ?? empty)
+  const firstVendor = vendors.find((item) => item.key !== 'all')?.key
+  return creditGameDetail(vendorLabel, vendor === firstVendor && book ? book : empty)
+}
+
+/** 信用 · 注单记录汇总：注单数取贵宾厅钱包注单笔数 */
+export function getMemberCreditBetSummary(currency: string) {
+  const { validBet, win } = sumCreditGameBooks(getMemberCreditGameBooks(currency))
+  const symbol = currency === '信用额度-USD' ? '$' : '¥'
+  return {
+    totalBets: currency === '信用额度-USD' ? 36 : 158,
+    validBetText: `${symbol}${validBet.toLocaleString('en-US')}`,
+    winText: formatProfitAmount(win).replace(/\.00$/, ''),
+    winPositive: win > 0,
+  }
+}
+
 /** 游戏净输赢公式构成项（退水为正；返佣无会员退水） */
 function getMemberProfitGameFormulaRows(
   currency: string,
@@ -314,6 +427,13 @@ export function getMemberProfitGameSection(
   currency: string,
   options?: MemberProfitOptions,
 ): MemberProfitSection {
+  if (isCreditProfitCurrency(currency)) {
+    const rows: MemberProfitSectionRow[] = getMemberCreditGameBooks(currency).map((book) => {
+      const net = book.win + book.rebate
+      return { key: book.key, label: book.label, value: formatProfitAmount(net), tone: profitTone(net) }
+    })
+    return { nameHeader: '游戏净输赢', amountHeader: '金额', rows, total: sumSectionRows(rows, 'game_sum') }
+  }
   const target = getMemberGameNetTotal(currency, options)
   const scaled = scaleWeightsToTarget(
     MEMBER_GAME_CATEGORY_BASE.map((item) => item.weight),
@@ -418,6 +538,22 @@ function getMemberCategoryDetailRows(
   options?: MemberProfitOptions,
 ): MemberProfitDialogDetailRow[] {
   const includeRebate = withMemberRebate(options)
+  if (isCreditProfitCurrency(currency)) {
+    const book = getMemberCreditGameBooks(currency).find((item) => item.key === categoryKey)
+    if (book) {
+      const detail = creditGameDetail(book.label, book)
+      return [
+        ...detail.rows.map((row) => ({ label: row.label, amountText: row.value, tone: row.tone })),
+        {
+          label: '游戏净输赢',
+          amountText: detail.totalProfit,
+          tone: detail.totalProfitTone,
+          emphasize: true,
+          formulaTip: memberGameNetFormulaText(includeRebate, currency),
+        },
+      ]
+    }
+  }
   const section = getMemberProfitGameSection(currency, options)
   const product = section.rows.find((row) => row.key === categoryKey)
   const targetNet = product ? parseProfitAmountText(product.value) : 650
@@ -635,17 +771,8 @@ export function getMemberProfitDetail(
   vendor: MemberProfitVendorKey,
   currency = '',
 ): AgentProfitDetail {
-  const detail = getMemberProfitDetailBase(category, vendor)
-  if (!isCreditProfitCurrency(currency)) return detail
-  const hidden = detail.rows.filter((row) => CREDIT_HIDDEN_PROFIT_LABELS.has(row.label))
-  const removed = hidden.reduce((acc, row) => acc + parseProfitAmountText(row.value), 0)
-  const total = parseProfitAmountText(detail.totalProfit) - removed
-  return {
-    ...detail,
-    totalProfit: formatProfitAmount(total),
-    totalProfitTone: profitTone(total),
-    rows: withoutCreditHiddenRows(currency, detail.rows),
-  }
+  if (isCreditProfitCurrency(currency)) return getMemberCreditProfitDetail(category, vendor, currency)
+  return getMemberProfitDetailBase(category, vendor)
 }
 
 function getMemberProfitDetailBase(

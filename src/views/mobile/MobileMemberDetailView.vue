@@ -23,10 +23,13 @@ import {
   type MemberDetailTab,
   type MemberGameSubTab,
 } from '../../constants/memberDetail'
+import { isCreditDirectSubordinate } from '../../constants/agentTeam'
 import { isCreditProfitCurrency } from '../../constants/agentDetailProfit'
 import {
   MEMBER_PROFIT_CATEGORY_TABS,
   MEMBER_PROFIT_VENDORS,
+  getMemberCreditBetSummary,
+  getMemberCreditGameFormula,
   getMemberProfitCostSection,
   getMemberProfitDetail,
   getMemberProfitDialogDetail,
@@ -61,7 +64,6 @@ import {
 } from '../../constants/agentReport'
 import {
   MH5_DATE_RANGE_TODAY,
-  creditSettleRangeScale,
   formatDateRangeText,
 } from '../../constants/mh5DateRange'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
@@ -69,6 +71,8 @@ import Mh5MemberFundPanel from '../../components/mobile/Mh5MemberFundPanel.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5AgentReportFilter from '../../components/mobile/Mh5AgentReportFilter.vue'
+import Mh5CreditSettlePanel from '../../components/mobile/Mh5CreditSettlePanel.vue'
+import { MEMBER_SETTLE_SPEC } from '../../constants/agentCreditSettleSpec'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   MEMBER_DETAIL_CREDIT_CURRENCY_SPEC,
@@ -150,6 +154,7 @@ const profitGameSection = computed(() =>
 )
 const profitCostSection = computed(() => getMemberProfitCostSection(currency.value))
 const profitFormula = computed(() => getMemberProfitFormula(currency.value, memberProfitOptions.value))
+const creditGameFormula = computed(() => getMemberCreditGameFormula(currency.value))
 const profitDialogTitle = computed(() =>
   profitDialogKind.value
     ? memberProfitDialogTitle(profitDialogKind.value, currency.value, memberProfitOptions.value)
@@ -216,18 +221,12 @@ const summaryItems = computed(() => {
   if (!member.value) return []
   const s = member.value.summary
   const cur = currency.value
-  if (cur === '信用额度-CNY') {
+  if (isCreditProfitCurrency(cur)) {
+    const credit = getMemberCreditBetSummary(cur)
     return [
-      { label: '总投注单数', value: String(s.totalBets + 2), positive: false },
-      { label: '有效投注额', value: '¥3,200', positive: false },
-      { label: '累计输赢', value: '+1,100', positive: true },
-    ]
-  }
-  if (cur === '信用额度-USD') {
-    return [
-      { label: '总投注单数', value: String(Math.max(1, s.totalBets - 1)), positive: false },
-      { label: '有效投注额', value: '¥980', positive: false },
-      { label: '累计输赢', value: '-120', positive: false },
+      { label: '总投注单数', value: String(credit.totalBets), positive: false },
+      { label: '有效投注额', value: credit.validBetText, positive: false },
+      { label: '累计输赢', value: credit.winText, positive: credit.winPositive },
     ]
   }
   if (cur === 'USDT') {
@@ -266,12 +265,18 @@ const creditCurrencyUnitLabel = computed(() => formatCreditCurrencyUnit(creditCu
 
 const creditLimitView = computed(() => {
   if (!member.value) return null
+  const { superiorAgentId, superiorAgent } = member.value
   return formatMemberCreditLimitView(
     member.value.creditLimits[creditCurrency.value],
     creditCurrency.value,
-    creditSettleRangeScale(settleStart.value, settleEnd.value),
+    superiorAgentId ? { id: superiorAgentId, name: superiorAgent } : undefined,
   )
 })
+
+/** 只能给自己的直属会员上下分；2级代理名下会员不展示入口 */
+const canCreditTransfer = computed(() =>
+  member.value ? isCreditDirectSubordinate(member.value.id) : false,
+)
 
 watch(activeTab, () => {
   creditCurrencyMenuOpen.value = false
@@ -353,6 +358,7 @@ function closeGameProfitFormulaTip() {
 }
 
 function goCredit() {
+  if (!canCreditTransfer.value) return
   router.push({
     name: 'mobile-xcoin-credit-member',
     query: {
@@ -561,6 +567,7 @@ function toggleCreditCurrencyMenu() {
               </div>
             </div>
             <button
+              v-if="canCreditTransfer"
               type="button"
               class="mh5-agent-detail-credit-manage__action mh5-agent-detail-credit-manage__action--primary"
               @click="goCredit"
@@ -614,7 +621,10 @@ function toggleCreditCurrencyMenu() {
           class="mh5-agent-detail-wallet mh5-agent-detail-xcoin mh5-agent-detail-credit-settle"
         >
           <div class="mh5-agent-detail-credit-settle__head">
-            <h3 class="mh5-agent-detail-wallet__title">对账结算</h3>
+            <h3 class="mh5-agent-detail-wallet__title">
+              对账结算
+              <Mh5SpecAnnot :spec="MEMBER_SETTLE_SPEC" placement="bottom" />
+            </h3>
             <button
               type="button"
               class="mh5-agent-report-filter__date mh5-agent-report-filter__date--action mh5-agent-detail-credit-settle__date"
@@ -628,49 +638,7 @@ function toggleCreditCurrencyMenu() {
               </span>
             </button>
           </div>
-          <div
-            class="mh5-agent-detail-credit-settle__receivable"
-            :class="{
-              'mh5-agent-detail-credit-settle__receivable--negative': !creditLimitView.receivablePositive,
-            }"
-          >
-            <p class="mh5-agent-detail-credit-settle__receivable-label">我方应收会员</p>
-            <p class="mh5-agent-detail-credit-settle__receivable-value">
-              {{ creditLimitView.receivableValue }}
-            </p>
-            <p
-              v-if="creditLimitView.receivableFormula"
-              class="mh5-agent-detail-credit-settle__receivable-formula"
-            >
-              {{ creditLimitView.receivableFormula }}
-            </p>
-          </div>
-          <div class="mh5-agent-detail-credit-settle__timeline">
-            <div
-              v-for="item in creditLimitView.settleFlowRows"
-              :key="item.label"
-              class="mh5-agent-detail-credit-settle__row"
-            >
-              <span>{{ item.label }}</span>
-              <span>{{ item.value }}</span>
-            </div>
-            <div class="mh5-agent-detail-credit-settle__divider" />
-            <div
-              v-for="item in creditLimitView.settleResultRows"
-              :key="item.label"
-              class="mh5-agent-detail-credit-settle__row"
-            >
-              <span>{{ item.label }}</span>
-              <span
-                :class="{
-                  'mh5-agent-detail-wallet__value--positive': item.positive,
-                  'mh5-agent-detail-wallet__value--negative': item.positive === false,
-                }"
-              >
-                {{ item.value }}
-              </span>
-            </div>
-          </div>
+          <Mh5CreditSettlePanel :panel="creditLimitView.settle" />
           <button
             type="button"
             class="mh5-agent-detail-credit-settle__statement"
@@ -819,6 +787,45 @@ function toggleCreditCurrencyMenu() {
                 </button>
               </div>
             </Transition>
+          </section>
+
+          <section
+            v-if="isCreditProfit"
+            class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
+            aria-label="游戏输赢加退水等于游戏净输赢"
+          >
+            <div
+              class="mh5-agent-commission-formula mh5-agent-my-profit-formula mh5-agent-my-profit-formula--extra"
+            >
+              <div class="mh5-agent-commission-cell">
+                <p class="mh5-agent-commission-cell__label">游戏输赢</p>
+                <p class="mh5-agent-commission-cell__value" :class="agentMyProfitToneClass(creditGameFormula.winTone)">
+                  {{ creditGameFormula.winText }}
+                </p>
+              </div>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">+</span>
+              <div class="mh5-agent-commission-cell">
+                <p class="mh5-agent-commission-cell__label">退水</p>
+                <p class="mh5-agent-commission-cell__value" :class="agentMyProfitToneClass(creditGameFormula.rebateTone)">
+                  {{ creditGameFormula.rebateText }}
+                </p>
+              </div>
+              <span class="mh5-agent-commission-formula__op" aria-hidden="true">=</span>
+              <button
+                type="button"
+                class="mh5-agent-commission-cell mh5-agent-my-profit-formula__result"
+                aria-label="查看会员盈亏明细"
+                @click="openProfitDialog('total')"
+              >
+                <p class="mh5-agent-commission-cell__label">游戏净输赢</p>
+                <p
+                  class="mh5-agent-commission-cell__value mh5-agent-my-profit-formula__result-value"
+                  :class="agentMyProfitToneClass(creditGameFormula.netTone)"
+                >
+                  {{ creditGameFormula.netText }}
+                </p>
+              </button>
+            </div>
           </section>
 
           <section

@@ -1,12 +1,13 @@
-import { filterTeamList, type TeamListItem } from './agentTeam'
+import { creditViewerId, findTeamItem, type TeamListItem } from './agentTeam'
 import type { AgentLedgerType } from './agentIdentity'
 import {
   formatCashWalletGroups,
-  formatCreditReceivable,
   type AgentCashWalletRow,
   type AgentCreditCurrency,
   type AgentCreditLimitView,
 } from './agentDetail'
+import { buildDirectMemberSettlePanel } from './agentCreditSettle'
+import { MEMBER_SETTLE_MOCK } from './memberSettleMock'
 
 export type MemberDetailTab = 'manage' | 'credit' | 'profit' | 'game' | 'login'
 
@@ -66,6 +67,8 @@ export type MemberDetailProfile = {
   memberTag: string
   memberAccount: string
   superiorAgent: string
+  /** 2级代理名下会员：上级代理 id，交收由该代理负责 */
+  superiorAgentId?: string
   /** 是否已开通信用（授信过才展示信用额度） */
   isCredited: boolean
   wallets: MemberWalletRow[]
@@ -98,14 +101,14 @@ function buildMemberCreditLimits(scale: number): Record<AgentCreditCurrency, Mem
   return {
     '信用额度-CNY': {
       creditBalance: s * 120,
-      creditUpTotal: s * 820,
-      creditDownTotal: s * 640,
+      creditUpTotal: MEMBER_SETTLE_MOCK.creditUp,
+      creditDownTotal: MEMBER_SETTLE_MOCK.creditDown,
       creditQuotaTotal: s * 1000,
     },
     '信用额度-USD': {
       creditBalance: s * 45,
-      creditUpTotal: s * 310,
-      creditDownTotal: s * 240,
+      creditUpTotal: MEMBER_SETTLE_MOCK.creditUp,
+      creditDownTotal: MEMBER_SETTLE_MOCK.creditDown,
       creditQuotaTotal: s * 375,
     },
   }
@@ -115,45 +118,20 @@ function formatCreditAmount(n: number) {
   return n.toLocaleString('zh-CN')
 }
 
-function scaleMemberSettle(stats: MemberCreditLimitStats, scale: number): MemberCreditLimitStats {
-  if (scale === 1) return stats
-  return {
-    ...stats,
-    creditUpTotal: Math.round(stats.creditUpTotal * scale),
-    creditDownTotal: Math.round(stats.creditDownTotal * Math.min(1, scale + 0.04)),
-  }
-}
-
+/** 会员交收与上下分统一用固定 Mock，不随对账日期变化；上下分单列，不参与交收 */
 export function formatMemberCreditLimitView(
   stats: MemberCreditLimitStats,
   currency: AgentCreditCurrency,
-  rangeScale = 1,
+  superior?: { id: string; name: string },
 ): AgentCreditLimitView {
-  const settle = scaleMemberSettle(stats, rangeScale)
   const quota = Math.max(0, stats.creditQuotaTotal)
   const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
-  /** 我方应收会员 = 上分总额 − 下分总额 − 可用额度 */
-  const receivable = settle.creditUpTotal - settle.creditDownTotal - stats.creditBalance
   return {
     availableValue: formatCreditAmount(stats.creditBalance),
     quotaValue: formatCreditAmount(quota),
     usedPercent,
     usedPercentText: `~${usedPercent}%`,
-    receivableValue: formatCreditReceivable(receivable, currency),
-    receivablePositive: receivable >= 0,
-    receivableFormula: '上分总额 − 下分总额 − 可用额度',
-    settleFlowRows: [
-      { label: '上分总额:', value: formatCreditAmount(settle.creditUpTotal) },
-      { label: '下分总额:', value: formatCreditAmount(settle.creditDownTotal) },
-      { label: '可用额度:', value: formatCreditAmount(stats.creditBalance) },
-    ],
-    settleResultRows: [
-      {
-        label: '我方应收:',
-        value: formatCreditAmount(Math.abs(receivable)),
-        positive: receivable >= 0,
-      },
-    ],
+    settle: buildDirectMemberSettlePanel(currency, stats, superior, creditViewerId.value),
   }
 }
 
@@ -194,16 +172,22 @@ const MOCK_DEFAULT_MEMBER: MemberDetailProfile = {
   },
 }
 
-function mockDetailFromTeam(item: TeamListItem): MemberDetailProfile {
+function mockDetailFromTeam(item: TeamListItem, parent: TeamListItem | null): MemberDetailProfile {
   const isCreditMember = item.kind === 'credit_member'
   return {
     id: item.id,
     nickname: item.nickname,
     avatarEmoji: item.avatarEmoji ?? '👤',
     lastLogin: '2026-04-12 09:30:00',
-    memberTag: isCreditMember ? '信用会员' : '直属会员',
-    memberAccount: item.nickname,
-    superiorAgent: 'PP231233',
+    memberTag:
+      parent && parent.id !== creditViewerId.value
+        ? '2级代理会员'
+        : isCreditMember
+          ? '信用会员'
+          : '直属会员',
+    memberAccount: item.kingkongId?.trim() || item.nickname,
+    superiorAgent: parent?.nickname ?? 'PP231233',
+    superiorAgentId: parent?.id,
     isCredited: isCreditMember,
     wallets: DEFAULT_WALLETS,
     creditLimits: buildMemberCreditLimits(item.subordinateCount + 1),
@@ -223,15 +207,16 @@ function mockDetailFromTeam(item: TeamListItem): MemberDetailProfile {
 export function findMemberDetail(id: string): MemberDetailProfile | null {
   if (!id) return MOCK_DEFAULT_MEMBER
 
-  const found = filterTeamList('all').find((item) => item.id === id)
-  if (!found) return MOCK_DEFAULT_MEMBER
+  const hit = findTeamItem(id)
+  if (!hit) return MOCK_DEFAULT_MEMBER
+  const found = hit.item
   if (found.kind !== 'member' && found.kind !== 'credit_member') return null
 
   if (found.id === 'm1') {
     return { ...MOCK_DEFAULT_MEMBER, id: found.id, nickname: found.nickname, isCredited: false }
   }
 
-  return mockDetailFromTeam(found)
+  return mockDetailFromTeam(found, hit.parent)
 }
 
 export function isMemberTeamItem(item: TeamListItem) {

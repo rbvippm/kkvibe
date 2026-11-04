@@ -9,7 +9,13 @@ import {
   TEAM_TREE_DEFAULT_EXPANDED,
   TEAM_TREE_DEFAULT_VISIBLE,
   CREATE_ACCOUNT_OPTIONS,
+  CREDIT_VIEWER_OPTIONS,
   DEFAULT_CREATE_ACCOUNT_OPTION,
+  creditViewerId,
+  creditViewerLabel,
+  isCreditDirectSubordinate,
+  setCreditViewer,
+  type CreditViewerId,
   collectTeamFullExpandState,
   formatTeamMemberBetSearchKeyword,
   getTeamTreeRows,
@@ -28,6 +34,7 @@ import {
 } from '../../constants/agentTeam'
 import { agentSentInvites } from '../../constants/agentInvitation'
 import {
+  AGENT_TEAM_HIERARCHY_SPEC,
   AGENT_TEAM_QUICK_ACTIONS_SPEC,
   AGENT_TEAM_REBATE_SPEC,
   AGENT_TEAM_SEARCH_SPEC,
@@ -40,8 +47,25 @@ const route = useRoute()
 const router = useRouter()
 const { isRebateAgent, isCreditLedger, withAgentQuery, agentTypeLabel } = useAgentIdentity()
 
+/** 信用代理中心 Mock 身份切换：一级代理EZ / 2级代理小红来了EZ1 */
+const showCreditViewerSwitch = computed(() => isCreditLedger.value && !isRebateAgent.value)
+const creditViewerMenuOpen = ref(false)
+const creditViewerWrapRef = ref<HTMLElement | null>(null)
+const isSubAgentViewer = computed(() => showCreditViewerSwitch.value && creditViewerId.value !== 'self')
+
+function toggleCreditViewerMenu() {
+  creditViewerMenuOpen.value = !creditViewerMenuOpen.value
+}
+
+function pickCreditViewer(id: CreditViewerId) {
+  creditViewerMenuOpen.value = false
+  if (id === creditViewerId.value) return
+  setCreditViewer(id)
+}
+
+/** 返佣、2级代理只能创建会员（2级代理之下不能再发展代理） */
 const createAccountOptions = computed(() =>
-  isRebateAgent.value
+  isRebateAgent.value || isSubAgentViewer.value
     ? CREATE_ACCOUNT_OPTIONS.filter((item) => item.key === 'member')
     : CREATE_ACCOUNT_OPTIONS,
 )
@@ -88,10 +112,9 @@ const expandedIds = ref<Set<string>>(new Set(TEAM_TREE_DEFAULT_EXPANDED))
 /** parentId → 该层已展开可见条数（「查看更多」累加） */
 const moreVisibleCount = ref<Record<string, number>>({})
 
-/** 现金代理中心不含信用账号；信用代理中心把信用账号并入直属分类 */
+/** 现金代理中心只含直属账号；信用代理中心只含信用账号，并入直属分类 */
 const teamTreeOptions = computed(() => ({
   includeCredit: isCreditLedger.value,
-  mergeCreditIntoDirect: isCreditLedger.value,
   singleLayer: isRebateAgent.value,
   flatDirectMembers: isRebateAgent.value,
   onlineFilter: onlineFilter.value,
@@ -110,6 +133,11 @@ function applyFilterExpand(tab: TeamFilterTab) {
 
 applyFilterExpand(effectiveTeamFilterTab.value)
 
+watch(creditViewerId, () => {
+  closeAllSheets()
+  applyFilterExpand(effectiveTeamFilterTab.value)
+})
+
 function closeOnlineFilterMenu() {
   onlineFilterOpen.value = false
 }
@@ -125,9 +153,13 @@ function pickOnlineFilter(next: TeamOnlineFilter) {
 }
 
 function onDocumentClickCloseFilter(event: MouseEvent) {
+  const target = event.target instanceof Node ? event.target : null
+  if (creditViewerMenuOpen.value && !(target && creditViewerWrapRef.value?.contains(target))) {
+    creditViewerMenuOpen.value = false
+  }
   if (!onlineFilterOpen.value) return
   const wrap = onlineFilterWrapRef.value
-  if (wrap && event.target instanceof Node && wrap.contains(event.target)) return
+  if (wrap && target && wrap.contains(target)) return
   closeOnlineFilterMenu()
 }
 
@@ -174,8 +206,8 @@ const teamQuickActions = computed(() => {
   } else {
     actions.push({ key: 'profit_ratio', label: '收益比例', icon: TEAM_QUICK_ACTION_ICONS.profit_ratio })
   }
-  /** 信用代理中心：团队成员均为信用账号，直接上下分；现金代理中心无上下分 */
-  if (isCreditLedger.value && row.kind !== 'me') {
+  /** 信用代理中心：只能给自己的直属代理 / 直属会员上下分；现金代理中心无上下分 */
+  if (isCreditLedger.value && row.kind !== 'me' && isCreditDirectSubordinate(row.id)) {
     actions.push({ key: 'credit_transfer', label: '上下分', icon: TEAM_QUICK_ACTION_ICONS.credit_transfer })
   }
   actions.push({ key: 'remark', label: '修改备注', icon: TEAM_QUICK_ACTION_ICONS.remark })
@@ -423,6 +455,10 @@ async function onTeamQuickAction(action: TeamQuickAction) {
       await mh5Alert('上下分仅在信用代理中心提供')
       return
     }
+    if (!isCreditDirectSubordinate(row.id)) {
+      await mh5Alert('只能给自己的直属代理或直属会员上下分')
+      return
+    }
     router.push({
       name: showMemberBadge(row.kind) ? 'mobile-xcoin-credit-member' : 'mobile-xcoin-credit-agent',
       query: withAgentQuery({
@@ -559,6 +595,61 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
+    <div v-if="showCreditViewerSwitch" class="agent-team-viewer-bar">
+      <span class="agent-team-viewer-bar__label">{{ $t('模拟身份') }}</span>
+      <div ref="creditViewerWrapRef" class="agent-team-toolbar__filter-wrap">
+        <button
+          type="button"
+          class="agent-team-toolbar__sort agent-team-viewer-bar__trigger"
+          :aria-label="$t('切换代理身份')"
+          :aria-expanded="creditViewerMenuOpen"
+          aria-haspopup="listbox"
+          @click="toggleCreditViewerMenu"
+        >
+          <span>{{ creditViewerLabel() }}</span>
+          <svg
+            class="agent-team-toolbar__sort-caret"
+            :class="{ 'agent-team-toolbar__sort-caret--open': creditViewerMenuOpen }"
+            width="10"
+            height="10"
+            viewBox="0 0 12 12"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M3 4.5 6 7.5 9 4.5"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div
+          v-if="creditViewerMenuOpen"
+          class="agent-team-toolbar__filter-menu agent-team-viewer-bar__menu"
+          role="listbox"
+          :aria-label="$t('切换代理身份')"
+        >
+          <button
+            v-for="opt in CREDIT_VIEWER_OPTIONS"
+            :key="opt.id"
+            type="button"
+            role="option"
+            class="agent-team-toolbar__filter-option"
+            :class="{ 'agent-team-toolbar__filter-option--active': creditViewerId === opt.id }"
+            :aria-selected="creditViewerId === opt.id"
+            @click="pickCreditViewer(opt.id)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
+      <span class="agent-team-viewer-bar__hint">{{
+        isSubAgentViewer ? $t('2级代理，只能管理名下会员') : $t('1级代理')
+      }}</span>
+    </div>
+
     <div v-if="isRebateAgent" class="agent-team-toolbar">
       <div class="agent-team-toolbar__tabs" role="tablist" :aria-label="$t('在线状态')">
         <button
@@ -590,6 +681,7 @@ onBeforeUnmount(() => {
         >
           {{ $t(tab.label) }}
         </button>
+        <Mh5SpecAnnot :spec="AGENT_TEAM_HIERARCHY_SPEC" placement="bottom" />
       </div>
       <div
         ref="onlineFilterWrapRef"

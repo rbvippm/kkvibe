@@ -1,6 +1,23 @@
 import { sortByLocaleCashOrder } from '../i18n'
 import type { AgentCurrencyScope, AgentLedgerType } from './agentIdentity'
-import { filterTeamList, MOCK_TEAM_SELF, type TeamListItem } from './agentTeam'
+import {
+  buildSubAgentSettlePanel,
+  buildSuperiorSettlePanel,
+  CREDIT_SETTLE_SELF_PT,
+  CREDIT_SETTLE_SUB_AGENT_PT,
+  isCreditSubAgentFixed,
+  summarizeSubAgentSuperiorSettle,
+  summarizeSuperiorSettle,
+  type CreditSettlePanel,
+} from './agentCreditSettle'
+import {
+  filterTeamList,
+  findTeamItem,
+  isCreditViewerSelf,
+  MOCK_TEAM_SELF,
+  type TeamListItem,
+} from './agentTeam'
+import { MEMBER_SETTLE_MOCK } from './memberSettleMock'
 
 export type AgentDetailTab = 'wallet' | 'credit' | 'profit' | 'game' | 'login'
 
@@ -54,23 +71,13 @@ export type AgentCreditLimitStats = {
   creditQuotaTotal: number
 }
 
-export type AgentCreditSettleRow = {
-  label: string
-  value: string
-  positive?: boolean
-}
-
 export type AgentCreditLimitView = {
   availableValue: string
   quotaValue: string
   usedPercent: number
   usedPercentText: string
-  receivableValue: string
-  receivablePositive: boolean
-  /** 应收金额下方的公式说明，不传则不展示 */
-  receivableFormula?: string
-  settleFlowRows: AgentCreditSettleRow[]
-  settleResultRows: AgentCreditSettleRow[]
+  /** 对账结算：按 Algorithm A 结算，上下分单列不参与交收 */
+  settle: CreditSettlePanel
 }
 
 export type AgentDetailProfile = {
@@ -165,16 +172,6 @@ function formatCreditAmount(n: number) {
   return n.toLocaleString('zh-CN')
 }
 
-function formatSignedCreditAmount(n: number, digits = 0) {
-  const abs = Math.abs(n).toLocaleString('zh-CN', {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  })
-  if (n > 0) return `+${abs}`
-  if (n < 0) return `-${abs}`
-  return digits ? '0.00' : '0'
-}
-
 function creditNet(stats: AgentCreditLimitStats) {
   return stats.creditUpTotal - stats.creditDownTotal
 }
@@ -205,41 +202,36 @@ export function formatCreditReceivable(amount: number, currency: AgentCreditCurr
   return `${amount < 0 ? '-' : ''}${symbol}${formatted}`
 }
 
+/** 查看下级代理 → 我方应收下级；查看自己 → 我方应付上级 */
 export function formatCreditLimitView(
   stats: AgentCreditLimitStats,
   currency: AgentCreditCurrency,
-  rangeScale = 1,
+  rangeScale: number,
+  target: { id: string; name: string },
 ): AgentCreditLimitView {
-  const settle = scaleCreditSettleStats(stats, rangeScale)
+  const fixed = target.id !== MOCK_TEAM_SELF.id && isCreditSubAgentFixed(target.id)
+  const transfer = scaleCreditSettleStats(stats, fixed ? 1 : rangeScale)
   const quota = Math.max(0, stats.creditQuotaTotal)
   const usedPercent = quota > 0 ? Math.round((stats.creditBalance / quota) * 100) : 0
-  const net = creditNet(settle)
+  const settle = !isCreditViewerSelf(target.id)
+    ? buildSubAgentSettlePanel(target, currency, transfer, rangeScale)
+    : target.id === MOCK_TEAM_SELF.id
+      ? buildSuperiorSettlePanel(summarizeSuperiorSettle(currency, rangeScale), currency, transfer)
+      : buildSuperiorSettlePanel(
+          summarizeSubAgentSuperiorSettle(
+            target,
+            findTeamItem(target.id)?.item.children ?? [],
+            currency,
+          ),
+          currency,
+          transfer,
+        )
   return {
     availableValue: formatCreditAmount(stats.creditBalance),
     quotaValue: formatCreditAmount(quota),
     usedPercent,
     usedPercentText: `~${usedPercent}%`,
-    receivableValue: formatCreditReceivable(net, currency),
-    receivablePositive: net >= 0,
-    settleFlowRows: [
-      {
-        label: '上分总额:',
-        value: formatSignedCreditAmount(settle.creditUpTotal),
-        positive: true,
-      },
-      {
-        label: '下分总额:',
-        value: formatSignedCreditAmount(-settle.creditDownTotal),
-        positive: false,
-      },
-    ],
-    settleResultRows: [
-      {
-        label: '上下分净额:',
-        value: formatSignedCreditAmount(net),
-        positive: net >= 0,
-      },
-    ],
+    settle,
   }
 }
 
@@ -315,18 +307,19 @@ function buildCreditLimits(scale: number, shareRatio: number): Record<AgentCredi
 
 const MOCK_SELF_DETAIL: AgentDetailProfile = {
   id: 'self',
-  nickname: 'OO1231236789',
+  nickname: '一级代理EZ',
   avatarEmoji: '🧔🏻‍♂️',
   lastLogin: '刚刚',
   levelBadge: '1级代理/我',
   remark: '我自己',
   kingkongId: 'gg12345678',
   isCredited: true,
+  /** 团队：2级代理 EZ1 + 其名下会员 EZ */
   stats: {
-    agents: 18,
-    directAgents: 16,
-    members: 180,
-    directMembers: 8,
+    agents: 1,
+    directAgents: 1,
+    members: 1,
+    directMembers: 0,
   },
   wallets: [
     { currency: 'KKC', balance: '1,000', deposit: '12,800', withdraw: '6,400' },
@@ -338,14 +331,14 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
       creditBalance: 866,
       creditUpTotal: 58000,
       creditDownTotal: 42000,
-      shareRatio: 65,
+      shareRatio: CREDIT_SETTLE_SELF_PT,
       creditQuotaTotal: 7200,
     },
     '信用额度-USD': {
       creditBalance: 320,
       creditUpTotal: 12800,
       creditDownTotal: 9600,
-      shareRatio: 65,
+      shareRatio: CREDIT_SETTLE_SELF_PT,
       creditQuotaTotal: 2700,
     },
   },
@@ -354,22 +347,22 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
 function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
   const isCreditAgent = item.kind === 'credit_agent'
   const isAgent = item.kind === 'agent' || item.kind === 'me' || isCreditAgent
-  const level = item.vipLevel ?? 1
-  const shareRatio = Math.min(90, 45 + level * 5)
+  const memberCount = Math.max(0, item.memberCount ?? 0)
   return {
     id: item.id,
     nickname: item.nickname,
     avatarEmoji: item.avatarEmoji ?? (isAgent ? '🧔🏻‍♂️' : '👤'),
     lastLogin: '2小时前',
-    levelBadge: isAgent ? `${level}级代理` : '直属会员',
+    levelBadge: isAgent ? '2级代理' : '直属会员',
     remark: item.id === 'ca1' ? '小红' : undefined,
     kingkongId: item.kingkongId?.trim() || `kk_${item.id}`,
     isCredited: isCreditAgent,
+    /** 2级代理不能再发展代理，会员全部为直属 */
     stats: {
-      agents: item.subordinateCount,
-      directAgents: Math.max(0, item.subordinateCount - 2),
-      members: (item.memberCount ?? item.subordinateCount) * 2,
-      directMembers: Math.max(0, item.memberCount ?? 0),
+      agents: 0,
+      directAgents: 0,
+      members: memberCount,
+      directMembers: memberCount,
     },
     wallets: [
       {
@@ -391,7 +384,22 @@ function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
         withdraw: (150 + (item.subordinateCount || 1) * 30).toLocaleString('zh-CN'),
       },
     ],
-    creditLimits: buildCreditLimits(item.subordinateCount || 1, shareRatio),
+    creditLimits: isCreditSubAgentFixed(item.id)
+      ? vipBackedCreditLimits()
+      : buildCreditLimits(item.subordinateCount || 1, CREDIT_SETTLE_SUB_AGENT_PT),
+  }
+}
+
+/** 名下会员取贵宾厅数据的 2级代理：上下分 = 会员钱包累计上分 / 下分 */
+function vipBackedCreditLimits(): Record<AgentCreditCurrency, AgentCreditLimitStats> {
+  const base = buildCreditLimits(1, CREDIT_SETTLE_SUB_AGENT_PT)
+  const transfer = {
+    creditUpTotal: MEMBER_SETTLE_MOCK.creditUp,
+    creditDownTotal: MEMBER_SETTLE_MOCK.creditDown,
+  }
+  return {
+    '信用额度-CNY': { ...base['信用额度-CNY'], ...transfer },
+    '信用额度-USD': { ...base['信用额度-USD'], ...transfer },
   }
 }
 

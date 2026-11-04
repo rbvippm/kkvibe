@@ -150,6 +150,15 @@ function openMenu(item: AgentMeMenuItem) {
               <rect x="5" y="3" width="14" height="18" rx="2" stroke="currentColor" stroke-width="1.6" />
               <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
             </svg>
+            <svg v-else-if="item.icon === 'credit-settle'" width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 7h11l-3-3M17 17H6l3 3"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
             <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none">
               <circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.6" />
               <circle cx="17" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6" />

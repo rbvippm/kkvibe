@@ -1,3 +1,6 @@
+import { computeMemberSettlement } from './creditSettleEngine'
+import { MEMBER_SETTLE_MOCK, VIP_MEMBER_EZ } from './memberSettleMock'
+
 /** 代理交收账期「今天」，本月 = 2026-08-01 至 2026-08-23 */
 export const AGENT_SETTLE_TODAY = '2026-08-23'
 
@@ -14,14 +17,15 @@ export type AgentSettleWallet = {
   remark: string
   /** 对应贵宾厅信用账户，跳转账单 / 投注时作为默认钱包 */
   creditWalletId?: string
+  /** 上分 / 下分为额度调拨，只展示上下分净额，不参与交收 */
   creditUp: number
   creditDown: number
-  /** 钱包当前余额，实时值，不随对账周期变化 */
+  /** 钱包当前余额，实时值，不随对账周期变化；= 累计上分 − 累计下分 + 总输赢 + 总退水 */
   balance: number
   validBet: number
-  /** 会员视角游戏输赢（不含退水），赢为正；须满足 钱包余额 = 累计上分 − 累计下分 + 总输赢 + 总退水 */
+  /** 会员视角游戏输赢（不含退水），赢为正 */
   memberWinLose: number
-  /** 对账周期内退水合计，归会员所得，已计入钱包余额 */
+  /** 对账周期内总退水金额 */
   rebate: number
   transferCount: number
   betCount: number
@@ -64,6 +68,17 @@ export const AGENT_SETTLE_CREDIT_OPTIONS: {
   { value: 'USD', label: 'USD', icon: '/images/vip-club/icon-currency-usd.svg' },
 ]
 
+function settleWalletMock(memberWinLose: number = MEMBER_SETTLE_MOCK.memberWinLose) {
+  const { creditUp, creditDown, rebate } = MEMBER_SETTLE_MOCK
+  return {
+    ...MEMBER_SETTLE_MOCK,
+    memberWinLose,
+    balance: creditUp - creditDown + memberWinLose + rebate,
+  }
+}
+
+const SETTLE_WALLET_MOCK = settleWalletMock()
+
 export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
   {
     id: 'ez1',
@@ -73,12 +88,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         currency: 'CNY',
         remark: 'EZ Wallet',
         creditWalletId: 'credit-ez-cny-1',
-        creditUp: 12800,
-        creditDown: 5200,
-        balance: 2360,
-        validBet: 68500,
-        memberWinLose: -5788,
-        rebate: 548,
+        ...settleWalletMock(VIP_MEMBER_EZ.winLose.CNY),
         transferCount: 12,
         betCount: 158,
       },
@@ -86,12 +96,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         currency: 'USD',
         remark: 'Cross',
         creditWalletId: 'credit-ez-usd-1',
-        creditUp: 200,
-        creditDown: 700,
-        balance: 80,
-        validBet: 4200,
-        memberWinLose: 546.4,
-        rebate: 33.6,
+        ...settleWalletMock(VIP_MEMBER_EZ.winLose.USD),
         transferCount: 4,
         betCount: 36,
       },
@@ -104,12 +109,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
       {
         currency: 'CNY',
         remark: '星辰额度',
-        creditUp: 4500,
-        creditDown: 6800,
-        balance: 1200,
-        validBet: 24600,
-        memberWinLose: 3303.2,
-        rebate: 196.8,
+        ...SETTLE_WALLET_MOCK,
         transferCount: 8,
         betCount: 72,
       },
@@ -123,24 +123,14 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         currency: 'CNY',
         remark: '一直赢钱',
         creditWalletId: 'credit-b-cny-1',
-        creditUp: 3200,
-        creditDown: 3100,
-        balance: 60,
-        validBet: 18900,
-        memberWinLose: -191.2,
-        rebate: 151.2,
+        ...SETTLE_WALLET_MOCK,
         transferCount: 6,
         betCount: 54,
       },
       {
         currency: 'USD',
         remark: 'Lucky',
-        creditUp: 1000,
-        creditDown: 1900,
-        balance: 120,
-        validBet: 8600,
-        memberWinLose: 951.2,
-        rebate: 68.8,
+        ...SETTLE_WALLET_MOCK,
         transferCount: 5,
         betCount: 41,
       },
@@ -154,12 +144,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         currency: 'CNY',
         remark: 'account1',
         creditWalletId: 'credit-a-cny-1',
-        creditUp: 1200,
-        creditDown: 1200,
-        balance: 0,
-        validBet: 6400,
-        memberWinLose: -51.2,
-        rebate: 51.2,
+        ...SETTLE_WALLET_MOCK,
         transferCount: 4,
         betCount: 18,
       },
@@ -223,26 +208,32 @@ export function roundSettleAmount(value: number) {
   return Math.round(value * 100) / 100
 }
 
-/** 结算金额 = 累计上分 − 累计下分 − 钱包余额；正数需支付，负数待收取 */
+function walletMemberSettle(wallet: AgentSettleWallet) {
+  return computeMemberSettlement({
+    validBet: wallet.validBet,
+    memberWinLose: wallet.memberWinLose,
+    rebate: wallet.rebate,
+  })
+}
+
+/** 总退水 C_M */
+export function settleWalletRebate(wallet: AgentSettleWallet) {
+  return roundSettleAmount(walletMemberSettle(wallet).rebate)
+}
+
+/** 结算金额 = 总输赢 + 总退水（会员视角）；负数需支付给代理，正数待代理支付 */
 export function settleWalletNet(wallet: AgentSettleWallet) {
-  return roundSettleAmount(wallet.creditUp - wallet.creditDown - wallet.balance)
+  return roundSettleAmount(walletMemberSettle(wallet).net)
 }
 
-/** 核对口径：会员游戏输额 − 总退水（= −总输赢 − 总退水），数据自洽时与结算金额相等 */
-export function settleWalletGameNet(wallet: AgentSettleWallet) {
-  return roundSettleAmount(-wallet.memberWinLose - wallet.rebate)
-}
-
-export function settleGameWinLoseLabel(wallet: AgentSettleWallet) {
-  if (wallet.memberWinLose < 0) return '会员游戏输'
-  if (wallet.memberWinLose > 0) return '会员游戏赢'
-  return '会员游戏输赢'
+export function settleWalletTransferNet(wallet: AgentSettleWallet) {
+  return roundSettleAmount(wallet.creditUp - wallet.creditDown)
 }
 
 export function settleWalletStatus(wallet: AgentSettleWallet): AgentSettleStatus {
   const net = settleWalletNet(wallet)
   if (Math.abs(net) < 0.005) return 'cleared'
-  return net > 0 ? 'pay' : 'receive'
+  return net < 0 ? 'pay' : 'receive'
 }
 
 export function settleWalletAbs(wallet: AgentSettleWallet) {

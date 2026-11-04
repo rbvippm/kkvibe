@@ -334,6 +334,12 @@ export const router = createRouter({
           meta: { title: '流水明细', hideTabBar: true },
         },
         {
+          path: 'agent/superior-settle',
+          name: 'mobile-agent-superior-settle',
+          component: () => import('../views/mobile/MobileAgentSuperiorSettleView.vue'),
+          meta: { title: '上级交收', hideTabBar: true },
+        },
+        {
           path: 'agent/xcoin/credit/member',
           name: 'mobile-xcoin-credit-member',
           component: () => import('../views/mobile/MobileXCoinCreditView.vue'),

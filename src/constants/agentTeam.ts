@@ -1,6 +1,7 @@
 /** 代理中心 · 团队管理 Mock（树结构对齐 Figma 1433:19431） */
 
 import { ref } from 'vue'
+import { VIP_MEMBER_EZ } from './memberSettleMock'
 
 export type TeamFilterTab =
   | 'all'
@@ -73,13 +74,13 @@ export const TEAM_TREE_DEFAULT_VISIBLE = 2
 
 export const MOCK_TEAM_SELF: TeamListItem = {
   id: 'self',
-  nickname: 'kk5858',
+  nickname: '一级代理EZ',
   kind: 'me',
   avatarEmoji: '🧕',
   /** 金刚号：搜索原型可输入 581 精准命中本人 */
   kingkongId: '581',
-  subordinateCount: 3,
-  memberCount: 2,
+  subordinateCount: 1,
+  memberCount: 0,
   vipLevel: 1,
   online: true,
   expanded: true,
@@ -98,7 +99,7 @@ export const MOCK_TEAM_MEMBERS: TeamListItem[] = [
   },
 ]
 
-/** 信用代理 */
+/** 信用代理：2级代理 EZ1，直属会员即贵宾厅会员 EZ */
 export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
   {
     id: 'ca1',
@@ -106,29 +107,31 @@ export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
     kind: 'credit_agent',
     avatarEmoji: '🧔🏻‍♂️',
     kingkongId: 'EZ188888',
-    subordinateCount: 3,
-    memberCount: 8,
+    subordinateCount: 0,
+    memberCount: 1,
     vipLevel: 2,
     online: true,
+    children: [
+      {
+        id: VIP_MEMBER_EZ.id,
+        nickname: VIP_MEMBER_EZ.nickname,
+        kind: 'credit_member',
+        avatarEmoji: '🧑🏻',
+        kingkongId: VIP_MEMBER_EZ.kingkongId,
+        subordinateCount: 0,
+        online: true,
+      },
+    ],
   },
 ]
 
-/** 信用会员 */
-export const MOCK_CREDIT_MEMBERS: TeamListItem[] = [
-  {
-    id: 'cm1',
-    nickname: 'wa_da_da888',
-    kind: 'credit_member',
-    avatarEmoji: '👩🏻',
-    subordinateCount: 0,
-  },
-]
+/** 信用会员（1级代理直属）：当前无 */
+export const MOCK_CREDIT_MEMBERS: TeamListItem[] = []
 
 /**
- * 直属代理树（最小可演示）：
- * - 一层嵌套：展开 / 下级代理 / 会员灰标
+ * 直属代理树（最小可演示），代理固定两层：1级代理（我）→ 2级代理 → 会员
+ * - 2级代理之下只能挂会员，不能再发展代理
  * - 同级 ≥3：触发「查看更多」
- * - 保留 mid_eyv4menuoax、授信相关账号
  */
 export const MOCK_DIRECT_AGENTS: TeamListItem[] = [
   {
@@ -136,21 +139,11 @@ export const MOCK_DIRECT_AGENTS: TeamListItem[] = [
     nickname: 'jj12300932',
     kind: 'agent',
     avatarEmoji: '👨🏻',
-    subordinateCount: 1,
+    subordinateCount: 0,
     memberCount: 2,
     vipLevel: 2,
     online: true,
     children: [
-      {
-        id: 'a1-1',
-        nickname: 'pp12300932',
-        kind: 'agent',
-        avatarEmoji: '👨🏻',
-        subordinateCount: 0,
-        memberCount: 1,
-        vipLevel: 1,
-        online: true,
-      },
       {
         id: 'a1-m1',
         nickname: 'oo12300932',
@@ -173,7 +166,7 @@ export const MOCK_DIRECT_AGENTS: TeamListItem[] = [
     nickname: 'mid_eyv4menuoax',
     kind: 'agent',
     avatarEmoji: '👨🏻',
-    subordinateCount: 1,
+    subordinateCount: 0,
     memberCount: 2,
     vipLevel: 1,
     online: true,
@@ -198,9 +191,52 @@ export const teamDirectAgents = ref<TeamListItem[]>(
   MOCK_DIRECT_AGENTS.map((item) => structuredClone(item)),
 )
 
-export const teamCreditAgents = ref<TeamListItem[]>(MOCK_CREDIT_AGENTS.map((item) => ({ ...item })))
+export const teamCreditAgents = ref<TeamListItem[]>(MOCK_CREDIT_AGENTS.map((item) => structuredClone(item)))
 
 export const teamCreditMembers = ref<TeamListItem[]>(MOCK_CREDIT_MEMBERS.map((item) => ({ ...item })))
+
+/** 信用代理中心 Mock 身份：以一级代理EZ 或 2级代理小红来了EZ1 登录 */
+export type CreditViewerId = 'self' | 'ca1'
+
+export const CREDIT_VIEWER_OPTIONS: { id: CreditViewerId; label: string }[] = [
+  { id: 'self', label: '一级代理EZ' },
+  { id: 'ca1', label: '小红来了EZ1' },
+]
+
+export const creditViewerId = ref<CreditViewerId>('self')
+
+export function setCreditViewer(id: CreditViewerId) {
+  creditViewerId.value = id
+}
+
+export function creditViewerLabel(id: CreditViewerId = creditViewerId.value) {
+  return CREDIT_VIEWER_OPTIONS.find((item) => item.id === id)?.label ?? ''
+}
+
+/** 当前 Mock 身份在团队树中的根节点（2级代理只能挂会员） */
+function creditViewerRoot(): { self: TeamListItem; agents: TeamListItem[]; members: TeamListItem[] } | null {
+  if (creditViewerId.value === 'self') return null
+  const sub = teamCreditAgents.value.find((item) => item.id === creditViewerId.value)
+  if (!sub) return null
+  const members = sub.children ?? []
+  return {
+    self: { ...sub, kind: 'me', subordinateCount: 0, memberCount: members.length, expanded: true, children: undefined },
+    agents: [],
+    members,
+  }
+}
+
+/** 是否为当前 Mock 身份本人（代理详情 id：一级代理EZ 为 self） */
+export function isCreditViewerSelf(id: string) {
+  return id === creditViewerId.value
+}
+
+/** 只能给自己的直属代理 / 直属会员上下分：信用代理中心按当前 Mock 身份判断 */
+export function isCreditDirectSubordinate(id: string) {
+  const viewer = creditViewerRoot()
+  if (viewer) return viewer.members.some((item) => item.id === id)
+  return [...teamCreditAgents.value, ...teamCreditMembers.value].some((item) => item.id === id)
+}
 
 export function addTeamDirectMember(member: TeamListItem) {
   if (teamDirectMembers.value.some((item) => item.id === member.id)) return
@@ -340,10 +376,8 @@ export const TEAM_ONLINE_FILTER_OPTIONS: { key: TeamOnlineFilter; label: string 
 ]
 
 export type BuildTeamTreeOptions = {
-  /** 是否包含信用代理 / 信用会员；返佣、现金代理中心为 false */
+  /** 信用代理中心为 true：只展示信用代理 / 信用会员，并入「直属代理 / 直属会员」分类；返佣、现金代理中心为 false */
   includeCredit?: boolean
-  /** 信用代理中心：信用代理 / 信用会员直接并入直属代理 / 直属会员，不单独分类 */
-  mergeCreditIntoDirect?: boolean
   /** 是否仅展示本人直属一层；返佣代理为 true */
   singleLayer?: boolean
   /** 返佣：扁平直属会员列表，不展示「我」节点、无树形缩进 */
@@ -379,56 +413,40 @@ function stripCreditTeamNodes(items: TeamListItem[]): TeamListItem[] {
 }
 
 function buildTeamTree(tab: TeamFilterTab, options: BuildTeamTreeOptions = {}): TeamListItem {
-  const includeCredit = options.includeCredit !== false
+  /** 信用代理中心只看信用下线；现金 / 返佣只看直属下线 */
+  const isCredit = options.includeCredit !== false
   const singleLayer = options.singleLayer === true
-  const members = teamDirectMembers.value
-  const agents = teamDirectAgents.value
-  const creditAgents = includeCredit ? teamCreditAgents.value : []
-  const creditMembers = includeCredit ? teamCreditMembers.value : []
-  const merge = options.mergeCreditIntoDirect === true
+  const viewer = isCredit ? creditViewerRoot() : null
+  const agents = viewer ? viewer.agents : isCredit ? teamCreditAgents.value : teamDirectAgents.value
+  const members = viewer ? viewer.members : isCredit ? teamCreditMembers.value : teamDirectMembers.value
+  /** 两层代理：我的代理数 = 直属代理数，会员数取直属会员 */
+  const self: TeamListItem = viewer
+    ? viewer.self
+    : {
+        ...MOCK_TEAM_SELF,
+        subordinateCount: agents.length,
+        memberCount: members.length,
+      }
 
-  // 直属/信用分类：只展示「我」的直属一级，不展开下级的下级
-  if (tab === 'direct_agent') {
+  // 直属分类：只展示「我」的直属一级，不展开下级的下级
+  if (tab === 'direct_agent' || tab === 'credit_agent') {
     return {
-      ...MOCK_TEAM_SELF,
-      children: (merge ? [...creditAgents, ...agents] : agents).map((item) => ({
-        ...item,
-        children: undefined,
-      })),
+      ...self,
+      children: agents.map((item) => ({ ...item, children: undefined })),
     }
   }
-  if (tab === 'direct_member') {
+  if (tab === 'direct_member' || tab === 'credit_member') {
     return {
-      ...MOCK_TEAM_SELF,
-      children: (merge ? [...creditMembers, ...members] : members).map((item) => ({
-        ...item,
-        children: undefined,
-      })),
-    }
-  }
-  if (tab === 'credit_agent') {
-    return {
-      ...MOCK_TEAM_SELF,
-      children: creditAgents.map((item) => ({ ...item, children: undefined })),
-    }
-  }
-  if (tab === 'credit_member') {
-    return {
-      ...MOCK_TEAM_SELF,
-      children: creditMembers.map((item) => ({ ...item, children: undefined })),
+      ...self,
+      children: members.map((item) => ({ ...item, children: undefined })),
     }
   }
 
-  const children = [
-    ...agents.map((item) => ({ ...item })),
-    ...members.map((item) => ({ ...item })),
-    ...creditAgents.map((item) => ({ ...item })),
-    ...creditMembers.map((item) => ({ ...item })),
-  ]
+  const children = [...agents.map((item) => ({ ...item })), ...members.map((item) => ({ ...item }))]
 
   return {
-    ...MOCK_TEAM_SELF,
-    children: (includeCredit ? children : stripCreditTeamNodes(children)).map((item) =>
+    ...self,
+    children: (isCredit ? children : stripCreditTeamNodes(children)).map((item) =>
       singleLayer ? { ...item, children: undefined } : item,
     ),
   }
@@ -576,6 +594,22 @@ export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
     return [MOCK_TEAM_SELF, ...teamCreditAgents.value]
   }
   return [MOCK_TEAM_SELF, ...teamCreditMembers.value]
+}
+
+/** 按 id 查团队节点（含 2级代理名下会员），并带出上级代理 */
+export function findTeamItem(id: string): { item: TeamListItem; parent: TeamListItem | null } | null {
+  const roots = [
+    ...teamDirectAgents.value,
+    ...teamDirectMembers.value,
+    ...teamCreditAgents.value,
+    ...teamCreditMembers.value,
+  ]
+  for (const root of roots) {
+    if (root.id === id) return { item: root, parent: null }
+    const child = root.children?.find((node) => node.id === id)
+    if (child) return { item: child, parent: root }
+  }
+  return null
 }
 
 /** 团队搜索提示（搜索前 / 未出结果时） */
@@ -744,10 +778,11 @@ export function agentSubordinateLabel(count: number) {
   return `代(${count}人)`
 }
 
+/** 2级代理不能再有下级代理，只展示会员人数 */
 export function teamStatsLabel(item: TeamListItem) {
-  const agentPart = `代(${item.subordinateCount}人)`
   const memberPart = `会(${item.memberCount ?? 0}人)`
-  return `${agentPart}｜${memberPart}`
+  if (item.kind !== 'me' || item.id !== MOCK_TEAM_SELF.id) return memberPart
+  return `代(${item.subordinateCount}人)｜${memberPart}`
 }
 
 /** 过滤后排除当前用户，供列表子级展示 */
@@ -766,8 +801,8 @@ export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }
 
 export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'
 
-/** 默认展开：非「全部」Tab 仅展开「我」一层；「全部」Tab 走 collectTeamFullExpandState */
-export const TEAM_TREE_DEFAULT_EXPANDED = ['self'] as const
+/** 默认展开：非「全部」Tab 仅展开「我」一层（一级代理EZ / Mock 身份小红来了EZ1）；「全部」Tab 走 collectTeamFullExpandState */
+export const TEAM_TREE_DEFAULT_EXPANDED = ['self', 'ca1'] as const
 
 /** 是否展示「会员授信」入口（已是信用会员则不展示） */
 export function canShowMemberCreditAction(kind: TeamMemberKind) {
