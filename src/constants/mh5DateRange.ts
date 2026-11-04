@@ -71,6 +71,11 @@ export const DATE_RANGE_SHEET_PRESETS: { key: DateRangeSheetPreset; label: strin
   { key: 'lastMonth', label: '上月' },
 ]
 
+/** 信用额度 · 对账结算筛选条快捷：交收以周为主 */
+export const CREDIT_SETTLE_RANGE_PRESETS = DATE_RANGE_SHEET_PRESETS.filter((item) =>
+  (['today', 'thisWeek', 'lastWeek', 'thisMonth'] as DateRangeSheetPreset[]).includes(item.key),
+)
+
 export function dateRangeSheetPresetRange(
   preset: DateRangeSheetPreset,
   today: string = MH5_DATE_RANGE_TODAY,
