@@ -1,6 +1,7 @@
 /**
  * Algorithm A 标准用例校验：node scripts/check-credit-settle.ts
  * 退水逐级整笔传递、赚差价（平台付 2%、1级赚 0.5%、2级赚 0.5%、会员拿 1%）
+ * 代理赚水按天发放、不参与交收：应付上级 = 应收下级 − 实占游戏净输赢
  */
 import {
   computeCreditSettlement,
@@ -16,12 +17,12 @@ const expectations: [string, number, number][] = [
   ['1级 净盈亏', result.nodes[1]!.net, 2050],
   ['2级 净盈亏', result.nodes[2]!.net, 1550],
   ['会员 净盈亏', result.member.net, -4900],
-  ['平台 应收下级', result.nodes[0]!.receivable, 1300],
-  ['1级 应收下级', result.nodes[1]!.receivable, 3350],
+  ['平台 应收下级', result.nodes[0]!.receivable, 1400],
+  ['1级 应收下级', result.nodes[1]!.receivable, 3400],
   ['2级 应收会员', result.nodes[2]!.receivable, 4900],
   ['平台 应付上级', result.nodes[0]!.payable, 0],
-  ['1级 应付上级', result.nodes[1]!.payable, 1300],
-  ['2级 应付上级', result.nodes[2]!.payable, 3350],
+  ['1级 应付上级', result.nodes[1]!.payable, 1400],
+  ['2级 应付上级', result.nodes[2]!.payable, 3400],
   ['1级 占成毛利', result.nodes[1]!.shareProfit, 2000],
   ['平台 退水收支', result.nodes[0]!.rebateNet, -200],
   ['1级 收上级退水', result.nodes[1]!.rebateIn, 200],

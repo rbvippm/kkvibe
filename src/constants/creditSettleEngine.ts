@@ -5,6 +5,8 @@
  * - nodes[0] = 平台，nodes[k] = 会员直属代理；ΣPT = 1
  * - 退水逐级整笔传递、赚差价：节点 i 收上级退水 = V × R_{i−1}，付下级退水 = V × R_i，
  *   赚水 = V × (R_{i−1} − R_i)；平台只付不收，全部退水成本落在平台
+ * - 代理赚水由平台按天发放，不参与交收；会员退水在交收时由直属代理扣给会员（应收会员 = G − C_M）
+ * - 交收只认本期游戏净输赢：应付上级 = 应收下级 − 实占游戏净输赢 P_i
  * - 全程定点小数（BigInt，放大 10^8），禁止浮点直接累加
  */
 
@@ -112,7 +114,7 @@ export type CreditSettleNodeResult = {
   net: number
   /** 应收下级 S_{i←i+1}；直属代理即应收会员 S_{k←M} */
   receivable: number
-  /** 应付上级 Pay_{i→i−1} = S_{i←i+1} − Net_i；平台恒为 0 */
+  /** 应付上级 Pay_{i→i−1} = S_{i←i+1} − P_i（赚水按天发放，不参与交收）；平台恒为 0 */
   payable: number
 }
 
@@ -190,20 +192,21 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
     return row
   })
 
-  /** 交收链路自下而上：S_{k←M} = G − V×R_k，Pay_{i→i−1} = S_{i←i+1} − Net_i */
+  /** 交收链路自下而上：S_{k←M} = G − V×R_k，Pay_{i→i−1} = S_{i←i+1} − P_i */
   let downstream = G - memberRebate
   for (let i = k; i >= 0; i -= 1) {
     const row = raw[i]!
     row.receivable = downstream
-    row.payable = i === 0 ? 0n : downstream - row.net
+    row.payable = i === 0 ? 0n : downstream - row.shareProfit
     downstream = row.payable
   }
 
   assertZero(raw.reduce((sum, row) => sum + row.shareProfit, 0n) - G, '毛利守恒失败：ΣP_i ≠ G')
   assertZero(raw.reduce((sum, row) => sum + row.rebateNet, 0n) + memberRebate, '退水守恒失败：ΣC_i + C_M ≠ 0')
   assertZero(raw.reduce((sum, row) => sum + row.net, 0n) + memberNet, '零和守恒失败：ΣNet_i + Net_M ≠ 0')
-  /** 平台作为链路顶端，应收下级即本级净盈亏 */
-  assertZero(raw[0]!.receivable - raw[0]!.net, '链路闭合失败：平台应收 ≠ 平台净盈亏')
+  /** 平台作为链路顶端：交收应收 − 按天发放给各级代理的赚水 = 平台净盈亏 */
+  const dailyRebatePaid = raw.slice(1).reduce((sum, row) => sum + row.rebateNet, 0n)
+  assertZero(raw[0]!.receivable - dailyRebatePaid - raw[0]!.net, '链路闭合失败：平台应收 − 代理赚水 ≠ 平台净盈亏')
 
   return {
     validBet: toNumber(V),

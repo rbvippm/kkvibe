@@ -168,7 +168,7 @@ export const TRANSFER_TIME_PRESETS: { key: Exclude<TransferTimePreset, 'custom'>
 export const TRANSFER_RECORD_PAGE_SIZE = 20
 export const TRANSFER_RECORD_MAX_RANGE_DAYS = 90
 
-/** 记录页类型：全部 / 平台 / 上级往来 / 下级分发 */
+/** 记录页类型：全部 / 平台账务 / 上级往来 / 下级往来（key 保持 platform / superior / downstream，兼容入口 lane 参数） */
 export type TransferLane = 'all' | 'platform' | 'superior' | 'downstream'
 
 export type TransferScene =
@@ -186,9 +186,9 @@ export type TransferPartyRole = 'member' | 'agent' | 'platform' | 'superior'
 
 export const TRANSFER_LANE_TABS: { key: TransferLane; label: string }[] = [
   { key: 'all', label: '全部' },
-  { key: 'platform', label: '平台' },
+  { key: 'platform', label: '平台账务' },
   { key: 'superior', label: '上级往来' },
-  { key: 'downstream', label: '下级分发' },
+  { key: 'downstream', label: '下级往来' },
 ]
 
 export const TRANSFER_DOWNSTREAM_ROLE_PILLS: { key: TransferRoleFilter; label: string }[] = [
@@ -197,16 +197,17 @@ export const TRANSFER_DOWNSTREAM_ROLE_PILLS: { key: TransferRoleFilter; label: s
   { key: 'agent', label: '代理' },
 ]
 
+/** 场景名统一四字 */
 export const TRANSFER_SCENE_LABEL: Record<TransferScene, string> = {
-  platform_refund: '平台回退',
-  platform_reclaim: '平台回收',
+  platform_refund: '平台补分',
+  platform_reclaim: '平台扣回',
   platform_rebate: '平台退水',
   superior_up: '上级上分',
   superior_down: '上级下分',
-  agent_up: '给代理上分',
-  member_up: '给会员上分',
-  agent_down: '给代理下分',
-  member_down: '给会员下分',
+  agent_up: '代理上分',
+  agent_down: '代理下分',
+  member_up: '会员上分',
+  member_down: '会员下分',
 }
 
 export const TRANSFER_PLATFORM_SCENES: TransferScene[] = [
@@ -219,8 +220,8 @@ export const TRANSFER_SUPERIOR_SCENES: TransferScene[] = ['superior_up', 'superi
 
 export const TRANSFER_DOWNSTREAM_SCENES: TransferScene[] = [
   'agent_up',
-  'member_up',
   'agent_down',
+  'member_up',
   'member_down',
 ]
 
@@ -237,8 +238,8 @@ export const TRANSFER_SUMMARY_METRICS: {
   label: string
   hint: string
 }[] = [
-  { key: 'creditUpTotal', label: '上分总额', hint: '上级上分 + 平台回退' },
-  { key: 'creditDownTotal', label: '下分总额', hint: '上级下分 − 平台回收' },
+  { key: 'creditUpTotal', label: '上分总额', hint: '上级上分 + 平台补分' },
+  { key: 'creditDownTotal', label: '下分总额', hint: '上级下分 − 平台扣回' },
   { key: 'creditNet', label: '上下分净额', hint: '上分总额 − 下分总额' },
   { key: 'rebate', label: '退水', hint: '平台退水' },
 ]
@@ -415,7 +416,7 @@ export function transferCardFlow(row: XCoinTransferRecord): TransferCardFlow {
   }
 }
 
-/** 我对这笔的额度变动：进账/回收为正，发给下级/平台回收/上级下分为负 */
+/** 我对这笔的额度变动：平台补分/平台退水/上级上分/代理下分/会员下分为正，代理上分/会员上分/平台扣回/上级下分为负 */
 export function transferMyCreditDelta(row: XCoinTransferRecord) {
   const scene = transferRecordScene(row)
   const abs = Math.abs(row.amount)
@@ -496,7 +497,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 4, 2),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r1b',
-    summary: '收入-给代理下分',
+    summary: '收入-代理下分',
     relationLabel: '我 → 直属代理',
   },
   {
@@ -511,7 +512,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 4, 3),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r1',
-    summary: '收入-平台回退上分',
+    summary: '收入-平台补分',
     relationLabel: '平台 → 我',
   },
 
@@ -567,7 +568,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 11, 8, 19),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r6ub',
-    summary: '支出-给会员上分',
+    summary: '支出-会员上分',
     relationLabel: '我 → 直属会员',
   },
   {
@@ -582,7 +583,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 11, 8, 20),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r6u',
-    summary: '支出-平台回收',
+    summary: '支出-平台扣回',
     relationLabel: '平台 → 我',
   },
 
@@ -602,7 +603,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(2, 15, 20, 8),
     creditCurrency: '信用额度-USD',
     relatedRecordId: 'r10b',
-    summary: '收入-给会员下分',
+    summary: '收入-会员下分',
     relationLabel: '我 → 直属会员',
   },
   {
@@ -617,7 +618,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(2, 15, 20, 9),
     creditCurrency: '信用额度-USD',
     relatedRecordId: 'r10',
-    summary: '收入-平台回退上分',
+    summary: '收入-平台补分',
     relationLabel: '平台 → 我',
   },
 
@@ -694,7 +695,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 13, 40, 10),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r12b',
-    summary: '支出-给代理上分',
+    summary: '支出-代理上分',
     relationLabel: '我 → 直属代理',
   },
   {
@@ -709,7 +710,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 13, 40, 11),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 'r12',
-    summary: '支出-平台回收',
+    summary: '支出-平台扣回',
     relationLabel: '平台 → 我',
   },
 
@@ -755,7 +756,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     amount: 36,
     createdAt: mockTransferAt(0, 21, 32, 10),
     creditCurrency: '信用额度-CNY',
-    summary: '收入-平台回退',
+    summary: '收入-平台补分',
     relationLabel: '平台 → 我',
   },
   {
@@ -769,7 +770,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     amount: -22,
     createdAt: mockTransferAt(0, 21, 33, 10),
     creditCurrency: '信用额度-CNY',
-    summary: '支出-平台回收',
+    summary: '支出-平台扣回',
     relationLabel: '平台 → 我',
   },
   {
@@ -836,7 +837,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 37, 10),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_agent_up_b',
-    summary: '支出-给代理上分',
+    summary: '支出-代理上分',
     relationLabel: '我 → 直属代理',
   },
   {
@@ -851,7 +852,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 37, 11),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_agent_up',
-    summary: '支出-平台回收',
+    summary: '支出-平台扣回',
     relationLabel: '平台 → 我',
   },
   {
@@ -869,7 +870,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 38, 10),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_member_up_b',
-    summary: '支出-给会员上分',
+    summary: '支出-会员上分',
     relationLabel: '我 → 直属会员',
   },
   {
@@ -884,7 +885,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 38, 11),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_member_up',
-    summary: '支出-平台回收',
+    summary: '支出-平台扣回',
     relationLabel: '平台 → 我',
   },
   {
@@ -901,7 +902,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 39, 10),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_agent_down_b',
-    summary: '收入-给代理下分',
+    summary: '收入-代理下分',
     relationLabel: '我 → 直属代理',
   },
   {
@@ -916,7 +917,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 39, 11),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_agent_down',
-    summary: '收入-平台回退',
+    summary: '收入-平台补分',
     relationLabel: '平台 → 我',
   },
   {
@@ -934,7 +935,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 40, 10),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_member_down_b',
-    summary: '收入-给会员下分',
+    summary: '收入-会员下分',
     relationLabel: '我 → 直属会员',
   },
   {
@@ -949,7 +950,7 @@ const RAW_MOCK_TRANSFER_RECORDS: XCoinTransferRecord[] = [
     createdAt: mockTransferAt(0, 21, 40, 11),
     creditCurrency: '信用额度-CNY',
     relatedRecordId: 's_member_down',
-    summary: '收入-平台回退',
+    summary: '收入-平台补分',
     relationLabel: '平台 → 我',
   },
 ]
@@ -1336,9 +1337,9 @@ export type TransferLaneCurrencySummary = {
   currency: XCoinCreditCurrency
   label: string
   count: number
-  /** 上分总额：上级上分 + 平台回退 */
+  /** 上分总额：上级上分 + 平台补分 */
   creditUpTotal: number
-  /** 下分总额：上级下分 − 平台回收 */
+  /** 下分总额：上级下分 − 平台扣回 */
   creditDownTotal: number
   /** 上下分净额：上分总额 − 下分总额 */
   creditNet: number

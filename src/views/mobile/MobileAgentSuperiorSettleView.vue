@@ -80,13 +80,6 @@ function confirmDate(start: string, end: string) {
   settleDateOpen.value = false
 }
 
-function openLink(link: { kind: 'agent' | 'member'; id: string }) {
-  router.push({
-    name: link.kind === 'agent' ? 'mobile-agent-detail' : 'mobile-member-detail',
-    query: withAgentQuery({ id: link.id, tab: 'credit' }),
-  })
-}
-
 function goStatement() {
   router.push({
     name: 'mobile-xcoin-records',
@@ -131,7 +124,7 @@ function goStatement() {
             />
           </h3>
         </div>
-        <Mh5CreditSettlePanel :panel="panel" @link="openLink" />
+        <Mh5CreditSettlePanel :panel="panel" />
         <button type="button" class="mh5-agent-detail-credit-settle__statement" @click="goStatement">
           查看与上级的流水对账单
         </button>

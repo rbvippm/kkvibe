@@ -38,7 +38,11 @@ import {
   formatYmd,
   matchDateRangeSheetPreset,
 } from '../../constants/mh5DateRange'
-import { XCOIN_CREDIT_CURRENCY_SPEC, XCOIN_RECORDS_LANE_SPEC } from '../../constants/xCoinCreditSpec'
+import {
+  XCOIN_CREDIT_CURRENCY_SPEC,
+  XCOIN_RECORDS_FILTER_SPEC,
+  XCOIN_RECORDS_LANE_SPEC,
+} from '../../constants/xCoinCreditSpec'
 import '../../styles/mobile-app-shell.css'
 
 function machineTodayYmd() {
@@ -281,6 +285,9 @@ function resetFilter() {
 
 function applyFilter() {
   const next = { ...filterDraft.value, keyword: searchInput.value.trim(), timePreset: 'custom' as const }
+  if (next.customStart && next.customEnd && next.customStart > next.customEnd) {
+    ;[next.customStart, next.customEnd] = [next.customEnd, next.customStart]
+  }
   appliedFilter.value = next
   filterOpen.value = false
   filterError.value = ''
@@ -643,7 +650,10 @@ function summaryToneClass(value: number) {
       <Transition name="mh5-sheet">
         <div v-if="filterOpen" class="mh5-agent-overlay-mask" @click.self="filterOpen = false">
           <div class="mh5-xcoin-sheet mh5-bet-order-sheet">
-            <h2 class="mh5-xcoin-sheet__title">高级筛选</h2>
+            <h2 class="mh5-xcoin-sheet__title">
+              高级筛选
+              <Mh5SpecAnnot :spec="XCOIN_RECORDS_FILTER_SPEC" placement="bottom" />
+            </h2>
             <p v-if="filterError" class="mh5-bet-order-sheet__error">{{ filterError }}</p>
 
             <div class="mh5-bet-order-sheet__body">

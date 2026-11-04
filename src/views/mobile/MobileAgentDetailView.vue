@@ -478,14 +478,6 @@ function confirmFilterDate(start: string, end: string) {
   filterDateOpen.value = false
 }
 
-/** 查看自己时「应收下线」逐条可点，进入对应下线详情 */
-function openSettleLink(link: { kind: 'agent' | 'member'; id: string }) {
-  router.push({
-    name: link.kind === 'agent' ? 'mobile-agent-detail' : 'mobile-member-detail',
-    query: { ...route.query, id: link.id, tab: 'credit' },
-  })
-}
-
 function pickCurrency(value: string) {
   setAgentAppCurrencyByUser(value as AgentWalletCurrency)
   currencyPickerOpen.value = false
@@ -741,7 +733,7 @@ function closeProfitFormulaTips() {
               </span>
             </button>
           </div>
-          <Mh5CreditSettlePanel :panel="creditLimitView.settle" @link="openSettleLink" />
+          <Mh5CreditSettlePanel :panel="creditLimitView.settle" />
           <button
             type="button"
             class="mh5-agent-detail-credit-settle__statement"
