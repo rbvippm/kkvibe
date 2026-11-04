@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
+import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import {
   getTurnoverPairCurrencies,
   getTurnoverPairDisplayLabel,
@@ -14,8 +15,18 @@ import {
   flowTypeLabel,
   formatFundAmount,
   MOCK_USER_FUND_FLOWS,
-  USER_CREDIT_LIMIT_CURRENCIES,
+  USER_AGENT_CREDIT_CURRENCIES,
+  USER_CREDIT_AGENT_GROUPS,
+  USER_CREDIT_AGENT_OPTIONS,
+  USER_CREDIT_TX_TYPES,
+  USER_CREDIT_WALLET_OPTIONS,
+  userCreditWalletLabel,
   USER_DETAIL_MODULE_TABS,
+  USER_FUND_LEDGER_TABS,
+  MOCK_USER_CREDIT_FLOWS,
+  findUserCreditWallet,
+  type UserCreditFlowRow,
+  type UserFundLedgerTab,
   USER_FUND_CURRENCIES,
   USER_FUND_FLOW_TYPE_OPTIONS,
   USER_FUND_TX_TYPES,
@@ -25,9 +36,11 @@ import {
 } from '../../constants/userDetail'
 import {
   USER_DETAIL_CREDIT_TAB_SPEC,
+  USER_DETAIL_LEDGER_TAB_SPEC,
   USER_DETAIL_SPEC_ANNOT_NO,
 } from '../../constants/userDetailSpec'
 import { signedNumberClass } from '../../utils/formatSignedNumber'
+import { showPcToast } from '../../composables/usePcToast'
 import '../../styles/pc-wireframe.css'
 
 type TurnoverAdjustMethod = 'increase' | 'decrease' | ''
@@ -151,22 +164,17 @@ const fiatWalletRows = ref<WalletRow[]>([
   { id: 'f2', currency: 'USD', tradable: 1000, frozen: 0, address: '' },
 ])
 
-const creditWalletRows = ref<WalletRow[]>(
-  USER_CREDIT_LIMIT_CURRENCIES.map((currency, index) => ({
+const agentCreditRows = ref<WalletRow[]>(
+  USER_AGENT_CREDIT_CURRENCIES.map((currency, index) => ({
     id: `c${index + 1}`,
     currency,
-    tradable:
-      currency === '代理-信用额度-CNY'
-        ? 50000
-        : currency === '代理-信用额度-USD'
-          ? 8000
-          : currency === '会员-信用额度-CNY'
-            ? 12000
-            : 2000,
-    frozen: currency === '会员-信用额度-CNY' ? 500 : 0,
+    tradable: currency === '代理-信用额度-CNY' ? 50000 : 8000,
+    frozen: 0,
     address: '',
   })),
 )
+
+const memberCreditGroups = USER_CREDIT_AGENT_GROUPS
 
 const bankRows = ref([
   { id: 'b1', bankName: '中国工商银行', cardNo: '6222 **** **** 1234', balance: 5000, currency: 'CNY' },
@@ -175,7 +183,6 @@ const bankRows = ref([
 const totalAssetCny = computed(() => (fiatUnit.value === 'usd' ? '2983858.09' : '21483778.24'))
 
 const displayRows = computed(() => {
-  if (accountTab.value === 'credit') return creditWalletRows.value
   if (assetTab.value === 'bank') return []
   return accountTab.value === 'crypto' ? cryptoWalletRows.value : fiatWalletRows.value
 })
@@ -221,7 +228,7 @@ function formatAmount(value: number) {
   return value.toFixed(6)
 }
 
-function totalAmount(row: WalletRow) {
+function totalAmount(row: { tradable: number; frozen: number }) {
   return row.tradable + row.frozen
 }
 
@@ -369,6 +376,104 @@ function matchFundFlow(row: UserFundFlowRow) {
 
 const filteredFundFlows = computed(() => fundFlows.value.filter(matchFundFlow))
 
+/* ---------- 信用资金明细 ---------- */
+const ledgerTab = ref<UserFundLedgerTab>('cash')
+
+type CreditLedgerFilter = {
+  agentId: string
+  wallet: string
+  txTypes: string[]
+  flowNo: string
+  flowType: '' | UserFundFlowType
+  startDate: string
+  endDate: string
+}
+
+const defaultCreditFilter = (): CreditLedgerFilter => ({
+  agentId: '',
+  wallet: '',
+  txTypes: [],
+  flowNo: '',
+  flowType: '',
+  startDate: '',
+  endDate: '',
+})
+
+const creditFilter = ref<CreditLedgerFilter>(defaultCreditFilter())
+const appliedCreditFilter = ref<CreditLedgerFilter>(defaultCreditFilter())
+const creditHint = ref('')
+const creditDetailRow = ref<UserCreditFlowRow | null>(null)
+
+const creditWalletChoices = computed(() =>
+  creditFilter.value.agentId
+    ? USER_CREDIT_WALLET_OPTIONS.filter((w) => w.agentId === creditFilter.value.agentId)
+    : USER_CREDIT_WALLET_OPTIONS,
+)
+
+const creditAgentSelectOptions = USER_CREDIT_AGENT_OPTIONS.map((agent) => ({
+  value: agent.agentId,
+  label: agent.label,
+}))
+
+const creditWalletSelectOptions = computed(() =>
+  creditWalletChoices.value.map((wallet) => ({ value: wallet.id, label: userCreditWalletLabel(wallet) })),
+)
+
+watch(
+  () => creditFilter.value.agentId,
+  () => {
+    if (!creditWalletChoices.value.some((w) => w.id === creditFilter.value.wallet)) {
+      creditFilter.value.wallet = ''
+    }
+  },
+)
+
+function creditWalletLabel(walletKey: string) {
+  const wallet = findUserCreditWallet(walletKey)
+  return wallet ? userCreditWalletLabel(wallet) : '-'
+}
+
+function matchCreditFlow(row: UserCreditFlowRow) {
+  const f = appliedCreditFilter.value
+  const wallet = findUserCreditWallet(row.walletKey)
+  if (f.agentId && wallet?.agentId !== f.agentId) return false
+  if (f.wallet && row.walletKey !== f.wallet) return false
+  if (f.txTypes.length && !f.txTypes.includes(row.txType)) return false
+  if (f.flowNo && !row.flowNo.includes(f.flowNo.trim())) return false
+  if (f.flowType && row.flowType !== f.flowType) return false
+  if (f.startDate && row.createdAtBackend.slice(0, 10) < f.startDate) return false
+  if (f.endDate && row.createdAtBackend.slice(0, 10) > f.endDate) return false
+  return true
+}
+
+const filteredCreditFlows = computed(() =>
+  MOCK_USER_CREDIT_FLOWS.filter(matchCreditFlow).sort((a, b) =>
+    b.createdAtBackend.localeCompare(a.createdAtBackend),
+  ),
+)
+
+function applyCreditFilter() {
+  const f = creditFilter.value
+  if (f.startDate && f.endDate && f.startDate > f.endDate) {
+    creditHint.value = '结束日期不能早于开始日期'
+    return
+  }
+  creditHint.value = ''
+  appliedCreditFilter.value = { ...f, txTypes: [...f.txTypes] }
+}
+
+function resetCreditFilter() {
+  creditFilter.value = defaultCreditFilter()
+  appliedCreditFilter.value = defaultCreditFilter()
+  creditHint.value = ''
+}
+
+function exportCreditLedger() {
+  const count = filteredCreditFlows.value.length
+  if (count) showPcToast(`已导出当前 ${count} 条信用资金明细`)
+  else showPcToast('暂无数据可导出', 'info')
+}
+
 function openFlowDetail(row: UserFundFlowRow) {
   detailRow.value = row
   detailVisible.value = true
@@ -475,6 +580,46 @@ watch(
         </div>
 
         <template v-if="accountTab === 'credit'">
+          <h3 class="user-detail-page__sub-title">会员信用额度（按上分代理）</h3>
+          <div class="wf-table-wrap">
+            <table class="wf-table">
+              <thead>
+                <tr>
+                  <th class="wf-th">上分代理</th>
+                  <th class="wf-th">币种</th>
+                  <th class="wf-th">钱包ID</th>
+                  <th class="wf-th">钱包名称</th>
+                  <th class="wf-th">可进行交易的货币数（单位/个）</th>
+                  <th class="wf-th">冻结的货币数（单位/个）</th>
+                  <th class="wf-th">总资产（单位/个）</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="group in memberCreditGroups" :key="group.agentId">
+                  <tr v-for="(row, index) in group.rows" :key="row.id">
+                    <td
+                      v-if="index === 0"
+                      :rowspan="group.rows.length"
+                      class="wf-td user-detail-page__agent-cell"
+                    >
+                      {{ group.agentName }}
+                    </td>
+                    <td class="wf-td">{{ row.currencyLabel }}</td>
+                    <td class="wf-td wf-td--bill">{{ row.walletId }}</td>
+                    <td class="wf-td">{{ row.walletName }}</td>
+                    <td class="wf-td wf-td--num">{{ formatAmount(row.tradable) }}</td>
+                    <td class="wf-td wf-td--num">{{ formatAmount(row.frozen) }}</td>
+                    <td class="wf-td wf-td--num">{{ formatAmount(totalAmount(row)) }}</td>
+                  </tr>
+                </template>
+                <tr v-if="!memberCreditGroups.length">
+                  <td colspan="7" class="wf-td wf-td--empty">暂无会员信用额度</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3 class="user-detail-page__sub-title">代理信用额度（本人作为代理）</h3>
           <div class="wf-table-wrap">
             <table class="wf-table">
               <thead>
@@ -486,14 +631,14 @@ watch(
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in displayRows" :key="row.id">
+                <tr v-for="row in agentCreditRows" :key="row.id">
                   <td class="wf-td">{{ row.currency }}</td>
                   <td class="wf-td wf-td--num">{{ formatAmount(row.tradable) }}</td>
                   <td class="wf-td wf-td--num">{{ formatAmount(row.frozen) }}</td>
                   <td class="wf-td wf-td--num">{{ formatAmount(totalAmount(row)) }}</td>
                 </tr>
-                <tr v-if="!displayRows.length">
-                  <td colspan="4" class="wf-td wf-td--empty">暂无信用额度数据</td>
+                <tr v-if="!agentCreditRows.length">
+                  <td colspan="4" class="wf-td wf-td--empty">暂无代理信用额度</td>
                 </tr>
               </tbody>
             </table>
@@ -580,6 +725,26 @@ watch(
       <section class="user-detail-page__section">
         <h2 class="user-detail-page__title">用户资金明细</h2>
 
+        <div class="user-detail-page__account-tabs">
+          <div v-for="(tab, index) in USER_FUND_LEDGER_TABS" :key="tab.key" class="user-detail-page__account-tab-item">
+            <button
+              type="button"
+              class="user-detail-page__account-tab"
+              :class="{ 'user-detail-page__account-tab--active': ledgerTab === tab.key }"
+              @click="ledgerTab = tab.key"
+            >
+              {{ tab.label }}
+            </button>
+            <WfSpecAnnot
+              v-if="index === USER_FUND_LEDGER_TABS.length - 1"
+              :no="USER_DETAIL_SPEC_ANNOT_NO.ledgerTabs"
+              title="现金 / 信用资金明细"
+              :items="[...USER_DETAIL_LEDGER_TAB_SPEC]"
+            />
+          </div>
+        </div>
+
+        <template v-if="ledgerTab === 'cash'">
         <div class="wf-block user-detail-page__ledger-filter">
           <div class="user-detail-page__chip-row">
             <span class="user-detail-page__chip-label">交易币种</span>
@@ -738,6 +903,126 @@ watch(
         <div class="wf-pagination">
           <span class="wf-pagination__info">共 {{ filteredFundFlows.length }} 条</span>
         </div>
+        </template>
+
+        <template v-else>
+          <div class="wf-block user-detail-page__ledger-filter">
+            <div class="wf-toolbar wf-toolbar--filters">
+              <label class="wf-label">上级代理：</label>
+              <WfSearchSelect
+                v-model="creditFilter.agentId"
+                :options="creditAgentSelectOptions"
+                empty-label="全部代理"
+                placeholder="输入代理名称或金刚号"
+                wide
+              />
+              <label class="wf-label">钱包：</label>
+              <WfSearchSelect
+                v-model="creditFilter.wallet"
+                :options="creditWalletSelectOptions"
+                empty-label="全部钱包"
+                placeholder="输入币种或钱包名称"
+                wide
+              />
+            </div>
+
+            <div class="user-detail-page__chip-row">
+              <span class="user-detail-page__chip-label">交易类型</span>
+              <div class="user-detail-page__chips">
+                <button
+                  v-for="txType in USER_CREDIT_TX_TYPES"
+                  :key="txType"
+                  type="button"
+                  class="user-detail-page__chip"
+                  :class="{ 'user-detail-page__chip--active': creditFilter.txTypes.includes(txType) }"
+                  @click="toggleChip(creditFilter.txTypes, txType)"
+                >
+                  {{ txType }}
+                </button>
+              </div>
+            </div>
+
+            <div class="wf-toolbar wf-toolbar--filters">
+              <label class="wf-label">流水号：</label>
+              <input v-model="creditFilter.flowNo" type="text" class="wf-input" placeholder="请输入流水号" />
+              <label class="wf-label">流水类型：</label>
+              <select v-model="creditFilter.flowType" class="wf-input wf-input--select">
+                <option
+                  v-for="opt in USER_FUND_FLOW_TYPE_OPTIONS"
+                  :key="opt.value || 'all'"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+              <label class="wf-label">流水生成时间：</label>
+              <input v-model="creditFilter.startDate" type="date" class="wf-input wf-input--date" />
+              <span class="wf-range-sep">-</span>
+              <input v-model="creditFilter.endDate" type="date" class="wf-input wf-input--date" />
+            </div>
+
+            <div class="wf-toolbar">
+              <span class="wf-toolbar__actions wf-toolbar__actions--start">
+                <button type="button" class="wf-btn wf-btn--primary" @click="applyCreditFilter">搜索</button>
+                <button type="button" class="wf-btn wf-btn--default" @click="resetCreditFilter">重置</button>
+                <button type="button" class="wf-btn user-detail-page__btn--export" @click="exportCreditLedger">
+                  导出
+                </button>
+              </span>
+              <p v-if="creditHint" class="wf-modal__hint">{{ creditHint }}</p>
+            </div>
+          </div>
+
+          <div class="wf-table-wrap">
+            <table class="wf-table user-detail-page__credit-ledger-table">
+              <thead>
+                <tr>
+                  <th class="wf-th wf-th--no">编号</th>
+                  <th class="wf-th">流水号</th>
+                  <th class="wf-th">上分代理</th>
+                  <th class="wf-th">钱包</th>
+                  <th class="wf-th">钱包ID</th>
+                  <th class="wf-th">流水类型</th>
+                  <th class="wf-th">交易类型</th>
+                  <th class="wf-th">交易说明</th>
+                  <th class="wf-th">交易金额（单位/个）</th>
+                  <th class="wf-th">交易前余额（单位/个）</th>
+                  <th class="wf-th">交易后余额（单位/个）</th>
+                  <th class="wf-th">流水生成时间</th>
+                  <th class="wf-th">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-if="!filteredCreditFlows.length">
+                  <td colspan="13" class="wf-td wf-td--empty">暂无信用资金明细</td>
+                </tr>
+                <tr v-for="(row, index) in filteredCreditFlows" :key="row.id">
+                  <td class="wf-td wf-td--center">{{ index + 1 }}</td>
+                  <td class="wf-td wf-td--bill">{{ row.flowNo }}</td>
+                  <td class="wf-td">{{ findUserCreditWallet(row.walletKey)?.agentName ?? '-' }}</td>
+                  <td class="wf-td">{{ creditWalletLabel(row.walletKey) }}</td>
+                  <td class="wf-td wf-td--bill">{{ findUserCreditWallet(row.walletKey)?.walletId ?? '-' }}</td>
+                  <td class="wf-td wf-td--center">{{ flowTypeLabel(row.flowType) }}</td>
+                  <td class="wf-td wf-td--center">{{ row.txType }}</td>
+                  <td class="wf-td">{{ row.summary }}</td>
+                  <td class="wf-td wf-td--num" :class="signedNumberClass(row.amount)">
+                    {{ formatFundAmount(row.amount) }}
+                  </td>
+                  <td class="wf-td wf-td--num">{{ formatFundAmount(row.balanceBefore) }}</td>
+                  <td class="wf-td wf-td--num">{{ formatFundAmount(row.balanceAfter) }}</td>
+                  <td class="wf-td">{{ row.createdAtBackend }}</td>
+                  <td class="wf-td wf-td--actions">
+                    <button type="button" class="wf-link-action" @click="creditDetailRow = row">查看详情</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="wf-pagination">
+            <span class="wf-pagination__info">共 {{ filteredCreditFlows.length }} 条</span>
+          </div>
+        </template>
       </section>
     </template>
 
@@ -821,6 +1106,96 @@ watch(
             <button type="button" class="wf-btn wf-btn--primary wf-btn--lg" @click="confirmTurnoverAdjust">
               确定
             </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 信用资金流水详情 -->
+    <Teleport to="body">
+      <div
+        v-if="creditDetailRow"
+        class="wf-modal-mask"
+        role="presentation"
+        @click.self="creditDetailRow = null"
+      >
+        <div
+          class="wf-modal wf-modal--scroll user-detail-page__flow-modal"
+          role="dialog"
+          aria-labelledby="credit-flow-detail-title"
+          aria-modal="true"
+        >
+          <div class="wf-modal__header">
+            <h3 id="credit-flow-detail-title" class="wf-modal__title">信用资金流水详情</h3>
+            <button type="button" class="wf-modal__close" aria-label="关闭" @click="creditDetailRow = null">
+              ×
+            </button>
+          </div>
+          <div class="wf-modal__body">
+            <section class="user-detail-page__detail-section">
+              <h4 class="user-detail-page__detail-section-title">钱包信息</h4>
+              <div class="user-detail-page__detail-grid user-detail-page__detail-grid--3">
+                <div>
+                  <span class="user-detail-page__detail-label">上分代理</span>
+                  <span>{{ findUserCreditWallet(creditDetailRow.walletKey)?.agentName ?? '-' }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">钱包</span>
+                  <span>{{ creditWalletLabel(creditDetailRow.walletKey) }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">钱包ID</span>
+                  <span>{{ findUserCreditWallet(creditDetailRow.walletKey)?.walletId ?? '-' }}</span>
+                </div>
+              </div>
+            </section>
+            <section class="user-detail-page__detail-section">
+              <h4 class="user-detail-page__detail-section-title">流水明细</h4>
+              <div class="user-detail-page__detail-summary">
+                <span>交易类型：{{ creditDetailRow.txType }}</span>
+                <span>流水生成时间(后台)：{{ creditDetailRow.createdAtBackend }}</span>
+                <span>流水生成时间(客户端)：{{ creditDetailRow.createdAtClient }}</span>
+              </div>
+              <div class="user-detail-page__detail-grid user-detail-page__detail-grid--3">
+                <div>
+                  <span class="user-detail-page__detail-label">流水号</span>
+                  <span>{{ creditDetailRow.flowNo }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">流水类型</span>
+                  <span>{{ flowTypeLabel(creditDetailRow.flowType) }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">交易说明</span>
+                  <span>{{ creditDetailRow.summary }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">交易金额</span>
+                  <span :class="signedNumberClass(creditDetailRow.amount)">
+                    {{ formatFundAmount(creditDetailRow.amount) }}
+                  </span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">交易前余额</span>
+                  <span>{{ formatFundAmount(creditDetailRow.balanceBefore) }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">交易后余额</span>
+                  <span>{{ formatFundAmount(creditDetailRow.balanceAfter) }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">操作人昵称</span>
+                  <span>{{ creditDetailRow.operatorNickname }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">操作人ID</span>
+                  <span>{{ creditDetailRow.operatorUserId }}</span>
+                </div>
+              </div>
+            </section>
+          </div>
+          <div class="wf-modal__footer">
+            <button type="button" class="wf-btn wf-btn--default" @click="creditDetailRow = null">关闭</button>
           </div>
         </div>
       </div>
@@ -1093,6 +1468,23 @@ watch(
   font-variant-numeric: tabular-nums;
 }
 
+.user-detail-page__sub-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pc-text, #333);
+}
+
+.wf-table-wrap + .user-detail-page__sub-title {
+  margin-top: 20px;
+}
+
+.user-detail-page__agent-cell {
+  background: #fafafa;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
 .user-detail-page__turnover-current {
   margin: 0 0 16px;
   color: var(--pc-text-secondary, #666);
@@ -1142,6 +1534,11 @@ watch(
 .user-detail-page__ledger-table {
   table-layout: auto;
   min-width: 1800px;
+}
+
+.user-detail-page__credit-ledger-table {
+  table-layout: auto;
+  min-width: 1400px;
 }
 
 .user-detail-page__placeholder {

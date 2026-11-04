@@ -800,6 +800,18 @@ export const router = createRouter({
           meta: { title: '用户详情-文档说明' },
         },
         {
+          path: 'credit-flow-list',
+          name: 'pc-credit-flow-list',
+          component: () => import('../views/pc/PcCreditFlowListView.vue'),
+          meta: { title: '信用流水列表' },
+        },
+        {
+          path: 'credit-flow-list/doc',
+          name: 'pc-credit-flow-list-doc',
+          component: () => import('../views/pc/PcCreditFlowListDocView.vue'),
+          meta: { title: '信用流水列表-文档说明' },
+        },
+        {
           path: 'user-manage',
           name: 'pc-user-manage',
           component: PcUserManageView,

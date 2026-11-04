@@ -117,6 +117,12 @@ export const pcDocRoutes: PcDocRoute[] = [
     pagePath: ['用户管理', '用户列表', '用户详情', '文档说明'],
   },
   {
+    path: '/pc/credit-flow-list/doc',
+    routeName: 'pc-credit-flow-list-doc',
+    title: '文档说明',
+    pagePath: ['财务管理', '信用流水列表', '文档说明'],
+  },
+  {
     path: '/pc/activity-center/doc',
     routeName: 'pc-activity-center-doc',
     title: '文档说明',
@@ -257,6 +263,15 @@ const pcMenuFinanceChildren: PcMenuItem[] = [
     routeName: 'pc-withdraw-turnover-record',
     icon: '💰',
     pagePath: ['财务管理', '提现流水变更记录'],
+  },
+  {
+    key: 'credit-flow-list',
+    title: '信用流水列表',
+    path: '/pc/credit-flow-list',
+    routeName: 'pc-credit-flow-list',
+    icon: '🧮',
+    pagePath: ['财务管理', '信用流水列表'],
+    docRouteName: 'pc-credit-flow-list-doc',
   },
 ]
 
