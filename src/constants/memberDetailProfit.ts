@@ -1,6 +1,8 @@
 import {
   AGENT_PROFIT_CATEGORY_TABS,
   AGENT_PROFIT_VENDORS,
+  CREDIT_HIDDEN_PROFIT_LABELS,
+  isCreditProfitCurrency,
   profitTotalClass,
   profitValueClass,
   type AgentProfitCategoryKey,
@@ -67,12 +69,24 @@ function withMemberRebate(options?: MemberProfitOptions) {
   return options?.includeMemberRebate !== false
 }
 
-export function memberProfitFormulaText(includeMemberRebate = true) {
+/** 信用代理中心：会员无 VIP 奖励与活动金，无其他奖励 */
+export const MEMBER_CREDIT_PROFIT_FORMULA = '会员盈亏 = 游戏输赢 + 会员退水'
+export const MEMBER_CREDIT_SECTION_FORMULA = '会员盈亏 = 游戏净输赢'
+export const MEMBER_CREDIT_GAME_NET_FORMULA = '游戏净输赢 = 游戏输赢 + 会员退水'
+
+export function memberProfitFormulaText(includeMemberRebate = true, currency = '') {
+  if (isCreditProfitCurrency(currency)) return MEMBER_CREDIT_PROFIT_FORMULA
   return includeMemberRebate ? MEMBER_PROFIT_FORMULA : MEMBER_REBATE_PROFIT_FORMULA
 }
 
-export function memberGameNetFormulaText(includeMemberRebate = true) {
+export function memberGameNetFormulaText(includeMemberRebate = true, currency = '') {
+  if (isCreditProfitCurrency(currency)) return MEMBER_CREDIT_GAME_NET_FORMULA
   return includeMemberRebate ? MEMBER_PROFIT_GAME_NET_FORMULA : MEMBER_REBATE_GAME_NET_PROFIT_FORMULA
+}
+
+function withoutCreditHiddenRows<T extends { label: string }>(currency: string, rows: T[]): T[] {
+  if (!isCreditProfitCurrency(currency)) return rows
+  return rows.filter((row) => !CREDIT_HIDDEN_PROFIT_LABELS.has(row.label))
 }
 
 type MemberProfitSummaryMock = {
@@ -114,23 +128,24 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, MemberProfitSummaryMock> = {
     activityGold: 120,
     depositWithdrawFee: 42,
   },
+  /** 信用代理中心：无 VIP 奖励 / 活动金 / 充提，相关字段恒为 0 */
   '信用额度-CNY': {
     gameProfit: 1550,
     memberRebate: 128,
-    vipRebate: 18,
-    vipBonus: 60,
-    vipExtraBonus: 20,
-    activityGold: 40,
-    depositWithdrawFee: 16,
+    vipRebate: 0,
+    vipBonus: 0,
+    vipExtraBonus: 0,
+    activityGold: 0,
+    depositWithdrawFee: 0,
   },
   '信用额度-USD': {
     gameProfit: 620,
     memberRebate: 48,
-    vipRebate: 8,
-    vipBonus: 22,
-    vipExtraBonus: 8,
-    activityGold: 15,
-    depositWithdrawFee: 8,
+    vipRebate: 0,
+    vipBonus: 0,
+    vipExtraBonus: 0,
+    activityGold: 0,
+    depositWithdrawFee: 0,
   },
 }
 
@@ -288,7 +303,7 @@ function getMemberProfitGameFormulaRows(
     value: formatProfitAmount(stats.vipRebate),
     tone: profitTone(stats.vipRebate),
   })
-  return rows
+  return withoutCreditHiddenRows(currency, rows)
 }
 
 /**
@@ -324,7 +339,7 @@ export function getMemberProfitGameSection(
 /** 占成 · 其他奖励分区（VIP晋级礼金 / VIP额外奖金 / 活动金；无实占文案） */
 export function getMemberProfitCostSection(currency: string): MemberProfitSection {
   const stats = getMemberProfitSummaryMock(currency)
-  const rows: MemberProfitSectionRow[] = [
+  const rows: MemberProfitSectionRow[] = withoutCreditHiddenRows(currency, [
     {
       key: 'vip_bonus',
       label: 'VIP晋级礼金',
@@ -343,7 +358,7 @@ export function getMemberProfitCostSection(currency: string): MemberProfitSectio
       value: formatProfitAmount(stats.activityGold),
       tone: profitTone(stats.activityGold),
     },
-  ]
+  ])
   return {
     nameHeader: '其他奖励',
     amountHeader: '金额',
@@ -406,11 +421,14 @@ function getMemberCategoryDetailRows(
   const section = getMemberProfitGameSection(currency, options)
   const product = section.rows.find((row) => row.key === categoryKey)
   const targetNet = product ? parseProfitAmountText(product.value) : 650
-  const base = MEMBER_CATEGORY_DETAIL_BASE.filter((row) => {
-    if (row.label === '下注有效金额' || row.emphasize) return false
-    if (!includeRebate && row.label === '会员退水') return false
-    return true
-  })
+  const base = withoutCreditHiddenRows(
+    currency,
+    MEMBER_CATEGORY_DETAIL_BASE.filter((row) => {
+      if (row.label === '下注有效金额' || row.emphasize) return false
+      if (!includeRebate && row.label === '会员退水') return false
+      return true
+    }),
+  )
   const winBase = Math.abs(
     parseProfitAmountText(base.find((row) => row.label === '输赢')?.amountText ?? '0'),
   )
@@ -458,7 +476,7 @@ function getMemberCategoryDetailRows(
       amountText: formatProfitAmount(targetNet),
       tone: profitTone(targetNet),
       emphasize: true,
-      formulaTip: memberGameNetFormulaText(includeRebate),
+      formulaTip: memberGameNetFormulaText(includeRebate, currency),
     },
   ]
 }
@@ -487,7 +505,7 @@ export function getMemberProfitDialogDetail(
         amountText: total.value,
         tone: total.tone,
         emphasize: true,
-        formulaTip: memberProfitFormulaText(withMemberRebate(options)),
+        formulaTip: memberProfitFormulaText(withMemberRebate(options), currency),
       },
     ]
   }
@@ -547,7 +565,7 @@ export function getMemberProfitSummaryRows(
       tone: profitTone(stats.activityGold),
     },
   )
-  return rows
+  return withoutCreditHiddenRows(currency, rows)
 }
 
 const IM_SPORTS_DETAIL: AgentProfitDetail = {
@@ -611,7 +629,26 @@ function getMemberCategoryVendorAllDetail(category: MemberProfitCategoryKey): Ag
   }
 }
 
+/** 信用额度看板：去掉 VIP退水 行，游戏净输赢同步扣除该笔奖励 */
 export function getMemberProfitDetail(
+  category: MemberProfitCategoryKey,
+  vendor: MemberProfitVendorKey,
+  currency = '',
+): AgentProfitDetail {
+  const detail = getMemberProfitDetailBase(category, vendor)
+  if (!isCreditProfitCurrency(currency)) return detail
+  const hidden = detail.rows.filter((row) => CREDIT_HIDDEN_PROFIT_LABELS.has(row.label))
+  const removed = hidden.reduce((acc, row) => acc + parseProfitAmountText(row.value), 0)
+  const total = parseProfitAmountText(detail.totalProfit) - removed
+  return {
+    ...detail,
+    totalProfit: formatProfitAmount(total),
+    totalProfitTone: profitTone(total),
+    rows: withoutCreditHiddenRows(currency, detail.rows),
+  }
+}
+
+function getMemberProfitDetailBase(
   category: MemberProfitCategoryKey,
   vendor: MemberProfitVendorKey,
 ): AgentProfitDetail {

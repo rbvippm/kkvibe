@@ -70,7 +70,9 @@ const emit = defineEmits<{
 
 const route = useRoute()
 const router = useRouter()
-const { agentType, isRebateAgent, withAgentQuery } = useAgentIdentity()
+const { agentType, isRebateAgent, currencyScope, withAgentQuery } = useAgentIdentity()
+/** 占成信用代理中心：无 VIP / 活动金 / 充提手续费，不展示其他成本 */
+const isShareCredit = computed(() => !isRebateAgent.value && currencyScope.value === 'credit')
 
 const preset = ref<ProfitDatePreset>(agentMyProfitDefaultPreset(agentType.value))
 /** 返佣结算月（月份选择与快捷 Tab 共用）；默认本月 */
@@ -178,7 +180,7 @@ const rebateSectionScale = computed<RebateSectionScale>(() => {
 })
 const rebateCommissionRate = computed(() => rebateCommissionBill.value?.commissionRate ?? '5.00%')
 /** 占成顶部总盈亏 = 实占净输赢 + P2P返利 + 代理赚水（与明细同源；随日期快捷变化） */
-const totalBlock = computed(() => agentMyProfitShareTotalBlock(preset.value))
+const totalBlock = computed(() => agentMyProfitShareTotalBlock(preset.value, currencyScope.value))
 
 watch(preset, () => {
   netWinTipOpen.value = false
@@ -201,7 +203,7 @@ const gameSection = computed(() =>
 const costSection = computed(() =>
   isRebateAgent.value
     ? agentMyProfitRebateCostSection('l1', rebateSectionScale.value)
-    : agentMyProfitShareCostSection(preset.value),
+    : agentMyProfitShareCostSection(preset.value, currencyScope.value),
 )
 const shareEarnSection = computed(() => agentMyProfitShareEarnSection(preset.value))
 const shareP2pSection = computed(() => agentMyProfitShareP2pSection(preset.value))
@@ -223,7 +225,7 @@ const rebateMonthCommission = computed(() => rebateL1Formula.value.monthCommissi
 const rebateTotalCommission = computed(() => rebateMonthCommission.value)
 const rebateHeroAmount = computed(() => formatCommissionAmount(rebateTotalCommission.value))
 /** 占成公式条：实占净输赢 + P2P返利 + 代理赚水 */
-const shareFormula = computed(() => agentMyProfitShareFormula(preset.value))
+const shareFormula = computed(() => agentMyProfitShareFormula(preset.value, currencyScope.value))
 const rebateDetailContext = computed(() => ({
   l1Commission: rebateL1Formula.value.monthCommission,
   monthCommission: rebateMonthCommission.value,
@@ -269,6 +271,7 @@ const detailRows = computed(() =>
         'l1',
         isRebateAgent.value ? rebateDetailContext.value : undefined,
         preset.value,
+        currencyScope.value,
       )
     : [],
 )
@@ -618,6 +621,7 @@ onBeforeUnmount(() => {
             <p class="mh5-agent-commission-cell__label">
               <span class="mh5-agent-detail-profit-summary__label-wrap mh5-agent-detail-profit-hero__net-tip">
                 <button
+                  v-if="!isShareCredit"
                   type="button"
                   class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
                   :aria-label="$t('查看实占净输赢计算公式')"
@@ -636,7 +640,7 @@ onBeforeUnmount(() => {
                 </button>
                 <span>{{ $t('实占净输赢') }}</span>
                 <span
-                  v-if="netPnlFormulaTipOpen"
+                  v-if="netPnlFormulaTipOpen && !isShareCredit"
                   class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
                   role="tooltip"
                   @click.stop
@@ -897,6 +901,7 @@ onBeforeUnmount(() => {
       </section>
 
       <section
+        v-if="!isShareCredit"
         class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
         :aria-label="$t('其他成本金额')"
       >

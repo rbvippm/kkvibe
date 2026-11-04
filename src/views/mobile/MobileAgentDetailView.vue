@@ -22,12 +22,15 @@ import {
 } from '../../constants/agentAppCurrency'
 import {
   AGENT_COMMISSION_FORMULA,
+  AGENT_CREDIT_GAME_PROFIT_FORMULA,
+  AGENT_CREDIT_PROFIT_FORMULA,
   AGENT_GAME_PROFIT_FORMULA,
   AGENT_NET_PNL_FORMULA,
   AGENT_PROFIT_CATEGORY_TABS,
   AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_VENDORS,
   agentProfitDialogTitle,
+  isCreditProfitCurrency,
   getAgentCommissionSummaryRows,
   getAgentProfitCostSection,
   getAgentProfitDetail,
@@ -160,8 +163,16 @@ const detailTabs = computed(() =>
 )
 const currencyOptions = computed(() => getAgentDetailCurrencyOptions(currencyScope.value))
 const profitTabLabel = computed(() => (isRebateAgent.value ? '代理佣金' : '代理盈亏'))
-const profitTabFormula = computed(() =>
-  isRebateAgent.value ? AGENT_COMMISSION_FORMULA : AGENT_PROFIT_FORMULA,
+/** 信用额度看板（信用代理中心）：无 VIP / 活动金 / 充提，不展示其他成本 */
+const isCreditProfit = computed(
+  () => !isRebateAgent.value && isCreditProfitCurrency(currency.value),
+)
+const profitTabFormula = computed(() => {
+  if (isRebateAgent.value) return AGENT_COMMISSION_FORMULA
+  return isCreditProfit.value ? AGENT_CREDIT_PROFIT_FORMULA : AGENT_PROFIT_FORMULA
+})
+const gameProfitFormulaText = computed(() =>
+  isCreditProfit.value ? AGENT_CREDIT_GAME_PROFIT_FORMULA : AGENT_GAME_PROFIT_FORMULA,
 )
 const useProfitSections = computed(
   () => !isRebateAgent.value && profitLayoutMode.value === 'sections',
@@ -200,7 +211,9 @@ watch(
 )
 
 const profitVendorOptions = computed(() => AGENT_PROFIT_VENDORS[profitCategory.value])
-const profitDetail = computed(() => getAgentProfitDetail(profitCategory.value, profitVendor.value))
+const profitDetail = computed(() =>
+  getAgentProfitDetail(profitCategory.value, profitVendor.value, currency.value),
+)
 const profitSummaryRows = computed(() =>
   isRebateAgent.value
     ? getAgentCommissionSummaryRows(currency.value)
@@ -725,7 +738,7 @@ function closeProfitFormulaTips() {
           />
           <section
             class="mh5-agent-report-summary mh5-agent-detail-profit-team-flow"
-            aria-label="团队充提总额"
+            :aria-label="isCreditProfit ? '团队上下分总额' : '团队充提总额'"
           >
             <div
               v-for="row in profitFlowRows"
@@ -821,6 +834,7 @@ function closeProfitFormulaTips() {
                   <p class="mh5-agent-commission-cell__label">
                     <span class="mh5-agent-detail-profit-summary__label-wrap mh5-agent-detail-profit-hero__net-tip">
                       <button
+                        v-if="!isCreditProfit"
                         type="button"
                         class="mh5-agent-detail-profit-summary__tip-btn mh5-agent-report-detail__tip-btn"
                         aria-label="查看实占净输赢计算公式"
@@ -839,7 +853,7 @@ function closeProfitFormulaTips() {
                       </button>
                       <span>实占净输赢</span>
                       <span
-                        v-if="netPnlFormulaTipOpen"
+                        v-if="netPnlFormulaTipOpen && !isCreditProfit"
                         class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
                         role="tooltip"
                         @click.stop
@@ -1010,6 +1024,7 @@ function closeProfitFormulaTips() {
             </section>
 
             <section
+              v-if="!isCreditProfit"
               class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
               aria-label="其他成本金额"
             >
@@ -1291,7 +1306,7 @@ function closeProfitFormulaTips() {
                     class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
                     role="tooltip"
                   >
-                    {{ AGENT_GAME_PROFIT_FORMULA }}
+                    {{ gameProfitFormulaText }}
                   </span>
                 </span>
                 <em :class="profitTotalClass(profitDetail.totalProfitTone)">

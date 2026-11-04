@@ -18,16 +18,20 @@ const props = withDefaults(
     maskClass?: string
     /** 投注记录等场景不展示账户余额 */
     hideBalance?: boolean
+    /** 贵宾厅「我的」钱包列表：账户名称旁展示改名入口 */
+    editableName?: boolean
   }>(),
   {
     teleportTo: 'body',
     maskClass: 'mh5-agent-overlay-mask',
     hideBalance: false,
+    editableName: false,
   },
 )
 
 const emit = defineEmits<{
   close: []
+  editName: [item: CreditWalletItem]
 }>()
 
 const { wallets, selectedId, selectAccount, selectRecordsAll, recordsSelectAll, recordsCurrencyFilter, reorderAgentGroups } =
@@ -319,17 +323,40 @@ function onHandlePointerUp() {
               </button>
 
               <template v-else>
-                <button
+                <div
                   v-for="item in group.items"
                   :key="item.id"
-                  type="button"
+                  role="button"
+                  tabindex="0"
                   class="mh5-credit-account-card"
                   :class="{ 'mh5-credit-account-card--active': isItemSelected(item) }"
+                  :aria-pressed="isItemSelected(item)"
                   @click="onSelect(item)"
+                  @keydown.enter.self.prevent="onSelect(item)"
+                  @keydown.space.self.prevent="onSelect(item)"
                 >
                   <img class="mh5-credit-account-card__icon" :src="item.icon" alt="" width="36" height="36" />
                   <span class="mh5-credit-account-card__meta">
-                    <span class="mh5-credit-account-card__name">{{ item.displayName }}</span>
+                    <span class="mh5-credit-account-card__name-row">
+                      <span class="mh5-credit-account-card__name">{{ item.displayName }}</span>
+                      <button
+                        v-if="editableName"
+                        type="button"
+                        class="mh5-credit-account-card__edit"
+                        :aria-label="$t('修改钱包名称')"
+                        @click.stop="emit('editName', item)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path
+                            d="M4 20h4L18.5 9.5a2.1 2.1 0 00-3-3L5 17v3z"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                            stroke-linejoin="round"
+                          />
+                          <path d="M13.5 8.5l2 2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                    </span>
                     <span
                       v-if="!hideBalance"
                       class="mh5-credit-account-card__balance"
@@ -341,7 +368,7 @@ function onHandlePointerUp() {
                       <path d="M4.8 8.2l2.2 2.2 4.2-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
                     </svg>
                   </span>
-                </button>
+                </div>
               </template>
             </section>
           </div>

@@ -34,6 +34,20 @@ export const AGENT_NET_PNL_DETAIL_FORMULA =
 export const AGENT_PROFIT_SECTION_FORMULA =
   '总盈亏 = 游戏净输赢 + P2P返利 - 其他成本 + 代理赚水'
 
+/** 信用代理中心不发放 VIP 奖励与活动金、无充提：无其他成本，游戏侧不扣 VIP 退水 */
+export const AGENT_CREDIT_PROFIT_FORMULA = '总盈亏 = 游戏净输赢 + P2P返利 + 代理赚水'
+export const AGENT_CREDIT_NET_PNL_DETAIL_FORMULA = '实占净输赢 = 实占游戏输赢 - 实占退水 - 场馆费'
+export const AGENT_CREDIT_GAME_PROFIT_FORMULA = '游戏净输赢 = 实占游戏输赢 - 实占退水 - 场馆费'
+
+/** 信用代理中心不展示的盈亏细项 */
+export const CREDIT_HIDDEN_PROFIT_LABELS = new Set([
+  'VIP退水',
+  'VIP晋级礼金',
+  'VIP额外奖金',
+  '活动金',
+  '充提手续费',
+])
+
 /** 加项公式：结果 = 细项1 + 细项2 + …；无细项时不拼公式 */
 export function joinProfitSumFormula(resultLabel: string, itemLabels: string[]) {
   if (!itemLabels.length) return ''
@@ -137,30 +151,41 @@ const PROFIT_SUMMARY_BY_CURRENCY: Record<string, AgentProfitSummaryMock> = {
     depositWithdrawFee: 42,
     p2pRebate: 610,
   },
+  /** 信用代理中心：无 VIP 奖励 / 活动金 / 充提，相关字段恒为 0 */
   '信用额度-CNY': {
     actualWin: 1848,
     actualRebate: 135,
-    actualVipRebate: 35,
+    actualVipRebate: 0,
     rebateEarn: 128,
     venueFee: 18,
-    vipBonus: 60,
-    vipExtraBonus: 20,
-    activityGold: 40,
-    depositWithdrawFee: 16,
+    vipBonus: 0,
+    vipExtraBonus: 0,
+    activityGold: 0,
+    depositWithdrawFee: 0,
     p2pRebate: 150,
   },
   '信用额度-USD': {
     actualWin: 750,
     actualRebate: 118,
-    actualVipRebate: 12,
+    actualVipRebate: 0,
     rebateEarn: 48,
     venueFee: 8,
-    vipBonus: 22,
-    vipExtraBonus: 8,
-    activityGold: 15,
-    depositWithdrawFee: 8,
+    vipBonus: 0,
+    vipExtraBonus: 0,
+    activityGold: 0,
+    depositWithdrawFee: 0,
     p2pRebate: 55,
   },
+}
+
+/** 信用额度看板（信用代理中心）：不展示 VIP / 其他成本 */
+export function isCreditProfitCurrency(currency: string) {
+  return currency.startsWith('信用额度-')
+}
+
+function withoutCreditHiddenRows<T extends { label: string }>(currency: string, rows: T[]): T[] {
+  if (!isCreditProfitCurrency(currency)) return rows
+  return rows.filter((row) => !CREDIT_HIDDEN_PROFIT_LABELS.has(row.label))
 }
 
 const EMPTY_SUMMARY_MOCK: AgentProfitSummaryMock = {
@@ -411,7 +436,7 @@ function scaleWeightsToTarget(weights: number[], targetSum: number): number[] {
 /** 游戏净输赢公式构成项（明细弹框用；列表展开为游戏大类） */
 function getAgentProfitGameFormulaRows(currency: string): AgentProfitSectionRow[] {
   const stats = getAgentProfitSummaryMock(currency)
-  return [
+  return withoutCreditHiddenRows(currency, [
     {
       key: 'win',
       label: '输赢',
@@ -433,7 +458,7 @@ function getAgentProfitGameFormulaRows(currency: string): AgentProfitSectionRow[
       label: '场馆费',
       ...formatCostAmount(stats.venueFee),
     },
-  ]
+  ])
 }
 
 /**
@@ -504,10 +529,10 @@ export function getAgentProfitP2pSection(currency: string): AgentProfitSection {
   }
 }
 
-/** 占成 · 其他成本分区（对齐「我的盈亏」，含充提手续费） */
+/** 占成 · 其他成本分区（对齐「我的盈亏」，含充提手续费）；信用额度看板无细项 */
 export function getAgentProfitCostSection(currency: string): AgentProfitSection {
   const stats = getAgentProfitSummaryMock(currency)
-  const rows: AgentProfitSectionRow[] = [
+  const rows: AgentProfitSectionRow[] = withoutCreditHiddenRows(currency, [
     {
       key: 'vip_bonus',
       label: 'VIP晋级礼金',
@@ -528,7 +553,7 @@ export function getAgentProfitCostSection(currency: string): AgentProfitSection 
       label: '充提手续费',
       ...formatCostAmount(stats.depositWithdrawFee),
     },
-  ]
+  ])
   const costAbs = getAgentOtherCostAbs(currency)
   const costCell = formatCostAmount(costAbs)
   return {
@@ -747,7 +772,8 @@ function getAgentCategoryDetailRows(
   const product = section.rows.find((row) => row.key === categoryKey)
   const targetNet = product ? parseProfitAmountText(product.value) : 330
   const base = AGENT_CATEGORY_DETAIL_BASE.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
-  const amounts = scaleAgentGameNetParts(base, targetNet)
+  const visibleBase = withoutCreditHiddenRows(currency, base)
+  const amounts = scaleAgentGameNetParts(visibleBase, targetNet)
   const betScale = Math.max(Math.abs(targetNet) / 330, 0.2)
   const betValue = Number((10000 * betScale).toFixed(2))
   return [
@@ -759,7 +785,7 @@ function getAgentCategoryDetailRows(
       }),
       tone: 'neutral',
     },
-    ...base.map((row) => {
+    ...visibleBase.map((row) => {
       const cell = formatItemAmount(row.label, amounts[row.label] ?? 0)
       return {
         ...row,
@@ -772,7 +798,9 @@ function getAgentCategoryDetailRows(
       amountText: formatProfitAmount(targetNet),
       tone: profitTone(targetNet),
       emphasize: true,
-      formulaTip: AGENT_GAME_PROFIT_FORMULA,
+      formulaTip: isCreditProfitCurrency(currency)
+        ? AGENT_CREDIT_GAME_PROFIT_FORMULA
+        : AGENT_GAME_PROFIT_FORMULA,
     },
   ]
 }
@@ -822,7 +850,9 @@ export function getAgentProfitDialogDetail(
         amountText: net.value,
         tone: net.tone,
         emphasize: true,
-        formulaTip: AGENT_NET_PNL_DETAIL_FORMULA,
+        formulaTip: isCreditProfitCurrency(currency)
+          ? AGENT_CREDIT_NET_PNL_DETAIL_FORMULA
+          : AGENT_NET_PNL_DETAIL_FORMULA,
       },
     ]
   }
@@ -850,7 +880,8 @@ export function getAgentProfitDialogDetail(
     const costCell = formatCostAmount(getAgentOtherCostAbs(currency))
     const earn = getAgentRebateEarn(currency)
     const total = getAgentSectionTotalProfit(currency)
-    return [
+    const isCredit = isCreditProfitCurrency(currency)
+    const rows: AgentProfitDialogDetailRow[] = [
       {
         label: '游戏净输赢',
         amountText: game.value,
@@ -876,9 +907,10 @@ export function getAgentProfitDialogDetail(
         amountText: total.value,
         tone: total.tone,
         emphasize: true,
-        formulaTip: AGENT_PROFIT_SECTION_FORMULA,
+        formulaTip: isCredit ? AGENT_CREDIT_PROFIT_FORMULA : AGENT_PROFIT_SECTION_FORMULA,
       },
     ]
+    return isCredit ? rows.filter((row) => row.label !== '其他成本') : rows
   }
 
   return getAgentCategoryDetailRows(kind, currency)
@@ -900,9 +932,15 @@ export function agentProfitDialogTitle(kind: AgentProfitDialogKind, currency = '
 
 /**
  * 代理盈亏上方汇总卡：团队充值总额 / 团队提款总额（不参与盈亏公式）
- * 样式与数值口径对齐「我的报表」现金汇总卡
+ * 样式与数值口径对齐「我的报表」现金汇总卡；信用额度看板无充提，改为团队上分 / 下分
  */
-export function getAgentProfitFlowRows(_currency: string): AgentProfitSummaryRow[] {
+export function getAgentProfitFlowRows(currency: string): AgentProfitSummaryRow[] {
+  if (isCreditProfitCurrency(currency)) {
+    return [
+      { label: '团队上分总额', value: '8,600.00', tone: 'neutral' },
+      { label: '团队下分总额', value: '3,240.00', tone: 'neutral' },
+    ]
+  }
   return [
     { label: '团队充值总额', value: '12,800.00', tone: 'neutral' },
     { label: '团队提款总额', value: '6,420.00', tone: 'neutral' },
@@ -912,7 +950,7 @@ export function getAgentProfitFlowRows(_currency: string): AgentProfitSummaryRow
 /** 经典汇总卡 · 构成项（游戏成本不含代理赚水；代理赚水为总盈亏加项） */
 export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryRow[] {
   const stats = getAgentProfitSummaryMock(currency)
-  return [
+  return withoutCreditHiddenRows(currency, [
     {
       label: '输赢',
       value: formatProfitAmount(stats.actualWin),
@@ -956,7 +994,7 @@ export function getAgentProfitSummaryRows(currency: string): AgentProfitSummaryR
       value: formatProfitAmount(stats.rebateEarn),
       tone: profitTone(stats.rebateEarn),
     },
-  ]
+  ])
 }
 
 /** 返佣 · 代理佣金细项：输赢 / VIP退水 / 场馆费 / VIP晋级礼金 / VIP额外奖金 / 活动金 / 充提手续费 */
@@ -1117,7 +1155,26 @@ function getCategoryVendorAllDetail(category: AgentProfitCategoryKey): AgentProf
   }
 }
 
+/** 信用额度看板：去掉 VIP退水 行，并把该笔扣减加回游戏净输赢 */
 export function getAgentProfitDetail(
+  category: AgentProfitCategoryKey,
+  vendor: AgentProfitVendorKey,
+  currency = '',
+): AgentProfitDetail {
+  const detail = getAgentProfitDetailBase(category, vendor)
+  if (!isCreditProfitCurrency(currency)) return detail
+  const hidden = detail.rows.filter((row) => CREDIT_HIDDEN_PROFIT_LABELS.has(row.label))
+  const addBack = hidden.reduce((acc, row) => acc + Math.abs(parseProfitAmountText(row.value)), 0)
+  const total = parseProfitAmountText(detail.totalProfit) + addBack
+  return {
+    ...detail,
+    totalProfit: formatProfitAmount(total),
+    totalProfitTone: profitTone(total),
+    rows: withoutCreditHiddenRows(currency, detail.rows),
+  }
+}
+
+function getAgentProfitDetailBase(
   category: AgentProfitCategoryKey,
   vendor: AgentProfitVendorKey,
 ): AgentProfitDetail {

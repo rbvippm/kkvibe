@@ -2555,6 +2555,52 @@
   white-space: nowrap;
 }
 
+.mh5-credit-account-card:focus-visible {
+  outline: 2px solid rgb(201 154 78 / 60%);
+  outline-offset: 2px;
+}
+
+.mh5-credit-account-card__name-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.mh5-credit-account-card__name-row .mh5-credit-account-card__name {
+  min-width: 0;
+}
+
+/* 视觉 28px，伪元素把热区扩到 44px，避免误触卡片选中 */
+.mh5-credit-account-card__edit {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #b8873a;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.mh5-credit-account-card__edit::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.mh5-credit-account-card__edit:active {
+  background: rgb(220 171 94 / 18%);
+  transform: scale(0.92);
+}
+
 .mh5-credit-account-card__balance {
   color: #a8762c;
   font-size: 16px;
@@ -2705,6 +2751,32 @@
 
 .mh5-mine-prompt--vip .mh5-mine-prompt__btn + .mh5-mine-prompt__btn {
   border-left-color: #f0e9dd;
+}
+
+.mh5-mine-prompt--vip .mh5-mine-prompt__btn:disabled {
+  color: #d6c7ab;
+  cursor: not-allowed;
+}
+
+.mh5-mine-prompt__field {
+  position: relative;
+  margin: 16px 16px 0;
+}
+
+.mh5-mine-prompt__field .mh5-mine-prompt__input {
+  width: 100%;
+  margin: 0;
+  padding-right: 52px;
+}
+
+.mh5-mine-prompt__count {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #b3a892;
+  pointer-events: none;
 }
 
 .mh5-app-shell--vip-club .mh5-mine-credit__card .mh5-mine-wallet__icon-btn {
@@ -18372,6 +18444,27 @@
   color: #8c7f6b;
 }
 
+.mh5-agent-settle-formula__check {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgb(201 154 78 / 18%);
+}
+
+.mh5-agent-settle-formula__check .mh5-agent-settle-formula__rows {
+  margin-top: 8px;
+}
+
+.mh5-agent-settle-formula__check .mh5-agent-settle-formula__row--total dd {
+  font-size: 13px;
+}
+
+.mh5-agent-settle-formula__note {
+  margin-top: 6px !important;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #8c7f6b;
+}
+
 .mh5-agent-settle-formula__rule {
   margin-top: 8px !important;
   font-size: 11px;
@@ -27064,7 +27157,6 @@ div.agent-home__profit-tab--ratio {
 .mh5-agent-my-profit-formula--extra .mh5-agent-commission-cell__label {
   font-size: 10px;
 }
-
 .mh5-agent-my-profit-formula--extra .mh5-agent-commission-cell__value {
   font-size: 13px;
 }

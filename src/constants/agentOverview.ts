@@ -1,6 +1,7 @@
 /** 代理中心 · 概况页 Mock（对齐 Figma 1433:25041） */
 
 import { sortByLocaleCashOrder } from '../i18n'
+import type { AgentLedgerType } from './agentIdentity'
 
 export type AgentOverviewStat = {
   key: string
@@ -114,13 +115,43 @@ export const MOCK_DIRECT_STATS: AgentOverviewStat[] = [
   { key: 'winLose', label: '游戏输赢', value: '0.00' },
 ]
 
+/** 信用代理中心无充值 / 提款、不发放 VIP 奖励与活动金 */
+const CREDIT_HIDDEN_STAT_KEYS = new Set([
+  'promo',
+  'vipRebate',
+  'vipUpgradeBonus',
+  'vipExtraBonus',
+  'fee',
+  'firstDeposit',
+])
+
+const CREDIT_STAT_LABELS: Record<string, string> = {
+  充值总额: '上分总额',
+  取款总额: '下分总额',
+  '充值（10人）': '上分（10人）',
+  '提款（10人）': '下分（10人）',
+}
+
+function toCreditStats(stats: AgentOverviewStat[]): AgentOverviewStat[] {
+  return stats
+    .filter((item) => !CREDIT_HIDDEN_STAT_KEYS.has(item.key))
+    .map((item) => ({ ...item, label: CREDIT_STAT_LABELS[item.label] ?? item.label }))
+}
+
 /** 返佣代理无「投注退水」、无概况「活跃人数」（档位进度只在返佣比例弹层） */
 export function getDirectStats(
   identity: 'share' | 'rebate' = 'share',
   _overviewCurrency = 'KKC',
+  ledger: AgentLedgerType = 'cash',
 ): AgentOverviewStat[] {
-  if (identity !== 'rebate') return MOCK_DIRECT_STATS
-  return MOCK_DIRECT_STATS.filter((item) => item.key !== 'rebate' && item.key !== 'active')
+  if (identity === 'rebate') {
+    return MOCK_DIRECT_STATS.filter((item) => item.key !== 'rebate' && item.key !== 'active')
+  }
+  return ledger === 'credit' ? toCreditStats(MOCK_DIRECT_STATS) : MOCK_DIRECT_STATS
+}
+
+export function getSubAgentStats(ledger: AgentLedgerType = 'cash'): AgentOverviewStat[] {
+  return ledger === 'credit' ? toCreditStats(MOCK_SUB_AGENT_STATS) : MOCK_SUB_AGENT_STATS
 }
 
 /** 占成 / 返佣均按三列顺序铺满，避免中间空一格 */

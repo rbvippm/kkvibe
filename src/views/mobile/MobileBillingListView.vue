@@ -5,6 +5,7 @@ import Mh5BillingRecordRow from '../../components/mobile/Mh5BillingRecordRow.vue
 import Mh5BillingGroupHead from '../../components/mobile/Mh5BillingGroupHead.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
+import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
 import { BILLING_FLAGSHIP_HISTORY_SPEC } from '../../constants/billingListSpec'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
@@ -17,15 +18,19 @@ import {
   isVipClubBillingRecord,
   MOCK_BILLING_RECORDS,
 } from '../../constants/billingList'
-import { MH5_DATE_RANGE_TODAY } from '../../constants/mh5DateRange'
+import {
+  DATE_RANGE_SHEET_PRESETS,
+  MH5_DATE_RANGE_TODAY,
+  matchDateRangeSheetPreset,
+} from '../../constants/mh5DateRange'
 import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
-import type { CreditCurrencyCode } from '../../constants/walletCatalog'
+import { creditAllWalletsLabel } from '../../constants/walletCatalog'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 const isVipClubBilling = computed(() => isVipClubMineFrom(route.query.from))
-const { selectedWallet, recordsSelectAll, recordsCurrencyFilter, selectRecordsAll } = useVipCreditAccounts()
+const { selectedWallet, recordsSelectAll, recordsCurrencyFilter } = useVipCreditAccounts()
 
 const filterType = ref(String(route.query.type || '') === 'xcoin' ? 'xcoin' : '')
 const filterCurrency = ref('')
@@ -36,14 +41,10 @@ const draftType = ref('')
 const draftCurrency = ref('')
 const draftStart = ref('')
 const draftEnd = ref('')
-/** 贵宾厅已选具体账户时，高级筛选未改币种则保持该账户 */
-const draftVipCurrency = ref<CreditCurrencyCode | '' | 'keep'>('')
-
-const VIP_CURRENCY_CHIPS: { value: CreditCurrencyCode | ''; label: string }[] = [
-  { value: '', label: '全部' },
-  { value: 'cny', label: 'CNY' },
-  { value: 'usd', label: 'USD' },
-]
+/** 贵宾厅顶部三列下拉：类型 / 钱包 / 时间 */
+const vipTypePickerOpen = ref(false)
+const vipWalletSheetOpen = ref(false)
+const vipDateOpen = ref(false)
 
 const typeOptions = computed(() =>
   isVipClubBilling.value ? BILLING_VIP_TYPE_OPTIONS : BILLING_TYPE_OPTIONS,
@@ -77,9 +78,25 @@ const typeChips = computed(() => typeOptions.value.filter((item) => item.value))
 
 const advancedDirty = computed(() => {
   if (filterStart.value && filterEnd.value) return true
-  if (isVipClubBilling.value) return !recordsSelectAll.value || Boolean(recordsCurrencyFilter.value)
   return Boolean(filterCurrency.value)
 })
+
+const vipTypeLabel = computed(
+  () => typeOptions.value.find((item) => item.value && item.value === filterType.value)?.label ?? '全部类型',
+)
+
+const vipWalletLabel = computed(() => {
+  if (recordsSelectAll.value) return creditAllWalletsLabel(recordsCurrencyFilter.value)
+  return selectedWallet.value?.displayName || '全部钱包'
+})
+
+const vipTimeLabel = computed(() => {
+  if (!filterStart.value || !filterEnd.value) return '全部时间'
+  const preset = matchDateRangeSheetPreset(filterStart.value, filterEnd.value, MH5_DATE_RANGE_TODAY)
+  return DATE_RANGE_SHEET_PRESETS.find((item) => item.key === preset)?.label ?? '自定义'
+})
+
+const vipWalletDirty = computed(() => !recordsSelectAll.value || Boolean(recordsCurrencyFilter.value))
 
 const selectedCurrencyForSummary = computed(() => {
   if (isVipClubBilling.value) return vipBillingCurrency.value
@@ -94,13 +111,22 @@ function selectType(value: string) {
   filterType.value = filterType.value === value ? '' : value
 }
 
+function pickVipType(value: string) {
+  filterType.value = value
+  vipTypePickerOpen.value = false
+}
+
+function confirmVipDate(start: string, end: string) {
+  filterStart.value = start
+  filterEnd.value = end
+  vipDateOpen.value = false
+}
+
 function openAdvanced() {
   draftType.value = filterType.value
   draftCurrency.value = filterCurrency.value
   draftStart.value = filterStart.value || MH5_DATE_RANGE_TODAY
   draftEnd.value = filterEnd.value || MH5_DATE_RANGE_TODAY
-  if (!recordsSelectAll.value) draftVipCurrency.value = 'keep'
-  else draftVipCurrency.value = recordsCurrencyFilter.value
   advancedOpen.value = true
 }
 
@@ -118,18 +144,13 @@ function resetAdvanced() {
   draftCurrency.value = ''
   draftStart.value = MH5_DATE_RANGE_TODAY
   draftEnd.value = MH5_DATE_RANGE_TODAY
-  draftVipCurrency.value = ''
 }
 
 function applyAdvanced() {
   filterType.value = draftType.value
   filterStart.value = draftStart.value
   filterEnd.value = draftEnd.value
-  if (isVipClubBilling.value) {
-    if (draftVipCurrency.value !== 'keep') selectRecordsAll(draftVipCurrency.value)
-  } else {
-    filterCurrency.value = draftCurrency.value
-  }
+  filterCurrency.value = draftCurrency.value
   advancedOpen.value = false
 }
 
@@ -168,7 +189,47 @@ function goStats() {
       </div>
     </header>
 
-    <div class="mh5-billing-filters">
+    <div v-if="isVipClubBilling" class="mh5-bet-order-toolbar mh5-bet-order-toolbar--member">
+      <div class="mh5-bet-order-toolbar__row">
+        <div class="mh5-bet-order-toolbar__picks">
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': Boolean(filterType) }"
+            @click="vipTypePickerOpen = true"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ $t(vipTypeLabel) }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': vipWalletDirty }"
+            @click="vipWalletSheetOpen = true"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ $t(vipWalletLabel) }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            class="mh5-bet-order-toolbar__pick"
+            :class="{ 'mh5-bet-order-toolbar__pick--active': Boolean(filterStart) }"
+            @click="vipDateOpen = true"
+          >
+            <span class="mh5-bet-order-toolbar__pick-text">{{ $t(vipTimeLabel) }}</span>
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+              <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="mh5-billing-filters">
       <div class="mh5-billing-type-chips" role="tablist" :aria-label="$t('账单类型')">
         <button
           v-for="opt in typeChips"
@@ -205,12 +266,51 @@ function goStats() {
       </section>
     </main>
 
-    <Teleport to="body">
+    <template v-if="isVipClubBilling">
+      <Teleport to="body">
+        <Transition name="mh5-billing-sheet">
+          <div v-if="vipTypePickerOpen" class="mh5-agent-overlay-mask" @click.self="vipTypePickerOpen = false">
+            <div
+              class="mh5-xcoin-sheet mh5-bet-order-sheet mh5-bet-order-sheet--vip"
+              role="dialog"
+              aria-modal="true"
+              :aria-label="$t('选择类型')"
+            >
+              <h2 class="mh5-xcoin-sheet__title">{{ $t('选择类型') }}</h2>
+              <button
+                v-for="opt in typeOptions"
+                :key="`vip-type-${opt.value || 'all'}`"
+                type="button"
+                class="mh5-xcoin-sheet__option"
+                :class="{ 'mh5-xcoin-sheet__option--active': filterType === opt.value }"
+                @click="pickVipType(opt.value)"
+              >
+                {{ $t(opt.value ? opt.label : '全部类型') }}
+              </button>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Mh5VipCreditAccountSheet :open="vipWalletSheetOpen" hide-balance @close="vipWalletSheetOpen = false" />
+
+      <Mh5DateRangeSheet
+        unlimited
+        tone="vip"
+        :open="vipDateOpen"
+        :start="filterStart"
+        :end="filterEnd"
+        :today="MH5_DATE_RANGE_TODAY"
+        @close="vipDateOpen = false"
+        @confirm="confirmVipDate"
+      />
+    </template>
+
+    <Teleport v-else to="body">
       <Transition name="mh5-billing-sheet">
         <div v-if="advancedOpen" class="mh5-agent-overlay-mask" @click.self="closeAdvanced">
           <div
             class="mh5-xcoin-sheet mh5-bet-order-sheet"
-            :class="{ 'mh5-bet-order-sheet--vip': isVipClubBilling }"
             role="dialog"
             aria-modal="true"
             aria-labelledby="billing-advanced-title"
@@ -222,7 +322,6 @@ function goStats() {
                 <Mh5DateRangeSheet
                   inline
                   unlimited
-                  :tone="isVipClubBilling ? 'vip' : 'default'"
                   :start="draftStart"
                   :end="draftEnd"
                   :today="MH5_DATE_RANGE_TODAY"
@@ -232,19 +331,7 @@ function goStats() {
 
               <section class="mh5-xcoin-filter-group">
                 <h3 class="mh5-xcoin-filter-group__label">{{ $t('币种') }}</h3>
-                <div v-if="isVipClubBilling" class="mh5-xcoin-filter-chips">
-                  <button
-                    v-for="opt in VIP_CURRENCY_CHIPS"
-                    :key="opt.value || 'all'"
-                    type="button"
-                    class="mh5-xcoin-chip"
-                    :class="{ 'mh5-xcoin-chip--active': draftVipCurrency === opt.value }"
-                    @click="draftVipCurrency = opt.value"
-                  >
-                    {{ $t(opt.label) }}
-                  </button>
-                </div>
-                <div v-else class="mh5-xcoin-filter-chips">
+                <div class="mh5-xcoin-filter-chips">
                   <button
                     v-for="opt in BILLING_CURRENCY_OPTIONS"
                     :key="opt.value || 'all'"

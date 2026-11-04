@@ -16,7 +16,10 @@ import {
   isAgentCreditCurrency,
   setAgentAppCurrencyByUser,
 } from '../../constants/agentAppCurrency'
-import { AGENT_GAME_PROFIT_FORMULA } from '../../constants/agentDetailProfit'
+import {
+  AGENT_CREDIT_GAME_PROFIT_FORMULA,
+  AGENT_GAME_PROFIT_FORMULA,
+} from '../../constants/agentDetailProfit'
 import { rebateGameNetProfitFormula } from '../../constants/agentMyProfit'
 import {
   AGENT_REPORT_FILTER_ASSETS,
@@ -90,12 +93,14 @@ const summaryCards = computed(() => getReportSummaryCards(isAgentCreditCurrency(
 const gameProfitFormula = computed(() =>
   isRebateAgent.value
     ? rebateGameNetProfitFormula()
-    : AGENT_GAME_PROFIT_FORMULA,
+    : currencyScope.value === 'credit'
+      ? AGENT_CREDIT_GAME_PROFIT_FORMULA
+      : AGENT_GAME_PROFIT_FORMULA,
 )
 const reportDetail = computed(() =>
   isRebateAgent.value
     ? getRebateReportDetail(category.value, vendor.value)
-    : getReportDetail(category.value, vendor.value),
+    : getReportDetail(category.value, vendor.value, false, currencyScope.value),
 )
 
 function pickPageTab(tab: AgentReportPageTab) {

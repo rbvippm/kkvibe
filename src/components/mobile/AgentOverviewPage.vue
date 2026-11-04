@@ -5,8 +5,8 @@ import AgentOverviewStatMask from './AgentOverviewStatMask.vue'
 import AgentMyShareRatioDialog from './AgentMyShareRatioDialog.vue'
 import {
   getDirectStats,
+  getSubAgentStats,
   MOCK_PROFIT_RANKINGS,
-  MOCK_SUB_AGENT_STATS,
   getProfitRankTabs,
   type AgentOverviewCurrency,
   type ProfitRankTab,
@@ -145,7 +145,10 @@ const presetOptions = [
   ['lastMonth', '上月'],
 ] as const
 
-const directStats = computed(() => getDirectStats(props.agentType, props.currency))
+const directStats = computed(() =>
+  getDirectStats(props.agentType, props.currency, currencyScope.value),
+)
+const subAgentStats = computed(() => getSubAgentStats(currencyScope.value))
 const profitRankTabs = computed(() => getProfitRankTabs(props.agentType))
 const profitRankRows = computed(() => {
   const tabs = profitRankTabs.value
@@ -391,7 +394,7 @@ function pickWalletCurrency(value: string) {
           <p class="agent-home__panel-title">{{ $t('下级代理') }}</p>
           <div class="agent-home__stat-rows">
             <AgentOverviewStatMask
-              v-for="item in MOCK_SUB_AGENT_STATS"
+              v-for="item in subAgentStats"
               :key="item.key"
               :label="item.label"
               :value="item.value"

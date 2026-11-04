@@ -461,6 +461,8 @@
   "金额": "Amount",
   "钱包分类": "Wallet categories",
   "钱包名称": "Wallet name",
+  "修改钱包名称": "Rename wallet",
+  "请输入钱包名称": "Enter wallet name",
   "附件": "Attachment",
   "需达到流水要求": "Turnover requirement applies",
   "晋级流水": "Upgrade turnover",

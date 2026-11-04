@@ -1,26 +1,37 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
-import { CREDIT_NAME_MAX_LEN, formatCreditWalletBalance } from '../../constants/walletCatalog'
+import {
+  CREDIT_NAME_MAX_LEN,
+  formatCreditWalletBalance,
+  type CreditWalletItem,
+} from '../../constants/walletCatalog'
 import Mh5VipCreditAccountSheet from './Mh5VipCreditAccountSheet.vue'
 import '../../styles/mobile-app-shell.css'
 
 const emit = defineEmits<{
   go: [routeName: string]
+  toast: [message: string]
 }>()
 
 defineProps<{
   actions: { key: string; label: string; icon: string; route?: string }[]
 }>()
 
-const { selectedWallet, updateDisplayName } = useVipCreditAccounts()
+const { wallets, selectedWallet, updateDisplayName } = useVipCreditAccounts()
 const balanceHidden = ref(false)
 const refreshing = ref(false)
 const accountSheetOpen = ref(false)
 const nameEditorOpen = ref(false)
+const nameTargetId = ref('')
 const nameDraft = ref('')
-const nameError = ref('')
 const nameInputRef = ref<HTMLInputElement | null>(null)
+
+const nameTarget = computed(
+  () => wallets.value.find((item) => item.id === nameTargetId.value) ?? null,
+)
+const nameDraftTrimmed = computed(() => nameDraft.value.trim())
+const nameDraftLength = computed(() => nameDraft.value.length)
 
 const amountText = computed(() => {
   const wallet = selectedWallet.value
@@ -37,30 +48,33 @@ function closeAccountSheet() {
   accountSheetOpen.value = false
 }
 
-function openNameEditor() {
-  nameDraft.value = selectedWallet.value?.displayName ?? ''
-  nameError.value = ''
+/** 余额卡箭头改当前账户；信用额度弹层铅笔改对应账户，均不切换选中项 */
+function openNameEditor(item: CreditWalletItem | undefined = selectedWallet.value) {
+  if (!item) return
+  nameTargetId.value = item.id
+  nameDraft.value = item.displayName
   nameEditorOpen.value = true
-  void nextTick(() => nameInputRef.value?.focus())
+  void nextTick(() => {
+    nameInputRef.value?.focus()
+    nameInputRef.value?.select()
+  })
 }
 
 function closeNameEditor() {
   nameEditorOpen.value = false
-  nameError.value = ''
 }
 
 function saveDisplayName() {
-  const next = nameDraft.value.trim()
-  if (!next) {
-    nameError.value = '请输入名称'
+  const next = nameDraftTrimmed.value
+  const target = nameTarget.value
+  if (!next || !target) return
+  if (next === target.displayName) {
+    closeNameEditor()
     return
   }
-  if (next.length > CREDIT_NAME_MAX_LEN) {
-    nameError.value = '输入的名称不超过12个字符。'
-    return
-  }
-  updateDisplayName(next)
+  updateDisplayName(next, target.id)
   closeNameEditor()
+  emit('toast', '已修改')
 }
 
 function handleRefresh() {
@@ -147,7 +161,7 @@ function goAction(route?: string) {
           type="button"
           class="mh5-mine-credit__name-arrow"
           :aria-label="$t('钱包名称')"
-          @click.stop="openNameEditor"
+          @click.stop="openNameEditor()"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <path
@@ -182,27 +196,37 @@ function goAction(route?: string) {
     :open="accountSheetOpen"
     teleport-to="#mh5-mine-overlays"
     mask-class="mh5-wallet-sheet-mask"
+    editable-name
     @close="closeAccountSheet"
+    @edit-name="openNameEditor"
   />
 
   <Teleport to="#mh5-mine-overlays" defer>
   <Transition name="mh5-confirm">
     <div v-if="nameEditorOpen" class="mh5-mine-prompt-mask" @click.self="closeNameEditor">
       <div class="mh5-mine-prompt mh5-mine-prompt--vip" role="dialog" aria-modal="true" aria-labelledby="mh5-credit-name-title">
-        <h2 id="mh5-credit-name-title" class="mh5-mine-prompt__title">{{ $t('钱包名称') }}</h2>
+        <h2 id="mh5-credit-name-title" class="mh5-mine-prompt__title">{{ $t('修改钱包名称') }}</h2>
         <p class="mh5-mine-prompt__hint">{{ $t('输入的名称不超过12个字符。') }}</p>
-        <input
-          ref="nameInputRef"
-          v-model="nameDraft"
-          class="mh5-mine-prompt__input"
-          type="text"
-          :maxlength="CREDIT_NAME_MAX_LEN"
-          :placeholder="selectedWallet?.accountCode"
-        />
-        <p v-if="nameError" class="mh5-mine-prompt__error">{{ $t(nameError) }}</p>
+        <div class="mh5-mine-prompt__field">
+          <input
+            ref="nameInputRef"
+            v-model="nameDraft"
+            class="mh5-mine-prompt__input"
+            type="text"
+            :maxlength="CREDIT_NAME_MAX_LEN"
+            :placeholder="$t('请输入钱包名称')"
+            @keydown.enter.prevent="saveDisplayName"
+          />
+          <span class="mh5-mine-prompt__count" aria-hidden="true">{{ nameDraftLength }}/{{ CREDIT_NAME_MAX_LEN }}</span>
+        </div>
         <div class="mh5-mine-prompt__actions">
           <button type="button" class="mh5-mine-prompt__btn" @click="closeNameEditor">{{ $t('取消') }}</button>
-          <button type="button" class="mh5-mine-prompt__btn mh5-mine-prompt__btn--primary" @click="saveDisplayName">
+          <button
+            type="button"
+            class="mh5-mine-prompt__btn mh5-mine-prompt__btn--primary"
+            :disabled="!nameDraftTrimmed"
+            @click="saveDisplayName"
+          >
             {{ $t('确认') }}
           </button>
         </div>

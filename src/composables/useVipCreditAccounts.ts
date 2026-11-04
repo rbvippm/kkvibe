@@ -42,8 +42,9 @@ function selectRecordsAll(currency: CreditCurrencyCode | '' = '') {
   recordsCurrencyFilter.value = currency
 }
 
-function updateDisplayName(name: string) {
-  const target = wallets.value.find((item) => item.id === selectedId.value)
+/** 改写展示名称；不传 id 时改当前选中账户，不改变选中项 */
+function updateDisplayName(name: string, id: string = selectedId.value) {
+  const target = wallets.value.find((item) => item.id === id)
   if (target) target.displayName = name
 }
 

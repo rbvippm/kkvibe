@@ -23,8 +23,8 @@ import {
   type MemberDetailTab,
   type MemberGameSubTab,
 } from '../../constants/memberDetail'
+import { isCreditProfitCurrency } from '../../constants/agentDetailProfit'
 import {
-  MEMBER_GAME_PROFIT_FORMULA,
   MEMBER_PROFIT_CATEGORY_TABS,
   MEMBER_PROFIT_VENDORS,
   getMemberProfitCostSection,
@@ -34,6 +34,7 @@ import {
   getMemberProfitGameSection,
   getMemberProfitSummaryRows,
   getMemberTotalProfit,
+  memberGameNetFormulaText,
   memberProfitDialogTitle,
   memberProfitFormulaText,
   memberRebateGameNetProfitFormula,
@@ -90,7 +91,7 @@ function resolveMemberDetailTab(raw: unknown): MemberDetailTab | null {
 
 function resolveMemberGameSubTab(raw: unknown): MemberGameSubTab | null {
   const key = String(raw ?? '')
-  if (key === 'instant' || key === 'records' || key === 'stats') return key
+  if (key === 'records' || key === 'stats') return key
   return null
 }
 
@@ -114,8 +115,9 @@ const profitFormulaTipOpen = ref(false)
 const profitLayoutMode = ref<'classic' | 'sections'>('sections')
 const lastProfitTabTapAt = ref(0)
 const PROFIT_TAB_DOUBLE_TAP_MS = 400
-/** 会员盈亏分区模式：游戏净输赢默认收起、其他奖励默认展开 */
-const profitGameDetailsExpanded = ref(false)
+/** 会员盈亏分区模式：游戏净输赢默认收起、其他奖励默认展开；信用额度只剩游戏净输赢一块，默认展开 */
+const defaultProfitGameExpanded = () => isCreditProfitCurrency(currency.value)
+const profitGameDetailsExpanded = ref(defaultProfitGameExpanded())
 const profitCostDetailsExpanded = ref(true)
 /** 会员盈亏分区模式 · 明细弹框 */
 const profitDialogKind = ref<MemberProfitDialogKind | null>(null)
@@ -130,13 +132,17 @@ const profitVendorOptions = computed(() => MEMBER_PROFIT_VENDORS[profitCategory.
 const memberProfitOptions = computed(() => ({
   includeMemberRebate: !isRebateAgent.value,
 }))
-const profitDetail = computed(() => getMemberProfitDetail(profitCategory.value, profitVendor.value))
+/** 信用代理中心：会员无 VIP 奖励与活动金，不展示其他奖励 */
+const isCreditProfit = computed(() => isCreditProfitCurrency(currency.value))
+const profitDetail = computed(() =>
+  getMemberProfitDetail(profitCategory.value, profitVendor.value, currency.value),
+)
 const profitSummaryRows = computed(() =>
   getMemberProfitSummaryRows(currency.value, memberProfitOptions.value),
 )
 const memberTotalProfit = computed(() => getMemberTotalProfit(currency.value, memberProfitOptions.value))
 const profitFormulaText = computed(() =>
-  memberProfitFormulaText(memberProfitOptions.value.includeMemberRebate),
+  memberProfitFormulaText(memberProfitOptions.value.includeMemberRebate, currency.value),
 )
 const useProfitSections = computed(() => profitLayoutMode.value === 'sections')
 const profitGameSection = computed(() =>
@@ -159,7 +165,7 @@ const profitDialogFormulaText = computed(
 )
 
 watch(currency, () => {
-  profitGameDetailsExpanded.value = false
+  profitGameDetailsExpanded.value = defaultProfitGameExpanded()
   profitCostDetailsExpanded.value = true
   profitFormulaTipOpen.value = false
   closeProfitDialog()
@@ -816,6 +822,7 @@ function toggleCreditCurrencyMenu() {
           </section>
 
           <section
+            v-if="!isCreditProfit"
             class="mh5-agent-my-profit-table mh5-agent-my-profit-table--section"
             aria-label="其他奖励金额"
           >
@@ -876,6 +883,7 @@ function toggleCreditCurrencyMenu() {
           </section>
 
           <section
+            v-if="!isCreditProfit"
             class="mh5-agent-my-profit-formula-card mh5-agent-my-profit-formula-card--extra"
             aria-label="游戏净输赢加其他奖励等于会员盈亏"
           >
@@ -1111,7 +1119,7 @@ function toggleCreditCurrencyMenu() {
                       class="mh5-agent-detail-profit-summary__tip-bubble mh5-agent-report-detail__tip-bubble"
                       role="tooltip"
                     >
-                      {{ MEMBER_GAME_PROFIT_FORMULA }}
+                      {{ memberGameNetFormulaText(true, currency) }}
                     </span>
                   </span>
                   <em :class="profitTotalClass(profitDetail.totalProfitTone)">

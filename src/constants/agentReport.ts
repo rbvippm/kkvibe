@@ -1,3 +1,5 @@
+import type { AgentLedgerType } from './agentIdentity'
+
 export type ReportRangePreset = 'today' | 'yesterday' | 'thisMonth' | 'lastMonth'
 
 export type ReportCategoryKey = 'all' | 'chess' | 'esports' | 'fishing' | 'slots' | 'sports'
@@ -144,34 +146,45 @@ function buildDetail(
   }
 }
 
+/** 占成 · [下注有效金额, 输赢, 退水, VIP退水, 代理赚水, 场馆费] */
+type ShareReportNums = [string, number, number, number, number, number]
+
 /** 一级「全部」合计：游戏净输赢 = 12350 − 1280 − 150 − 80 = 10840（占成含场馆费，不含代理赚水） */
-const OVERALL_DETAIL = buildDetail('86,420.00', 12350, 1280, 150, 860, 80)
+const OVERALL_NUMS: ShareReportNums = ['86,420.00', 12350, 1280, 150, 860, 80]
 
 /** 品类二级「全部」 */
-const CATEGORY_ALL_DETAIL: Record<Exclude<ReportCategoryKey, 'all'>, ReportDetail> = {
-  sports: buildDetail('42,800.00', 9860, 980, 120, 340, 40), // 8720
-  chess: buildDetail('18,640.00', 3200, 280, 45, 95, 20), // 2855
-  esports: buildDetail('9,820.00', 1560, 160, 28, 52, 12), // 1360
-  fishing: buildDetail('6,450.00', -820, 90, 15, 35, 8), // -933
-  slots: buildDetail('11,200.00', 2140, 210, 38, 72, 15), // 1877
+const CATEGORY_ALL_NUMS: Record<Exclude<ReportCategoryKey, 'all'>, ShareReportNums> = {
+  sports: ['42,800.00', 9860, 980, 120, 340, 40], // 8720
+  chess: ['18,640.00', 3200, 280, 45, 95, 20], // 2855
+  esports: ['9,820.00', 1560, 160, 28, 52, 12], // 1360
+  fishing: ['6,450.00', -820, 90, 15, 35, 8], // -933
+  slots: ['11,200.00', 2140, 210, 38, 72, 15], // 1877
 }
 
 /** 具体场馆：游戏净输赢 = 500 − 100 − 50 − 20 = 330 */
-const VENDOR_DETAIL = buildDetail('1,000.00', 500, 100, 50, 10, 20)
+const VENDOR_NUMS: ShareReportNums = ['1,000.00', 500, 100, 50, 10, 20]
 
 /** @deprecated 请使用 getReportDetail */
-export const REPORT_DETAIL_ROWS = OVERALL_DETAIL.rows
+export const REPORT_DETAIL_ROWS = buildDetail(...OVERALL_NUMS).rows
 
+/** 信用代理中心不发放 VIP 奖励：VIP退水不计入游戏净输赢，也不展示该行 */
 export function getReportDetail(
   category: ReportCategoryKey,
   vendor: ReportVendorKey,
   _includeCommission = false,
+  ledger: AgentLedgerType = 'cash',
 ): ReportDetail {
-  return category === 'all'
-    ? OVERALL_DETAIL
-    : vendor === 'all'
-      ? CATEGORY_ALL_DETAIL[category]
-      : VENDOR_DETAIL
+  const [validBet, win, rebate, vipRebate, commission, venueFee] =
+    category === 'all'
+      ? OVERALL_NUMS
+      : vendor === 'all'
+        ? CATEGORY_ALL_NUMS[category]
+        : VENDOR_NUMS
+  if (ledger !== 'credit') {
+    return buildDetail(validBet, win, rebate, vipRebate, commission, venueFee)
+  }
+  const detail = buildDetail(validBet, win, rebate, 0, commission, venueFee)
+  return { ...detail, rows: detail.rows.filter((row) => row.key !== 'vipRebate') }
 }
 
 /**

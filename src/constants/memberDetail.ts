@@ -10,7 +10,7 @@ import {
 
 export type MemberDetailTab = 'manage' | 'credit' | 'profit' | 'game' | 'login'
 
-export type MemberGameSubTab = 'instant' | 'records' | 'stats'
+export type MemberGameSubTab = 'records' | 'stats'
 
 export const MEMBER_DETAIL_TABS: { key: MemberDetailTab; label: string }[] = [
   { key: 'manage', label: '会员钱包' },
@@ -38,7 +38,6 @@ export function getMemberDetailTabs(
 
 /** 游戏数据子 Tab */
 export const MEMBER_GAME_SUB_TABS: { key: MemberGameSubTab; label: string }[] = [
-  { key: 'instant', label: '即时注单' },
   { key: 'records', label: '注单记录' },
   { key: 'stats', label: '游戏统计' },
 ]

@@ -7,18 +7,22 @@ import {
 } from './agentCommissionReport'
 import {
   AGENT_COST_ITEM_LABELS,
+  AGENT_CREDIT_GAME_PROFIT_FORMULA,
+  AGENT_CREDIT_NET_PNL_DETAIL_FORMULA,
+  AGENT_CREDIT_PROFIT_FORMULA,
   AGENT_GAME_PROFIT_FORMULA,
   AGENT_NET_PNL_DETAIL_FORMULA,
   AGENT_NET_PNL_FORMULA,
   AGENT_PROFIT_FORMULA,
   AGENT_PROFIT_SECTION_FORMULA,
   AGENT_REBATE_EARN_FORMULA,
+  CREDIT_HIDDEN_PROFIT_LABELS,
   buildRebateEarnGameDetailRows,
   parseEarnCategoryKey,
   rebateEarnSumFormula,
   scaleAgentGameNetParts,
 } from './agentDetailProfit'
-import type { AgentIdentityType } from './agentIdentity'
+import type { AgentIdentityType, AgentLedgerType } from './agentIdentity'
 
 export {
   AGENT_GAME_PROFIT_FORMULA,
@@ -484,8 +488,19 @@ export function agentMyProfitShareP2pSection(preset: ProfitDatePreset = 'today')
   }
 }
 
-/** 占成 · 其他成本分区（结构对齐返佣；金额列带实占；随日期快捷缩放） */
-export function agentMyProfitShareCostSection(preset: ProfitDatePreset = 'today'): MyProfitSection {
+/** 占成 · 其他成本分区（结构对齐返佣；金额列带实占；随日期快捷缩放）；信用代理中心无其他成本 */
+export function agentMyProfitShareCostSection(
+  preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
+): MyProfitSection {
+  if (ledger === 'credit') {
+    return {
+      nameHeader: '其他成本',
+      amountHeader: '金额（实占）',
+      rows: [],
+      total: { key: 'cost_sum', name: '合计', amountText: '0.00', tone: 'neutral' },
+    }
+  }
   const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
   const rows = shareRowsScaledToTotal(AGENT_MY_PROFIT_SHARE_COST_ROWS, target.costTotal, true)
   return {
@@ -499,9 +514,10 @@ export function agentMyProfitShareCostSection(preset: ProfitDatePreset = 'today'
 /** 占成 · 实占净输赢 = 游戏净输赢 − 其他成本（P2P返利单独加在总盈亏） */
 export function agentMyProfitShareNetPnlRow(
   preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitProductRow {
   const game = agentMyProfitShareGameSection(preset).total
-  const cost = agentMyProfitShareCostSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset, ledger).total
   const sum =
     parseProfitAmountText(game.amountText) -
     Math.abs(parseProfitAmountText(cost.amountText))
@@ -522,8 +538,9 @@ export function agentMyProfitShareRebateEarn(preset: ProfitDatePreset = 'today')
 /** 占成 · 总盈亏 = 实占净输赢 + P2P返利 + 代理赚水 */
 export function agentMyProfitShareSummaryRow(
   preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitProductRow {
-  const net = agentMyProfitShareNetPnlRow(preset)
+  const net = agentMyProfitShareNetPnlRow(preset, ledger)
   const p2p = agentMyProfitShareP2pSection(preset).total
   const earn = agentMyProfitShareRebateEarn(preset)
   const sum =
@@ -538,8 +555,11 @@ export function agentMyProfitShareSummaryRow(
 }
 
 /** 占成顶部汇总卡：金额由分区合计推导，与公式卡一致 */
-export function agentMyProfitShareTotalBlock(preset: ProfitDatePreset = 'today') {
-  const row = agentMyProfitShareSummaryRow(preset)
+export function agentMyProfitShareTotalBlock(
+  preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
+) {
+  const row = agentMyProfitShareSummaryRow(preset, ledger)
   const abs = row.amountText.replace(/^[+-]/, '')
   if (row.tone === 'neutral') {
     return { label: '总盈亏' as const, valueText: abs, tone: row.tone }
@@ -607,10 +627,13 @@ export function agentMyProfitShareEarnSection(
 }
 
 /** 占成公式条：实占净输赢 + P2P返利 + 代理赚水（总盈亏在大号金额） */
-export function agentMyProfitShareFormula(preset: ProfitDatePreset = 'today') {
+export function agentMyProfitShareFormula(
+  preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
+) {
   const game = agentMyProfitShareGameSection(preset).total
   const p2p = agentMyProfitShareP2pSection(preset).total
-  const cost = agentMyProfitShareCostSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset, ledger).total
   const costAbs = Math.abs(parseProfitAmountText(cost.amountText))
   const costCell = formatCostAmountText(costAbs)
   const earn = agentMyProfitShareRebateEarn(preset)
@@ -629,20 +652,25 @@ export function agentMyProfitShareFormula(preset: ProfitDatePreset = 'today') {
     /** 减数展示绝对值、粉色（配合「−」运算符） */
     costAmountText: costCell.amountText,
     costTone: costCell.tone,
-    netPnl: agentMyProfitShareNetPnlRow(preset),
+    hasCost: ledger !== 'credit',
+    netPnl: agentMyProfitShareNetPnlRow(preset, ledger),
     earnAmountText: earnCell.amountText,
     earnTone: earnCell.tone,
-    total: agentMyProfitShareSummaryRow(preset),
+    total: agentMyProfitShareSummaryRow(preset, ledger),
   }
 }
 
 /** 占成实占净输赢明细：游戏构成（不含代理赚水）+ 其他成本，末行与列表实占净输赢一致 */
 export function agentMyProfitShareNetPnlDetailRows(
   preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitDetailRow[] {
+  const isCredit = ledger === 'credit'
   const target = SHARE_SECTION_SCALE_BY_PRESET[sharePresetKey(preset)]
-  const summary = agentMyProfitShareNetPnlRow(preset)
-  const base = AGENT_MY_PROFIT_NET_PNL_DETAIL_ROWS.filter((row) => !row.emphasize)
+  const summary = agentMyProfitShareNetPnlRow(preset, ledger)
+  const base = AGENT_MY_PROFIT_NET_PNL_DETAIL_ROWS.filter(
+    (row) => !row.emphasize && !(isCredit && CREDIT_HIDDEN_PROFIT_LABELS.has(row.label)),
+  )
   const gameLabels = new Set(['输赢', '退水', 'VIP退水', '场馆费'])
   const gameBase = base.filter((row) => gameLabels.has(row.label))
   const costBase = base.filter((row) => !gameLabels.has(row.label))
@@ -670,7 +698,9 @@ export function agentMyProfitShareNetPnlDetailRows(
       amountText: summary.amountText,
       tone: summary.tone,
       emphasize: true,
-      formulaTip: AGENT_MY_PROFIT_NET_PNL_DETAIL_FORMULA,
+      formulaTip: isCredit
+        ? AGENT_CREDIT_NET_PNL_DETAIL_FORMULA
+        : AGENT_MY_PROFIT_NET_PNL_DETAIL_FORMULA,
     },
   ]
 }
@@ -678,15 +708,17 @@ export function agentMyProfitShareNetPnlDetailRows(
 /** 占成总盈亏明细：实占净输赢 + P2P返利 + 代理赚水 = 总盈亏 */
 export function agentMyProfitShareTotalDetailRows(
   preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitDetailRow[] {
+  const isCredit = ledger === 'credit'
   const game = agentMyProfitShareGameSection(preset).total
   const p2p = agentMyProfitShareP2pSection(preset).total
-  const cost = agentMyProfitShareCostSection(preset).total
+  const cost = agentMyProfitShareCostSection(preset, ledger).total
   const costCell = formatCostAmountText(Math.abs(parseProfitAmountText(cost.amountText)))
   const earn = agentMyProfitShareRebateEarn(preset)
   const earnCell = formatProfitAmountText(earn)
-  const total = agentMyProfitShareSummaryRow(preset)
-  return [
+  const total = agentMyProfitShareSummaryRow(preset, ledger)
+  const rows: AgentMyProfitDetailRow[] = [
     {
       label: '游戏净输赢',
       amountText: game.amountText,
@@ -712,9 +744,10 @@ export function agentMyProfitShareTotalDetailRows(
       amountText: total.amountText,
       tone: total.tone,
       emphasize: true,
-      formulaTip: AGENT_MY_PROFIT_TOTAL_FORMULA,
+      formulaTip: isCredit ? AGENT_CREDIT_PROFIT_FORMULA : AGENT_MY_PROFIT_TOTAL_FORMULA,
     },
   ]
+  return isCredit ? rows.filter((row) => row.label !== '其他成本') : rows
 }
 
 /** P2P返利 = 当前返回的游戏之和（游戏名动态拼接，未返回的不出现） */
@@ -783,7 +816,9 @@ export function agentMyProfitShareRebateEarnGameDetailRows(
 export function agentMyProfitShareGameDetailRows(
   rowKey: string,
   preset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitDetailRow[] {
+  const isCredit = ledger === 'credit'
   const section = agentMyProfitShareGameSection(preset)
   const product = section.rows.find((row) => row.key === rowKey)
   const targetNet = product
@@ -791,7 +826,12 @@ export function agentMyProfitShareGameDetailRows(
     : parseProfitAmountText(
         AGENT_MY_PROFIT_DETAIL_ROWS.find((row) => row.emphasize)?.amountText ?? '0',
       )
-  const base = AGENT_MY_PROFIT_DETAIL_ROWS.filter((row) => row.label !== '下注有效金额' && !row.emphasize)
+  const base = AGENT_MY_PROFIT_DETAIL_ROWS.filter(
+    (row) =>
+      row.label !== '下注有效金额' &&
+      !row.emphasize &&
+      !(isCredit && CREDIT_HIDDEN_PROFIT_LABELS.has(row.label)),
+  )
   const amounts = scaleAgentGameNetParts(base, targetNet)
   const betRow = AGENT_MY_PROFIT_DETAIL_ROWS.find((row) => row.label === '下注有效金额')
   const betScale =
@@ -818,7 +858,7 @@ export function agentMyProfitShareGameDetailRows(
       amountText: result.amountText,
       tone: result.tone,
       emphasize: true,
-      formulaTip: AGENT_GAME_PROFIT_FORMULA,
+      formulaTip: isCredit ? AGENT_CREDIT_GAME_PROFIT_FORMULA : AGENT_GAME_PROFIT_FORMULA,
     },
   ]
 }
@@ -1073,6 +1113,7 @@ export function agentMyProfitDetailRows(
   _rebateLevel: RebateProfitLevel = 'l1',
   rebateContext?: RebateDetailContext,
   sharePreset: ProfitDatePreset = 'today',
+  ledger: AgentLedgerType = 'cash',
 ): AgentMyProfitDetailRow[] {
   if (identity === 'rebate') {
     if (rebateContext) return agentMyProfitRebateDetailRowsWithContext(rowKey, rebateContext)
@@ -1080,13 +1121,13 @@ export function agentMyProfitDetailRows(
     if (rowKey === 'level_l1') return AGENT_MY_PROFIT_REBATE_L1_DETAIL
     return AGENT_MY_PROFIT_REBATE_GAME_DETAIL
   }
-  if (rowKey === 'total') return agentMyProfitShareTotalDetailRows(sharePreset)
-  if (rowKey === 'net_pnl') return agentMyProfitShareNetPnlDetailRows(sharePreset)
+  if (rowKey === 'total') return agentMyProfitShareTotalDetailRows(sharePreset, ledger)
+  if (rowKey === 'net_pnl') return agentMyProfitShareNetPnlDetailRows(sharePreset, ledger)
   if (rowKey === 'rebate_earn') return agentMyProfitShareRebateEarnDetailRows(sharePreset)
   if (rowKey === 'p2p_rebate') return agentMyProfitShareP2pDetailRows(sharePreset)
   const earnCategory = parseEarnCategoryKey(rowKey)
   if (earnCategory) return agentMyProfitShareRebateEarnGameDetailRows(earnCategory, sharePreset)
-  return agentMyProfitShareGameDetailRows(rowKey, sharePreset)
+  return agentMyProfitShareGameDetailRows(rowKey, sharePreset, ledger)
 }
 
 export function agentMyProfitTableNameHeader(identity: AgentIdentityType) {

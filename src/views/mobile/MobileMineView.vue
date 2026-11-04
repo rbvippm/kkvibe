@@ -665,7 +665,7 @@ watch(preferredFiatAmountText, () => {
     </div>
     </div>
 
-    <Mh5VipCreditWallet v-if="isVipClub" :actions="vipRecordActions" @go="goRoute" />
+    <Mh5VipCreditWallet v-if="isVipClub" :actions="vipRecordActions" @go="goRoute" @toast="showCopyToast" />
 
     <section v-if="!isVipClub" class="mh5-mine-wallet">
       <div class="mh5-mine-wallet__balance-row">

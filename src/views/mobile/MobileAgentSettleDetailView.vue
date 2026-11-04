@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
@@ -11,8 +11,10 @@ import {
   findAgentSettle,
   formatSettleMoney,
   formatSettleSignedMoney,
+  settleGameWinLoseLabel,
   settleStatusTagText,
   settleWalletCreditCode,
+  settleWalletGameNet,
   settleWalletIcon,
   settleWalletNet,
   settleWalletStatus,
@@ -103,8 +105,13 @@ function goBets(wallet: AgentSettleWallet) {
   })
 }
 
-function toggleFormulaTip(wallet: AgentSettleWallet) {
+async function toggleFormulaTip(wallet: AgentSettleWallet) {
   formulaTipCurrency.value = formulaTipCurrency.value === wallet.currency ? '' : wallet.currency
+  if (!formulaTipCurrency.value) return
+  await nextTick()
+  document
+    .querySelector('.mh5-agent-settle-page .mh5-agent-settle-formula')
+    ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 }
 
 function closeFormulaTip() {
@@ -212,6 +219,32 @@ function winLoseClass(value: number) {
                       <dd>{{ formatSettleSignedMoney(settleWalletNet(wallet), wallet.currency) }}</dd>
                     </div>
                   </dl>
+                  <div class="mh5-agent-settle-formula__check">
+                    <p class="mh5-agent-settle-formula__expr">等同于 会员游戏输额 − 总退水</p>
+                    <dl class="mh5-agent-settle-formula__rows">
+                      <div class="mh5-agent-settle-formula__row">
+                        <dt>
+                          <span v-if="wallet.memberWinLose > 0" class="mh5-agent-settle-formula__op">−</span>
+                          {{ settleGameWinLoseLabel(wallet) }}
+                        </dt>
+                        <dd>{{ formatSettleMoney(Math.abs(wallet.memberWinLose), wallet.currency) }}</dd>
+                      </div>
+                      <div class="mh5-agent-settle-formula__row">
+                        <dt><span class="mh5-agent-settle-formula__op">−</span>总退水（归会员）</dt>
+                        <dd>{{ formatSettleMoney(wallet.rebate, wallet.currency) }}</dd>
+                      </div>
+                      <div
+                        class="mh5-agent-settle-formula__row mh5-agent-settle-formula__row--total"
+                        :class="`mh5-agent-settle-formula__row--${settleWalletStatus(wallet)}`"
+                      >
+                        <dt>核对结果</dt>
+                        <dd>{{ formatSettleSignedMoney(settleWalletGameNet(wallet), wallet.currency) }}</dd>
+                      </div>
+                    </dl>
+                    <p class="mh5-agent-settle-formula__note">
+                      退水是会员自己的利润，已计入钱包余额，两种算法结果一致
+                    </p>
+                  </div>
                   <p class="mh5-agent-settle-formula__rule">
                     正数需支付 · 负数待收取 · 为 0 已结清
                   </p>

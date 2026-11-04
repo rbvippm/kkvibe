@@ -19,8 +19,9 @@ export type AgentSettleWallet = {
   /** 钱包当前余额，实时值，不随对账周期变化 */
   balance: number
   validBet: number
+  /** 会员视角游戏输赢（不含退水），赢为正；须满足 钱包余额 = 累计上分 − 累计下分 + 总输赢 + 总退水 */
   memberWinLose: number
-  /** 对账周期内退水合计 */
+  /** 对账周期内退水合计，归会员所得，已计入钱包余额 */
   rebate: number
   transferCount: number
   betCount: number
@@ -76,7 +77,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 5200,
         balance: 2360,
         validBet: 68500,
-        memberWinLose: -5240,
+        memberWinLose: -5788,
         rebate: 548,
         transferCount: 12,
         betCount: 158,
@@ -89,7 +90,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 700,
         balance: 80,
         validBet: 4200,
-        memberWinLose: 580,
+        memberWinLose: 546.4,
         rebate: 33.6,
         transferCount: 4,
         betCount: 36,
@@ -107,7 +108,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 6800,
         balance: 1200,
         validBet: 24600,
-        memberWinLose: 3500,
+        memberWinLose: 3303.2,
         rebate: 196.8,
         transferCount: 8,
         betCount: 72,
@@ -126,7 +127,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 3100,
         balance: 60,
         validBet: 18900,
-        memberWinLose: -40,
+        memberWinLose: -191.2,
         rebate: 151.2,
         transferCount: 6,
         betCount: 54,
@@ -138,7 +139,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 1900,
         balance: 120,
         validBet: 8600,
-        memberWinLose: 1020,
+        memberWinLose: 951.2,
         rebate: 68.8,
         transferCount: 5,
         betCount: 41,
@@ -157,7 +158,7 @@ export const MOCK_AGENT_SETTLE_AGENTS: AgentSettleAgent[] = [
         creditDown: 1200,
         balance: 0,
         validBet: 6400,
-        memberWinLose: 0,
+        memberWinLose: -51.2,
         rebate: 51.2,
         transferCount: 4,
         betCount: 18,
@@ -187,7 +188,7 @@ export const MOCK_AGENT_SETTLE_TRANSFERS: AgentSettleTransfer[] = [
   { id: 'ST-STAR-02', agentId: 'star', currency: 'CNY', type: 'down', amount: 3000, at: '2026-08-20 16:44:09' },
   { id: 'ST-STAR-03', agentId: 'star', currency: 'CNY', type: 'up', amount: 2000, at: '2026-08-17 10:19:55' },
   { id: 'ST-STAR-04', agentId: 'star', currency: 'CNY', type: 'down', amount: 1800, at: '2026-08-14 21:36:18' },
-  { id: 'ST-STAR-05', agentId: 'star', currency: 'CNY', type: 'down', amount: 2000, at: '2026-08-10 13:02:47' },
+  { id: 'ST-STAR-05', agentId: 'star', currency: 'CNY', type: 'down', amount: 1000, at: '2026-08-10 13:02:47' },
   { id: 'ST-STAR-06', agentId: 'star', currency: 'CNY', type: 'down', amount: 1000, at: '2026-08-07 19:51:30' },
   { id: 'ST-LUCKY-01', agentId: 'lucky', currency: 'CNY', type: 'up', amount: 1800, at: '2026-08-23 09:14:26' },
   { id: 'ST-LUCKY-02', agentId: 'lucky', currency: 'CNY', type: 'up', amount: 1400, at: '2026-08-19 15:40:08' },
@@ -225,6 +226,17 @@ export function roundSettleAmount(value: number) {
 /** 结算金额 = 累计上分 − 累计下分 − 钱包余额；正数需支付，负数待收取 */
 export function settleWalletNet(wallet: AgentSettleWallet) {
   return roundSettleAmount(wallet.creditUp - wallet.creditDown - wallet.balance)
+}
+
+/** 核对口径：会员游戏输额 − 总退水（= −总输赢 − 总退水），数据自洽时与结算金额相等 */
+export function settleWalletGameNet(wallet: AgentSettleWallet) {
+  return roundSettleAmount(-wallet.memberWinLose - wallet.rebate)
+}
+
+export function settleGameWinLoseLabel(wallet: AgentSettleWallet) {
+  if (wallet.memberWinLose < 0) return '会员游戏输'
+  if (wallet.memberWinLose > 0) return '会员游戏赢'
+  return '会员游戏输赢'
 }
 
 export function settleWalletStatus(wallet: AgentSettleWallet): AgentSettleStatus {
