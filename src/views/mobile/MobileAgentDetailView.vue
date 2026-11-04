@@ -83,7 +83,7 @@ import {
   type ReportVendorKey,
 } from '../../constants/agentReport'
 import {
-  MH5_DATE_RANGE_TODAY,
+  dateRangeSheetPresetRange,
   creditSettleRangeScale,
   formatDateRangeText,
 } from '../../constants/mh5DateRange'
@@ -399,8 +399,10 @@ const statItems = computed(() => {
 
 const cashWalletGroups = computed(() => formatCashWalletGroups(agent.value?.wallets))
 
-const settleStart = ref(MH5_DATE_RANGE_TODAY)
-const settleEnd = ref(MH5_DATE_RANGE_TODAY)
+/** 对账结算默认查上周 */
+const settleDefaultRange = dateRangeSheetPresetRange('lastWeek')
+const settleStart = ref(settleDefaultRange.start)
+const settleEnd = ref(settleDefaultRange.end)
 const settleDateOpen = ref(false)
 const settleDateText = computed(() => formatDateRangeText(settleStart.value, settleEnd.value))
 
@@ -1453,6 +1455,7 @@ function closeProfitFormulaTips() {
       :open="settleDateOpen"
       :start="settleStart"
       :end="settleEnd"
+      reset-preset="lastWeek"
       @close="settleDateOpen = false"
       @confirm="confirmSettleDate"
     />

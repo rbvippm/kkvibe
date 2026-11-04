@@ -29,6 +29,8 @@ const props = withDefaults(
     inline?: boolean
     /** 不限制最早可查日期，也不展示近 6 个月提示 */
     unlimited?: boolean
+    /** 「重置」回到的快捷区间，默认今天 */
+    resetPreset?: DateRangeSheetPreset
   }>(),
   {
     open: false,
@@ -37,6 +39,7 @@ const props = withDefaults(
     tone: 'default',
     inline: false,
     unlimited: false,
+    resetPreset: 'today',
   },
 )
 
@@ -123,7 +126,8 @@ function neighborLabel(part: DatePart, delta: number) {
 }
 
 function resetDraft() {
-  applyRange(props.today, props.today)
+  const range = dateRangeSheetPresetRange(props.resetPreset, props.today)
+  applyRange(range.start, range.end)
 }
 
 function confirmDraft() {

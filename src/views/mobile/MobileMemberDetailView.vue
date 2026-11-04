@@ -63,7 +63,7 @@ import {
   type ReportVendorKey,
 } from '../../constants/agentReport'
 import {
-  MH5_DATE_RANGE_TODAY,
+  dateRangeSheetPresetRange,
   formatDateRangeText,
 } from '../../constants/mh5DateRange'
 import Mh5CurrencyIcon from '../../components/mobile/Mh5CurrencyIcon.vue'
@@ -250,8 +250,10 @@ const summaryItems = computed(() => {
   ]
 })
 
-const settleStart = ref(MH5_DATE_RANGE_TODAY)
-const settleEnd = ref(MH5_DATE_RANGE_TODAY)
+/** 对账结算默认查上周 */
+const settleDefaultRange = dateRangeSheetPresetRange('lastWeek')
+const settleStart = ref(settleDefaultRange.start)
+const settleEnd = ref(settleDefaultRange.end)
 const settleDateOpen = ref(false)
 const settleDateText = computed(() => formatDateRangeText(settleStart.value, settleEnd.value))
 
@@ -1263,6 +1265,7 @@ function toggleCreditCurrencyMenu() {
       :open="settleDateOpen"
       :start="settleStart"
       :end="settleEnd"
+      reset-preset="lastWeek"
       @close="settleDateOpen = false"
       @confirm="confirmSettleDate"
     />
