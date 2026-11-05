@@ -54,6 +54,9 @@ export type CreditSettleMemberProfile = {
 /** 名下会员都取贵宾厅数据的代理（EZ1 名下只有会员 EZ；EZ2 → EZ3 名下只有会员 EZ_A，同一组账本） */
 const VIP_BACKED_SUB_AGENT_IDS = new Set(['ca1', 'ca2', 'ca3'])
 
+/** 四层演示链（EZ2 → EZ3 → EZ_A）单独讲解，不计入一级代理EZ自身的交收 / 盈亏汇总，保留 EZ → EZ1 → 一级代理EZ 的闭环 */
+const SELF_SUMMARY_EXCLUDED_AGENT_IDS = new Set(['ca2'])
+
 /** 各级代理占成与「给直属下级的退水率」；未配置的下级代理按 2级默认值 */
 const CREDIT_SETTLE_AGENT_CONFIG: Record<string, { ptPercent: number; rebatePercent: number }> = {
   ca2: { ptPercent: 20, rebatePercent: 1.2 },
@@ -438,7 +441,8 @@ export function summarizeSuperiorSettle(
   rangeScale = 1,
   downline: { agents?: { id: string; nickname: string }[]; members?: { id: string; nickname: string }[] } = {},
 ): CreditSuperiorSettleSummary {
-  const agents = downline.agents ?? teamCreditAgents.value
+  const agents =
+    downline.agents ?? teamCreditAgents.value.filter((item) => !SELF_SUMMARY_EXCLUDED_AGENT_IDS.has(item.id))
   const members = downline.members ?? teamCreditMembers.value
   return summarizeLines([
     ...agents.map((item) => {
