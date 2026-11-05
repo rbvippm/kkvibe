@@ -364,19 +364,6 @@ function goCredit() {
   })
 }
 
-function goCreditStatement() {
-  if (!member.value) return
-  router.push({
-    name: 'mobile-xcoin-records',
-    query: {
-      currency: creditCurrency.value,
-      from: 'member-detail',
-      keyword: member.value.nickname,
-      lane: 'downstream',
-    },
-  })
-}
-
 function pickSettlePreset(key: string) {
   const range = dateRangeSheetPresetRange(key as DateRangeSheetPreset)
   settleStart.value = range.start
@@ -589,13 +576,6 @@ function pickCurrency(value: string) {
             </h3>
           </div>
           <Mh5CreditSettlePanel :panel="creditLimitView.settle" />
-          <button
-            type="button"
-            class="mh5-agent-detail-credit-settle__statement"
-            @click="goCreditStatement"
-          >
-            查看流水对账单
-          </button>
         </section>
       </template>
 

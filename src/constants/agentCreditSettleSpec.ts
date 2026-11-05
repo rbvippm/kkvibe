@@ -34,7 +34,6 @@ export const AGENT_SUB_SETTLE_SPEC: MobilePrdSpec = {
     interaction: [
       '点 Tab 顶部筛选条的日期区间弹出「筛选时间」，或点「今天 / 本周 / 上周 / 本月」快捷，按新区间重算全部分区；筛选条切信用额度-CNY / USD 后按对应币种重算。',
       '查看自己时只展示「交收结果」与「上下分」，不逐条列出下级（下线数量多），单条交收到对应下级代理 / 直属会员详情的「信用额度」Tab 查看。',
-      '底部「查看流水对账单」进入信用额度记录，带入当前币种并按该下级筛选。',
     ],
     visual: [
       '汇总框：标题「我方应收下级」（负数时为「我方应付下级」）+ 大号带币符金额，应收绿底、应付粉底；其下浅色小字公式「下级应收下线 − 下级实占游戏净输赢 − 下级实占P2P返利」。',
@@ -60,7 +59,6 @@ export const AGENT_SUB_SETTLE_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '入口：团队 / 信用代理列表 → 代理详情（mobile-agent-detail）→「信用额度」Tab。',
-      '出口：查看流水对账单 → mobile-xcoin-records（lane=downstream）。',
     ],
   }),
 }
@@ -77,7 +75,6 @@ export const MEMBER_SETTLE_SPEC: MobilePrdSpec = {
     ],
     interaction: [
       '点 Tab 顶部筛选条的日期区间或快捷时间后重算；筛选条切信用额度-CNY / USD 后按对应币种重算。',
-      '底部「查看流水对账单」进入信用额度记录，带入当前币种并按该会员筛选。',
     ],
     visual: [
       '汇总框：标题「我方应收会员」（会员盈亏为正时为「我方应付会员」）+ 大号带币符金额，应收绿底、应付粉底；其下浅色小字「会员盈亏为正我方应付，为负我方应收」。',
@@ -102,7 +99,6 @@ export const MEMBER_SETTLE_SPEC: MobilePrdSpec = {
     ],
     routing: [
       '入口：团队 / 信用会员列表 → 会员详情（mobile-member-detail）→「信用额度」Tab。',
-      '出口：查看流水对账单 → mobile-xcoin-records。',
     ],
   }),
 }
@@ -120,7 +116,6 @@ export const AGENT_SUPERIOR_SETTLE_SPEC: MobilePrdSpec = {
       '点报表顶部「交收」切到本 Tab，路由参数同步为交收；底栏切走再回来仍停在「交收」。',
       '筛选条交互与「我的报表 · 游戏」一致：点左侧日期弹出「筛选时间」，确定后重算并取消快捷高亮；点右侧币种弹出底部币种选择（信用额度-CNY / 信用额度-USD），选中后关闭并重算，与代理端全局币种联动；点「今天 / 昨天 / 本月 / 上月」直接切换区间。',
       '只展示「交收结果」，不逐条列出下线、不可点；单条交收拆解从团队管理进入对应下级代理详情 / 直属会员详情的「信用额度」Tab 查看。',
-      '底部「查看与上级的流水对账单」进入信用额度记录，类型预选「上级往来」。',
     ],
     visual: [
       '报表顶部页内 Tab 依次为「盈亏 / 游戏 / 交收」，选中项黑字加粗 + 橙色下划线。',
@@ -148,7 +143,6 @@ export const AGENT_SUPERIOR_SETTLE_SPEC: MobilePrdSpec = {
     routing: [
       '入口：信用代理中心底栏「我的报表」→ 页内「交收」Tab（mobile-agent，tab=report&reportTab=settle），仅信用账本可见；「我的」菜单不再放「上级交收」入口。',
       '独立页 mobile-agent-superior-settle（/mobile/agent/superior-settle）保留同一内容，供旧链接直达。',
-      '出口：流水对账单 → mobile-xcoin-records（lane=superior）。',
     ],
   }),
 }

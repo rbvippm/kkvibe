@@ -24459,22 +24459,6 @@ div.agent-home__profit-tab--ratio {
   color: #c4c4c4;
 }
 
-.mh5-agent-detail-credit-settle__statement {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 42px;
-  margin-top: 6px;
-  border: 1px solid #d5d5d5;
-  border-radius: 999px;
-  background: #fff;
-  color: #1a1a1a;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .mh5-agent-detail-profit {
   margin-top: 4px;
 }

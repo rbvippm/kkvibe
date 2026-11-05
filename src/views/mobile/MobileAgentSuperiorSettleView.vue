@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import Mh5AgentReportFilter from '../../components/mobile/Mh5AgentReportFilter.vue'
 import Mh5CreditSettlePanel from '../../components/mobile/Mh5CreditSettlePanel.vue'
 import Mh5CurrencyPickerSheet from '../../components/mobile/Mh5CurrencyPickerSheet.vue'
 import Mh5DateRangeSheet from '../../components/mobile/Mh5DateRangeSheet.vue'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
-import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
   agentAppCreditCurrency,
   setAgentAppCurrencyByUser,
@@ -35,8 +33,6 @@ import '../../styles/mobile-app-shell.css'
 /** embedded：嵌入「我的报表 · 交收」Tab，不渲染二级页头 */
 const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
-const router = useRouter()
-const { withAgentQuery } = useAgentIdentity()
 
 const creditCurrency = agentAppCreditCurrency
 const currencyOptions = getAgentDetailCurrencyOptions('credit')
@@ -79,13 +75,6 @@ function confirmDate(start: string, end: string) {
   preset.value = null
   settleDateOpen.value = false
 }
-
-function goStatement() {
-  router.push({
-    name: 'mobile-xcoin-records',
-    query: withAgentQuery({ currency: creditCurrency.value, lane: 'superior' }),
-  })
-}
 </script>
 
 <template>
@@ -125,9 +114,6 @@ function goStatement() {
           </h3>
         </div>
         <Mh5CreditSettlePanel :panel="panel" />
-        <button type="button" class="mh5-agent-detail-credit-settle__statement" @click="goStatement">
-          查看与上级的流水对账单
-        </button>
       </section>
 
       <p v-else class="mh5-settlement-empty">
