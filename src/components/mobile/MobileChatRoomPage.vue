@@ -38,6 +38,16 @@ import type { ChatMediaSendPayload } from '../../constants/mobileChatGallery'
 import { CHAT_MEDIA_PICKER_SPEC, CHAT_VIDEO_DOWNLOAD_SPEC } from '../../constants/mobileChatMediaPickerSpec'
 import { liveShareMessagesForRoom, type LiveShareCard } from '../../constants/liveShareChat'
 import { TG_H5_ROOM_ID } from '../../constants/mobileChatTelegramH5'
+import {
+  markPayServiceRead,
+  PAY_SERVICE_DEFAULT_REPLY,
+  PAY_SERVICE_QUICK_QUESTIONS,
+  PAY_SERVICE_ROOM_ID,
+  PAY_SERVICE_STAFF,
+  syncPayServicePreview,
+  type PayServiceStaff,
+} from '../../constants/chatPayService'
+import { CHAT_PAY_SERVICE_SPEC } from '../../constants/chatPayServiceSpec'
 import { CHAT_TG_H5_MEDIA_SPEC } from '../../constants/mobileChatTelegramH5Spec'
 import {
   CHAT_GAME_DOCK,
@@ -78,6 +88,8 @@ const plusActions = computed(() =>
 )
 /** 「h5图文入口」走 Telegram Web 系统相册/相机流程 */
 const isTgH5Room = computed(() => room.value.id === TG_H5_ROOM_ID)
+const isPayServiceRoom = computed(() => room.value.id === PAY_SERVICE_ROOM_ID)
+const payServiceTimers: ReturnType<typeof setTimeout>[] = []
 const messages = ref<ChatRoomMessage[]>([])
 const toast = ref('')
 const draft = ref('')
@@ -217,10 +229,14 @@ const overlayOpen = computed(
     Boolean(watchingVideo.value),
 )
 const isGroupRoom = computed(() => room.value.kind === 'group')
-const showPinnedGame = computed(() => isGroupRoom.value && CHAT_GROUP_PINNED_GAMES.length > 0)
+const showPinnedGame = computed(
+  () => isGroupRoom.value && !room.value.official && CHAT_GROUP_PINNED_GAMES.length > 0,
+)
 const dismissedFloats = ref<ChatGroupFloatKind[]>([])
 const visibleFloats = computed(() =>
-  isGroupRoom.value ? CHAT_GROUP_FLOATS.filter((item) => !dismissedFloats.value.includes(item.id)) : [],
+  isGroupRoom.value && !room.value.official
+    ? CHAT_GROUP_FLOATS.filter((item) => !dismissedFloats.value.includes(item.id))
+    : [],
 )
 const pinnedIndex = ref(0)
 const pinnedSlideName = ref('mh5-chat-pinned-slide-up')
@@ -843,7 +859,9 @@ function jumpToBottom() {
 watch(
   () => room.value.id,
   async () => {
-    const unread = getConversationUnreadByRoomId(room.value.id)
+    const unread = isPayServiceRoom.value ? 0 : getConversationUnreadByRoomId(room.value.id)
+    if (isPayServiceRoom.value) markPayServiceRead()
+    clearPayServiceTimers()
     const packed = attachChatUnreadHistory(
       room.value.messages.map((msg) => ({
         ...msg,
@@ -852,7 +870,7 @@ watch(
       room.value.kind,
       unread,
     )
-    messages.value = isVipClubRoom.value
+    messages.value = isVipClubRoom.value || room.value.official
       ? packed.messages
       : [...packed.messages, ...liveShareMessagesForRoom(room.value.id)]
     firstUnreadId.value = packed.firstUnreadId
@@ -906,6 +924,10 @@ function goBack() {
 }
 
 function openCommunityDetail() {
+  if (room.value.official) {
+    showToast('专属服务群由平台创建，不支持退出或修改群资料')
+    return
+  }
   void router.push({ name: 'mobile-chat-community', params: { id: room.value.id } })
 }
 
@@ -1962,9 +1984,56 @@ function nowTimeLabel() {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 }
 
+function clearPayServiceTimers() {
+  payServiceTimers.splice(0).forEach((timer) => clearTimeout(timer))
+}
+
+onBeforeUnmount(clearPayServiceTimers)
+
+function pushTextMessage(msg: Pick<ChatRoomMessage, 'direction' | 'text'> & Partial<ChatRoomMessage>) {
+  const time = nowTimeLabel()
+  const next: ChatRoomMessage = {
+    id: `local-text-${Date.now()}-${messages.value.length}`,
+    time,
+    layout: '1-square',
+    media: [],
+    ...msg,
+  }
+  messages.value = [...messages.value, next]
+  syncPayServicePreview(
+    next.direction === 'sent' ? next.text ?? '' : `${next.senderName}：${next.text ?? ''}`,
+    next.direction === 'sent',
+    time,
+  )
+  void scrollToBottom()
+  return next
+}
+
+/** 专属服务群：我的消息上屏，约 1 秒后对应专员回复 */
+function askPayService(question: string, reply: { staff: PayServiceStaff; answer: string }) {
+  const sent = pushTextMessage({ direction: 'sent', text: question, read: false })
+  payServiceTimers.push(
+    setTimeout(() => {
+      patchMessage(sent.id, { read: true })
+      pushTextMessage({
+        direction: 'received',
+        senderName: reply.staff.name,
+        senderTag: '官方',
+        avatar: reply.staff.avatar,
+        text: reply.answer,
+      })
+    }, 1000),
+  )
+}
+
 function sendDraft() {
   if (!canSend.value) return
   plusOpen.value = false
+  if (isPayServiceRoom.value) {
+    askPayService(draft.value.trim(), PAY_SERVICE_DEFAULT_REPLY)
+    draft.value = ''
+    return
+  }
   showToast('消息已发送（原型演示）')
   draft.value = ''
 }
@@ -2109,6 +2178,7 @@ onBeforeUnmount(() => {
         <img class="mh5-chat-room-header__avatar" :src="room.avatar" :alt="room.title" width="32" height="32" />
         <h1>
           {{ $t(room.title) }}
+          <span v-if="room.official" class="mh5-chat-official-tag">{{ $t('官方') }}</span>
           <Mh5SpecAnnot
             v-if="isTgH5Room"
             :spec="CHAT_TG_H5_MEDIA_SPEC"
@@ -2116,7 +2186,12 @@ onBeforeUnmount(() => {
           />
         </h1>
         <Mh5SpecAnnot
-          v-if="isGroupRoom"
+          v-if="isPayServiceRoom"
+          :spec="CHAT_PAY_SERVICE_SPEC"
+          placement="bottom"
+        />
+        <Mh5SpecAnnot
+          v-else-if="isGroupRoom"
           :spec="CHAT_GROUP_GAME_SPEC"
           placement="bottom"
         />
@@ -2135,6 +2210,15 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </header>
+
+    <div v-if="isPayServiceRoom" class="mh5-chat-pay-bar">
+      <span class="mh5-chat-pay-bar__avatars" aria-hidden="true">
+        <img v-for="staff in PAY_SERVICE_STAFF" :key="staff.kingkongId" :src="staff.avatar" alt="" width="22" height="22" />
+      </span>
+      <span class="mh5-chat-pay-bar__text">
+        {{ $t('专属客服') }} {{ PAY_SERVICE_STAFF.length }} {{ $t('人在线 · 充值 / 提现问题直接在群里说') }}
+      </span>
+    </div>
 
     <div
       v-if="showPinnedGame"
@@ -2180,7 +2264,7 @@ onBeforeUnmount(() => {
         <img :src="CHAT_ROOM_ASSETS.lock" alt="" width="16" height="16" />
         <span>此会话所发送信息都已经进行端到端加密</span>
       </div>
-      <div class="mh5-chat-room-hint mh5-chat-room-hint--date">昨天 21:08</div>
+      <div class="mh5-chat-room-hint mh5-chat-room-hint--date">{{ room.dateHint || '昨天 21:08' }}</div>
 
       <template v-for="msg in messages" :key="msg.id">
       <div
@@ -2202,7 +2286,9 @@ onBeforeUnmount(() => {
       >
         今天 14:40
       </div>
+      <div v-if="msg.notice" class="mh5-chat-room-hint mh5-chat-room-notice">{{ msg.notice }}</div>
       <article
+        v-else
         :data-msg-id="msg.id"
         class="mh5-chat-room-msg"
         :class="[
@@ -2255,6 +2341,7 @@ onBeforeUnmount(() => {
               class="mh5-chat-room-bubble__name"
             >
               {{ msg.senderName }}
+              <span v-if="msg.senderTag" class="mh5-chat-official-tag">{{ msg.senderTag }}</span>
             </p>
             <div
               v-if="msg.file"
@@ -2663,6 +2750,18 @@ onBeforeUnmount(() => {
     </main>
 
     <footer class="mh5-chat-room-composer">
+      <div v-if="isPayServiceRoom" class="mh5-chat-pay-quick" role="list" :aria-label="$t('常见问题')">
+        <button
+          v-for="item in PAY_SERVICE_QUICK_QUESTIONS"
+          :key="item.question"
+          type="button"
+          role="listitem"
+          class="mh5-chat-pay-quick__chip"
+          @click="askPayService(item.question, item)"
+        >
+          {{ $t(item.question) }}
+        </button>
+      </div>
       <div class="mh5-chat-room-input">
         <button
           type="button"

@@ -5,6 +5,7 @@ import {
 } from './mobileChatFileSend'
 import type { LiveShareCard } from './liveShareChat'
 import { CHAT_ROOM_ASSETS } from './mobileChatRoomAssets'
+import { PAY_SERVICE_ROOM, PAY_SERVICE_ROOM_ID } from './chatPayService'
 
 /** 「+」更多面板入口 · Figma 1290:17404 */
 export const CHAT_ROOM_PLUS_ACTIONS = [
@@ -83,6 +84,10 @@ export type ChatRoomMessage = {
   liveCard?: LiveShareCard
   /** 下载进度 0–100，仅 downloading */
   downloadProgress?: number
+  /** 居中灰色系统通知（如「xx 已加入群组」），不渲染气泡 */
+  notice?: string
+  /** 发送人昵称旁的身份标签，如「官方」 */
+  senderTag?: string
 }
 
 /** 宫格最多露出 4 格，再多收进末格 +N */
@@ -120,6 +125,10 @@ export type ChatRoomDemo = {
   kind: ChatRoomKind
   title: string
   avatar: string
+  /** 平台官方群：标题旁「官方」，不挂游戏置顶与悬浮入口 */
+  official?: boolean
+  /** 首条消息上方的日期分隔 */
+  dateHint?: string
   messages: ChatRoomMessage[]
 }
 
@@ -661,6 +670,7 @@ export function formatUnreadJumpLabel(count: number) {
 }
 
 export function getChatRoomDemo(id?: string): ChatRoomDemo {
+  if (id === PAY_SERVICE_ROOM_ID) return PAY_SERVICE_ROOM
   if (id === CHAT_ROOM_DIRECT_DEMO.id) return CHAT_ROOM_DIRECT_DEMO
   if (id === CHAT_ROOM_H5_ARTICLE_DEMO.id) return CHAT_ROOM_H5_ARTICLE_DEMO
   return CHAT_ROOM_GROUP_DEMO

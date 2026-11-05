@@ -5,6 +5,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router'
 import Mh5ConfirmDialog from '../components/mobile/Mh5ConfirmDialog.vue'
 import Mh5HiddenCover from '../components/mobile/Mh5HiddenCover.vue'
 import { appLock } from '../constants/appLock'
+import { chatNewUserMock } from '../constants/chatPayService'
 import Mh5LivePipLayer from '../components/mobile/Mh5LivePipLayer.vue'
 import Mh5MiniAppGameLayer from '../components/mobile/Mh5MiniAppGameLayer.vue'
 import { useWorkspaceInlinePreview } from '../composables/workspacePreviewContext'
@@ -111,6 +112,12 @@ const tabs = computed(() => (isVipClub.value ? vipTabs : outerTabs))
 
 function isActive(tab: AppTab) {
   return tab.match(route.path)
+}
+
+/** 会话角标：新用户 Mock 时只算充提专属服务群未读 */
+function tabBadge(tab: AppTab) {
+  if (tab.key === 'chat' && chatNewUserMock.enabled) return chatNewUserMock.conversation.unread
+  return tab.badge
 }
 </script>
 
@@ -243,7 +250,7 @@ function isActive(tab: AppTab) {
               <circle cx="14.5" cy="11" r="0.8" fill="currentColor" />
             </template>
           </svg>
-          <span v-if="tab.badge" class="mh5-app-tabbar__badge">{{ tab.badge }}</span>
+          <span v-if="tabBadge(tab)" class="mh5-app-tabbar__badge">{{ tabBadge(tab) }}</span>
         </span>
         <span>{{ $t(tab.label) }}</span>
       </RouterLink>

@@ -6381,6 +6381,271 @@
   font-size: 14px;
 }
 
+/* ---------- 会话 · 新用户充提专属服务群 ---------- */
+.mh5-chat-page {
+  position: relative;
+}
+
+.mh5-chat-header__top {
+  position: relative;
+}
+
+/* 隐藏 Mock 热区：顶部中间，不可见 */
+.mh5-chat-mock-hotzone {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 96px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  transform: translateX(-50%);
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mh5-chat-official-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  border: 1px solid var(--mh5-app-orange);
+  border-radius: 4px;
+  color: var(--mh5-app-orange);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  vertical-align: 2px;
+}
+
+.mh5-chat-item--guide {
+  position: relative;
+  z-index: 31;
+  background: #fff;
+  border-radius: 14px;
+  margin: 8px 8px 0;
+  border-bottom-color: transparent;
+  box-shadow: 0 0 0 2px rgba(255, 122, 43, 0.55);
+}
+
+.mh5-chat-guide-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.mh5-chat-guide-card {
+  position: relative;
+  z-index: 31;
+  margin: 14px 12px 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  animation: mh5-chat-guide-pop 0.28s ease-out;
+}
+
+.mh5-chat-guide-card::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 40px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+.mh5-chat-guide-card__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--mh5-app-text);
+}
+
+.mh5-chat-guide-card__desc {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4b5058;
+}
+
+.mh5-chat-guide-card__safe {
+  margin: 10px 0 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: #fff4ec;
+  color: #c2581a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.mh5-chat-guide-card__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.mh5-chat-guide-card__btn {
+  flex: 1;
+  height: 40px;
+  border: 1px solid #e2e4e8;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mh5-app-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-chat-guide-card__btn--primary {
+  border: 0;
+  background: linear-gradient(90deg, #ffb14a, var(--mh5-app-orange));
+  color: #fff;
+}
+
+@keyframes mh5-chat-guide-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mh5-chat-guide-fade-enter-active,
+.mh5-chat-guide-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-chat-guide-fade-enter-from,
+.mh5-chat-guide-fade-leave-to {
+  opacity: 0;
+}
+
+.mh5-chat-new-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 72px 32px 0;
+  text-align: center;
+}
+
+.mh5-chat-new-empty--inline {
+  margin: 16px 16px 0;
+  padding: 20px 16px;
+  border-radius: 14px;
+  background: var(--mh5-app-bg);
+}
+
+.mh5-chat-new-empty__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mh5-app-text);
+}
+
+.mh5-chat-new-empty__desc {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mh5-app-text-secondary);
+}
+
+.mh5-chat-new-empty__btn {
+  min-width: 112px;
+  height: 36px;
+  margin-top: 14px;
+  padding: 0 18px;
+  border: 1px solid var(--mh5-app-orange);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--mh5-app-orange);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mh5-chat-pay-bar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: #fff4ec;
+  border-bottom: 1px solid #ffe3cf;
+  color: #a4501c;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.mh5-chat-pay-bar__avatars {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.mh5-chat-pay-bar__avatars img {
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+.mh5-chat-pay-bar__avatars img + img {
+  margin-left: -8px;
+}
+
+.mh5-chat-pay-bar__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mh5-chat-room-notice {
+  max-width: 86%;
+  margin: 4px 0;
+  padding: 4px 10px;
+  text-align: center;
+}
+
+.mh5-chat-pay-quick {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mh5-chat-pay-quick::-webkit-scrollbar {
+  display: none;
+}
+
+.mh5-chat-pay-quick__chip {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid #ffd2b3;
+  border-radius: 999px;
+  background: #fff;
+  color: #c2581a;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.mh5-chat-pay-quick__chip:active {
+  background: #fff4ec;
+}
+
 /* ---------- 会话详情 · 多图消息（Figma 3390:116960） ---------- */
 .mh5-chat-room {
   display: flex;

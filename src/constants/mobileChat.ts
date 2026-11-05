@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { CHAT_ASSETS } from './mobileChatAssets'
+import { chatNewUserMock } from './chatPayService'
 
 export type ChatFilter = 'all' | 'direct' | 'group' | 'community'
 
@@ -28,6 +29,8 @@ export type ChatConversation = {
   unread: number
   highlighted: boolean
   pinned?: boolean
+  /** 平台官方会话，标题旁展示「官方」 */
+  official?: boolean
   avatar: string
   filter: ChatFilter
 }
@@ -147,6 +150,10 @@ export function getConversationUnreadByRoomId(roomId: string): number {
 }
 
 export function conversationsForFilter(filter: ChatFilter): ChatConversation[] {
+  if (chatNewUserMock.enabled) {
+    const item = chatNewUserMock.conversation
+    return filter === 'all' || filter === item.filter ? [item] : []
+  }
   if (filter === 'all') return chatConversationsState
   return chatConversationsState.filter((c) => c.filter === filter)
 }
