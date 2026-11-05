@@ -1,4 +1,4 @@
-import { creditViewerId, findTeamItem, type TeamListItem } from './agentTeam'
+import { creditViewerId, findTeamItem, teamAgentLevel, type TeamListItem } from './agentTeam'
 import type { AgentLedgerType } from './agentIdentity'
 import {
   formatCashWalletGroups,
@@ -181,7 +181,7 @@ function mockDetailFromTeam(item: TeamListItem, parent: TeamListItem | null): Me
     lastLogin: '2026-04-12 09:30:00',
     memberTag:
       parent && parent.id !== creditViewerId.value
-        ? '2级代理会员'
+        ? `${teamAgentLevel(parent.id)}级代理会员`
         : isCreditMember
           ? '信用会员'
           : '直属会员',

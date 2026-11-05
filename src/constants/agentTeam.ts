@@ -99,7 +99,11 @@ export const MOCK_TEAM_MEMBERS: TeamListItem[] = [
   },
 ]
 
-/** 信用代理：2级代理 EZ1，直属会员即贵宾厅会员 EZ */
+/**
+ * 信用代理：
+ * - 2级代理 EZ1，直属会员即贵宾厅会员 EZ
+ * - 四层演示链：2级代理 EZ2 → 3级代理 EZ3 → 会员 EZ_A（EZ_A 账本同会员 EZ，便于对照各层数据）
+ */
 export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
   {
     id: 'ca1',
@@ -120,6 +124,41 @@ export const MOCK_CREDIT_AGENTS: TeamListItem[] = [
         kingkongId: VIP_MEMBER_EZ.kingkongId,
         subordinateCount: 0,
         online: true,
+      },
+    ],
+  },
+  {
+    id: 'ca2',
+    nickname: '小红来了EZ2',
+    kind: 'credit_agent',
+    avatarEmoji: '👨🏻‍💼',
+    kingkongId: 'EZ288888',
+    subordinateCount: 1,
+    memberCount: 0,
+    vipLevel: 2,
+    online: true,
+    children: [
+      {
+        id: 'ca3',
+        nickname: '小红来了EZ3',
+        kind: 'credit_agent',
+        avatarEmoji: '🧑🏻‍💻',
+        kingkongId: 'EZ388888',
+        subordinateCount: 0,
+        memberCount: 1,
+        vipLevel: 1,
+        online: true,
+        children: [
+          {
+            id: 'ca3-m1',
+            nickname: 'EZ_A',
+            kind: 'credit_member',
+            avatarEmoji: '👦🏻',
+            kingkongId: 'EZA88888',
+            subordinateCount: 0,
+            online: true,
+          },
+        ],
       },
     ],
   },
@@ -596,20 +635,58 @@ export function filterTeamList(tab: TeamFilterTab): TeamListItem[] {
   return [MOCK_TEAM_SELF, ...teamCreditMembers.value]
 }
 
-/** 按 id 查团队节点（含 2级代理名下会员），并带出上级代理 */
-export function findTeamItem(id: string): { item: TeamListItem; parent: TeamListItem | null } | null {
+/** 按 id 逐层查团队节点（含下级代理名下的代理 / 会员），并带出直属上级与从顶层到该节点的路径 */
+export function findTeamItem(
+  id: string,
+): { item: TeamListItem; parent: TeamListItem | null; path: TeamListItem[] } | null {
   const roots = [
     ...teamDirectAgents.value,
     ...teamDirectMembers.value,
     ...teamCreditAgents.value,
     ...teamCreditMembers.value,
   ]
-  for (const root of roots) {
-    if (root.id === id) return { item: root, parent: null }
-    const child = root.children?.find((node) => node.id === id)
-    if (child) return { item: child, parent: root }
+  const walk = (nodes: TeamListItem[], path: TeamListItem[]): TeamListItem[] | null => {
+    for (const node of nodes) {
+      const next = [...path, node]
+      if (node.id === id) return next
+      if (node.children?.length) {
+        const hit = walk(node.children, next)
+        if (hit) return hit
+      }
+    }
+    return null
   }
-  return null
+  const path = walk(roots, [])
+  if (!path) return null
+  return { item: path[path.length - 1]!, parent: path[path.length - 2] ?? null, path }
+}
+
+/** 代理层级：我为 1级，直属代理为 2级，其下依次递增 */
+export function teamAgentLevel(id: string) {
+  const hit = findTeamItem(id)
+  return hit ? hit.path.filter((node) => node.kind !== 'member' && node.kind !== 'credit_member').length + 1 : 2
+}
+
+/** 节点下属统计：代理 / 直属代理 / 会员 / 直属会员 */
+export function teamSubtreeStats(item: TeamListItem) {
+  const isMember = (node: TeamListItem) => node.kind === 'member' || node.kind === 'credit_member'
+  const children = item.children ?? []
+  let agents = 0
+  let members = 0
+  const walk = (nodes: TeamListItem[]) => {
+    for (const node of nodes) {
+      if (isMember(node)) members += 1
+      else agents += 1
+      if (node.children?.length) walk(node.children)
+    }
+  }
+  walk(children)
+  return {
+    agents,
+    directAgents: children.filter((node) => !isMember(node)).length,
+    members,
+    directMembers: children.filter(isMember).length,
+  }
 }
 
 /** 团队搜索提示（搜索前 / 未出结果时） */
@@ -778,10 +855,11 @@ export function agentSubordinateLabel(count: number) {
   return `代(${count}人)`
 }
 
-/** 2级代理不能再有下级代理，只展示会员人数 */
+/** 有下级代理时展示「代(n人)｜会(n人)」，否则只展示会员人数 */
 export function teamStatsLabel(item: TeamListItem) {
   const memberPart = `会(${item.memberCount ?? 0}人)`
-  if (item.kind !== 'me' || item.id !== MOCK_TEAM_SELF.id) return memberPart
+  const isSelf = item.kind === 'me' && item.id === MOCK_TEAM_SELF.id
+  if (!isSelf && item.subordinateCount <= 0) return memberPart
   return `代(${item.subordinateCount}人)｜${memberPart}`
 }
 

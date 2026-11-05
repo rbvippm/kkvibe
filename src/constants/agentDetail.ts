@@ -4,17 +4,18 @@ import {
   buildSubAgentSettlePanel,
   buildSuperiorSettlePanel,
   CREDIT_SETTLE_SELF_PT,
-  CREDIT_SETTLE_SUB_AGENT_PT,
+  creditAgentShareRatio,
   isCreditSubAgentFixed,
   summarizeSubAgentSuperiorSettle,
   summarizeSuperiorSettle,
   type CreditSettlePanel,
 } from './agentCreditSettle'
 import {
-  filterTeamList,
   findTeamItem,
   isCreditViewerSelf,
   MOCK_TEAM_SELF,
+  teamAgentLevel,
+  teamSubtreeStats,
   type TeamListItem,
 } from './agentTeam'
 import { MEMBER_SETTLE_MOCK } from './memberSettleMock'
@@ -314,11 +315,11 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
   remark: '我自己',
   kingkongId: 'gg12345678',
   isCredited: true,
-  /** 团队：2级代理 EZ1 + 其名下会员 EZ */
+  /** 团队：2级代理 EZ1（会员 EZ）+ 2级代理 EZ2 → 3级代理 EZ3（会员 EZ_A） */
   stats: {
-    agents: 1,
-    directAgents: 1,
-    members: 1,
+    agents: 3,
+    directAgents: 2,
+    members: 2,
     directMembers: 0,
   },
   wallets: [
@@ -347,23 +348,16 @@ const MOCK_SELF_DETAIL: AgentDetailProfile = {
 function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
   const isCreditAgent = item.kind === 'credit_agent'
   const isAgent = item.kind === 'agent' || item.kind === 'me' || isCreditAgent
-  const memberCount = Math.max(0, item.memberCount ?? 0)
   return {
     id: item.id,
     nickname: item.nickname,
     avatarEmoji: item.avatarEmoji ?? (isAgent ? '🧔🏻‍♂️' : '👤'),
     lastLogin: '2小时前',
-    levelBadge: isAgent ? '2级代理' : '直属会员',
+    levelBadge: isAgent ? `${teamAgentLevel(item.id)}级代理` : '直属会员',
     remark: item.id === 'ca1' ? '小红' : undefined,
     kingkongId: item.kingkongId?.trim() || `kk_${item.id}`,
     isCredited: isCreditAgent,
-    /** 2级代理不能再发展代理，会员全部为直属 */
-    stats: {
-      agents: 0,
-      directAgents: 0,
-      members: memberCount,
-      directMembers: memberCount,
-    },
+    stats: teamSubtreeStats(item),
     wallets: [
       {
         currency: 'KKC',
@@ -385,14 +379,14 @@ function mockDetailFromTeam(item: TeamListItem): AgentDetailProfile {
       },
     ],
     creditLimits: isCreditSubAgentFixed(item.id)
-      ? vipBackedCreditLimits()
-      : buildCreditLimits(item.subordinateCount || 1, CREDIT_SETTLE_SUB_AGENT_PT),
+      ? vipBackedCreditLimits(creditAgentShareRatio(item.id))
+      : buildCreditLimits(item.subordinateCount || 1, creditAgentShareRatio(item.id)),
   }
 }
 
-/** 名下会员取贵宾厅数据的 2级代理：上下分 = 会员钱包累计上分 / 下分 */
-function vipBackedCreditLimits(): Record<AgentCreditCurrency, AgentCreditLimitStats> {
-  const base = buildCreditLimits(1, CREDIT_SETTLE_SUB_AGENT_PT)
+/** 名下会员取贵宾厅数据的下级代理：上下分 = 会员钱包累计上分 / 下分 */
+function vipBackedCreditLimits(shareRatio: number): Record<AgentCreditCurrency, AgentCreditLimitStats> {
+  const base = buildCreditLimits(1, shareRatio)
   const transfer = {
     creditUpTotal: MEMBER_SETTLE_MOCK.creditUp,
     creditDownTotal: MEMBER_SETTLE_MOCK.creditDown,
@@ -407,7 +401,7 @@ export function findAgentDetail(id: string): AgentDetailProfile | null {
   if (!id) return null
   if (id === MOCK_TEAM_SELF.id) return MOCK_SELF_DETAIL
 
-  const found = filterTeamList('all').find((item) => item.id === id)
+  const found = findTeamItem(id)?.item
   if (found) return mockDetailFromTeam(found)
 
   return null

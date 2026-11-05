@@ -11,9 +11,11 @@ import {
 } from './creditSettleEngine'
 
 /**
- * 信用代理中心 · 对账结算（Algorithm A），代理固定两层：平台 → 1级代理（我）→ 2级代理 → 会员
+ * 信用代理中心 · 对账结算（Algorithm A）：平台 → 1级代理（我）→ 2级代理 → 会员
  * 占成：平台 30%、1级 40%、2级 30%；直属会员没有 2级，2级那份归 1级（我方 70%）。
- * 单线收取：2级代理收会员全部，留下自己的本期游戏净输赢，其余交直属上级（我）；我再留下本期游戏净输赢，其余交平台。代理赚水由平台按天发放，不参与交收。
+ * 四层演示链：平台 30% → 我 40% → 2级 EZ2 20% → 3级 EZ3 10% → 会员 EZ_A；
+ * 退水 平台→我 2%、我→EZ2 1.5%、EZ2→EZ3 1.2%、EZ3→会员 1%。
+ * 单线收取：2级代理收会员全部，留下自己的实占游戏净输赢，其余交直属上级（我）；我再留下实占游戏净输赢，其余交平台。代理赚水由平台按天发放，不参与交收。
  * 退水总额 2%：平台不赚水（给我 2%），1级赚 0.5%（给 2级 1.5%），2级赚 0.5%（给会员 1%）；
  * 我的直属会员同样拿 1%，2级那份赚水归我。
  */
@@ -49,8 +51,36 @@ export type CreditSettleMemberProfile = {
   books: Record<AgentCreditCurrency, CreditSettleBook>
 }
 
-/** 2级代理 → 名下会员都取贵宾厅数据的代理（EZ1 名下只有会员 EZ） */
-const VIP_BACKED_SUB_AGENT_IDS = new Set(['ca1'])
+/** 名下会员都取贵宾厅数据的代理（EZ1 名下只有会员 EZ；EZ2 → EZ3 名下只有会员 EZ_A，同一组账本） */
+const VIP_BACKED_SUB_AGENT_IDS = new Set(['ca1', 'ca2', 'ca3'])
+
+/** 各级代理占成与「给直属下级的退水率」；未配置的下级代理按 2级默认值 */
+const CREDIT_SETTLE_AGENT_CONFIG: Record<string, { ptPercent: number; rebatePercent: number }> = {
+  ca2: { ptPercent: 20, rebatePercent: 1.2 },
+  ca3: { ptPercent: 10, rebatePercent: CREDIT_SETTLE_SUB_AGENT_TO_MEMBER_REBATE },
+}
+
+export function creditAgentShareRatio(id: string) {
+  return CREDIT_SETTLE_AGENT_CONFIG[id]?.ptPercent ?? CREDIT_SETTLE_SUB_AGENT_PT
+}
+
+/**
+ * 代理所在的下注链路（不含平台与我）：从我的直属代理一路到该代理；
+ * 该代理还有下级代理时，继续向下延伸到直接挂会员的那一级（原型每条线只有一个会员）
+ */
+function creditAgentLine(id: string, name: string): { id: string; name: string }[] {
+  const hit = findTeamItem(id)
+  if (!hit) return [{ id, name }]
+  const line = hit.path.filter((node) => node.kind === 'credit_agent')
+  let tail = hit.item
+  for (;;) {
+    const next = tail.children?.find((node) => node.kind === 'credit_agent')
+    if (!next) break
+    line.push(next)
+    tail = next
+  }
+  return line.map((node) => ({ id: node.id, name: node.nickname }))
+}
 
 export function isCreditSubAgentFixed(id: string) {
   return VIP_BACKED_SUB_AGENT_IDS.has(id)
@@ -115,12 +145,12 @@ function subAgentChain(book: CreditSettleBook, id: string, name: string) {
         ptPercent: CREDIT_SETTLE_SELF_PT,
         rebatePercent: CREDIT_SETTLE_SELF_TO_AGENT_REBATE,
       },
-      {
-        id,
-        name,
-        ptPercent: CREDIT_SETTLE_SUB_AGENT_PT,
-        rebatePercent: CREDIT_SETTLE_SUB_AGENT_TO_MEMBER_REBATE,
-      },
+      ...creditAgentLine(id, name).map((node) => ({
+        ...node,
+        ptPercent: creditAgentShareRatio(node.id),
+        rebatePercent:
+          CREDIT_SETTLE_AGENT_CONFIG[node.id]?.rebatePercent ?? CREDIT_SETTLE_SUB_AGENT_TO_MEMBER_REBATE,
+      })),
     ],
   })
 }
@@ -160,6 +190,9 @@ function nodeOf(result: CreditSettleResult, id: string) {
 }
 
 /* ---------------- 展示层 ---------------- */
+
+/** 原型信用 Mock 未接入 P2P 牌局抽水，与代理盈亏「P2P返利」同为 0 */
+const CREDIT_P2P_REBATE_MOCK = 0
 
 export type CreditSettleTone = 'positive' | 'negative' | 'neutral'
 
@@ -232,7 +265,11 @@ export function buildCreditTransferSection(stats: CreditTransferStats): CreditSe
   }
 }
 
-/** 代理查看下级代理：我方应收下级 S_{我←下级} = 下级应收下线 − 下级本期游戏净输赢 */
+/**
+ * 代理查看下级代理：上级应收下级 = 下级应收下线 − 下级实占游戏净输赢 − 下级实占P2P返利
+ * - 直属代理：由我方与其交收（我方应收下级）
+ * - 跨层级代理（如 3级 EZ3）：由我的下级代理（其直属上级）交收（下级代理应收下级）
+ */
 export function buildSubAgentSettlePanel(
   sub: { id: string; name: string },
   currency: AgentCreditCurrency,
@@ -240,14 +277,17 @@ export function buildSubAgentSettlePanel(
   rangeScale = 1,
 ): CreditSettlePanel {
   const result = settleSubAgentChain(sub.id, sub.name, currency, rangeScale)
-  const me = nodeOf(result, CREDIT_SETTLE_SELF_ID)
+  const index = result.nodes.findIndex((item) => item.id === sub.id)
   const child = nodeOf(result, sub.id)
-  const amount = me.receivable
+  const parent = result.nodes[index - 1]
+  const party = !parent || parent.id === CREDIT_SETTLE_SELF_ID ? '我方' : '下级代理'
+  const p2pRebate = CREDIT_P2P_REBATE_MOCK
+  const amount = sumSettleAmounts([child.payable, -p2pRebate])
   return {
-    heroLabel: amount >= 0 ? '我方应收下级' : '我方应付下级',
+    heroLabel: amount >= 0 ? `${party}应收下级` : `${party}应付下级`,
     heroValue: money(amount, currency),
     heroPositive: amount >= 0,
-    heroFormula: '下级应收下线 − 下级本期游戏净输赢',
+    heroFormula: '下级应收下线 − 下级实占游戏净输赢 − 下级实占P2P返利',
     sections: [
       {
         title: '交收依据',
@@ -259,19 +299,30 @@ export function buildSubAgentSettlePanel(
             tone: tone(result.memberWinLose),
           },
           {
+            label: '团队会员退水',
+            value: signed(result.member.rebate),
+            tone: tone(result.member.rebate),
+          },
+          {
             label: '下级应收下线',
             value: signed(child.receivable),
             tone: tone(child.receivable),
           },
           {
-            label: '下级本期游戏净输赢',
+            label: '下级实占游戏净输赢',
             value: signed(child.shareProfit),
             tone: tone(child.shareProfit),
           },
           {
-            label: amount >= 0 ? '我方应收下级' : '我方应付下级',
+            label: '下级实占P2P返利',
+            value: signed(p2pRebate),
+            tone: tone(p2pRebate),
+          },
+          {
+            label: amount >= 0 ? `${party}应收下级` : `${party}应付下级`,
             value: plain(amount),
             tone: tone(amount),
+            hint: party === '下级代理' && parent ? `由 ${parent.name} 与 ${sub.name} 交收` : undefined,
             total: true,
           },
         ],
@@ -365,8 +416,6 @@ export type CreditSuperiorSettleSummary = {
   payable: number
 }
 
-/** 原型信用 Mock 未接入 P2P 牌局抽水，与代理盈亏「P2P返利」同为 0 */
-const CREDIT_P2P_REBATE_MOCK = 0
 
 function summarizeLines(lines: CreditSuperiorSettleLine[]): CreditSuperiorSettleSummary {
   const sum = (pick: (me: CreditSettleNodeResult) => number) => sumSettleAmounts(lines.map((line) => pick(line.me)))
@@ -481,7 +530,7 @@ export function buildSuperiorSettlePanel(
     sections: [
       {
         title: '交收结果',
-        hint: summary.lines.length ? undefined : '本期暂无信用下线注单',
+        hint: summary.lines.length ? undefined : '所选时间段暂无信用下线注单',
         rows: [
           { label: '应收下线合计', value: signed(summary.receivable), tone: tone(summary.receivable) },
           { label: '我的实占游戏净输赢', value: signed(summary.shareProfit), tone: tone(summary.shareProfit) },

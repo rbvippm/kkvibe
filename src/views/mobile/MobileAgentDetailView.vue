@@ -95,6 +95,7 @@ import Mh5CreditSettlePanel from '../../components/mobile/Mh5CreditSettlePanel.v
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import {
   AGENT_DETAIL_CREDIT_CURRENCY_SPEC,
+  AGENT_DETAIL_CREDIT_TAB_SPEC,
   AGENT_DETAIL_GAME_DATA_SPEC,
 } from '../../constants/agentDetailSpec'
 import { ACCOUNT_SECURITY_COPY_ICON } from '../../constants/accountSecurity'
@@ -572,6 +573,12 @@ function closeProfitFormulaTips() {
               class="mh5-agent-detail-tab-annot"
             >
               <Mh5SpecAnnot :spec="AGENT_DETAIL_GAME_DATA_SPEC" placement="bottom" />
+            </span>
+            <span
+              v-if="tab.key === 'credit' && activeTab === 'credit'"
+              class="mh5-agent-detail-tab-annot"
+            >
+              <Mh5SpecAnnot :spec="AGENT_DETAIL_CREDIT_TAB_SPEC" placement="bottom" />
             </span>
           </template>
         </div>
