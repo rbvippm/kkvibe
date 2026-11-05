@@ -31,8 +31,8 @@ const billNo = computed(() => detail.value?.billNo || detail.value?.orderNo || '
 
 const amountLabel = computed(() => {
   if (!detail.value) return '金额'
-  if (detail.value.typeLabel.includes('下分')) return '下分金额'
-  if (detail.value.typeLabel.includes('上分')) return '上分金额'
+  if (detail.value.typeLabel.endsWith('-下分')) return '下分金额'
+  if (detail.value.typeLabel.endsWith('-上分')) return '上分金额'
   return '金额'
 })
 
@@ -92,7 +92,9 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
         </div>
         <h2 class="mh5-billing-detail-hero__title">{{ heroTitle }}</h2>
         <p class="mh5-billing-detail-hero__amount">{{ formatBillingHeroAmount(detail.amount) }}</p>
-        <p v-if="!isSystemPayment" class="mh5-billing-detail-hero__unit">{{ amountUnit }}</p>
+        <p v-if="!isSystemPayment || detail.superiorAgent" class="mh5-billing-detail-hero__unit">
+          {{ amountUnit }}<template v-if="detail.superiorAgent"> · {{ detail.superiorAgent }}</template>
+        </p>
       </section>
 
       <section v-if="isSystemPayment" class="mh5-billing-detail-card">
@@ -131,10 +133,6 @@ function rowValue(field: NonNullable<BillingDetail['fields']>[number]) {
             <span class="mh5-billing-detail-row__amount">{{ formatBillingPlainAmount(detail.amount) }}</span>
             <span class="mh5-billing-detail-row__unit">{{ amountUnit }}</span>
           </div>
-        </div>
-        <div class="mh5-billing-detail-row">
-          <span class="mh5-billing-detail-row__label">{{ $t('上级代理') }}</span>
-          <span class="mh5-billing-detail-row__value">{{ detail.superiorAgent }}</span>
         </div>
         <div class="mh5-billing-detail-row">
           <span class="mh5-billing-detail-row__label">{{ $t('时间') }}</span>

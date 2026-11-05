@@ -1,6 +1,7 @@
 /** 账单列表 · 类型与币种（对齐银行账单设计） */
 
 import { addDaysYmd, MH5_DATE_RANGE_TODAY } from './mh5DateRange'
+import { CREDIT_WALLET_CATALOG } from './walletCatalog'
 
 export type BillingType =
   | 'receive'
@@ -117,6 +118,8 @@ export type BillingRecord = {
   createdAt: string
   amount: number
   currency: string
+  /** 信用额度账单所属钱包（同一币种可来自不同上级代理的钱包） */
+  creditWalletId?: string
 }
 
 export type BillingDetailLayout = 'xcoin_transfer' | 'system_payment' | 'default'
@@ -252,6 +255,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-06-24 10:20:18',
     amount: 36.5,
     currency: 'CNY',
+    creditWalletId: 'credit-ez-cny-1',
   },
   {
     id: 'b17',
@@ -261,6 +265,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-06-23 16:08:42',
     amount: 12.8,
     currency: 'USD',
+    creditWalletId: 'credit-ez-usd-1',
   },
   {
     id: 'b21',
@@ -270,6 +275,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-05-26 09:16:04',
     amount: 8.6,
     currency: 'CNY',
+    creditWalletId: 'credit-b-cny-1',
   },
   {
     id: 'b18',
@@ -279,6 +285,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-05-25 14:33:09',
     amount: -50,
     currency: 'CNY',
+    creditWalletId: 'credit-b-cny-1',
   },
   {
     id: 'b19',
@@ -288,6 +295,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-05-24 19:05:21',
     amount: -28.6,
     currency: 'CNY',
+    creditWalletId: 'credit-a-cny-1',
   },
   {
     id: 'b20',
@@ -297,6 +305,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2026-05-23 21:40:55',
     amount: 88,
     currency: 'CNY',
+    creditWalletId: 'credit-ez-cny-1',
   },
   {
     id: 'b12',
@@ -306,6 +315,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-22 12:12:35',
     amount: 20,
     currency: 'CNY',
+    creditWalletId: 'credit-a-cny-1',
   },
   {
     id: 'b13',
@@ -315,6 +325,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-22 11:08:12',
     amount: -15,
     currency: 'CNY',
+    creditWalletId: 'credit-ez-cny-1',
   },
   {
     id: 'b14',
@@ -324,6 +335,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-18 09:22:01',
     amount: 50,
     currency: 'CNY',
+    creditWalletId: 'credit-b-cny-1',
   },
   {
     id: 'b21',
@@ -333,6 +345,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-21 16:40:11',
     amount: 80,
     currency: 'USD',
+    creditWalletId: 'credit-a-usd-1',
   },
   {
     id: 'b22',
@@ -342,6 +355,7 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     createdAt: '2025-06-21 17:02:44',
     amount: -25,
     currency: 'USD',
+    creditWalletId: 'credit-b-usd-1',
   },
   {
     id: 'b1',
@@ -525,7 +539,6 @@ export const MOCK_BILLING_DETAILS: Record<string, BillingDetail> = {
     amount: 20,
     currencySymbol: '¥',
     currencyCode: 'CNY',
-    superiorAgent: 'bckce26ji',
     timeDisplay: '2025.06.22 12:12:35',
     orderNo: 'asdad123812xc57343453',
   },
@@ -574,12 +587,17 @@ export function getBillingRecord(id: string) {
   return MOCK_BILLING_RECORDS.find((row) => row.id === id)
 }
 
-export function getBillingDetail(id: string) {
-  const detail = MOCK_BILLING_DETAILS[id]
-  if (detail) return detail
+/** 信用额度账单的上级代理 = 所属钱包的上分来源代理 */
+export function billingSuperiorAgent(row: BillingRecord) {
+  return CREDIT_WALLET_CATALOG.find((item) => item.id === row.creditWalletId)?.source
+}
+
+export function getBillingDetail(id: string): BillingDetail | undefined {
   const row = getBillingRecord(id)
-  if (!row) return undefined
-  return buildFallbackBillingDetail(row)
+  const detail = MOCK_BILLING_DETAILS[id] ?? (row ? buildFallbackBillingDetail(row) : undefined)
+  if (!detail) return undefined
+  const superiorAgent = detail.superiorAgent ?? (row ? billingSuperiorAgent(row) : undefined)
+  return superiorAgent ? { ...detail, superiorAgent } : detail
 }
 
 function buildFallbackBillingDetail(row: BillingRecord): BillingDetail {

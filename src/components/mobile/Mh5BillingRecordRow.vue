@@ -4,6 +4,7 @@ import Mh5BillingTypeIcon from './Mh5BillingTypeIcon.vue'
 import Mh5CurrencyIcon from './Mh5CurrencyIcon.vue'
 import {
   billingIconKindFromType,
+  billingSuperiorAgent,
   formatBillingAmount,
   formatBillingListTime,
   formatBillingListTypeLabel,
@@ -57,7 +58,10 @@ function openDetail(row: BillingRecord) {
           <template v-else>{{ part.text }}</template>
         </template>
       </div>
-      <div class="mh5-billing-item__time">{{ formatBillingListTime(row.createdAt) }}</div>
+      <div class="mh5-billing-item__time">
+        {{ formatBillingListTime(row.createdAt)
+        }}<template v-if="billingSuperiorAgent(row)"> · {{ billingSuperiorAgent(row) }}</template>
+      </div>
     </div>
     <div class="mh5-billing-item__amount-wrap">
       <div
