@@ -21,15 +21,16 @@ const router = useRouter()
 const isVipClub = computed(() => route.path.startsWith('/mobile/vip-club'))
 const activeFilter = ref<ChatFilter>('all')
 
-const conversations = computed(() => conversationsForFilter(activeFilter.value))
+/** 新用户 Mock 只在旗舰厅生效，贵宾厅始终展示演示会话 */
+const isNewUser = computed(() => !isVipClub.value && chatNewUserMock.enabled)
+const conversations = computed(() => conversationsForFilter(activeFilter.value, isNewUser.value))
 
 const totalUnread = computed(() =>
-  chatNewUserMock.enabled
+  isNewUser.value
     ? chatNewUserMock.conversation.unread
     : chatConversationsState.reduce((sum, c) => sum + c.unread, 0),
 )
 
-const isNewUser = computed(() => chatNewUserMock.enabled)
 const showGuide = computed(
   () => isNewUser.value && !chatNewUserMock.guideSeen && conversations.value.length > 0,
 )
@@ -100,7 +101,10 @@ function mediaIconSrc(kind?: ChatPreviewMediaIcon) {
   <div class="mh5-chat-page">
     <header class="mh5-chat-header">
       <div class="mh5-chat-header__top">
-        <button type="button" class="mh5-chat-mock-hotzone" tabindex="-1" aria-hidden="true" @click="onMockHotzoneTap" />
+        <button
+          v-if="!isVipClub"
+          type="button"
+          class="mh5-chat-mock-hotzone" tabindex="-1" aria-hidden="true" @click="onMockHotzoneTap" />
         <div class="mh5-chat-header__brand">
           <img class="mh5-chat-header__logo" :src="CHAT_ASSETS.logo" :alt="$t('金刚 KING KONG')" width="120" height="28" />
           <Mh5SpecAnnot v-if="isVipClub" :spec="VIP_CLUB_CHAT_SPEC" placement="bottom" />

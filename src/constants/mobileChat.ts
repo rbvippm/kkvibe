@@ -149,8 +149,9 @@ export function getConversationUnreadByRoomId(roomId: string): number {
   return Math.max(...matches.map((item) => item.unread))
 }
 
-export function conversationsForFilter(filter: ChatFilter): ChatConversation[] {
-  if (chatNewUserMock.enabled) {
+/** newUser：旗舰厅新用户 Mock 下只返回充提专属服务群；贵宾厅不参与 */
+export function conversationsForFilter(filter: ChatFilter, newUser = false): ChatConversation[] {
+  if (newUser) {
     const item = chatNewUserMock.conversation
     return filter === 'all' || filter === item.filter ? [item] : []
   }

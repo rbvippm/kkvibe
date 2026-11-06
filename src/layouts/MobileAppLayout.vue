@@ -114,9 +114,9 @@ function isActive(tab: AppTab) {
   return tab.match(route.path)
 }
 
-/** 会话角标：新用户 Mock 时只算充提专属服务群未读 */
+/** 会话角标：旗舰厅新用户 Mock 时只算充提专属服务群未读 */
 function tabBadge(tab: AppTab) {
-  if (tab.key === 'chat' && chatNewUserMock.enabled) return chatNewUserMock.conversation.unread
+  if (tab.key === 'chat' && !isVipClub.value && chatNewUserMock.enabled) return chatNewUserMock.conversation.unread
   return tab.badge
 }
 </script>
