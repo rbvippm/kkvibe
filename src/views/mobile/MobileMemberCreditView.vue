@@ -317,7 +317,7 @@ if (route.query.targetId && route.query.targetName) {
           <p class="agent-invite-member-card__label">待授信会员</p>
           <p class="agent-invite-member-card__account">昵称：{{ queryResult.nickname }}</p>
           <p class="agent-invite-member-card__account">金刚号：{{ queryResult.kingkongId }}</p>
-          <p class="agent-invite-member-card__desc">渠道一致，且不是你的直属会员</p>
+          <p class="agent-invite-member-card__desc">不是你的直属会员，可授信</p>
         </div>
       </section>
 
@@ -325,9 +325,7 @@ if (route.query.targetId && route.query.targetName) {
         <p class="agent-invite-rule-card__group">授信对象</p>
         <ul class="agent-invite-rule-card__list">
           <li>对方须为已注册会员，且金刚号真实有效</li>
-          <li>对方渠道须与当前代理一致</li>
           <li>对方不能已是你的直属会员（直属请走团队「会员授信」）</li>
-          <li>对方不能已是信用代理</li>
         </ul>
         <p class="agent-invite-rule-card__group">资金安全</p>
         <ul class="agent-invite-rule-card__list">

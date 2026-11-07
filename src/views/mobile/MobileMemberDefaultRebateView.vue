@@ -7,18 +7,19 @@ import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import {
   formatMemberRebateNumber,
   formatMemberRebatePercent,
+  getMemberDefaultRebateCategories,
+  getMemberDefaultRebateUpdatedAt,
   getMemberRebateProductIcon,
-  memberDefaultRebateCategories,
-  memberDefaultRebateUpdatedAt,
 } from '../../constants/memberRebateRatio'
 import { MEMBER_DEFAULT_REBATE_SPEC } from '../../constants/memberRebateRatioSpec'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
-const { withAgentQuery } = useAgentIdentity()
+const { withAgentQuery, isCreditLedger } = useAgentIdentity()
 
-const categories = computed(() => memberDefaultRebateCategories.value)
-const updatedAt = computed(() => memberDefaultRebateUpdatedAt.value)
+const rebateType = computed(() => (isCreditLedger.value ? 'credit' : 'cash'))
+const categories = computed(() => getMemberDefaultRebateCategories(rebateType.value).value)
+const updatedAt = computed(() => getMemberDefaultRebateUpdatedAt(rebateType.value).value)
 
 function goEdit() {
   router.push({ name: 'mobile-member-default-rebate-edit', query: withAgentQuery() })

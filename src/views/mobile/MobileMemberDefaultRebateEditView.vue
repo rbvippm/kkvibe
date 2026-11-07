@@ -3,18 +3,21 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Mh5MemberRebateEditor from '../../components/mobile/Mh5MemberRebateEditor.vue'
 import Mh5SubPageHeader from '../../components/mobile/Mh5SubPageHeader.vue'
+import { useAgentIdentity } from '../../composables/useAgentIdentity'
 import { mh5Alert } from '../../composables/useMh5Confirm'
 import {
-  memberDefaultRebateCategories,
+  getMemberDefaultRebateCategories,
   saveMemberDefaultRebateCategories,
   type MemberRebateCategory,
 } from '../../constants/memberRebateRatio'
 import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
+const { isCreditLedger } = useAgentIdentity()
+const rebateType = isCreditLedger.value ? 'credit' : 'cash'
 
 const categories = ref<MemberRebateCategory[]>(
-  memberDefaultRebateCategories.value.map((category) => ({
+  getMemberDefaultRebateCategories(rebateType).value.map((category) => ({
     ...category,
     products: category.products.map((product) => ({ ...product })),
   })),
@@ -28,7 +31,7 @@ async function saveDefault() {
     await mh5Alert(message)
     return
   }
-  saveMemberDefaultRebateCategories(categories.value)
+  saveMemberDefaultRebateCategories(categories.value, rebateType)
   await mh5Alert('会员默认退水已保存')
   router.back()
 }
@@ -40,7 +43,7 @@ async function saveDefault() {
 
     <main class="mh5-member-rebate-edit-main">
       <p class="mh5-member-rebate-edit-account">
-        邀请链接加入的会员，现金退水按此默认值带出
+        邀请链接加入的会员，{{ rebateType === 'credit' ? '信用' : '现金' }}退水按此默认值带出
         <span class="mh5-member-rebate-edit-account__type">默认退水</span>
       </p>
 

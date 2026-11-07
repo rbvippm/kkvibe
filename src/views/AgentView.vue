@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { isVipClubMineFrom, mineHomeRouteName } from '../constants/mineHall'
 import {
   AGENT_OVERVIEW_CURRENCY_BALANCES,
   type AgentOverviewCurrency,
@@ -164,8 +165,8 @@ function agentQueryForTab(tab: BottomTab): Record<string, string> {
 
 function handleAgentBack() {
   const from = route.query.from
-  if (from === 'mine') {
-    router.push({ name: 'mobile-mine' })
+  if (from === 'mine' || isVipClubMineFrom(from)) {
+    router.push({ name: mineHomeRouteName(from) })
     return
   }
   router.push({ name: 'home' })

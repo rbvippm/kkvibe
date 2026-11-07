@@ -8,7 +8,7 @@ import Mh5WalletSheet from '../../components/mobile/Mh5WalletSheet.vue'
 import { ACCOUNT_SECURITY_COPY_ICON } from '../../constants/accountSecurity'
 import { memberAgentInvites, memberAgentMembershipJoined } from '../../constants/agentInvitation'
 import { countClaimableInviteRebates } from '../../constants/inviteFriends'
-import { mineHallQuery } from '../../constants/mineHall'
+import { MINE_HALL_FROM_VIP, mineHallQuery } from '../../constants/mineHall'
 import { VIP_CLUB_MINE_SPEC } from '../../constants/vipClubSpec'
 import { sumWalletsCny, sumWalletsFrozenCny, walletsForSheet } from '../../constants/walletCatalog'
 import { walletTransferRoute } from '../../constants/walletTransfer'
@@ -252,6 +252,22 @@ const menuItems = computed<MineMenuItem[]>(() => {
     inviteItem,
   ]
 
+  /** 贵宾厅为信用额度会员：固定提供信用代理中心，不再展示通用「代理中心」 */
+  if (isVipClub.value) {
+    const creditAgentItem: MineMenuItem = { key: 'credit-agent', title: '信用代理中心' }
+    if (memberAgentMembershipJoined.value) return [...base, creditAgentItem]
+    return [
+      ...base,
+      creditAgentItem,
+      {
+        key: 'agent-invite',
+        title: '代理邀请',
+        badge: pendingInviteCount.value > 0 ? pendingInviteCount.value : undefined,
+        route: 'mobile-agent-invites',
+      },
+    ]
+  }
+
   if (memberAgentMembershipJoined.value) {
     return [...base, { key: 'agent', title: '代理中心' }]
   }
@@ -279,7 +295,9 @@ function menuIconSrc(key: string) {
   if (isVipClub.value) {
     if (key === 'live') return '/images/vip-club/icon-mine-live.svg'
     if (key === 'invite') return '/images/vip-club/icon-mine-invite.svg'
-    if (key === 'agent' || key === 'agent-invite') return '/images/vip-club/icon-mine-agent.svg'
+    if (key === 'agent' || key === 'agent-invite' || key === 'credit-agent') {
+      return '/images/vip-club/icon-mine-agent.svg'
+    }
   }
   if (key === 'payment') return '/images/mine/icon-payment.svg'
   if (key === 'live') return '/images/mine/icon-live.svg'
@@ -358,8 +376,15 @@ function goActivityCenter() {
 }
 
 function goMenuItem(item: MineMenuItem) {
+  if (item.key === 'credit-agent') {
+    router.push({
+      name: 'mobile-agent',
+      query: { agentType: 'share', ledger: 'credit', from: MINE_HALL_FROM_VIP },
+    })
+    return
+  }
   if (item.key === 'agent') {
-    router.push({ name: 'mobile-agent', query: { from: 'mine' } })
+    router.push({ name: 'mobile-agent', query: { ledger: 'cash', from: 'mine' } })
     return
   }
   goRoute(item.route)

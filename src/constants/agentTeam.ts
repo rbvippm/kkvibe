@@ -868,13 +868,14 @@ export function getTeamChildren(tab: TeamFilterTab): TeamListItem[] {
   return filterTeamList(tab).filter((item) => item.id !== MOCK_TEAM_SELF.id)
 }
 
-export type CreateAccountOption = 'agent' | 'member' | 'invite_existing'
+export type CreateAccountOption = 'agent' | 'member' | 'invite_existing' | 'member_credit'
 
-/** 现金 / 信用代理中心分包后不再有授信入口 */
+/** 「金刚号授信信用会员」仅信用代理中心展示 */
 export const CREATE_ACCOUNT_OPTIONS: { key: CreateAccountOption; label: string }[] = [
   { key: 'agent', label: '创建代理账户' },
   { key: 'member', label: '创建会员账户' },
   { key: 'invite_existing', label: '邀请会员为下级代理' },
+  { key: 'member_credit', label: '金刚号授信信用会员' },
 ]
 
 export const DEFAULT_CREATE_ACCOUNT_OPTION: CreateAccountOption = 'agent'

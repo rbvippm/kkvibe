@@ -64,11 +64,12 @@ function pickCreditViewer(id: CreditViewerId) {
 }
 
 /** 返佣、2级代理只能创建会员（2级代理之下不能再发展代理） */
-const createAccountOptions = computed(() =>
-  isRebateAgent.value || isSubAgentViewer.value
-    ? CREATE_ACCOUNT_OPTIONS.filter((item) => item.key === 'member')
-    : CREATE_ACCOUNT_OPTIONS,
-)
+const createAccountOptions = computed(() => {
+  if (isRebateAgent.value || isSubAgentViewer.value) {
+    return CREATE_ACCOUNT_OPTIONS.filter((item) => item.key === 'member')
+  }
+  return CREATE_ACCOUNT_OPTIONS.filter((item) => item.key !== 'member_credit' || isCreditLedger.value)
+})
 
 /** 占成：完整筛选 Tab；返佣固定直属会员，顶部用在线状态胶囊 */
 const teamFilterTabs = computed(() => TEAM_FILTER_TABS)
@@ -522,6 +523,11 @@ async function confirmCreateAccount() {
 
   if (createAccountDraft.value === 'member') {
     router.push({ name: 'mobile-agent-create-member', query: withAgentQuery() })
+    return
+  }
+
+  if (createAccountDraft.value === 'member_credit') {
+    router.push({ name: 'mobile-member-credit', query: withAgentQuery() })
     return
   }
 

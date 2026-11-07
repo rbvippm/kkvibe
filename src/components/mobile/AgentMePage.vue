@@ -32,13 +32,13 @@ const profitRows = computed(() =>
 )
 
 const CREDIT_MENU_KEYS = new Set(['credit-agent', 'credit-member', 'credit-record'])
-const CASH_SHARE_MENU_KEYS = new Set(['member-default-rebate'])
+const SHARE_MENU_KEYS = new Set(['member-default-rebate'])
 
-/** 返佣：无会员默认退水与信用入口；现金代理：无信用入口；信用代理：无现金会员默认退水 */
+/** 返佣：无会员默认退水与信用入口；现金代理：无信用入口；现金 / 信用占成代理均有会员默认退水 */
 const menuItems = computed(() =>
   AGENT_ME_MENU_ITEMS.filter((item) => {
     if (CREDIT_MENU_KEYS.has(item.key)) return isCreditLedger.value
-    if (CASH_SHARE_MENU_KEYS.has(item.key)) return !isRebateAgent.value && !isCreditLedger.value
+    if (SHARE_MENU_KEYS.has(item.key)) return !isRebateAgent.value
     return true
   }),
 )

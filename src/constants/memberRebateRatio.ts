@@ -215,6 +215,12 @@ export const memberRebateCategories = ref<MemberRebateCategory[]>(createMemberRe
 export const memberDefaultRebateCategories = ref<MemberRebateCategory[]>(createMemberRebateCategories())
 export const memberDefaultRebateUpdatedAt = ref('2026-06-18 00:18:58')
 
+/** 信用代理中心 · 邀请链接入会时带出的默认信用退水 */
+export const memberCreditDefaultRebateCategories = ref<MemberRebateCategory[]>(
+  createMemberCreditRebateCategories(),
+)
+export const memberCreditDefaultRebateUpdatedAt = ref('2026-06-18 00:18:58')
+
 /** 信用退水 · 原型共享状态（授信成功后可覆盖） */
 export const memberCreditRebateCategories = ref<MemberRebateCategory[]>(createMemberCreditRebateCategories())
 
@@ -246,14 +252,25 @@ export function formatMemberRebateUpdatedAt(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
-export function saveMemberDefaultRebateCategories(categories: MemberRebateCategory[]) {
-  memberDefaultRebateCategories.value = cloneMemberRebateCategories(categories)
-  memberDefaultRebateUpdatedAt.value = formatMemberRebateUpdatedAt()
+export function getMemberDefaultRebateCategories(type: MemberRebateRatioType) {
+  return type === 'credit' ? memberCreditDefaultRebateCategories : memberDefaultRebateCategories
 }
 
-/** 邀请链接加入的会员：现金退水直接复制当前默认配置 */
-export function createInviteLinkMemberRebateCategories() {
-  return cloneMemberRebateCategories(memberDefaultRebateCategories.value)
+export function getMemberDefaultRebateUpdatedAt(type: MemberRebateRatioType) {
+  return type === 'credit' ? memberCreditDefaultRebateUpdatedAt : memberDefaultRebateUpdatedAt
+}
+
+export function saveMemberDefaultRebateCategories(
+  categories: MemberRebateCategory[],
+  type: MemberRebateRatioType = 'cash',
+) {
+  getMemberDefaultRebateCategories(type).value = cloneMemberRebateCategories(categories)
+  getMemberDefaultRebateUpdatedAt(type).value = formatMemberRebateUpdatedAt()
+}
+
+/** 邀请链接加入的会员：现金 / 信用退水直接复制对应中心的默认配置 */
+export function createInviteLinkMemberRebateCategories(type: MemberRebateRatioType = 'cash') {
+  return cloneMemberRebateCategories(getMemberDefaultRebateCategories(type).value)
 }
 
 export function saveMemberRebateCategories(type: MemberRebateRatioType, categories: MemberRebateCategory[]) {
