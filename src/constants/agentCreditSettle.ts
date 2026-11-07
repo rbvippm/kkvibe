@@ -15,7 +15,7 @@ import {
  * 占成：平台 30%、1级 40%、2级 30%；直属会员没有 2级，2级那份归 1级（我方 70%）。
  * 四层演示链：平台 30% → 我 40% → 2级 EZ2 20% → 3级 EZ3 10% → 会员 EZ_A；
  * 退水 平台→我 2%、我→EZ2 1.5%、EZ2→EZ3 1.2%、EZ3→会员 1%。
- * 单线收取：2级代理收会员全部，留下自己的实占游戏净输赢，其余交直属上级（我）；我再留下实占游戏净输赢，其余交平台。代理赚水由平台按天发放，不参与交收。
+ * 单线收取：2级代理收会员全部，留下自己的实占净盈亏（= 总盈亏，含赚水），其余交直属上级（我）；我再留下实占净盈亏，其余交平台。
  * 退水总额 2%：平台不赚水（给我 2%），1级赚 0.5%（给 2级 1.5%），2级赚 0.5%（给会员 1%）；
  * 我的直属会员同样拿 1%，2级那份赚水归我。
  */
@@ -269,7 +269,7 @@ export function buildCreditTransferSection(stats: CreditTransferStats): CreditSe
 }
 
 /**
- * 代理查看下级代理：上级应收下级 = 下级应收下线 − 下级实占游戏净输赢 − 下级实占P2P返利
+ * 代理查看下级代理：上级应收下级 = 下级应收下线 − 下级实占净盈亏（= 下级总盈亏：实占净输赢 + P2P返利 + 代理赚水）
  * - 直属代理：由我方与其交收（我方应收下级）
  * - 跨层级代理（如 3级 EZ3）：由我的下级代理（其直属上级）交收（下级代理应收下级）
  */
@@ -284,13 +284,13 @@ export function buildSubAgentSettlePanel(
   const child = nodeOf(result, sub.id)
   const parent = result.nodes[index - 1]
   const party = !parent || parent.id === CREDIT_SETTLE_SELF_ID ? '我方' : '下级代理'
-  const p2pRebate = CREDIT_P2P_REBATE_MOCK
-  const amount = sumSettleAmounts([child.payable, -p2pRebate])
+  const shareNet = sumSettleAmounts([child.net, CREDIT_P2P_REBATE_MOCK])
+  const amount = sumSettleAmounts([child.receivable, -shareNet])
   return {
     heroLabel: amount >= 0 ? `${party}应收下级` : `${party}应付下级`,
     heroValue: money(amount, currency),
     heroPositive: amount >= 0,
-    heroFormula: '下级应收下线 − 下级实占游戏净输赢 − 下级实占P2P返利',
+    heroFormula: '下级应收下线 − 下级实占净盈亏',
     sections: [
       {
         title: '交收依据',
@@ -312,14 +312,9 @@ export function buildSubAgentSettlePanel(
             tone: tone(child.receivable),
           },
           {
-            label: '下级实占游戏净输赢',
-            value: signed(child.shareProfit),
-            tone: tone(child.shareProfit),
-          },
-          {
-            label: '下级实占P2P返利',
-            value: signed(p2pRebate),
-            tone: tone(p2pRebate),
+            label: '下级实占净盈亏',
+            value: signed(shareNet),
+            tone: tone(shareNet),
           },
           {
             label: amount >= 0 ? `${party}应收下级` : `${party}应付下级`,
@@ -415,7 +410,9 @@ export type CreditSuperiorSettleSummary = {
   net: number
   /** 我的实占P2P返利：P2P 牌局抽水按 P2P返利占成分给各级，代理留下自己那份，不往上交 */
   p2pRebate: number
-  /** 应付上级 = 应收下线合计 − 我的实占游戏净输赢 − 我的实占P2P返利 */
+  /** 我的实占净盈亏 = 总盈亏（实占净输赢 + P2P返利 + 代理赚水） */
+  shareNet: number
+  /** 应付上级 = 应收下线合计 − 我的实占净盈亏 */
   payable: number
 }
 
@@ -431,6 +428,7 @@ function summarizeLines(lines: CreditSuperiorSettleLine[]): CreditSuperiorSettle
     rebateNet: sum((me) => me.rebateNet),
     net: sum((me) => me.net),
     p2pRebate: CREDIT_P2P_REBATE_MOCK,
+    shareNet: sumSettleAmounts([sum((me) => me.net), CREDIT_P2P_REBATE_MOCK]),
     payable: sumSettleAmounts([sum((me) => me.payable), -CREDIT_P2P_REBATE_MOCK]),
   }
 }
@@ -477,7 +475,7 @@ export type CreditAgentProfitBook = {
   /** 团队有效投注、团队会员输赢（会员视角，赢为正） */
   validBet: number
   memberWinLose: number
-  /** 交收「实占游戏净输赢」= 代理盈亏「实占游戏输赢」 */
+  /** 交收「实占净盈亏」= 代理盈亏「实占游戏输赢」 */
   shareProfit: number
   /** 赚水 = 收上级退水 − 付下级退水 = 代理赚水 */
   rebateNet: number
@@ -530,15 +528,14 @@ export function buildSuperiorSettlePanel(
     heroLabel: amount >= 0 ? '我方应付上级' : '我方应收上级',
     heroValue: money(amount, currency),
     heroPositive: amount <= 0,
-    heroFormula: '应收下线合计 − 我的实占游戏净输赢 − 我的实占P2P返利',
+    heroFormula: '应收下线合计 − 我的实占净盈亏',
     sections: [
       {
         title: '交收结果',
         hint: summary.lines.length ? undefined : '所选时间段暂无信用下线注单',
         rows: [
           { label: '应收下线合计', value: signed(summary.receivable), tone: tone(summary.receivable) },
-          { label: '我的实占游戏净输赢', value: signed(summary.shareProfit), tone: tone(summary.shareProfit) },
-          { label: '我的实占P2P返利', value: signed(summary.p2pRebate), tone: tone(summary.p2pRebate) },
+          { label: '我的实占净盈亏', value: signed(summary.shareNet), tone: tone(summary.shareNet) },
           {
             label: amount >= 0 ? '我方应付上级' : '我方应收上级',
             value: plain(amount),
