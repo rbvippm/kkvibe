@@ -812,6 +812,42 @@ export const router = createRouter({
           meta: { title: '信用流水列表-文档说明' },
         },
         {
+          path: 'reconciliation-flow-list',
+          name: 'pc-reconciliation-flow-list',
+          component: () => import('../views/pc/PcReconciliationFlowListView.vue'),
+          meta: { title: '对账流水列表' },
+        },
+        {
+          path: 'reconciliation-flow-list/doc',
+          name: 'pc-reconciliation-flow-list-doc',
+          component: () => import('../views/pc/PcReconciliationFlowListDocView.vue'),
+          meta: { title: '对账流水列表-文档说明' },
+        },
+        {
+          path: 'platform-reconcile',
+          name: 'pc-platform-reconcile',
+          component: () => import('../views/pc/PcPlatformReconcileView.vue'),
+          meta: { title: '平台对账' },
+        },
+        {
+          path: 'platform-reconcile/doc',
+          name: 'pc-platform-reconcile-doc',
+          component: () => import('../views/pc/PcPlatformReconcileDocView.vue'),
+          meta: { title: '平台对账-文档说明' },
+        },
+        {
+          path: 'channel-reconcile',
+          name: 'pc-channel-reconcile',
+          component: () => import('../views/pc/PcChannelReconcileView.vue'),
+          meta: { title: '渠道对账' },
+        },
+        {
+          path: 'channel-reconcile/doc',
+          name: 'pc-channel-reconcile-doc',
+          component: () => import('../views/pc/PcChannelReconcileDocView.vue'),
+          meta: { title: '渠道对账-文档说明' },
+        },
+        {
           path: 'user-manage',
           name: 'pc-user-manage',
           component: PcUserManageView,
