@@ -352,7 +352,7 @@ function summaryToneClass(value: number) {
           v-model="searchInput"
           type="search"
           class="mh5-bet-order-search__input"
-          placeholder="对象关键词 / 单号"
+          placeholder="昵称 / 金刚号 / 单号"
           enterkeyhint="search"
         />
         <button type="submit" class="mh5-bet-order-search__btn">搜索</button>

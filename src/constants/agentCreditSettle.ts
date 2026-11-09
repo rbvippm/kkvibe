@@ -407,6 +407,7 @@ export type CreditSuperiorSettleSummary = {
   rebateIn: number
   rebateOut: number
   rebateNet: number
+  shareRebate: number
   net: number
   /** 我的实占P2P返利：P2P 牌局抽水按 P2P返利占成分给各级，代理留下自己那份，不往上交 */
   p2pRebate: number
@@ -426,6 +427,7 @@ function summarizeLines(lines: CreditSuperiorSettleLine[]): CreditSuperiorSettle
     rebateIn: sum((me) => me.rebateIn),
     rebateOut: sum((me) => me.rebateOut),
     rebateNet: sum((me) => me.rebateNet),
+    shareRebate: sum((me) => me.shareRebate),
     net: sum((me) => me.net),
     p2pRebate: CREDIT_P2P_REBATE_MOCK,
     shareNet: sumSettleAmounts([sum((me) => me.net), CREDIT_P2P_REBATE_MOCK]),
@@ -475,8 +477,10 @@ export type CreditAgentProfitBook = {
   /** 团队有效投注、团队会员输赢（会员视角，赢为正） */
   validBet: number
   memberWinLose: number
-  /** 交收「实占净盈亏」= 代理盈亏「实占游戏输赢」 */
+  /** 实占游戏输赢 = 会员输赢取反 × 占成 */
   shareProfit: number
+  /** 实占退水 = 退水总额（会员退水 + 各级代理赚水）× 占成 */
+  shareRebate: number
   /** 赚水 = 收上级退水 − 付下级退水 = 代理赚水 */
   rebateNet: number
   /** 净盈亏 = 总盈亏 */
@@ -511,6 +515,7 @@ export function getCreditAgentProfitBook(
     validBet,
     memberWinLose: sumResult((result) => result.memberWinLose),
     shareProfit: summary.shareProfit,
+    shareRebate: summary.shareRebate,
     rebateNet: summary.rebateNet,
     net: summary.net,
     creditUp: isVipBacked ? MEMBER_SETTLE_MOCK.creditUp * summary.lines.length : Math.round(validBet * 0.3),

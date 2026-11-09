@@ -1176,13 +1176,18 @@ export function matchTransferRecordPerson(row: XCoinTransferRecord, keyword: str
     row.sourceType === 'self' ||
     row.memberName === '我' ||
     row.targetName === '我'
+  const names = [row.superiorAgentName, row.memberName, row.targetName, row.sourceAgentName].filter(
+    Boolean,
+  ) as string[]
+  /** 往来对象按昵称映射金刚号，支持直接搜对方金刚号 */
+  const kingkongIds = [...MOCK_SELECTABLE_MEMBERS, ...MOCK_SELECTABLE_AGENTS]
+    .filter((item) => names.includes(item.nickname))
+    .map((item) => item.kingkongId)
   const fields = [
-    row.superiorAgentName,
-    row.memberName,
-    row.targetName,
-    row.sourceAgentName,
+    ...names,
+    ...kingkongIds,
     ...(involvesSelf ? [self.nickname, self.kingkongId, formatTransferSelfLabel()] : []),
-  ].filter(Boolean) as string[]
+  ]
   return fields.some((name) => name.toLowerCase().includes(q))
 }
 

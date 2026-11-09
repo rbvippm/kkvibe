@@ -27,8 +27,8 @@ import { MEMBER_CREDIT_GAME_SHARES } from './memberDetailProfit'
 /**
  * 信用代理中心 · 代理详情「代理盈亏」「游戏数据」与「信用额度 · 对账结算」同源，公式沿用原信用口径：
  * 总盈亏 = 游戏净输赢 + P2P返利 + 代理赚水；游戏净输赢 = 实占游戏输赢 − 实占退水 − 场馆费。
- * 取数：实占游戏输赢 = 交收链路本级占成毛利，代理赚水 = 交收「赚水」，总盈亏 = 交收「实占净盈亏」；
- * 交收不含实占退水（退水逐级赚差价已体现在赚水里）、场馆费，两项恒为 0；P2P返利计入总盈亏，原型 Mock 为 0。
+ * 取数：实占游戏输赢 = 交收链路本级占成毛利；实占退水 = 退水总额（会员退水 + 各级代理赚水）× 占成；
+ * 代理赚水 = 交收「赚水」；总盈亏 = 交收「实占净盈亏」。场馆费、P2P返利原型 Mock 为 0。
  * 游戏大类拆分沿用会员盈亏 / 游戏统计的同一组占比，保证代理、会员两边按大类也能对上。
  */
 type AgentRef = { id: string; name: string }
@@ -38,11 +38,11 @@ type CategoryBook = {
   label: string
   validBet: number
   win: number
+  rebate: number
   earn: number
 }
 
-/** 交收口径下恒为 0 的扣减项与加项 */
-const ACTUAL_REBATE = 0
+/** 原型未接入场馆费与 P2P 牌局 */
 const VENUE_FEE = 0
 const P2P_REBATE = 0
 
@@ -90,8 +90,8 @@ function bookOf(agent: AgentRef, currency: string): CreditAgentProfitBook {
   return getCreditAgentProfitBook(agent, currency as AgentCreditCurrency)
 }
 
-function gameNet(win: number) {
-  return round2(win - ACTUAL_REBATE - VENUE_FEE)
+function gameNet(win: number, rebate: number) {
+  return round2(win - rebate - VENUE_FEE)
 }
 
 function categoryBooks(book: CreditAgentProfitBook): CategoryBook[] {
@@ -99,12 +99,14 @@ function categoryBooks(book: CreditAgentProfitBook): CategoryBook[] {
   const winShares = MEMBER_CREDIT_GAME_SHARES.map((item) => item.win)
   const bets = splitByShares(book.validBet, betShares)
   const wins = splitByShares(book.shareProfit, winShares)
+  const rebates = splitByShares(book.shareRebate, betShares)
   const earns = splitByShares(book.rebateNet, betShares)
   return MEMBER_CREDIT_GAME_SHARES.map((item, index) => ({
     key: item.key,
     label: item.label,
     validBet: bets[index] ?? 0,
     win: wins[index] ?? 0,
+    rebate: rebates[index] ?? 0,
     earn: earns[index] ?? 0,
   }))
 }
@@ -124,7 +126,7 @@ export function getAgentCreditProfitFlowRows(agent: AgentRef, currency: string):
 /** 置顶：总盈亏 = 实占净输赢 + P2P返利 + 代理赚水 */
 export function getAgentCreditProfitHero(agent: AgentRef, currency: string) {
   const book = bookOf(agent, currency)
-  const net = gameNet(book.shareProfit)
+  const net = gameNet(book.shareProfit, book.shareRebate)
   const totalAbs = formatPlain(book.net)
   return {
     label: '总盈亏',
@@ -150,7 +152,7 @@ export function getAgentCreditProfitSummaryRows(agent: AgentRef, currency: strin
   const book = bookOf(agent, currency)
   return [
     { label: '输赢', value: formatAmount(book.shareProfit), tone: toneOf(book.shareProfit) },
-    { label: '退水', ...costCell(ACTUAL_REBATE) },
+    { label: '退水', ...costCell(book.shareRebate) },
     { label: '场馆费', ...costCell(VENUE_FEE) },
     { label: 'P2P返利', value: formatAmount(P2P_REBATE), tone: toneOf(P2P_REBATE) },
     { label: '代理赚水', value: formatAmount(book.rebateNet), tone: toneOf(book.rebateNet) },
@@ -162,8 +164,8 @@ export function getAgentCreditProfitGameSection(agent: AgentRef, currency: strin
   return {
     nameHeader: '游戏净输赢',
     amountHeader: '金额（实占）',
-    rows: categoryBooks(book).map((item) => sectionRow(item.key, item.label, gameNet(item.win))),
-    total: sectionRow('game_sum', '合计', gameNet(book.shareProfit)),
+    rows: categoryBooks(book).map((item) => sectionRow(item.key, item.label, gameNet(item.win, item.rebate))),
+    total: sectionRow('game_sum', '合计', gameNet(book.shareProfit, book.shareRebate)),
   }
 }
 
@@ -206,7 +208,7 @@ export function getAgentCreditProfitDialogDetail(
 
   if (kind === 'total') {
     return [
-      row('游戏净输赢', gameNet(book.shareProfit)),
+      row('游戏净输赢', gameNet(book.shareProfit, book.shareRebate)),
       row('P2P返利', P2P_REBATE),
       row('代理赚水', book.rebateNet),
       row('总盈亏', book.net, { emphasize: true, formulaTip: AGENT_CREDIT_PROFIT_FORMULA }),
@@ -215,9 +217,9 @@ export function getAgentCreditProfitDialogDetail(
   if (kind === 'net_pnl') {
     return [
       row('输赢', book.shareProfit),
-      costRow('退水', ACTUAL_REBATE),
+      costRow('退水', book.shareRebate),
       costRow('场馆费', VENUE_FEE),
-      row('实占净输赢', gameNet(book.shareProfit), {
+      row('实占净输赢', gameNet(book.shareProfit, book.shareRebate), {
         emphasize: true,
         formulaTip: AGENT_CREDIT_NET_PNL_DETAIL_FORMULA,
       }),
@@ -249,12 +251,13 @@ export function getAgentCreditProfitDialogDetail(
   }
   const hit = categories.find((item) => item.key === kind)
   const win = hit?.win ?? 0
+  const rebate = hit?.rebate ?? 0
   return [
     { label: '下注有效金额', amountText: formatPlain(hit?.validBet ?? 0), tone: 'neutral' },
     row('输赢', win),
-    costRow('退水', ACTUAL_REBATE),
+    costRow('退水', rebate),
     costRow('场馆费', VENUE_FEE),
-    row('游戏净输赢', gameNet(win), { emphasize: true, formulaTip: AGENT_CREDIT_GAME_PROFIT_FORMULA }),
+    row('游戏净输赢', gameNet(win, rebate), { emphasize: true, formulaTip: AGENT_CREDIT_GAME_PROFIT_FORMULA }),
   ]
 }
 
@@ -270,8 +273,8 @@ export function getAgentCreditProfitDetail(
 ): AgentProfitDetail {
   const book = bookOf(agent, currency)
   const categories = categoryBooks(book)
-  const build = (title: string, validBet: number, win: number): AgentProfitDetail => {
-    const net = gameNet(win)
+  const build = (title: string, validBet: number, win: number, rebate: number): AgentProfitDetail => {
+    const net = gameNet(win, rebate)
     return {
       title,
       totalProfit: formatAmount(net),
@@ -279,19 +282,20 @@ export function getAgentCreditProfitDetail(
       rows: [
         { label: '下注有效金额', value: formatPlain(validBet), tone: 'neutral' },
         { label: '输赢', value: formatAmount(win), tone: toneOf(win) },
-        { label: '退水', ...costCell(ACTUAL_REBATE) },
+        { label: '退水', ...costCell(rebate) },
         { label: '场馆费', ...costCell(VENUE_FEE) },
       ],
     }
   }
 
-  if (category === 'overall') return build('全部（实占）', book.validBet, book.shareProfit)
+  if (category === 'overall') return build('全部（实占）', book.validBet, book.shareProfit, book.shareRebate)
 
   const catLabel = AGENT_PROFIT_CATEGORY_TABS.find((item) => item.key === category)?.label ?? '明细'
   const hit = categories.find((item) => item.key === category)
   const validBet = hit?.validBet ?? 0
   const win = hit?.win ?? 0
-  if (vendor === 'all') return build(`${catLabel}（实占）`, validBet, win)
+  const rebate = hit?.rebate ?? 0
+  if (vendor === 'all') return build(`${catLabel}（实占）`, validBet, win, rebate)
 
   const vendors = AGENT_PROFIT_VENDORS[category].filter((item) => item.key !== 'all')
   const index = Math.max(0, vendors.findIndex((item) => item.key === vendor))
@@ -303,5 +307,6 @@ export function getAgentCreditProfitDetail(
     `${label}（实占）`,
     splitByShares(validBet, shares)[index] ?? 0,
     splitByShares(win, shares)[index] ?? 0,
+    splitByShares(rebate, shares)[index] ?? 0,
   )
 }

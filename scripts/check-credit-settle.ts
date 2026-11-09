@@ -1,7 +1,7 @@
 /**
  * Algorithm A 标准用例校验：node scripts/check-credit-settle.ts
  * 退水逐级整笔传递、赚差价（平台付 2%、1级赚 0.5%、2级赚 0.5%、会员拿 1%）
- * 每级留下本级净盈亏（含赚水）：应付上级 = 应收下级 − 实占净盈亏
+ * 退水总额按占成分摊为实占退水；每级留下本级净盈亏（实占游戏输赢 − 实占退水 + 代理赚水）：应付上级 = 应收下级 − 实占净盈亏
  */
 import {
   computeCreditSettlement,
@@ -13,16 +13,19 @@ import {
 const result = computeCreditSettlement(CREDIT_SETTLE_STANDARD_CASE)
 
 const expectations: [string, number, number][] = [
-  ['平台 净盈亏', result.nodes[0]!.net, 1300],
-  ['1级 净盈亏', result.nodes[1]!.net, 2050],
-  ['2级 净盈亏', result.nodes[2]!.net, 1550],
+  ['平台 实占退水', result.nodes[0]!.shareRebate, 60],
+  ['1级 实占退水', result.nodes[1]!.shareRebate, 80],
+  ['2级 实占退水', result.nodes[2]!.shareRebate, 60],
+  ['平台 净盈亏', result.nodes[0]!.net, 1440],
+  ['1级 净盈亏', result.nodes[1]!.net, 1970],
+  ['2级 净盈亏', result.nodes[2]!.net, 1490],
   ['会员 净盈亏', result.member.net, -4900],
-  ['平台 应收下级', result.nodes[0]!.receivable, 1300],
-  ['1级 应收下级', result.nodes[1]!.receivable, 3350],
+  ['平台 应收下级', result.nodes[0]!.receivable, 1440],
+  ['1级 应收下级', result.nodes[1]!.receivable, 3410],
   ['2级 应收会员', result.nodes[2]!.receivable, 4900],
   ['平台 应付上级', result.nodes[0]!.payable, 0],
-  ['1级 应付上级', result.nodes[1]!.payable, 1300],
-  ['2级 应付上级', result.nodes[2]!.payable, 3350],
+  ['1级 应付上级', result.nodes[1]!.payable, 1440],
+  ['2级 应付上级', result.nodes[2]!.payable, 3410],
   ['1级 占成毛利', result.nodes[1]!.shareProfit, 2000],
   ['平台 退水收支', result.nodes[0]!.rebateNet, -200],
   ['1级 收上级退水', result.nodes[1]!.rebateIn, 200],

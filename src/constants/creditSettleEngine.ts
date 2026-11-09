@@ -4,7 +4,8 @@
  * - 上分 / 下分（额度调拨）不参与交收，只认会员真实输赢 W_M 与有效投注 V
  * - nodes[0] = 平台，nodes[k] = 会员直属代理；ΣPT = 1
  * - 退水逐级整笔传递、赚差价：节点 i 收上级退水 = V × R_{i−1}，付下级退水 = V × R_i，
- *   赚水 = V × (R_{i−1} − R_i)；平台只付不收，全部退水成本落在平台
+ *   赚水 = V × (R_{i−1} − R_i)；平台只付不收
+ * - 退水总额 T = V × R_0（= 会员退水 + 各级代理赚水），按占成分摊：实占退水 = T × PT_i
  * - 代理赚水随交收逐级留存；会员退水在交收时由直属代理扣给会员（应收会员 = G − C_M）
  * - 每级留下本级净盈亏（= 总盈亏）：应付上级 = 应收下级 − 实占净盈亏 Net_i（Net_i = P_i + C_i）
  * - 全程定点小数（BigInt，放大 10^8），禁止浮点直接累加
@@ -108,9 +109,11 @@ export type CreditSettleNodeResult = {
   rebateIn: number
   /** 付下级退水 C_out,i = V × R_i */
   rebateOut: number
-  /** 退水收支 C_i = C_in,i − C_out,i */
+  /** 退水收支 C_i = C_in,i − C_out,i（代理即代理赚水） */
   rebateNet: number
-  /** 本级净盈亏 Net_i = P_i + C_i */
+  /** 实占退水 = 退水总额 T × PT_i */
+  shareRebate: number
+  /** 本级净盈亏 Net_i = P_i − 实占退水 + 代理赚水（平台不赚水） */
   net: number
   /** 应收下级 S_{i←i+1}；直属代理即应收会员 S_{k←M} */
   receivable: number
@@ -163,6 +166,9 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
   const memberRebate = fixedRebate ?? mul(V, rates[k]!)
   const memberNet = -G + memberRebate
 
+  /** 退水总额 = 平台付出的整笔退水 = 会员退水 + 各级代理赚水 */
+  const totalRebate = mul(V, rates[0]!)
+
   let ptUp = 0n
   const raw = nodes.map((node, i) => {
     const pt = pts[i]!
@@ -172,6 +178,8 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
     const shareProfit = mul(G, pt)
     const rebateIn = i === 0 ? 0n : mul(V, rateIn)
     const rebateOut = i === k && fixedRebate !== null ? fixedRebate : mul(V, rateOut)
+    const shareRebate = mul(totalRebate, pt)
+    const earn = i === 0 ? 0n : rebateIn - rebateOut
     const row = {
       node,
       level: i,
@@ -184,7 +192,8 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
       rebateIn,
       rebateOut,
       rebateNet: rebateIn - rebateOut,
-      net: shareProfit + rebateIn - rebateOut,
+      shareRebate,
+      net: shareProfit - shareRebate + earn,
       receivable: 0n,
       payable: 0n,
     }
@@ -203,6 +212,7 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
 
   assertZero(raw.reduce((sum, row) => sum + row.shareProfit, 0n) - G, '毛利守恒失败：ΣP_i ≠ G')
   assertZero(raw.reduce((sum, row) => sum + row.rebateNet, 0n) + memberRebate, '退水守恒失败：ΣC_i + C_M ≠ 0')
+  assertZero(raw.reduce((sum, row) => sum + row.shareRebate, 0n) - totalRebate, '实占退水守恒失败：Σ实占退水 ≠ 退水总额')
   assertZero(raw.reduce((sum, row) => sum + row.net, 0n) + memberNet, '零和守恒失败：ΣNet_i + Net_M ≠ 0')
   /** 平台作为链路顶端：交收应收 = 平台净盈亏 */
   assertZero(raw[0]!.receivable - raw[0]!.net, '链路闭合失败：平台应收 ≠ 平台净盈亏')
@@ -230,6 +240,7 @@ export function computeCreditSettlement(input: CreditSettleInput): CreditSettleR
       rebateIn: toNumber(row.rebateIn),
       rebateOut: toNumber(row.rebateOut),
       rebateNet: toNumber(row.rebateNet),
+      shareRebate: toNumber(row.shareRebate),
       net: toNumber(row.net),
       receivable: toNumber(row.receivable),
       payable: toNumber(row.payable),
