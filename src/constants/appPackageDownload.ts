@@ -1,8 +1,7 @@
 /** App 包下载配置 · 原型数据与校验 */
 
-export type AppTerminal = 'ios' | 'android'
+export type AppTerminal = 'ios' | 'android' | 'windows' | 'mac'
 export type AppPackageCategory = 'super' | 'chat' | 'store'
-export type AppUpdateMode = 'optional' | 'force'
 export type AppPackageStatus = 'enabled' | 'disabled'
 
 export type AppPackageHistory = {
@@ -10,7 +9,6 @@ export type AppPackageHistory = {
   versionNumber: string
   downloadUrl: string
   plistUrl: string
-  updateMode: AppUpdateMode
   updateLog: string
   operator: string
   updatedAt: string
@@ -24,7 +22,6 @@ export type AppPackageRow = {
   versionNumber: string
   downloadUrl: string
   plistUrl: string
-  updateMode: AppUpdateMode
   updateLog: string
   status: AppPackageStatus
   remarks: string
@@ -40,7 +37,6 @@ export type AppPackageForm = {
   versionNumber: string
   downloadUrl: string
   plistUrl: string
-  updateMode: AppUpdateMode
   updateLog: string
   status: AppPackageStatus
   remarks: string
@@ -51,7 +47,16 @@ export const CURRENT_APP_PACKAGE_OPERATOR = '运营-周宁'
 export const APP_TERMINAL_LABEL: Record<AppTerminal, string> = {
   ios: 'iOS',
   android: 'Android',
+  windows: 'Windows',
+  mac: 'Mac',
 }
+
+export const APP_TERMINAL_OPTIONS: { value: AppTerminal; label: string }[] = [
+  { value: 'ios', label: 'iOS' },
+  { value: 'android', label: 'Android' },
+  { value: 'windows', label: 'Windows' },
+  { value: 'mac', label: 'Mac' },
+]
 
 export const APP_CATEGORY_LABEL: Record<AppPackageCategory, string> = {
   super: '超签包',
@@ -59,15 +64,12 @@ export const APP_CATEGORY_LABEL: Record<AppPackageCategory, string> = {
   store: '上架包',
 }
 
-export const APP_UPDATE_LABEL: Record<AppUpdateMode, string> = {
-  optional: '弱更',
-  force: '强更',
-}
-
 export const APP_TERMINAL_FILTER_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'ios', label: 'iOS' },
   { value: 'android', label: 'Android' },
+  { value: 'windows', label: 'Windows' },
+  { value: 'mac', label: 'Mac' },
 ] as const
 
 export const APP_CATEGORY_FILTER_OPTIONS = [
@@ -88,6 +90,20 @@ const HTTP_URL_RE = /^https?:\/\/\S+$/i
 const ITMS_RE = /^itms-services:\/\/\S+$/i
 const IOS_STORE_HOSTS = ['apps.apple.com', 'itunes.apple.com']
 const ANDROID_STORE_HOSTS = ['play.google.com', 'appgallery.huawei.com', 'sj.qq.com', 'app.mi.com']
+const WINDOWS_STORE_HOSTS = ['apps.microsoft.com', 'microsoft.com']
+/** 纯聊包按终端拒收的安装包后缀 */
+const CHAT_REJECT_EXTS: Record<AppTerminal, string[]> = {
+  ios: ['.apk'],
+  android: ['.ipa'],
+  windows: ['.apk', '.ipa', '.dmg', '.pkg'],
+  mac: ['.apk', '.ipa', '.exe', '.msi'],
+}
+const CHAT_ACCEPT_HINT: Record<AppTerminal, string> = {
+  ios: 'IPA 或 H5',
+  android: 'APK 或 H5',
+  windows: 'EXE / MSI 或 H5',
+  mac: 'DMG / PKG 或 H5',
+}
 
 export function formatAppPackageNow(date = new Date()) {
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -143,6 +159,9 @@ export function validateAppPackageForm(
   form: AppPackageForm,
   mode: 'create' | 'publish' | 'edit',
   currentVersion: string | null,
+  /** 该配置历史里已用过的版本号：当前版本与历史版本号全局唯一 */
+  historyVersions: string[] = [],
+  linkChanged = false,
 ) {
   const appName = form.appName.trim()
   if (!appName) return '请输入应用/包名称'
@@ -160,6 +179,12 @@ export function validateAppPackageForm(
   if (currentVersion && mode === 'edit' && compareAppVersion(version, currentVersion) < 0) {
     return `版本号须不低于当前 v${currentVersion}`
   }
+  if (historyVersions.includes(version)) {
+    return `v${version} 已在历史版本中，版本号不能重复`
+  }
+  if (mode === 'edit' && linkChanged && version === currentVersion) {
+    return '修改下载链接须同时升级版本号，同一版本号只对应一个包'
+  }
 
   const downloadUrl = form.downloadUrl.trim()
   if (!downloadUrl) return '请输入下载链接'
@@ -174,11 +199,14 @@ export function validateAppPackageForm(
   if (form.category === 'store' && form.terminal === 'android' && !hostIn(downloadUrl, ANDROID_STORE_HOSTS)) {
     return 'Android 上架包请填写 Google Play 或华为、应用宝、小米商店链接'
   }
-  if (form.category === 'chat' && form.terminal === 'ios' && pathEnds(downloadUrl, '.apk')) {
-    return 'iOS 纯聊包请填写 IPA 或 H5 地址'
+  if (form.category === 'store' && form.terminal === 'windows' && !hostIn(downloadUrl, WINDOWS_STORE_HOSTS)) {
+    return 'Windows 上架包请填写 Microsoft Store 链接'
   }
-  if (form.category === 'chat' && form.terminal === 'android' && pathEnds(downloadUrl, '.ipa')) {
-    return 'Android 纯聊包请填写 APK 或 H5 地址'
+  if (form.category === 'store' && form.terminal === 'mac' && !hostIn(downloadUrl, IOS_STORE_HOSTS)) {
+    return 'Mac 上架包请填写 Mac App Store 链接'
+  }
+  if (form.category === 'chat' && CHAT_REJECT_EXTS[form.terminal].some((ext) => pathEnds(downloadUrl, ext))) {
+    return `${APP_TERMINAL_LABEL[form.terminal]} 纯聊包请填写 ${CHAT_ACCEPT_HINT[form.terminal]} 地址`
   }
 
   if (showsPlistField(form.terminal, form.category)) {
@@ -197,7 +225,6 @@ export function snapshotAppPackage(row: AppPackageRow): AppPackageHistory {
     versionNumber: row.versionNumber,
     downloadUrl: row.downloadUrl,
     plistUrl: row.plistUrl,
-    updateMode: row.updateMode,
     updateLog: row.updateLog,
     operator: row.operator,
     updatedAt: row.updatedAt,
@@ -213,7 +240,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '1.0.3',
     downloadUrl: 'https://dl.kkvibe.com/ios/chat/super/1.0.3/install.html',
     plistUrl: 'https://dl.kkvibe.com/ios/chat/super/1.0.3/manifest.plist',
-    updateMode: 'force',
     updateLog: '修复企业签掉签后无法安装的问题，请卸载后按新链接重装。',
     status: 'enabled',
     remarks: '企业签 1 号，旧地址已失效',
@@ -225,7 +251,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
         versionNumber: '1.0.2',
         downloadUrl: 'https://dl.kkvibe.com/ios/chat/super/1.0.2/install.html',
         plistUrl: 'https://dl.kkvibe.com/ios/chat/super/1.0.2/manifest.plist',
-        updateMode: 'optional',
         updateLog: '优化启动速度。',
         operator: '技术-陈舟',
         updatedAt: '2026-09-18 11:20:06',
@@ -235,7 +260,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
         versionNumber: '1.0.1',
         downloadUrl: 'https://dl.kkvibe.com/ios/chat/super/1.0.1/install.html',
         plistUrl: 'itms-services://?action=download-manifest&url=https://dl.kkvibe.com/ios/chat/super/1.0.1/manifest.plist',
-        updateMode: 'optional',
         updateLog: '首个超签包。',
         operator: '技术-陈舟',
         updatedAt: '2026-08-02 09:12:40',
@@ -250,7 +274,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '2.4.0',
     downloadUrl: 'https://dl.kkvibe.com/android/chat/pure/jingang-chat-2.4.0.apk',
     plistUrl: '',
-    updateMode: 'optional',
     updateLog: '纯聊渠道包，隐藏娱乐入口。',
     status: 'enabled',
     remarks: '推广渠道 A',
@@ -262,7 +285,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
         versionNumber: '2.3.0',
         downloadUrl: 'https://dl.kkvibe.com/android/chat/pure/jingang-chat-2.3.0.apk',
         plistUrl: '',
-        updateMode: 'optional',
         updateLog: '修复消息重复。',
         operator: '运营-林夏',
         updatedAt: '2026-09-30 14:08:22',
@@ -277,7 +299,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '3.2.1',
     downloadUrl: 'https://apps.apple.com/cn/app/id6471003210',
     plistUrl: '',
-    updateMode: 'optional',
     updateLog: 'App Store 在架版本。',
     status: 'enabled',
     remarks: '',
@@ -293,8 +314,7 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '3.2.0',
     downloadUrl: 'https://play.google.com/store/apps/details?id=com.kkvibe.sport',
     plistUrl: '',
-    updateMode: 'force',
-    updateLog: 'Google Play 强更，修复支付回调。',
+    updateLog: 'Google Play 版本，修复支付回调。',
     status: 'enabled',
     remarks: '国内渠道另有应用宝包，暂未启用',
     updatedAt: '2026-10-19 18:22:41',
@@ -305,7 +325,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
         versionNumber: '3.1.0',
         downloadUrl: 'https://sj.qq.com/appdetail/com.kkvibe.sport',
         plistUrl: '',
-        updateMode: 'optional',
         updateLog: '应用宝上架包。',
         operator: '运营-林夏',
         updatedAt: '2026-08-11 09:00:12',
@@ -320,7 +339,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '1.8.6',
     downloadUrl: 'https://dl.kkvibe.com/ios/live/pure/jingang-live-1.8.6.ipa',
     plistUrl: '',
-    updateMode: 'optional',
     updateLog: '直播纯聊包，当前渠道暂停投放。',
     status: 'disabled',
     remarks: '渠道暂停',
@@ -336,7 +354,6 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '1.8.5',
     downloadUrl: 'https://h5.kkvibe.com/download/live-chat',
     plistUrl: '',
-    updateMode: 'optional',
     updateLog: 'H5 落地页分发 APK。',
     status: 'enabled',
     remarks: '',
@@ -352,12 +369,66 @@ const MOCK_APP_PACKAGE_ROWS: AppPackageRow[] = [
     versionNumber: '1.1.0',
     downloadUrl: 'https://app.mi.com/details?id=com.kkvibe.lottery',
     plistUrl: '',
-    updateMode: 'force',
     updateLog: '小米商店包，审核中先禁用。',
     status: 'disabled',
     remarks: '待商店审核通过后再启用',
     updatedAt: '2026-10-08 19:05:27',
     operator: '财务-何清',
+    history: [],
+  },
+  {
+    id: 'pkg_chat_windows_chat',
+    appName: '金刚聊天',
+    terminal: 'windows',
+    category: 'chat',
+    versionNumber: '1.2.0',
+    downloadUrl: 'https://dl.kkvibe.com/desktop/windows/jingang-chat-setup-1.2.0.exe',
+    plistUrl: '',
+    updateLog: '桌面端支持多开窗口与文件拖拽发送。',
+    status: 'enabled',
+    remarks: '官网下载页',
+    updatedAt: '2026-11-05 15:20:33',
+    operator: '技术-陈舟',
+    history: [
+      {
+        id: 'his_chat_windows_110',
+        versionNumber: '1.1.0',
+        downloadUrl: 'https://dl.kkvibe.com/desktop/windows/jingang-chat-setup-1.1.0.exe',
+        plistUrl: '',
+        updateLog: '首个 Windows 桌面版。',
+        operator: '技术-陈舟',
+        updatedAt: '2026-09-22 10:05:41',
+      },
+    ],
+  },
+  {
+    id: 'pkg_chat_mac_chat',
+    appName: '金刚聊天',
+    terminal: 'mac',
+    category: 'chat',
+    versionNumber: '1.2.0',
+    downloadUrl: 'https://dl.kkvibe.com/desktop/mac/jingang-chat-1.2.0-universal.dmg',
+    plistUrl: '',
+    updateLog: '支持 Apple 芯片与 Intel 通用包。',
+    status: 'enabled',
+    remarks: '',
+    updatedAt: '2026-11-05 15:22:10',
+    operator: '技术-陈舟',
+    history: [],
+  },
+  {
+    id: 'pkg_chat_mac_store',
+    appName: '金刚聊天',
+    terminal: 'mac',
+    category: 'store',
+    versionNumber: '1.1.0',
+    downloadUrl: 'https://apps.apple.com/cn/app/id6472001120?mt=12',
+    plistUrl: '',
+    updateLog: 'Mac App Store 审核中，先禁用。',
+    status: 'disabled',
+    remarks: '审核通过后启用',
+    updatedAt: '2026-11-03 18:40:02',
+    operator: '运营-林夏',
     history: [],
   },
 ]

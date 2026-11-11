@@ -8,8 +8,8 @@ import {
   APP_CATEGORY_LABEL,
   APP_STATUS_FILTER_OPTIONS,
   APP_TERMINAL_FILTER_OPTIONS,
+  APP_TERMINAL_OPTIONS,
   APP_TERMINAL_LABEL,
-  APP_UPDATE_LABEL,
   CURRENT_APP_PACKAGE_OPERATOR,
   appPackageIdentity,
   cloneAppPackageRows,
@@ -22,7 +22,6 @@ import {
   type AppPackageRow,
   type AppPackageStatus,
   type AppTerminal,
-  type AppUpdateMode,
 } from '../../constants/appPackageDownload'
 import { APP_PACKAGE_DOWNLOAD_ANNOT_MAP } from '../../constants/appPackageDownloadSpec'
 import '../../styles/pc-wireframe.css'
@@ -67,7 +66,6 @@ function emptyForm(): AppPackageForm {
     versionNumber: '',
     downloadUrl: '',
     plistUrl: '',
-    updateMode: 'optional',
     updateLog: '',
     status: 'enabled',
     remarks: '',
@@ -116,7 +114,6 @@ function openEdit(row: AppPackageRow) {
     versionNumber: row.versionNumber,
     downloadUrl: row.downloadUrl,
     plistUrl: row.plistUrl,
-    updateMode: row.updateMode,
     updateLog: row.updateLog,
     status: row.status,
     remarks: row.remarks,
@@ -139,7 +136,6 @@ function applyFormToRow(target: AppPackageRow, pushHistory: boolean) {
   target.versionNumber = form.value.versionNumber.trim()
   target.downloadUrl = form.value.downloadUrl.trim()
   target.plistUrl = plistVisible.value ? form.value.plistUrl.trim() : ''
-  target.updateMode = form.value.updateMode
   target.updateLog = form.value.updateLog.trim()
   target.status = form.value.status
   target.remarks = form.value.remarks.trim()
@@ -171,7 +167,6 @@ function commitSave() {
       versionNumber: form.value.versionNumber.trim(),
       downloadUrl: form.value.downloadUrl.trim(),
       plistUrl: plistVisible.value ? form.value.plistUrl.trim() : '',
-      updateMode: form.value.updateMode,
       updateLog: form.value.updateLog.trim(),
       status: form.value.status,
       remarks: form.value.remarks.trim(),
@@ -199,12 +194,18 @@ function requestSave() {
     formError.value = '该应用、终端、包分类已有配置，请直接编辑那一条'
     return
   }
-  const currentVersion = saveMode.value === 'publish'
-    ? matchedRow.value?.versionNumber ?? null
+  const baseRow = saveMode.value === 'publish'
+    ? matchedRow.value
     : saveMode.value === 'edit'
-      ? rows.value.find((row) => row.id === editingId.value)?.versionNumber ?? null
+      ? rows.value.find((row) => row.id === editingId.value) ?? null
       : null
-  const message = validateAppPackageForm(form.value, saveMode.value, currentVersion)
+  const message = validateAppPackageForm(
+    form.value,
+    saveMode.value,
+    baseRow?.versionNumber ?? null,
+    baseRow?.history.map((item) => item.versionNumber) ?? [],
+    form.value.downloadUrl.trim() !== originalDownloadUrl.value.trim(),
+  )
   formError.value = message
   if (message) return
 
@@ -311,13 +312,12 @@ function requestRollback(historyId: string) {
   if (!row) return
   const item = row.history.find((history) => history.id === historyId)
   if (!item) return
-  openConfirm('回滚版本', `确定回滚到 v${item.versionNumber} 吗？当前版本会写入历史。`, '回滚', () => {
+  openConfirm('回滚版本', `确定回滚到 v${item.versionNumber} 吗？当前 v${row.versionNumber} 会写入历史，列表版本号改为 v${item.versionNumber}。`, '回滚', () => {
     const current = snapshotAppPackage(row)
     row.history = [current, ...row.history.filter((history) => history.id !== historyId)]
     row.versionNumber = item.versionNumber
     row.downloadUrl = item.downloadUrl
     row.plistUrl = item.plistUrl
-    row.updateMode = item.updateMode
     row.updateLog = item.updateLog
     row.status = 'enabled'
     row.updatedAt = formatAppPackageNow()
@@ -336,9 +336,6 @@ function setCategory(value: AppPackageCategory) {
   formError.value = ''
 }
 
-function setUpdateMode(value: AppUpdateMode) {
-  form.value.updateMode = value
-}
 </script>
 
 <template>
@@ -423,7 +420,6 @@ function setUpdateMode(value: AppUpdateMode) {
                   :items="[...APP_PACKAGE_DOWNLOAD_ANNOT_MAP.download.items]"
                 />
               </th>
-              <th class="wf-th">更新模式</th>
               <th class="wf-th wf-th--with-spec">
                 历史版本
                 <WfSpecAnnot
@@ -453,7 +449,7 @@ function setUpdateMode(value: AppUpdateMode) {
           </thead>
           <tbody>
             <tr v-if="filteredRows.length === 0">
-              <td colspan="10" class="wf-td wf-td--empty">暂无符合条件的下载配置</td>
+              <td colspan="9" class="wf-td wf-td--empty">暂无符合条件的下载配置</td>
             </tr>
             <tr v-for="row in filteredRows" :key="row.id">
               <td class="wf-td">
@@ -478,11 +474,6 @@ function setUpdateMode(value: AppUpdateMode) {
                   <span>{{ row.downloadUrl }}</span>
                   <button type="button" class="wf-link-action" @click="copyDownload(row.downloadUrl)">复制</button>
                 </div>
-              </td>
-              <td class="wf-td">
-                <span class="wf-app-pkg-mode" :class="`wf-app-pkg-mode--${row.updateMode}`">
-                  {{ APP_UPDATE_LABEL[row.updateMode] }}
-                </span>
               </td>
               <td class="wf-td wf-td--nowrap">
                 <button
@@ -554,8 +545,10 @@ function setUpdateMode(value: AppUpdateMode) {
             <div class="wf-form-row">
               <span class="wf-form-row__label wf-form-row__label--required">终端</span>
               <div class="wf-app-pkg-radios">
-                <label><input :checked="form.terminal === 'ios'" type="radio" name="pkg-terminal" @change="setTerminal('ios')" /> iOS</label>
-                <label><input :checked="form.terminal === 'android'" type="radio" name="pkg-terminal" @change="setTerminal('android')" /> Android</label>
+                <label v-for="opt in APP_TERMINAL_OPTIONS" :key="opt.value">
+                  <input :checked="form.terminal === opt.value" type="radio" name="pkg-terminal" @change="setTerminal(opt.value)" />
+                  {{ opt.label }}
+                </label>
               </div>
             </div>
             <div class="wf-form-row">
@@ -566,7 +559,7 @@ function setUpdateMode(value: AppUpdateMode) {
                   <label><input :checked="form.category === 'chat'" type="radio" name="pkg-category" @change="setCategory('chat')" /> 纯聊包</label>
                   <label><input :checked="form.category === 'store'" type="radio" name="pkg-category" @change="setCategory('store')" /> 上架包</label>
                 </div>
-                <p v-if="form.category === 'super' && form.terminal === 'android'" class="wf-form-row__hint">超签包只适用于 iOS。</p>
+                <p v-if="form.category === 'super' && form.terminal !== 'ios'" class="wf-form-row__hint">超签包只适用于 iOS。</p>
                 <p v-else-if="saveMode === 'publish' && matchedRow" class="wf-form-row__hint">
                   该组合已有 v{{ matchedRow.versionNumber }}，保存将发布为新版本并覆盖。
                 </p>
@@ -588,15 +581,8 @@ function setUpdateMode(value: AppUpdateMode) {
               </div>
             </div>
             <div class="wf-form-row">
-              <span class="wf-form-row__label wf-form-row__label--required">更新模式</span>
-              <div class="wf-app-pkg-radios">
-                <label><input :checked="form.updateMode === 'optional'" type="radio" name="pkg-update" @change="setUpdateMode('optional')" /> 弱更新</label>
-                <label><input :checked="form.updateMode === 'force'" type="radio" name="pkg-update" @change="setUpdateMode('force')" /> 强更新</label>
-              </div>
-            </div>
-            <div class="wf-form-row">
               <label class="wf-form-row__label">更新日志</label>
-              <textarea v-model="form.updateLog" class="wf-input wf-app-pkg-textarea" rows="3" placeholder="客户端检查更新时展示的文案" />
+              <textarea v-model="form.updateLog" class="wf-input wf-app-pkg-textarea" rows="3" placeholder="下载页展示的版本说明，如本次新增功能" />
             </div>
             <div class="wf-form-row">
               <span class="wf-form-row__label">状态</span>
@@ -634,13 +620,16 @@ function setUpdateMode(value: AppUpdateMode) {
             <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeHistory">×</button>
           </div>
           <div class="wf-modal__body">
+            <p class="wf-app-pkg-history-current">
+              当前下载版本：<strong>v{{ historyRow.versionNumber }}</strong>
+              <span class="wf-muted">（{{ historyRow.downloadUrl }}）</span>
+            </p>
             <div class="wf-table-wrap">
               <table class="wf-table">
                 <thead>
                   <tr>
                     <th class="wf-th">版本号</th>
                     <th class="wf-th">下载链接</th>
-                    <th class="wf-th">更新模式</th>
                     <th class="wf-th">更新日志</th>
                     <th class="wf-th">操作人</th>
                     <th class="wf-th">更新时间</th>
@@ -649,12 +638,11 @@ function setUpdateMode(value: AppUpdateMode) {
                 </thead>
                 <tbody>
                   <tr v-if="historyRow.history.length === 0">
-                    <td colspan="7" class="wf-td wf-td--empty">暂无历史版本</td>
+                    <td colspan="6" class="wf-td wf-td--empty">暂无历史版本</td>
                   </tr>
                   <tr v-for="item in historyRow.history" :key="item.id">
                     <td class="wf-td wf-td--nowrap">v{{ item.versionNumber }}</td>
                     <td class="wf-td">{{ item.downloadUrl }}</td>
-                    <td class="wf-td">{{ APP_UPDATE_LABEL[item.updateMode] }}</td>
                     <td class="wf-td">{{ item.updateLog || '—' }}</td>
                     <td class="wf-td">{{ item.operator }}</td>
                     <td class="wf-td wf-td--nowrap">{{ item.updatedAt }}</td>

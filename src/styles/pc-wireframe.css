@@ -1436,8 +1436,7 @@
 }
 
 .wf-app-pkg-terminal,
-.wf-app-pkg-cat,
-.wf-app-pkg-mode {
+.wf-app-pkg-cat {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 2px;
@@ -1458,6 +1457,18 @@
   border-color: #b7eb8f;
 }
 
+.wf-app-pkg-terminal--windows {
+  color: #0958d9;
+  background: #e6f4ff;
+  border-color: #91caff;
+}
+
+.wf-app-pkg-terminal--mac {
+  color: #531dab;
+  background: #f9f0ff;
+  border-color: #d3adf7;
+}
+
 .wf-app-pkg-cat--super {
   color: #cf1322;
   background: #fff1f0;
@@ -1476,16 +1487,12 @@
   border-color: #ffd591;
 }
 
-.wf-app-pkg-mode--force {
-  color: #cf1322;
-  background: #fff1f0;
-  border-color: #ffa39e;
-}
-
-.wf-app-pkg-mode--optional {
-  color: #0958d9;
-  background: #e6f4ff;
-  border-color: #91caff;
+.wf-app-pkg-history-current {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  background: var(--pc-bg-table-head);
+  font-size: 13px;
+  word-break: break-word;
 }
 
 .wf-app-pkg-url {
