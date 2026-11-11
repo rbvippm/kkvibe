@@ -1408,7 +1408,60 @@
 
 /* ---------- App 包下载配置 ---------- */
 .wf-table--app-pkg {
+  table-layout: auto;
   min-width: 1280px;
+}
+
+.wf-app-pkg-slot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-modal.wf-app-pkg-history-modal {
+  max-width: 960px;
+}
+
+.wf-app-pkg-history-col--version { width: 11%; }
+.wf-app-pkg-history-col--url { width: 28%; }
+.wf-app-pkg-history-col--log { width: 22%; }
+.wf-app-pkg-history-col--operator { width: 11%; }
+.wf-app-pkg-history-col--time { width: 15%; }
+
+.wf-app-pkg-history-time span {
+  display: inline-block;
+  white-space: nowrap;
+}
+.wf-app-pkg-history-col--op { width: 13%; }
+
+.wf-app-pkg-history-filter {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wf-app-pkg-history-pages {
+  gap: 8px;
+  height: auto;
+  margin-top: 12px;
+  padding: 10px 12px;
+}
+
+.wf-table--app-pkg-history .wf-td--nowrap,
+.wf-table--app-pkg .wf-td--nowrap,
+.wf-table--app-pkg .wf-app-pkg-slot {
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+
+.wf-app-pkg-form .wf-input:disabled {
+  color: var(--pc-text-secondary, #8c8c8c);
+  background: var(--pc-bg-table-head);
+  cursor: not-allowed;
+}
+
+.wf-app-pkg-row--empty .wf-td {
+  background: #fafafa;
 }
 
 .wf-td--nowrap {
@@ -1513,7 +1566,7 @@
 }
 
 .wf-table--app-pkg .wf-app-pkg-url {
-  min-width: 280px;
+  min-width: 260px;
 }
 
 .wf-app-pkg-url span {

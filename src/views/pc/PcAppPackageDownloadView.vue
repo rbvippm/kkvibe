@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
@@ -8,13 +8,11 @@ import {
   APP_CATEGORY_LABEL,
   APP_STATUS_FILTER_OPTIONS,
   APP_TERMINAL_FILTER_OPTIONS,
-  APP_TERMINAL_OPTIONS,
   APP_TERMINAL_LABEL,
   CURRENT_APP_PACKAGE_OPERATOR,
-  appPackageIdentity,
   cloneAppPackageRows,
   formatAppPackageNow,
-  showsPlistField,
+  resetAppPackageSlot,
   snapshotAppPackage,
   validateAppPackageForm,
   type AppPackageCategory,
@@ -31,7 +29,7 @@ const rows = ref<AppPackageRow[]>(cloneAppPackageRows())
 const filter = ref({
   terminal: '' as '' | AppTerminal,
   category: '' as '' | AppPackageCategory,
-  status: '' as '' | AppPackageStatus,
+  status: '' as '' | AppPackageStatus | 'unconfigured',
   keyword: '',
 })
 const appliedFilter = ref({ ...filter.value })
@@ -42,9 +40,10 @@ const filteredRows = computed(() => {
   return rows.value.filter((row) => {
     if (current.terminal && row.terminal !== current.terminal) return false
     if (current.category && row.category !== current.category) return false
-    if (current.status && row.status !== current.status) return false
+    if (current.status === 'unconfigured' && row.configured) return false
+    if (current.status && current.status !== 'unconfigured' && (!row.configured || row.status !== current.status)) return false
     if (!keyword) return true
-    const haystack = [row.appName, row.versionNumber, row.downloadUrl, row.plistUrl].join(' ').toLowerCase()
+    const haystack = [row.appName, row.versionNumber, row.downloadUrl].join(' ').toLowerCase()
     return haystack.includes(keyword)
   })
 })
@@ -58,67 +57,52 @@ function resetFilter() {
   appliedFilter.value = { ...filter.value }
 }
 
-function emptyForm(): AppPackageForm {
-  return {
-    appName: '',
-    terminal: 'ios',
-    category: 'chat',
-    versionNumber: '',
-    downloadUrl: '',
-    plistUrl: '',
-    updateLog: '',
-    status: 'enabled',
-    remarks: '',
-  }
+function slotLabel(row: AppPackageRow) {
+  return `${APP_TERMINAL_LABEL[row.terminal]}${APP_CATEGORY_LABEL[row.category]}`
 }
 
 const formVisible = ref(false)
 const formMode = ref<'add' | 'edit'>('add')
-const editingId = ref<string | null>(null)
-const form = ref<AppPackageForm>(emptyForm())
+const formRow = ref<AppPackageRow | null>(null)
+const form = ref<AppPackageForm>({
+  appName: '',
+  versionNumber: '',
+  downloadUrl: '',
+  updateLog: '',
+  status: 'enabled',
+  remarks: '',
+})
 const formError = ref('')
-const originalDownloadUrl = ref('')
 
-const matchedRow = computed(() => {
-  const identity = appPackageIdentity({
-    appName: form.value.appName,
-    terminal: form.value.terminal,
-    category: form.value.category,
-  })
-  return rows.value.find((row) => appPackageIdentity(row) === identity && row.id !== editingId.value) ?? null
-})
+const isIosSuper = computed(() => formRow.value?.terminal === 'ios' && formRow.value.category === 'super')
 
-const saveMode = computed(() => {
-  if (formMode.value === 'edit') return 'edit' as const
-  return matchedRow.value ? 'publish' as const : 'create' as const
-})
-
-const plistVisible = computed(() => showsPlistField(form.value.terminal, form.value.category))
-
-function openAdd() {
+function openAdd(row: AppPackageRow) {
   formMode.value = 'add'
-  editingId.value = null
-  form.value = emptyForm()
-  originalDownloadUrl.value = ''
+  formRow.value = row
+  form.value = {
+    appName: row.appName,
+    versionNumber: '',
+    downloadUrl: '',
+    updateLog: '',
+    status: 'enabled',
+    remarks: row.remarks,
+  }
   formError.value = ''
   formVisible.value = true
 }
 
 function openEdit(row: AppPackageRow) {
+  if (!row.configured) return
   formMode.value = 'edit'
-  editingId.value = row.id
+  formRow.value = row
   form.value = {
     appName: row.appName,
-    terminal: row.terminal,
-    category: row.category,
     versionNumber: row.versionNumber,
     downloadUrl: row.downloadUrl,
-    plistUrl: row.plistUrl,
     updateLog: row.updateLog,
     status: row.status,
     remarks: row.remarks,
   }
-  originalDownloadUrl.value = row.downloadUrl
   formError.value = ''
   formVisible.value = true
 }
@@ -128,100 +112,46 @@ function closeForm() {
   formVisible.value = false
 }
 
-function applyFormToRow(target: AppPackageRow, pushHistory: boolean) {
-  if (pushHistory) target.history = [snapshotAppPackage(target), ...target.history]
-  target.appName = form.value.appName.trim()
-  target.terminal = form.value.terminal
-  target.category = form.value.category
-  target.versionNumber = form.value.versionNumber.trim()
-  target.downloadUrl = form.value.downloadUrl.trim()
-  target.plistUrl = plistVisible.value ? form.value.plistUrl.trim() : ''
-  target.updateLog = form.value.updateLog.trim()
-  target.status = form.value.status
-  target.remarks = form.value.remarks.trim()
-  target.updatedAt = formatAppPackageNow()
-  target.operator = CURRENT_APP_PACKAGE_OPERATOR
-  if (target.status === 'enabled') {
-    const identity = appPackageIdentity(target)
-    rows.value.forEach((row) => {
-      if (row.id !== target.id && row.status === 'enabled' && appPackageIdentity(row) === identity) {
-        row.status = 'disabled'
-        row.updatedAt = target.updatedAt
-        row.operator = CURRENT_APP_PACKAGE_OPERATOR
-      }
-    })
-  }
-}
-
 function commitSave() {
-  const mode = saveMode.value
-  const versionChanged = (current: string) => form.value.versionNumber.trim() !== current
-  const urlChanged = form.value.downloadUrl.trim() !== originalDownloadUrl.value.trim()
-
-  if (mode === 'create') {
-    rows.value.unshift({
-      id: `pkg_${Date.now()}`,
-      appName: form.value.appName.trim(),
-      terminal: form.value.terminal,
-      category: form.value.category,
-      versionNumber: form.value.versionNumber.trim(),
-      downloadUrl: form.value.downloadUrl.trim(),
-      plistUrl: plistVisible.value ? form.value.plistUrl.trim() : '',
-      updateLog: form.value.updateLog.trim(),
-      status: form.value.status,
-      remarks: form.value.remarks.trim(),
-      updatedAt: formatAppPackageNow(),
-      operator: CURRENT_APP_PACKAGE_OPERATOR,
-      history: [],
-    })
-    showPcToast('已新增下载配置')
-  } else if (mode === 'publish' && matchedRow.value) {
-    applyFormToRow(matchedRow.value, true)
-    showPcToast('已发布新版本')
-  } else if (editingId.value) {
-    const target = rows.value.find((row) => row.id === editingId.value)
-    if (target) {
-      const shouldHistory = versionChanged(target.versionNumber) || urlChanged
-      applyFormToRow(target, shouldHistory)
-    }
-    showPcToast('保存成功')
+  const row = formRow.value
+  if (!row) return
+  const isAdd = formMode.value === 'add'
+  if (isAdd) {
+    if (row.configured) row.history = [snapshotAppPackage(row), ...row.history]
+    row.configured = true
+    row.versionNumber = form.value.versionNumber.trim()
+    row.downloadUrl = form.value.downloadUrl.trim()
   }
+  row.appName = form.value.appName.trim()
+  row.updateLog = form.value.updateLog.trim()
+  row.status = form.value.status
+  row.remarks = form.value.remarks.trim()
+  row.updatedAt = formatAppPackageNow()
+  row.operator = CURRENT_APP_PACKAGE_OPERATOR
+  showPcToast(isAdd ? `已新增 v${row.versionNumber}` : '保存成功')
   formVisible.value = false
 }
 
 function requestSave() {
-  if (formMode.value === 'edit' && matchedRow.value) {
-    formError.value = '该应用、终端、包分类已有配置，请直接编辑那一条'
-    return
-  }
-  const baseRow = saveMode.value === 'publish'
-    ? matchedRow.value
-    : saveMode.value === 'edit'
-      ? rows.value.find((row) => row.id === editingId.value) ?? null
-      : null
+  const row = formRow.value
+  if (!row) return
   const message = validateAppPackageForm(
     form.value,
-    saveMode.value,
-    baseRow?.versionNumber ?? null,
-    baseRow?.history.map((item) => item.versionNumber) ?? [],
-    form.value.downloadUrl.trim() !== originalDownloadUrl.value.trim(),
+    row,
+    formMode.value,
+    row.configured ? row.versionNumber : null,
+    row.history.map((item) => item.versionNumber),
   )
   formError.value = message
   if (message) return
 
-  if (saveMode.value === 'publish' && matchedRow.value) {
-    const row = matchedRow.value
+  if (formMode.value === 'add' && row.configured) {
     openConfirm(
-      '发布新版本',
-      `「${row.appName} / ${APP_TERMINAL_LABEL[row.terminal]} / ${APP_CATEGORY_LABEL[row.category]}」已有 v${row.versionNumber}。发布新版本将覆盖当前配置，并把旧版本写入历史。`,
-      '发布新版本',
+      '新增版本',
+      `「${slotLabel(row)}」当前为 v${row.versionNumber}。新增 v${form.value.versionNumber.trim()} 后将替换为当前下载版本，v${row.versionNumber} 写入历史。`,
+      '确认新增',
       commitSave,
     )
-    return
-  }
-
-  if (saveMode.value === 'edit' && form.value.downloadUrl.trim() !== originalDownloadUrl.value.trim()) {
-    openConfirm('修改下载链接', '确定要修改下载链接吗？线上用户将按新链接下载。', '确认修改', commitSave)
     return
   }
 
@@ -250,6 +180,7 @@ function runConfirm() {
 }
 
 function requestToggle(row: AppPackageRow) {
+  if (!row.configured) return
   if (row.status === 'enabled') {
     openConfirm(
       '停用下载配置',
@@ -267,24 +198,29 @@ function requestToggle(row: AppPackageRow) {
   row.status = 'enabled'
   row.updatedAt = formatAppPackageNow()
   row.operator = CURRENT_APP_PACKAGE_OPERATOR
-  const identity = appPackageIdentity(row)
-  rows.value.forEach((item) => {
-    if (item.id !== row.id && item.status === 'enabled' && appPackageIdentity(item) === identity) {
-      item.status = 'disabled'
-      item.updatedAt = row.updatedAt
-      item.operator = CURRENT_APP_PACKAGE_OPERATOR
-    }
-  })
   showPcToast('已启用该包')
 }
 
+function deleteDisabledReason(row: AppPackageRow) {
+  if (!row.configured) return '该包位未配置'
+  if (row.status === 'enabled') return '请先关闭开关再删除'
+  return ''
+}
+
 function requestDelete(row: AppPackageRow) {
-  if (row.history.length) return
-  openConfirm('删除下载配置', `确定删除「${row.appName}」的${APP_TERMINAL_LABEL[row.terminal]}${APP_CATEGORY_LABEL[row.category]}吗？删除后不可恢复。`, '删除', () => {
-    rows.value = rows.value.filter((item) => item.id !== row.id)
-    if (historyRow.value?.id === row.id) historyRow.value = null
-    showPcToast('已删除')
-  })
+  if (deleteDisabledReason(row)) return
+  openConfirm(
+    '删除下载配置',
+    `确定删除「${slotLabel(row)}」的当前配置吗？v${row.versionNumber} 会写入历史，该行恢复为未配置。`,
+    '删除',
+    () => {
+      row.history = [snapshotAppPackage(row), ...row.history]
+      resetAppPackageSlot(row)
+      row.updatedAt = formatAppPackageNow()
+      row.operator = CURRENT_APP_PACKAGE_OPERATOR
+      showPcToast('已删除')
+    },
+  )
 }
 
 async function copyDownload(url: string) {
@@ -297,9 +233,50 @@ async function copyDownload(url: string) {
 }
 
 const historyRow = ref<AppPackageRow | null>(null)
+const HISTORY_PAGE_SIZE = 5
+const historyFilter = ref({ version: '', log: '' })
+const historyApplied = ref({ version: '', log: '' })
+const historyPage = ref(1)
+
+const historyFiltered = computed(() => {
+  const list = historyRow.value?.history ?? []
+  const version = historyApplied.value.version.trim().toLowerCase().replace(/^v/, '')
+  const log = historyApplied.value.log.trim().toLowerCase()
+  return list.filter((item) => {
+    if (version && !item.versionNumber.toLowerCase().includes(version)) return false
+    if (log && !item.updateLog.toLowerCase().includes(log)) return false
+    return true
+  })
+})
+const historyTotalPages = computed(() => Math.max(1, Math.ceil(historyFiltered.value.length / HISTORY_PAGE_SIZE)))
+const historyPageItems = computed(() => {
+  const start = (historyPage.value - 1) * HISTORY_PAGE_SIZE
+  return historyFiltered.value.slice(start, start + HISTORY_PAGE_SIZE)
+})
+const historyPageNumbers = computed(() => Array.from({ length: historyTotalPages.value }, (_, index) => index + 1))
+
+watch(historyTotalPages, (last) => {
+  if (historyPage.value > last) historyPage.value = last
+})
+
+function applyHistoryFilter() {
+  historyApplied.value = { ...historyFilter.value }
+  historyPage.value = 1
+}
+
+function resetHistoryFilter() {
+  historyFilter.value = { version: '', log: '' }
+  applyHistoryFilter()
+}
+
+function goHistoryPage(page: number) {
+  if (page < 1 || page > historyTotalPages.value) return
+  historyPage.value = page
+}
 
 function openHistory(row: AppPackageRow) {
   historyRow.value = row
+  resetHistoryFilter()
 }
 
 function closeHistory() {
@@ -312,12 +289,15 @@ function requestRollback(historyId: string) {
   if (!row) return
   const item = row.history.find((history) => history.id === historyId)
   if (!item) return
-  openConfirm('回滚版本', `确定回滚到 v${item.versionNumber} 吗？当前 v${row.versionNumber} 会写入历史，列表版本号改为 v${item.versionNumber}。`, '回滚', () => {
-    const current = snapshotAppPackage(row)
-    row.history = [current, ...row.history.filter((history) => history.id !== historyId)]
+  const message = row.configured
+    ? `确定回滚到 v${item.versionNumber} 吗？当前 v${row.versionNumber} 会写入历史，列表版本号改为 v${item.versionNumber}。`
+    : `确定回滚到 v${item.versionNumber} 吗？该包位将恢复为 v${item.versionNumber} 并启用。`
+  openConfirm('回滚版本', message, '回滚', () => {
+    const rest = row.history.filter((history) => history.id !== historyId)
+    row.history = row.configured ? [snapshotAppPackage(row), ...rest] : rest
+    row.configured = true
     row.versionNumber = item.versionNumber
     row.downloadUrl = item.downloadUrl
-    row.plistUrl = item.plistUrl
     row.updateLog = item.updateLog
     row.status = 'enabled'
     row.updatedAt = formatAppPackageNow()
@@ -325,17 +305,6 @@ function requestRollback(historyId: string) {
     showPcToast(`已回滚至 v${item.versionNumber}`)
   })
 }
-
-function setTerminal(value: AppTerminal) {
-  form.value.terminal = value
-  formError.value = ''
-}
-
-function setCategory(value: AppPackageCategory) {
-  form.value.category = value
-  formError.value = ''
-}
-
 </script>
 
 <template>
@@ -394,23 +363,21 @@ function setCategory(value: AppPackageCategory) {
           <button type="button" class="wf-btn wf-btn--primary" @click="applyFilter">搜索</button>
           <button type="button" class="wf-btn wf-btn--danger" @click="resetFilter">清除</button>
         </span>
-        <span class="wf-toolbar__actions wf-action-with-spec">
-          <button type="button" class="wf-btn wf-btn--add" @click="openAdd">新增下载配置</button>
-          <WfSpecAnnot
-            :no="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.add.no"
-            :title="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.add.title"
-            :items="[...APP_PACKAGE_DOWNLOAD_ANNOT_MAP.add.items]"
-          />
-        </span>
       </div>
 
       <div class="wf-table-wrap">
         <table class="wf-table wf-table--app-pkg">
           <thead>
             <tr>
+              <th class="wf-th wf-th--with-spec">
+                终端 / 包分类
+                <WfSpecAnnot
+                  :no="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.slots.no"
+                  :title="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.slots.title"
+                  :items="[...APP_PACKAGE_DOWNLOAD_ANNOT_MAP.slots.items]"
+                />
+              </th>
               <th class="wf-th">应用/包名称</th>
-              <th class="wf-th">终端</th>
-              <th class="wf-th">包分类</th>
               <th class="wf-th">版本号</th>
               <th class="wf-th wf-th--with-spec">
                 下载链接
@@ -449,31 +416,36 @@ function setCategory(value: AppPackageCategory) {
           </thead>
           <tbody>
             <tr v-if="filteredRows.length === 0">
-              <td colspan="9" class="wf-td wf-td--empty">暂无符合条件的下载配置</td>
+              <td colspan="8" class="wf-td wf-td--empty">暂无符合条件的下载配置</td>
             </tr>
-            <tr v-for="row in filteredRows" :key="row.id">
+            <tr v-for="row in filteredRows" :key="row.id" :class="{ 'wf-app-pkg-row--empty': !row.configured }">
               <td class="wf-td">
-                <div class="wf-app-pkg-name">
+                <div class="wf-app-pkg-slot">
+                  <span class="wf-app-pkg-terminal" :class="`wf-app-pkg-terminal--${row.terminal}`">
+                    {{ APP_TERMINAL_LABEL[row.terminal] }}
+                  </span>
+                  <span class="wf-app-pkg-cat" :class="`wf-app-pkg-cat--${row.category}`">
+                    {{ APP_CATEGORY_LABEL[row.category] }}
+                  </span>
+                </div>
+              </td>
+              <td class="wf-td">
+                <div v-if="row.configured" class="wf-app-pkg-name">
                   <span class="wf-app-pkg-mark">{{ row.appName.slice(0, 1) }}</span>
                   <span>{{ row.appName }}</span>
                 </div>
+                <span v-else class="wf-muted">未配置</span>
+              </td>
+              <td class="wf-td wf-td--nowrap">
+                <template v-if="row.configured">v{{ row.versionNumber }}</template>
+                <span v-else class="wf-muted">—</span>
               </td>
               <td class="wf-td">
-                <span class="wf-app-pkg-terminal" :class="`wf-app-pkg-terminal--${row.terminal}`">
-                  {{ APP_TERMINAL_LABEL[row.terminal] }}
-                </span>
-              </td>
-              <td class="wf-td">
-                <span class="wf-app-pkg-cat" :class="`wf-app-pkg-cat--${row.category}`">
-                  {{ APP_CATEGORY_LABEL[row.category] }}
-                </span>
-              </td>
-              <td class="wf-td wf-td--nowrap">v{{ row.versionNumber }}</td>
-              <td class="wf-td">
-                <div class="wf-app-pkg-url">
+                <div v-if="row.configured" class="wf-app-pkg-url">
                   <span>{{ row.downloadUrl }}</span>
                   <button type="button" class="wf-link-action" @click="copyDownload(row.downloadUrl)">复制</button>
                 </div>
+                <span v-else class="wf-muted">—</span>
               </td>
               <td class="wf-td wf-td--nowrap">
                 <button
@@ -488,6 +460,7 @@ function setCategory(value: AppPackageCategory) {
               </td>
               <td class="wf-td">
                 <button
+                  v-if="row.configured"
                   type="button"
                   class="wf-app-pkg-switch"
                   :class="{ 'wf-app-pkg-switch--on': row.status === 'enabled' }"
@@ -495,16 +468,30 @@ function setCategory(value: AppPackageCategory) {
                   :aria-label="row.status === 'enabled' ? '停用' : '启用'"
                   @click="requestToggle(row)"
                 />
+                <span v-else class="wf-muted">—</span>
               </td>
-              <td class="wf-td">{{ row.updatedAt }}（{{ row.operator }}）</td>
+              <td class="wf-td">
+                <template v-if="row.updatedAt">{{ row.updatedAt }}（{{ row.operator }}）</template>
+                <span v-else class="wf-muted">—</span>
+              </td>
               <td class="wf-td wf-td--nowrap">
-                <button type="button" class="wf-link-action" @click="openEdit(row)">编辑</button>
+                <button type="button" class="wf-link-action" @click="openAdd(row)">新增</button>
+                <span class="wf-action-sep">|</span>
+                <button
+                  type="button"
+                  class="wf-link-action"
+                  :disabled="!row.configured"
+                  :title="row.configured ? '' : '该包位未配置，请先新增'"
+                  @click="openEdit(row)"
+                >
+                  编辑
+                </button>
                 <span class="wf-action-sep">|</span>
                 <button
                   type="button"
                   class="wf-link-action wf-link-action--danger"
-                  :disabled="row.history.length > 0"
-                  :title="row.history.length ? '已有历史版本，不可删除' : ''"
+                  :disabled="!!deleteDisabledReason(row)"
+                  :title="deleteDisabledReason(row)"
                   @click="requestDelete(row)"
                 >
                   删除
@@ -516,16 +503,16 @@ function setCategory(value: AppPackageCategory) {
       </div>
 
       <div class="wf-pagination">
-        <span class="wf-pagination__info">共 {{ filteredRows.length }} 条</span>
+        <span class="wf-pagination__info">共 {{ filteredRows.length }} 条（已配置 {{ filteredRows.filter((row) => row.configured).length }} 条）</span>
       </div>
     </section>
 
     <Teleport to="body">
-      <div v-if="formVisible" class="wf-modal-mask" @click.self="closeForm">
-        <div class="wf-modal wf-modal--scroll wf-modal--detail-wide" role="dialog" aria-modal="true">
+      <div v-if="formVisible && formRow" class="wf-modal-mask" @click.self="closeForm">
+        <div class="wf-modal wf-modal--scroll wf-modal--detail-wide wf-app-pkg-form" role="dialog" aria-modal="true">
           <div class="wf-modal__header">
             <h3 class="wf-modal__title wf-modal__title--with-spec">
-              {{ formMode === 'add' ? '新增下载配置' : '编辑下载配置' }}
+              {{ formMode === 'add' ? '新增版本' : '编辑下载配置' }}
               <WfSpecAnnot
                 :no="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.form.no"
                 :title="APP_PACKAGE_DOWNLOAD_ANNOT_MAP.form.title"
@@ -543,41 +530,44 @@ function setCategory(value: AppPackageCategory) {
               </div>
             </div>
             <div class="wf-form-row">
-              <span class="wf-form-row__label wf-form-row__label--required">终端</span>
-              <div class="wf-app-pkg-radios">
-                <label v-for="opt in APP_TERMINAL_OPTIONS" :key="opt.value">
-                  <input :checked="form.terminal === opt.value" type="radio" name="pkg-terminal" @change="setTerminal(opt.value)" />
-                  {{ opt.label }}
-                </label>
+              <span class="wf-form-row__label">终端 / 包分类</span>
+              <div class="wf-app-pkg-slot">
+                <span class="wf-app-pkg-terminal" :class="`wf-app-pkg-terminal--${formRow.terminal}`">
+                  {{ APP_TERMINAL_LABEL[formRow.terminal] }}
+                </span>
+                <span class="wf-app-pkg-cat" :class="`wf-app-pkg-cat--${formRow.category}`">
+                  {{ APP_CATEGORY_LABEL[formRow.category] }}
+                </span>
+                <span class="wf-muted">固定包位，不可修改</span>
               </div>
             </div>
             <div class="wf-form-row">
-              <span class="wf-form-row__label wf-form-row__label--required">包分类</span>
+              <label class="wf-form-row__label" :class="{ 'wf-form-row__label--required': formMode === 'add' }">版本号</label>
               <div>
-                <div class="wf-app-pkg-radios">
-                  <label><input :checked="form.category === 'super'" type="radio" name="pkg-category" @change="setCategory('super')" /> 超签包</label>
-                  <label><input :checked="form.category === 'chat'" type="radio" name="pkg-category" @change="setCategory('chat')" /> 纯聊包</label>
-                  <label><input :checked="form.category === 'store'" type="radio" name="pkg-category" @change="setCategory('store')" /> 上架包</label>
-                </div>
-                <p v-if="form.category === 'super' && form.terminal !== 'ios'" class="wf-form-row__hint">超签包只适用于 iOS。</p>
-                <p v-else-if="saveMode === 'publish' && matchedRow" class="wf-form-row__hint">
-                  该组合已有 v{{ matchedRow.versionNumber }}，保存将发布为新版本并覆盖。
+                <input
+                  v-model="form.versionNumber"
+                  type="text"
+                  class="wf-input"
+                  :disabled="formMode === 'edit'"
+                  :placeholder="formMode === 'add' && formRow.configured ? `当前 v${formRow.versionNumber}，填写新版本号` : '1.0.3'"
+                />
+                <p v-if="formMode === 'add' && formRow.configured" class="wf-form-row__hint">
+                  当前 v{{ formRow.versionNumber }}，保存后替换为当前下载版本，v{{ formRow.versionNumber }} 写入历史；版本号不能与当前、历史相同。
                 </p>
+                <p v-else-if="formMode === 'edit'" class="wf-form-row__hint">版本号、下载链接不可编辑；如需换包，请在列表点「新增」发布新版本。</p>
               </div>
             </div>
             <div class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">当前版本号</label>
-              <input v-model="form.versionNumber" type="text" class="wf-input" placeholder="1.0.3" />
-            </div>
-            <div class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">下载链接</label>
-              <input v-model="form.downloadUrl" type="text" class="wf-input wf-input--full" placeholder="https://" />
-            </div>
-            <div v-if="plistVisible" class="wf-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">Plist 链接</label>
+              <label class="wf-form-row__label" :class="{ 'wf-form-row__label--required': formMode === 'add' }">下载链接</label>
               <div>
-                <input v-model="form.plistUrl" type="text" class="wf-input wf-input--full" placeholder="https://example.com/manifest.plist" />
-                <p class="wf-form-row__hint">用于触发 iOS 安装，须以 .plist 结尾，或以 itms-services:// 开头。</p>
+                <input
+                  v-model="form.downloadUrl"
+                  type="text"
+                  class="wf-input wf-input--full"
+                  :disabled="formMode === 'edit'"
+                  :placeholder="isIosSuper ? 'https:// 或 itms-services://' : 'https://'"
+                />
+                <p v-if="isIosSuper" class="wf-form-row__hint">iOS 超签包填写安装页地址，或以 itms-services:// 开头的安装地址。</p>
               </div>
             </div>
             <div class="wf-form-row">
@@ -605,27 +595,64 @@ function setCategory(value: AppPackageCategory) {
           <div class="wf-modal__footer">
             <button type="button" class="wf-btn wf-btn--default" @click="closeForm">取消</button>
             <button type="button" class="wf-btn wf-btn--primary" @click="requestSave">
-              {{ saveMode === 'publish' ? '发布新版本' : '保存' }}
+              {{ formMode === 'add' ? '确认新增' : '保存' }}
             </button>
           </div>
         </div>
       </div>
 
       <div v-if="historyRow" class="wf-modal-mask" @click.self="closeHistory">
-        <div class="wf-modal wf-modal--scroll wf-modal--detail-wide" role="dialog" aria-modal="true">
+        <div class="wf-modal wf-modal--scroll wf-app-pkg-history-modal" role="dialog" aria-modal="true">
           <div class="wf-modal__header">
             <h3 class="wf-modal__title">
-              {{ historyRow.appName }} · {{ APP_TERMINAL_LABEL[historyRow.terminal] }} · {{ APP_CATEGORY_LABEL[historyRow.category] }} 历史版本
+              {{ APP_TERMINAL_LABEL[historyRow.terminal] }} · {{ APP_CATEGORY_LABEL[historyRow.category] }} 历史版本
             </h3>
             <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeHistory">×</button>
           </div>
           <div class="wf-modal__body">
             <p class="wf-app-pkg-history-current">
-              当前下载版本：<strong>v{{ historyRow.versionNumber }}</strong>
-              <span class="wf-muted">（{{ historyRow.downloadUrl }}）</span>
+              <template v-if="historyRow.configured">
+                当前下载版本：<strong>v{{ historyRow.versionNumber }}</strong>
+                <span class="wf-muted">（{{ historyRow.downloadUrl }}）</span>
+              </template>
+              <template v-else>当前下载版本：<span class="wf-muted">未配置，可回滚到下方任一版本恢复</span></template>
             </p>
+            <div class="wf-toolbar wf-toolbar--filters wf-app-pkg-history-filter">
+              <span class="wf-app-pkg-filter">
+                <label class="wf-label">版本号：</label>
+                <input
+                  v-model="historyFilter.version"
+                  type="text"
+                  class="wf-input"
+                  placeholder="如 2.3 或 v2.3.0"
+                  @keyup.enter="applyHistoryFilter"
+                />
+              </span>
+              <span class="wf-app-pkg-filter wf-app-pkg-filter--grow">
+                <label class="wf-label">更新日志：</label>
+                <input
+                  v-model="historyFilter.log"
+                  type="text"
+                  class="wf-input wf-input--grow"
+                  placeholder="输入关键字，如 修复"
+                  @keyup.enter="applyHistoryFilter"
+                />
+              </span>
+              <span class="wf-toolbar__actions">
+                <button type="button" class="wf-btn wf-btn--primary" @click="applyHistoryFilter">搜索</button>
+                <button type="button" class="wf-btn wf-btn--danger" @click="resetHistoryFilter">清除</button>
+              </span>
+            </div>
             <div class="wf-table-wrap">
-              <table class="wf-table">
+              <table class="wf-table wf-table--app-pkg-history">
+                <colgroup>
+                  <col class="wf-app-pkg-history-col--version" />
+                  <col class="wf-app-pkg-history-col--url" />
+                  <col class="wf-app-pkg-history-col--log" />
+                  <col class="wf-app-pkg-history-col--operator" />
+                  <col class="wf-app-pkg-history-col--time" />
+                  <col class="wf-app-pkg-history-col--op" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th class="wf-th">版本号</th>
@@ -637,21 +664,49 @@ function setCategory(value: AppPackageCategory) {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-if="historyRow.history.length === 0">
-                    <td colspan="6" class="wf-td wf-td--empty">暂无历史版本</td>
+                  <tr v-if="historyFiltered.length === 0">
+                    <td colspan="6" class="wf-td wf-td--empty">
+                      {{ historyRow.history.length ? '暂无符合条件的历史版本' : '暂无历史版本' }}
+                    </td>
                   </tr>
-                  <tr v-for="item in historyRow.history" :key="item.id">
+                  <tr v-for="item in historyPageItems" :key="item.id">
                     <td class="wf-td wf-td--nowrap">v{{ item.versionNumber }}</td>
                     <td class="wf-td">{{ item.downloadUrl }}</td>
                     <td class="wf-td">{{ item.updateLog || '—' }}</td>
                     <td class="wf-td">{{ item.operator }}</td>
-                    <td class="wf-td wf-td--nowrap">{{ item.updatedAt }}</td>
-                    <td class="wf-td wf-td--nowrap">
+                    <td class="wf-td wf-app-pkg-history-time">
+                      <span>{{ item.updatedAt.split(' ')[0] }}</span> <span>{{ item.updatedAt.split(' ')[1] }}</span>
+                    </td>
+                    <td class="wf-td">
                       <button type="button" class="wf-link-action" @click="requestRollback(item.id)">回滚至此版本</button>
                     </td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+            <div v-if="historyFiltered.length" class="wf-pagination wf-app-pkg-history-pages">
+              <span class="wf-pagination__info">共 {{ historyFiltered.length }} 条</span>
+              <button type="button" class="wf-btn wf-btn--default" :disabled="historyPage <= 1" @click="goHistoryPage(historyPage - 1)">
+                上一页
+              </button>
+              <button
+                v-for="page in historyPageNumbers"
+                :key="page"
+                type="button"
+                class="wf-btn"
+                :class="page === historyPage ? 'wf-btn--primary' : 'wf-btn--default'"
+                @click="goHistoryPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button
+                type="button"
+                class="wf-btn wf-btn--default"
+                :disabled="historyPage >= historyTotalPages"
+                @click="goHistoryPage(historyPage + 1)"
+              >
+                下一页
+              </button>
             </div>
           </div>
           <div class="wf-modal__footer">
