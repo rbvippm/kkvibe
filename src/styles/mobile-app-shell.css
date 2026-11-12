@@ -2022,6 +2022,45 @@
   margin: 12px 0 0;
 }
 
+.mh5-mine-credit__blank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.mh5-mine-credit__blank-icon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: inset 0 0 0 1px rgb(201 154 78 / 34%);
+  color: #b8873a;
+}
+
+.mh5-mine-credit__blank-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mh5-mine-credit__blank-text strong {
+  color: #2b2318;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.mh5-mine-credit__blank-text em {
+  color: #8c7f6b;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.5;
+}
+
 .mh5-mine-credit__head {
   display: flex;
   align-items: center;
@@ -2369,8 +2408,85 @@
   cursor: pointer;
 }
 
+.mh5-wallet-sheet.mh5-credit-account-sheet.mh5-credit-account-sheet--blank {
+  height: auto;
+}
+
+.mh5-credit-account-sheet__icon-btn--hidden {
+  visibility: hidden;
+}
+
 .mh5-credit-account-sheet__search {
   margin-bottom: 10px;
+}
+
+/* 无信用钱包缺省：会员邀请会员注册、代理未开通 */
+.mh5-credit-account-sheet__blank {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  animation: mh5-credit-blank-in 0.28s ease-out;
+}
+
+.mh5-credit-account-sheet__blank-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, #fffaf0 0%, #f3e2c0 100%);
+  box-shadow: inset 0 0 0 1px rgb(201 154 78 / 34%);
+  color: #b8873a;
+}
+
+.mh5-credit-account-sheet__blank-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  color: #2b2318;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mh5-credit-account-sheet__blank-desc {
+  margin: 8px 0 0;
+  max-width: 280px;
+  color: #8c7f6b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.mh5-credit-account-sheet__blank-btn {
+  min-width: 160px;
+  height: 44px;
+  margin-top: 20px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 22px;
+  background: linear-gradient(107deg, #f1d9a8 3%, #d3a65e 54%, #c4924a 104%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.mh5-credit-account-sheet__blank-btn:active {
+  transform: scale(0.97);
+}
+
+@keyframes mh5-credit-blank-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .mh5-credit-account-sheet__search-input {
@@ -31786,6 +31902,10 @@ div.agent-home__profit-tab--ratio {
 
 .mh5-vip-club-wallet {
   position: relative;
+}
+
+.mh5-vip-club-wallet--empty .mh5-vip-club-wallet__balance {
+  font-size: 14px;
 }
 
 .mh5-vip-club-wallet__coin,

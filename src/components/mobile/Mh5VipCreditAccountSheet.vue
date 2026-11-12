@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
+import { VIP_CLUB_NO_WALLET_SPEC } from '../../constants/vipClubSpec'
+import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import {
   CREDIT_CURRENCY_TABS,
   creditAllWalletsLabel,
@@ -34,7 +36,7 @@ const emit = defineEmits<{
   editName: [item: CreditWalletItem]
 }>()
 
-const { wallets, selectedId, selectAccount, selectRecordsAll, recordsSelectAll, recordsCurrencyFilter, reorderAgentGroups } =
+const { wallets, hasCreditWallet, selectedId, selectAccount, selectRecordsAll, recordsSelectAll, recordsCurrencyFilter, reorderAgentGroups } =
   useVipCreditAccounts()
 const searchOpen = ref(false)
 const searchKeyword = ref('')
@@ -175,13 +177,23 @@ function onHandlePointerUp() {
       <div v-if="open" :class="maskClass" @click.self="close">
         <div
           class="mh5-wallet-sheet mh5-credit-account-sheet"
-          :class="{ 'mh5-credit-account-sheet--no-balance': hideBalance }"
+          :class="{
+            'mh5-credit-account-sheet--no-balance': hideBalance,
+            'mh5-credit-account-sheet--blank': !hasCreditWallet,
+          }"
           role="dialog"
           aria-modal="true"
           aria-labelledby="mh5-credit-account-title"
         >
           <div class="mh5-credit-account-sheet__head">
-            <button type="button" class="mh5-credit-account-sheet__icon-btn" :aria-label="$t('搜索')" @click="toggleSearch">
+            <button
+              type="button"
+              class="mh5-credit-account-sheet__icon-btn"
+              :class="{ 'mh5-credit-account-sheet__icon-btn--hidden': !hasCreditWallet }"
+              :aria-label="$t('搜索')"
+              :disabled="!hasCreditWallet"
+              @click="toggleSearch"
+            >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
                 <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -195,6 +207,25 @@ function onHandlePointerUp() {
             </button>
           </div>
 
+          <div v-if="!hasCreditWallet" class="mh5-credit-account-sheet__blank">
+            <span class="mh5-credit-account-sheet__blank-icon" aria-hidden="true">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.6" />
+                <path d="M3 10h18" stroke="currentColor" stroke-width="1.6" />
+                <circle cx="16.5" cy="14.5" r="1.2" fill="currentColor" />
+              </svg>
+            </span>
+            <p class="mh5-credit-account-sheet__blank-title">
+              {{ $t('暂无信用钱包') }}
+              <Mh5SpecAnnot :spec="VIP_CLUB_NO_WALLET_SPEC" placement="bottom" />
+            </p>
+            <p class="mh5-credit-account-sheet__blank-desc">
+              {{ $t('你是通过会员邀请注册的，信用钱包需由代理开通。开通后可在这里切换账户，并进入贵宾厅游戏。') }}
+            </p>
+            <button type="button" class="mh5-credit-account-sheet__blank-btn" @click="close">{{ $t('我知道了') }}</button>
+          </div>
+
+          <template v-else>
           <div v-if="searchOpen" class="mh5-credit-account-sheet__search">
             <input
               ref="searchInputRef"
@@ -372,6 +403,7 @@ function onHandlePointerUp() {
               </template>
             </section>
           </div>
+          </template>
         </div>
       </div>
     </Transition>

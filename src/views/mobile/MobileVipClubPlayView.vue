@@ -2,19 +2,21 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import { VIP_CLUB_ASSETS, resolveVipClubPlayGame } from '../../constants/vipClub'
 import '../../styles/mobile-app-shell.css'
 
 const route = useRoute()
 const router = useRouter()
 const miniGame = useMiniAppGame()
+const { ensureVipWallet } = useVipCreditAccounts()
 const missing = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   const game = resolveVipClubPlayGame(String(route.params.kind || ''), String(route.params.id || ''))
   if (game) {
-    miniGame.open(game.name, game.kind)
     void router.replace({ name: 'mobile-vip-club' })
+    if (await ensureVipWallet()) miniGame.open(game.name, game.kind)
     return
   }
   missing.value = true

@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
   VIP_CLUB_ASSETS,
   VIP_CLUB_LOTTERY_ASSETS,
@@ -12,6 +13,7 @@ import '../../styles/mobile-app-shell.css'
 
 const router = useRouter()
 const miniGame = useMiniAppGame()
+const { ensureVipWallet } = useVipCreditAccounts()
 const toast = ref('')
 let toastTimer = 0
 
@@ -27,11 +29,12 @@ function showToast(message: string) {
   }, 1600)
 }
 
-function openGame(game: VipClubLotteryGame) {
+async function openGame(game: VipClubLotteryGame) {
   if (game.comingSoon) {
     showToast('敬请期待')
     return
   }
+  if (!(await ensureVipWallet())) return
   miniGame.open(game.title, 'lottery')
 }
 </script>

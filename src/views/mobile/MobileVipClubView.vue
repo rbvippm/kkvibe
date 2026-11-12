@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Mh5SpecAnnot from '../../components/mobile/Mh5SpecAnnot.vue'
 import Mh5VipCreditAccountSheet from '../../components/mobile/Mh5VipCreditAccountSheet.vue'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
@@ -11,6 +11,7 @@ import { VIP_CLUB_ENTRY_SPEC } from '../../constants/vipClubSpec'
 import { mineHallQuery } from '../../constants/mineHall'
 import '../../styles/mobile-app-shell.css'
 
+const route = useRoute()
 const router = useRouter()
 const miniGame = useMiniAppGame()
 const hallSheetOpen = ref(false)
@@ -18,7 +19,35 @@ const vendorSheetKind = ref<VipClubVendorKind | null>(null)
 const accountSheetOpen = ref(false)
 const hallMenuOpen = ref(false)
 
-const { selectedWallet } = useVipCreditAccounts()
+const { selectedWallet, hasCreditWallet, noWalletMock, setNoWalletMock, ensureVipWallet } = useVipCreditAccounts()
+if (route.query.wallet === 'none') setNoWalletMock(true)
+
+/** 隐藏 Mock：5 秒内连点 3 次 Logo 切换「信用钱包 / 会员邀请会员（无钱包）」 */
+const MOCK_TAP_WINDOW_MS = 5000
+const MOCK_TAP_COUNT = 3
+let mockTaps: number[] = []
+const toast = ref('')
+let toastTimer = 0
+
+function showToast(message: string) {
+  toast.value = message
+  window.clearTimeout(toastTimer)
+  toastTimer = window.setTimeout(() => {
+    if (toast.value === message) toast.value = ''
+  }, 1600)
+}
+
+function onLogoTap() {
+  const now = Date.now()
+  mockTaps = [...mockTaps.filter((t) => now - t <= MOCK_TAP_WINDOW_MS), now]
+  if (mockTaps.length < MOCK_TAP_COUNT) return
+  mockTaps = []
+  setNoWalletMock(!noWalletMock.value)
+  showToast(noWalletMock.value ? '已切换：会员邀请会员（无钱包）' : '已切换：信用钱包')
+}
+
+onBeforeUnmount(() => window.clearTimeout(toastTimer))
+
 const selectedBalanceText = computed(() =>
   selectedWallet.value ? formatCreditWalletBalance(selectedWallet.value.balance) : '',
 )
@@ -32,17 +61,18 @@ function goBetRecords() {
   router.push({ name: 'mobile-bet-records', query: mineHallQuery(true) })
 }
 
-function onGameAction(action: VipClubGameAction, key: string) {
+async function onGameAction(action: VipClubGameAction, key: string) {
   if (action === 'hall') {
     hallSheetOpen.value = true
     return
   }
-  if (action === 'vendor') {
-    vendorSheetKind.value = key === 'live' ? 'live' : 'slot'
-    return
-  }
   if (action === 'lottery') {
     router.push({ name: 'mobile-vip-club-lottery' })
+    return
+  }
+  if (!(await ensureVipWallet())) return
+  if (action === 'vendor') {
+    vendorSheetKind.value = key === 'live' ? 'live' : 'slot'
     return
   }
   miniGame.open('金刚体育', 'sports')
@@ -83,20 +113,23 @@ const vendorOptions = computed(() =>
       >
         <img :src="VIP_CLUB_ASSETS.menu" alt="" width="20" height="20" />
       </button>
-      <div class="mh5-vip-club-header__brand">
+      <div class="mh5-vip-club-header__brand" @click="onLogoTap">
         <img class="mh5-vip-club-header__logo" :src="VIP_CLUB_ASSETS.logo" alt="金刚 KING KONG" width="87" height="32" />
       </div>
       <Mh5SpecAnnot :spec="VIP_CLUB_ENTRY_SPEC" placement="bottom" />
 
       <button
-        v-if="selectedWallet"
         type="button"
         class="mh5-vip-club-wallet"
+        :class="{ 'mh5-vip-club-wallet--empty': !hasCreditWallet }"
         :aria-label="$t('信用额度')"
         @click="accountSheetOpen = true; hallMenuOpen = false"
       >
-        <img class="mh5-vip-club-wallet__coin" :src="selectedWallet.icon" alt="" width="20" height="20" />
-        <span class="mh5-vip-club-wallet__balance">{{ selectedBalanceText }}</span>
+        <template v-if="hasCreditWallet && selectedWallet">
+          <img class="mh5-vip-club-wallet__coin" :src="selectedWallet.icon" alt="" width="20" height="20" />
+          <span class="mh5-vip-club-wallet__balance">{{ selectedBalanceText }}</span>
+        </template>
+        <span v-else class="mh5-vip-club-wallet__balance">{{ $t('暂无钱包') }}</span>
         <img class="mh5-vip-club-wallet__chevron" :src="VIP_CLUB_ASSETS.chevronDown" alt="" width="12" height="12" />
       </button>
 
@@ -228,5 +261,9 @@ const vendorOptions = computed(() =>
     </Transition>
 
     <Mh5VipCreditAccountSheet :open="accountSheetOpen" @close="accountSheetOpen = false" />
+
+    <Transition name="mh5-toast">
+      <p v-if="toast" class="mh5-wallet-transfer-toast" role="status">{{ toast }}</p>
+    </Transition>
   </div>
 </template>

@@ -18,7 +18,7 @@ defineProps<{
   actions: { key: string; label: string; icon: string; route?: string }[]
 }>()
 
-const { wallets, selectedWallet, updateDisplayName } = useVipCreditAccounts()
+const { wallets, hasCreditWallet, selectedWallet, updateDisplayName } = useVipCreditAccounts()
 const balanceHidden = ref(false)
 const refreshing = ref(false)
 const accountSheetOpen = ref(false)
@@ -91,7 +91,22 @@ function goAction(route?: string) {
 </script>
 
 <template>
-  <section v-if="selectedWallet" class="mh5-mine-credit">
+  <section class="mh5-mine-credit">
+    <div v-if="!hasCreditWallet || !selectedWallet" class="mh5-mine-credit__card mh5-mine-credit__blank">
+      <span class="mh5-mine-credit__blank-icon" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="3" y="6" width="18" height="13" rx="3" stroke="currentColor" stroke-width="1.6" />
+          <path d="M3 10h18" stroke="currentColor" stroke-width="1.6" />
+          <circle cx="16.5" cy="14.5" r="1.2" fill="currentColor" />
+        </svg>
+      </span>
+      <span class="mh5-mine-credit__blank-text">
+        <strong>{{ $t('暂无信用钱包') }}</strong>
+        <em>{{ $t('通过会员邀请注册的账号，需由代理开通信用钱包后才能进入贵宾厅游戏。') }}</em>
+      </span>
+    </div>
+
+    <template v-else>
     <div class="mh5-mine-credit__head">
       <button
         type="button"
@@ -175,6 +190,7 @@ function goAction(route?: string) {
         </button>
       </div>
     </div>
+    </template>
 
     <div class="mh5-mine-credit__actions">
       <button

@@ -67,6 +67,7 @@ import { CHAT_ROOM_ASSETS } from '../../constants/mobileChatRoomAssets'
 import { VIP_CLUB_SPORTS_ASSETS } from '../../constants/vipClub'
 import { isVipClubMineFrom } from '../../constants/mineHall'
 import { useMiniAppGame } from '../../composables/useMiniAppGame'
+import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import Mh5SpecAnnot from './Mh5SpecAnnot.vue'
 import MobileChatFileSendFlow from './MobileChatFileSendFlow.vue'
 import MobileChatMediaPicker from './MobileChatMediaPicker.vue'
@@ -81,6 +82,14 @@ const router = useRouter()
 const room = computed(() => getChatRoomDemo(String(route.params.id || '')))
 /** 贵宾厅会话：不提供转账 / 送礼与直播分享卡，群聊游戏照常 */
 const isVipClubRoom = computed(() => isVipClubMineFrom(route.query.from))
+const { hasCreditWallet, ensureVipWallet } = useVipCreditAccounts()
+
+/** 贵宾厅会话进游戏前校验信用钱包；无钱包时弹框拦截 */
+function blockedByNoWallet() {
+  if (!isVipClubRoom.value || hasCreditWallet.value) return false
+  void ensureVipWallet()
+  return true
+}
 const plusActions = computed(() =>
   isVipClubRoom.value
     ? CHAT_ROOM_PLUS_ACTIONS.filter((action) => !VIP_CLUB_HIDDEN_PLUS_ACTIONS.has(action.key))
@@ -310,6 +319,7 @@ function openGamePlay(
   anchor: ChatGroupFloatKind = 'game',
   dockCollapse = false,
 ) {
+  if (blockedByNoWallet()) return
   stopHomeDismiss()
   showGameCenter.value = false
   showGameMenu.value = false
@@ -659,6 +669,7 @@ function minimizeGamePlay(ev?: MouseEvent) {
 }
 
 function openPinnedGame() {
+  if (blockedByNoWallet()) return
   miniGame.open(currentPinned.value.gameName, 'sports')
 }
 

@@ -7,8 +7,13 @@ import {
   type CreditWalletItem,
 } from '../constants/walletCatalog'
 import { effectiveVipClubCurrency, pickVipClubCurrency } from '../i18n'
+import { mh5Alert } from './useMh5Confirm'
 
-const wallets = ref(cloneCreditWallets())
+const allWallets = ref(cloneCreditWallets())
+/** 会员邀请会员注册：信用钱包只能由代理开通，开通前名下没有任何信用账户 */
+const noWalletMock = ref(false)
+const wallets = computed(() => (noWalletMock.value ? [] : allWallets.value))
+const hasCreditWallet = computed(() => wallets.value.length > 0)
 
 function resolveInitialAccountId() {
   const preferred = effectiveVipClubCurrency.value
@@ -58,13 +63,32 @@ function reorderAgentGroups(fromAgentId: string, toAgentId: string) {
   const next = [...groups]
   const [moved] = next.splice(from, 1)
   next.splice(to, 0, moved)
-  wallets.value = next.flatMap((group) => group.items)
+  allWallets.value = next.flatMap((group) => group.items)
+}
+
+function setNoWalletMock(enabled: boolean) {
+  noWalletMock.value = enabled
+}
+
+/** 进贵宾厅游戏前校验：无信用钱包时弹框拦截，返回 false 不进入游戏 */
+async function ensureVipWallet() {
+  if (hasCreditWallet.value) return true
+  await mh5Alert({
+    title: '暂无信用钱包',
+    message: '你是通过会员邀请注册的，信用钱包需由代理开通后才能进入游戏。请联系邀请你的会员或所属代理开通。',
+    confirmText: '我知道了',
+  })
+  return false
 }
 
 /** 尊享专区顶栏与贵宾厅「我的」共用同一套信用账户 */
 export function useVipCreditAccounts() {
   return {
     wallets,
+    hasCreditWallet,
+    noWalletMock,
+    setNoWalletMock,
+    ensureVipWallet,
     selectedId,
     selectedWallet,
     recordsSelectAll,
