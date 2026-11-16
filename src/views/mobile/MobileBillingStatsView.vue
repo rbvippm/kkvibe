@@ -6,7 +6,9 @@ import { useVipCreditAccounts } from '../../composables/useVipCreditAccounts'
 import {
   BILLING_STATS_CURRENCY_OPTIONS,
   BILLING_STATS_CURRENCY_TABS,
-  BILLING_STATS_GAME_OPTIONS,
+  BILLING_STATS_VENUE_GROUPS,
+  filterBillingStatsByVenue,
+  getBillingStatsVenueLabel,
   BILLING_STATS_RANGE_OPTIONS,
   filterBillingStatsCurrencyOptions,
   formatBillingStatsAmount,
@@ -44,13 +46,14 @@ const vipStatsCurrency = computed(() => {
   if (!recordsSelectAll.value) {
     return billingCurrencyFromCreditCode(selectedWallet.value?.currency ?? 'cny')
   }
-  if (recordsCurrencyFilter.value) return billingCurrencyFromCreditCode(recordsCurrencyFilter.value)
-  return ''
+  return billingCurrencyFromCreditCode(recordsCurrencyFilter.value || selectedWallet.value?.currency || 'cny')
 })
 
 const currencyLabel = computed(() => {
   if (isVipClubBilling.value) {
-    if (recordsSelectAll.value) return creditAllWalletsLabel(recordsCurrencyFilter.value)
+    if (recordsSelectAll.value) {
+      return creditAllWalletsLabel(recordsCurrencyFilter.value || selectedWallet.value?.currency || 'cny')
+    }
     return selectedWallet.value?.displayName || '信用额度'
   }
   return BILLING_STATS_CURRENCY_OPTIONS.find((item) => item.value === currency.value)?.label ?? currency.value
@@ -60,27 +63,20 @@ const currencySheetOptions = computed(() =>
   filterBillingStatsCurrencyOptions(BILLING_STATS_CURRENCY_OPTIONS, currencyTab.value),
 )
 
-const gameLabel = computed(
-  () => BILLING_STATS_GAME_OPTIONS.find((item) => item.value === game.value)?.label ?? '所有游戏',
-)
+const gameLabel = computed(() => getBillingStatsVenueLabel(game.value))
 
 const bundle = computed(() =>
-  getBillingStatsBundle(isVipClubBilling.value ? vipStatsCurrency.value : currency.value),
+  filterBillingStatsByVenue(
+    getBillingStatsBundle(isVipClubBilling.value ? vipStatsCurrency.value : currency.value),
+    game.value,
+  ),
 )
 
-const summary = computed(() => {
-  const base = bundle.value.summary
-  if (game.value && game.value !== 'sport' && game.value !== '') {
-    return { expense: 0, expenseCount: 0, income: 0, incomeCount: 0, net: 0 }
-  }
-  return base
-})
+const summary = computed(() => bundle.value.summary)
 
-const rankList = computed(() => {
-  const list = rankMode.value === 'expense' ? bundle.value.expenseRank : bundle.value.incomeRank
-  if (!game.value) return list
-  return list.filter((item) => item.id === game.value)
-})
+const rankList = computed(() =>
+  rankMode.value === 'expense' ? bundle.value.expenseRank : bundle.value.incomeRank,
+)
 
 function pickRange(key: BillingStatsRangeKey) {
   rangeKey.value = key
@@ -361,39 +357,49 @@ function selectGame(value: string) {
             aria-labelledby="billing-stats-game-title"
           >
             <div class="mh5-wallet-sheet__head">
-              <h2 id="billing-stats-game-title" class="mh5-wallet-sheet__title">{{ $t('选择游戏') }}</h2>
+              <h2 id="billing-stats-game-title" class="mh5-wallet-sheet__title">{{ $t('选择游戏场馆') }}</h2>
               <button type="button" class="mh5-wallet-sheet__close" :aria-label="$t('关闭')" @click="closeSheet">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
                 </svg>
               </button>
             </div>
-            <div class="mh5-wallet-sheet__list agent-currency-sheet__list">
+            <div class="mh5-wallet-sheet__list agent-currency-sheet__list mh5-billing-venue-list">
               <button
-                v-for="opt in BILLING_STATS_GAME_OPTIONS"
-                :key="opt.value || 'all'"
                 type="button"
                 class="agent-currency-sheet__item"
-                :class="{ 'agent-currency-sheet__item--active': game === opt.value }"
-                @click="selectGame(opt.value)"
+                :class="{ 'agent-currency-sheet__item--active': !game }"
+                @click="selectGame('')"
               >
-                <span class="agent-currency-sheet__name">{{ $t(opt.label) }}</span>
-                <span
-                  v-if="game === opt.value"
-                  class="agent-currency-sheet__check agent-currency-sheet__check--active"
-                  aria-hidden="true"
-                >
+                <span class="agent-currency-sheet__name">{{ $t('所有游戏') }}</span>
+                <span v-if="!game" class="agent-currency-sheet__check agent-currency-sheet__check--active" aria-hidden="true">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path
-                      d="M2.5 6.2l2.4 2.4 4.6-5"
-                      stroke="#fff"
-                      stroke-width="1.6"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
+                    <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </span>
               </button>
+              <template v-for="group in BILLING_STATS_VENUE_GROUPS" :key="group.category">
+                <p class="mh5-billing-venue-list__group">{{ $t(group.label) }}</p>
+                <button
+                  v-for="venue in group.venues"
+                  :key="venue.value"
+                  type="button"
+                  class="agent-currency-sheet__item"
+                  :class="{ 'agent-currency-sheet__item--active': game === venue.value }"
+                  @click="selectGame(venue.value)"
+                >
+                  <span class="agent-currency-sheet__name">{{ $t(venue.label) }}</span>
+                  <span
+                    v-if="game === venue.value"
+                    class="agent-currency-sheet__check agent-currency-sheet__check--active"
+                    aria-hidden="true"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                </button>
+              </template>
             </div>
           </div>
         </div>
@@ -402,6 +408,7 @@ function selectGame(value: string) {
     <Mh5VipCreditAccountSheet
       :open="creditSheetOpen"
       hide-balance
+      currency-required
       @close="creditSheetOpen = false"
     />
   </div>

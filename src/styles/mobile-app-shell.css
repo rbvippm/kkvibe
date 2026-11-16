@@ -17645,6 +17645,19 @@
   margin: 0 auto;
 }
 
+.mh5-billing-venue-list {
+  gap: 8px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mh5-billing-venue-list__group {
+  margin: 8px 2px -2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mh5-app-text-secondary, #8c7f6b);
+}
+
 .mh5-billing-sheet-mask {
   position: absolute;
   inset: 0;
@@ -26333,6 +26346,18 @@ div.agent-home__profit-tab--ratio {
   transform: translateX(-50%) rotate(45deg);
 }
 
+.mh5-bet-order-summary__tip-bubble--end {
+  left: auto;
+  right: -8px;
+  transform: none;
+}
+
+.mh5-bet-order-summary__tip-bubble--end::before {
+  left: auto;
+  right: 11px;
+  transform: rotate(45deg);
+}
+
 .mh5-bet-order-summary-carousel--tip {
   z-index: 6;
   overflow: visible;
@@ -26835,6 +26860,110 @@ div.agent-home__profit-tab--ratio {
 
 .mh5-bet-order-date-row .mh5-xcoin-filter-input {
   margin-bottom: 0;
+}
+
+.mh5-bet-order-time-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mh5-bet-order-time-head .mh5-xcoin-filter-group__label {
+  margin: 0;
+}
+
+.mh5-bet-order-time-field {
+  position: relative;
+}
+
+.mh5-bet-order-time-field__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--mh5-app-border);
+  border-radius: 999px;
+  background: var(--mh5-app-bg);
+  color: var(--mh5-app-text);
+  font-size: 12px;
+  font-weight: 500;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.mh5-bet-order-time-field__trigger svg {
+  color: var(--mh5-app-text-secondary);
+  transition: transform 0.2s ease;
+}
+
+.mh5-bet-order-time-field__trigger--open {
+  border-color: var(--mh5-app-orange);
+  color: var(--mh5-app-orange);
+}
+
+.mh5-bet-order-time-field__trigger--open svg {
+  color: var(--mh5-app-orange);
+  transform: rotate(180deg);
+}
+
+.mh5-bet-order-time-field__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  min-width: 128px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: 12px;
+  background: var(--mh5-app-card, #fff);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%), 0 0 0 1px rgb(0 0 0 / 4%);
+  transform-origin: top left;
+}
+
+.mh5-bet-order-time-field__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mh5-app-text);
+  font-size: 14px;
+  text-align: left;
+}
+
+.mh5-bet-order-time-field__option:active {
+  background: var(--mh5-app-bg);
+}
+
+.mh5-bet-order-time-field__option--active {
+  color: var(--mh5-app-orange);
+  font-weight: 600;
+}
+
+.mh5-bet-order-time-field-pop-enter-active,
+.mh5-bet-order-time-field-pop-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.mh5-bet-order-time-field-pop-enter-from,
+.mh5-bet-order-time-field-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+}
+
+.mh5-bet-order-sheet--vip .mh5-bet-order-time-field__trigger {
+  background: #faf6ee;
+}
+
+.mh5-bet-order-sheet--vip .mh5-bet-order-time-field__trigger--open,
+.mh5-bet-order-sheet--vip .mh5-bet-order-time-field__trigger--open svg,
+.mh5-bet-order-sheet--vip .mh5-bet-order-time-field__option--active {
+  color: #a8762c;
 }
 
 .mh5-xcoin-sheet.mh5-bet-order-detail-sheet {

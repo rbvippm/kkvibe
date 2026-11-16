@@ -116,6 +116,12 @@ export function betOrderStatusTabKey(status: BetOrderStatusFilter): BetOrderStat
 export const BET_ORDER_VALID_BET_TIP =
   '有效投注为实际计入输赢统计的投注额。和局、取消或未完成结算的注单可能不计或按场馆规则折算，与「总下注」不一定相同。'
 
+/** 汇总卡「总输赢」感叹号气泡：输赢只在结算后产生，报表按结算时间统计，注单查询默认按投注时间筛选 */
+export const BET_ORDER_WIN_LOSE_TIP: Record<BetOrderTimeField, string> = {
+  bet: '总输赢仅统计已结算注单，未结算不计入。当前按投注时间筛选，报表按结算时间统计，金额可能不一致；如需核对，请在筛选中切换为「结算时间」。',
+  settle: '当前按结算时间筛选，总输赢为该时间内已结算注单的输赢合计，与报表口径一致，可直接用于核对。',
+}
+
 export const BET_ORDER_WINLOSE_OPTIONS = [
   { value: '', label: '全部' },
   { value: 'win', label: '赢' },
@@ -784,8 +790,22 @@ export const MOCK_BET_ORDER_RECORDS = MOCK_BET_ORDER_RECORDS_RAW.map(enrichBetOr
 
 export type BetOrderCurrencyFilter = BetGameCurrency
 
+/** 时间区间口径：按投注时间或结算时间筛选 */
+export type BetOrderTimeField = 'bet' | 'settle'
+
+export const BET_ORDER_TIME_FIELD_OPTIONS: { value: BetOrderTimeField; label: string }[] = [
+  { value: 'bet', label: '投注时间' },
+  { value: 'settle', label: '结算时间' },
+]
+
+/** 未结算注单没有结算时间，按结算时间口径时返回 null */
+export function betOrderTimeOf(row: BetOrderRecord, field: BetOrderTimeField) {
+  return field === 'settle' ? row.gameSettledAt : row.betAt
+}
+
 export type BetOrderFilter = {
   keyword: string
+  timeField: BetOrderTimeField
   timePreset: BetTimePreset
   customStart: string
   customEnd: string
@@ -895,8 +915,10 @@ export function filterBetOrders(
   const { start, end } = getBetOrderDateRange(filter)
 
   return rows.filter((row) => {
-    const betTime = parseDateTime(row.betAt)
-    if (betTime < start || betTime > end) return false
+    const timeValue = betOrderTimeOf(row, filter.timeField)
+    if (!timeValue) return false
+    const time = parseDateTime(timeValue)
+    if (time < start || time > end) return false
     if (!matchBetOrderStatus(row.status, filter.status)) return false
     if (filter.category && row.gameCategory !== filter.category) return false
     if (filter.gameName && row.gameName !== filter.gameName) return false

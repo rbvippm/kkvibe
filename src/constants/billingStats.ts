@@ -1,5 +1,7 @@
 /** 账单统计 · Mock 与筛选项 */
 
+import { BET_ORDER_GAME_NAME_OPTIONS, getBetOrderCategoryLabel } from './betOrderQuery'
+
 export type BillingStatsRangeKey =
   | 'today'
   | 'yesterday'
@@ -74,14 +76,23 @@ export function filterBillingStatsCurrencyOptions(
   return options.filter((item) => item.kind === tab)
 }
 
-export const BILLING_STATS_GAME_OPTIONS = [
-  { value: '', label: '所有游戏' },
-  { value: 'sport', label: '体育' },
-  { value: 'live', label: '真人' },
-  { value: 'slot', label: '电子' },
-  { value: 'lottery', label: '彩票' },
-  { value: 'chess', label: '棋牌' },
-] as const
+/** 游戏筛选按场馆维度，按分类分组展示；场馆与注单查询的游戏名称同一套 */
+const BILLING_STATS_VENUE_CATEGORY_ORDER = ['sports', 'live', 'slots', 'lottery', 'chess'] as const
+
+export const BILLING_STATS_VENUE_GROUPS = BILLING_STATS_VENUE_CATEGORY_ORDER.map((category) => ({
+  category,
+  label: getBetOrderCategoryLabel(category),
+  venues: BET_ORDER_GAME_NAME_OPTIONS[category],
+}))
+
+export function getBillingStatsVenueLabel(value: string) {
+  if (!value) return '所有游戏'
+  for (const group of BILLING_STATS_VENUE_GROUPS) {
+    const venue = group.venues.find((item) => item.value === value)
+    if (venue) return venue.label
+  }
+  return '所有游戏'
+}
 
 /** 原型基准日：与系统演示日期对齐 */
 export const BILLING_STATS_BASE_DATE = '2026-07-13'
@@ -155,54 +166,86 @@ export type BillingStatsSummary = {
   net: number
 }
 
-/** 默认空态（对齐截图）；切换币种/周期后可展示演示数据 */
-export const BILLING_STATS_DEMO_BY_CURRENCY: Record<
-  string,
-  { summary: BillingStatsSummary; expenseRank: BillingStatsRankItem[]; incomeRank: BillingStatsRankItem[] }
-> = {
-  KKC: {
-    summary: { expense: 0, expenseCount: 0, income: 0, incomeCount: 0, net: 0 },
-    expenseRank: [],
-    incomeRank: [],
-  },
+export type BillingStatsBundle = {
+  summary: BillingStatsSummary
+  expenseRank: BillingStatsRankItem[]
+  incomeRank: BillingStatsRankItem[]
+}
+
+/** 排行榜：游戏账变按场馆（id 为场馆值）列示，其余为充值 / 奖金 / 上下分等账单类型；汇总由排行榜累加 */
+const BILLING_STATS_RANK_DEMO: Record<string, Omit<BillingStatsBundle, 'summary'>> = {
+  KKC: { expenseRank: [], incomeRank: [] },
   KKV: {
-    summary: { expense: 1288.5, expenseCount: 6, income: 2560, incomeCount: 4, net: 1271.5 },
     expenseRank: [
-      { id: 'sport', name: '体育', amount: 680.5, count: 3 },
-      { id: 'live', name: '真人', amount: 408, count: 2 },
-      { id: 'slot', name: '电子', amount: 200, count: 1 },
+      { id: 'hz-sports', name: '皇者-体育', amount: 680.5, count: 3 },
+      { id: 'ag', name: 'AG - 真人', amount: 408, count: 2 },
+      { id: 'pg', name: 'PG - 电子', amount: 200, count: 1 },
     ],
     incomeRank: [
       { id: 'bonus', name: '奖金', amount: 1280, count: 2 },
       { id: 'recharge', name: '充值', amount: 880, count: 1 },
+      { id: 'hz-sports', name: '皇者-体育', amount: 520, count: 2 },
       { id: 'redpacket', name: '红包', amount: 400, count: 1 },
     ],
   },
   'USDT-TRON': {
-    summary: { expense: 120.5, expenseCount: 1, income: 500, incomeCount: 2, net: 379.5 },
     expenseRank: [{ id: 'withdraw', name: '提现', amount: 120.5, count: 1 }],
-    incomeRank: [
-      { id: 'recharge', name: '充值', amount: 500, count: 2 },
-    ],
+    incomeRank: [{ id: 'recharge', name: '充值', amount: 500, count: 2 }],
   },
   CNY: {
-    summary: { expense: 15, expenseCount: 1, income: 70, incomeCount: 2, net: 55 },
-    expenseRank: [{ id: 'xcoin_down', name: '上下分-下分', amount: 15, count: 1 }],
+    expenseRank: [
+      { id: 'hz-sports', name: '皇者-体育', amount: 50, count: 1 },
+      { id: 'hz-slots', name: '皇者-电子', amount: 28.6, count: 1 },
+      { id: 'xcoin_down', name: '上下分-下分', amount: 15, count: 1 },
+    ],
     incomeRank: [
+      { id: 'hz-live', name: '皇者-真人', amount: 88, count: 1 },
       { id: 'xcoin_up', name: '上下分-上分', amount: 70, count: 2 },
     ],
   },
   USD: {
-    summary: { expense: 25, expenseCount: 1, income: 80, incomeCount: 1, net: 55 },
-    expenseRank: [{ id: 'xcoin_down', name: '上下分-下分', amount: 25, count: 1 }],
-    incomeRank: [{ id: 'xcoin_up', name: '上下分-上分', amount: 80, count: 1 }],
+    expenseRank: [
+      { id: 'saba', name: 'SABA - 体育', amount: 36, count: 2 },
+      { id: 'xcoin_down', name: '上下分-下分', amount: 25, count: 1 },
+    ],
+    incomeRank: [
+      { id: 'xcoin_up', name: '上下分-上分', amount: 80, count: 1 },
+      { id: 'saba', name: 'SABA - 体育', amount: 45, count: 1 },
+    ],
   },
 }
 
-function mergeBillingStatsBundles(
-  left: { summary: BillingStatsSummary; expenseRank: BillingStatsRankItem[]; incomeRank: BillingStatsRankItem[] },
-  right: { summary: BillingStatsSummary; expenseRank: BillingStatsRankItem[]; incomeRank: BillingStatsRankItem[] },
-) {
+export function summarizeBillingStatsRank(
+  expenseRank: BillingStatsRankItem[],
+  incomeRank: BillingStatsRankItem[],
+): BillingStatsSummary {
+  const sum = (list: BillingStatsRankItem[], key: 'amount' | 'count') =>
+    list.reduce((acc, item) => acc + item[key], 0)
+  const expense = sum(expenseRank, 'amount')
+  const income = sum(incomeRank, 'amount')
+  return {
+    expense,
+    expenseCount: sum(expenseRank, 'count'),
+    income,
+    incomeCount: sum(incomeRank, 'count'),
+    net: income - expense,
+  }
+}
+
+/** 选中某一场馆：汇总与排行榜只保留该场馆的支出 / 收入 */
+export function filterBillingStatsByVenue(bundle: BillingStatsBundle, venue: string): BillingStatsBundle {
+  if (!venue) return bundle
+  const expenseRank = bundle.expenseRank.filter((item) => item.id === venue)
+  const incomeRank = bundle.incomeRank.filter((item) => item.id === venue)
+  return { summary: summarizeBillingStatsRank(expenseRank, incomeRank), expenseRank, incomeRank }
+}
+
+function rankBundle(currency: string): BillingStatsBundle {
+  const ranks = BILLING_STATS_RANK_DEMO[currency] ?? { expenseRank: [], incomeRank: [] }
+  return { ...ranks, summary: summarizeBillingStatsRank(ranks.expenseRank, ranks.incomeRank) }
+}
+
+function mergeBillingStatsBundles(left: BillingStatsBundle, right: BillingStatsBundle): BillingStatsBundle {
   const mergeRank = (a: BillingStatsRankItem[], b: BillingStatsRankItem[]) => {
     const map = new Map<string, BillingStatsRankItem>()
     for (const item of [...a, ...b]) {
@@ -228,17 +271,9 @@ function mergeBillingStatsBundles(
   }
 }
 
-export function getBillingStatsBundle(currency: string) {
-  if (!currency || currency === 'ALL') {
-    return mergeBillingStatsBundles(BILLING_STATS_DEMO_BY_CURRENCY.CNY, BILLING_STATS_DEMO_BY_CURRENCY.USD)
-  }
-  return (
-    BILLING_STATS_DEMO_BY_CURRENCY[currency] ?? {
-      summary: { expense: 0, expenseCount: 0, income: 0, incomeCount: 0, net: 0 },
-      expenseRank: [],
-      incomeRank: [],
-    }
-  )
+export function getBillingStatsBundle(currency: string): BillingStatsBundle {
+  if (!currency || currency === 'ALL') return mergeBillingStatsBundles(rankBundle('CNY'), rankBundle('USD'))
+  return rankBundle(currency)
 }
 
 export function formatBillingStatsAmount(amount: number, signed: 'expense' | 'income' | 'net') {

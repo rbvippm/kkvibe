@@ -36,8 +36,11 @@ import {
   BET_ORDER_STATUS_TABS,
   betOrderStatusTabKey,
   BET_ORDER_VALID_BET_TIP,
+  BET_ORDER_WIN_LOSE_TIP,
   BET_TIME_PRESETS,
+  BET_ORDER_TIME_FIELD_OPTIONS,
   MOCK_BET_ORDER_RECORDS,
+  betOrderTimeOf,
   betCurrencyFromCreditCode,
   betOrderStatusClass,
   betWinLoseClass,
@@ -62,6 +65,7 @@ import {
   type BetOrderRecord,
   type BetOrderCurrencyFilter,
   type BetOrderStatusTabKey,
+  type BetOrderTimeField,
   type BetTimePreset,
 } from '../../constants/betOrderQuery'
 import '../../styles/mobile-app-shell.css'
@@ -104,6 +108,7 @@ const forkBanner = computed(() => {
 function createDefaultFilter(): BetOrderFilter {
   return {
     keyword: '',
+    timeField: 'bet',
     timePreset: 'today',
     customStart: '',
     customEnd: '',
@@ -139,6 +144,25 @@ watch(
 )
 const filterOpen = ref(false)
 const filterError = ref('')
+const timeFieldMenuOpen = ref(false)
+const draftTimeFieldLabel = computed(
+  () => BET_ORDER_TIME_FIELD_OPTIONS.find((opt) => opt.value === filterDraft.value.timeField)?.label ?? '投注时间',
+)
+
+function pickTimeField(value: BetOrderTimeField) {
+  filterDraft.value = { ...filterDraft.value, timeField: value }
+  timeFieldMenuOpen.value = false
+}
+
+watch(filterOpen, () => {
+  timeFieldMenuOpen.value = false
+})
+
+/** 按当前时间口径倒序；按结算时间时未结算注单已被筛掉 */
+function sortByTimeField(rows: BetOrderRecord[]) {
+  const field = appliedFilter.value.timeField
+  return rows.sort((a, b) => (betOrderTimeOf(b, field) ?? '').localeCompare(betOrderTimeOf(a, field) ?? ''))
+}
 const dateOpen = ref(false)
 const toolbarPicker = ref<'category' | 'currency' | null>(null)
 
@@ -171,7 +195,7 @@ const filteredRecords = computed(() => {
       rows = rows.filter((row) => row.creditWalletId === selectedWallet.value?.id)
     }
   }
-  return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
+  return sortByTimeField(rows)
 })
 
 const scopedRecords = computed(() => {
@@ -196,16 +220,20 @@ const activeStatusTab = computed<BetOrderStatusTabKey | null>(() =>
   betOrderStatusTabKey(appliedFilter.value.status),
 )
 
-const validBetTipOpen = ref(false)
+const summaryTip = ref<'validBet' | 'winLose' | null>(null)
 
 function pickStatusTab(key: BetOrderStatusTabKey) {
-  validBetTipOpen.value = false
+  summaryTip.value = null
   appliedFilter.value = { ...appliedFilter.value, status: key }
   filterDraft.value = { ...filterDraft.value, status: key }
 }
 
-function toggleValidBetTip() {
-  validBetTipOpen.value = !validBetTipOpen.value
+function toggleSummaryTip(key: 'validBet' | 'winLose') {
+  summaryTip.value = summaryTip.value === key ? null : key
+}
+
+function isSummaryTipOpen(key: 'validBet' | 'winLose', slideIndex: number) {
+  return summaryTip.value === key && summarySlideIndex.value === slideIndex
 }
 
 function statusTabCount(key: BetOrderStatusTabKey) {
@@ -222,7 +250,7 @@ const summaryRecords = computed(() => {
       rows = rows.filter((row) => row.creditWalletId === selectedWallet.value?.id)
     }
   }
-  return rows.sort((a, b) => b.betAt.localeCompare(a.betAt))
+  return sortByTimeField(rows)
 })
 
 const currencyOptions = computed(() => {
@@ -624,7 +652,7 @@ function summaryWinLoseClass(value: number) {
   <div
     class="mh5-bet-order-page"
     :class="{ 'mh5-bet-order-page--embedded': embedded, 'mh5-vip-records': isVipClubRecords }"
-    @click="validBetTipOpen = false"
+    @click="summaryTip = null"
   >
     <header v-if="embedded" class="mh5-agent-report-header">
       <h1 class="mh5-agent-report-header__title">{{ pageTitle }}</h1>
@@ -812,7 +840,7 @@ function summaryWinLoseClass(value: number) {
         class="mh5-bet-order-summary-carousel mh5-bet-order-summary-carousel--scroll"
         :class="{
           'mh5-bet-order-summary-carousel--single': currencySummaries.length < 2,
-          'mh5-bet-order-summary-carousel--tip': validBetTipOpen,
+          'mh5-bet-order-summary-carousel--tip': Boolean(summaryTip),
         }"
       >
         <div
@@ -842,11 +870,11 @@ function summaryWinLoseClass(value: number) {
                     type="button"
                     class="mh5-bet-order-summary__tip-btn"
                     :aria-label="$t('查看有效投注说明')"
-                    :aria-expanded="validBetTipOpen && summarySlideIndex === slideIndex"
-                    @click.stop="toggleValidBetTip"
+                    :aria-expanded="isSummaryTipOpen('validBet', slideIndex)"
+                    @click.stop="toggleSummaryTip('validBet')"
                   >!</button>
                   <span
-                    v-if="validBetTipOpen && summarySlideIndex === slideIndex"
+                    v-if="isSummaryTipOpen('validBet', slideIndex)"
                     class="mh5-bet-order-summary__tip-bubble"
                     role="tooltip"
                     @click.stop
@@ -857,7 +885,24 @@ function summaryWinLoseClass(value: number) {
                 <strong>{{ formatMoney(slide.validBet, slide.currency) }}</strong>
               </div>
               <div class="mh5-bet-order-summary__item">
-                <span class="mh5-bet-order-summary__label">总输赢</span>
+                <span class="mh5-bet-order-summary__label mh5-bet-order-summary__label--tip">
+                  {{ $t('总输赢') }}
+                  <button
+                    type="button"
+                    class="mh5-bet-order-summary__tip-btn"
+                    :aria-label="$t('查看总输赢说明')"
+                    :aria-expanded="isSummaryTipOpen('winLose', slideIndex)"
+                    @click.stop="toggleSummaryTip('winLose')"
+                  >!</button>
+                  <span
+                    v-if="isSummaryTipOpen('winLose', slideIndex)"
+                    class="mh5-bet-order-summary__tip-bubble mh5-bet-order-summary__tip-bubble--end"
+                    role="tooltip"
+                    @click.stop
+                  >
+                    {{ $t(BET_ORDER_WIN_LOSE_TIP[appliedFilter.timeField]) }}
+                  </span>
+                </span>
                 <strong :class="summaryWinLoseClass(slide.winLose)">
                   {{ formatSummaryWinLose(slide.winLose, slide.currency) }}
                 </strong>
@@ -913,7 +958,9 @@ function summaryWinLoseClass(value: number) {
           </div>
           <p class="mh5-bet-order-card__bet-content">{{ formatBetOrderContentPreview(row.betContent) }}</p>
         </div>
-        <time class="mh5-bet-order-card__time">{{ row.betAt }}</time>
+        <time class="mh5-bet-order-card__time">
+          {{ appliedFilter.timeField === 'settle' ? `结算 ${row.gameSettledAt}` : row.betAt }}
+        </time>
 
         <div class="mh5-bet-order-card__foot">
           <span class="mh5-bet-order-card__bet">下注 {{ formatMoney(row.betAmount, row.currency) }}</span>
@@ -1008,13 +1055,56 @@ function summaryWinLoseClass(value: number) {
           <div
             class="mh5-xcoin-sheet mh5-bet-order-sheet"
             :class="{ 'mh5-bet-order-sheet--vip': isVipClubRecords }"
+            @click="timeFieldMenuOpen = false"
           >
           <h2 class="mh5-xcoin-sheet__title">高级筛选</h2>
           <p v-if="filterError" class="mh5-bet-order-sheet__error">{{ filterError }}</p>
 
           <div class="mh5-bet-order-sheet__body">
           <section class="mh5-xcoin-filter-group">
-            <h3 class="mh5-xcoin-filter-group__label">时间区间</h3>
+            <div class="mh5-bet-order-time-head">
+              <h3 class="mh5-xcoin-filter-group__label">时间区间</h3>
+              <div class="mh5-bet-order-time-field">
+                <button
+                  type="button"
+                  class="mh5-bet-order-time-field__trigger"
+                  :class="{ 'mh5-bet-order-time-field__trigger--open': timeFieldMenuOpen }"
+                  aria-haspopup="listbox"
+                  :aria-expanded="timeFieldMenuOpen"
+                  @click.stop="timeFieldMenuOpen = !timeFieldMenuOpen"
+                >
+                  {{ draftTimeFieldLabel }}
+                  <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">
+                    <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <Transition name="mh5-bet-order-time-field-pop">
+                  <ul v-if="timeFieldMenuOpen" class="mh5-bet-order-time-field__menu" role="listbox" @click.stop>
+                    <li v-for="opt in BET_ORDER_TIME_FIELD_OPTIONS" :key="opt.value">
+                      <button
+                        type="button"
+                        role="option"
+                        class="mh5-bet-order-time-field__option"
+                        :class="{ 'mh5-bet-order-time-field__option--active': filterDraft.timeField === opt.value }"
+                        :aria-selected="filterDraft.timeField === opt.value"
+                        @click="pickTimeField(opt.value)"
+                      >
+                        {{ opt.label }}
+                        <svg
+                          v-if="filterDraft.timeField === opt.value"
+                          viewBox="0 0 16 16"
+                          width="14"
+                          height="14"
+                          aria-hidden="true"
+                        >
+                          <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                      </button>
+                    </li>
+                  </ul>
+                </Transition>
+              </div>
+            </div>
             <div class="mh5-bet-order-date-row">
               <input
                 v-model="filterDraft.customStart"
@@ -1038,6 +1128,9 @@ function summaryWinLoseClass(value: number) {
                   ? '仅支持查询近 6 个月的记录'
                   : `选择自定义日期后将覆盖顶部快捷 Tab，区间最长${BET_ORDER_MAX_RANGE_DAYS}天`
               }}
+            </p>
+            <p v-if="filterDraft.timeField === 'settle'" class="mh5-xcoin-filter-hint">
+              按结算时间查询时，未结算的注单不展示
             </p>
           </section>
 

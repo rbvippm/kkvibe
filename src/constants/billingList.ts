@@ -31,6 +31,7 @@ export type BillingType =
   | 'settle'
   | 'live'
   | 'trial'
+  | 'game'
 
 export type BillingCurrencyKind = 'crypto' | 'fiat' | 'credit'
 
@@ -84,7 +85,8 @@ export function billingIconKindFromType(type: BillingType): BillingIconKind {
     type === 'allocate' ||
     type === 'fx' ||
     type === 'intl_transfer' ||
-    type === 'transfer'
+    type === 'transfer' ||
+    type === 'game'
   ) {
     return 'transfer'
   }
@@ -173,7 +175,8 @@ export type BillingCurrencyOption = {
 
 /**
  * 类型筛选：
- * - 旗舰厅按线上类型表补齐，系统 / 充值 / 提现 / 转账 / 兑换 / 红包靠前
+ * - 旗舰厅顺序按「三端账单一致性对齐」排序值；盈利对应排序表的结算，奖金 / 消费不在排序表中，排在游戏之前
+ * - 游戏：36 转账-转给 小程序中心 / 37 转账-来自 小程序中心
  * - 收款与购买并入充值；提现与出售并入提现
  * - 信用币交易类型：转账【游戏名】/ 投注【游戏名】/ 结算【游戏名】/ 上下分 / 系统【退水备注】
  * - 上下分流水：上分=收入(+)；下分=支出(-)
@@ -183,21 +186,22 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'system', label: '系统' },
   { value: 'recharge', label: '充值' },
   { value: 'withdraw', label: '提现' },
+  { value: 'activity', label: '活动金' },
   { value: 'transfer', label: '转账' },
-  { value: 'exchange', label: '兑换' },
   { value: 'redpacket', label: '红包' },
-  { value: 'profit', label: '盈利' },
+  { value: 'exchange', label: '兑换' },
   { value: 'bet', label: '投注' },
+  { value: 'profit', label: '盈利' },
+  { value: 'xcoin', label: '上下分' },
   { value: 'finance', label: '理财' },
   { value: 'loan', label: '借贷' },
   { value: 'allocate', label: '划转' },
   { value: 'fx', label: '换汇' },
   { value: 'intl_transfer', label: '国际转账' },
   { value: 'cash_delivery', label: '全球送现' },
-  { value: 'xcoin', label: '上下分' },
-  { value: 'activity', label: '活动金' },
   { value: 'bonus', label: '奖金' },
   { value: 'consume', label: '消费' },
+  { value: 'game', label: '游戏' },
 ]
 
 /** 贵宾厅账单：转账 / 投注 / 结算（游戏账变）+ 上下分 / 系统 */
@@ -526,6 +530,24 @@ export const MOCK_BILLING_RECORDS: BillingRecord[] = [
     typeLabel: '活动金',
     createdAt: '2026-05-08 12:06:14',
     amount: 28,
+    currency: 'KKC',
+  },
+  {
+    id: 'b35',
+    month: '2026-06',
+    type: 'game',
+    typeLabel: '转账-转给 小程序中心',
+    createdAt: '2026-06-22 20:18:36',
+    amount: -100,
+    currency: 'KKC',
+  },
+  {
+    id: 'b36',
+    month: '2026-06',
+    type: 'game',
+    typeLabel: '转账-来自 小程序中心',
+    createdAt: '2026-06-22 21:45:02',
+    amount: 156.5,
     currency: 'KKC',
   },
 ]
@@ -906,6 +928,7 @@ export function groupBillingByMonth(records: BillingRecord[]) {
     list.push(row)
     map.set(row.month, list)
   }
+  for (const list of map.values()) list.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
   return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
 }
 

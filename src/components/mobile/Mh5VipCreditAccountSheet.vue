@@ -22,12 +22,15 @@ const props = withDefaults(
     hideBalance?: boolean
     /** 贵宾厅「我的」钱包列表：账户名称旁展示改名入口 */
     editableName?: boolean
+    /** 收支分析：只能按币种或单个钱包统计，不提供「全部」币种与「全部钱包」 */
+    currencyRequired?: boolean
   }>(),
   {
     teleportTo: 'body',
     maskClass: 'mh5-agent-overlay-mask',
     hideBalance: false,
     editableName: false,
+    currencyRequired: false,
   },
 )
 
@@ -36,8 +39,17 @@ const emit = defineEmits<{
   editName: [item: CreditWalletItem]
 }>()
 
-const { wallets, hasCreditWallet, selectedId, selectAccount, selectRecordsAll, recordsSelectAll, recordsCurrencyFilter, reorderAgentGroups } =
-  useVipCreditAccounts()
+const {
+  wallets,
+  hasCreditWallet,
+  selectedId,
+  selectedWallet,
+  selectAccount,
+  selectRecordsAll,
+  recordsSelectAll,
+  recordsCurrencyFilter,
+  reorderAgentGroups,
+} = useVipCreditAccounts()
 const searchOpen = ref(false)
 const searchKeyword = ref('')
 const currencyFilter = ref<CreditCurrencyCode | ''>('')
@@ -60,6 +72,13 @@ const agentGroups = computed(() => groupCreditWalletsByAgent(filteredWallets.val
 /** 账单 / 投注记录：列表上方「全部钱包」；选 CNY / USD 后改为信用额度-CNY / USD */
 const showAllRow = computed(() => props.hideBalance && !searchKeyword.value.trim())
 const recordsAllMode = computed(() => props.hideBalance && recordsSelectAll.value)
+/** 未选币种的「全部钱包」带到收支分析时，按当前钱包币种统计 */
+const recordsAllCurrency = computed<CreditCurrencyCode | ''>(() =>
+  props.currencyRequired
+    ? recordsCurrencyFilter.value || selectedWallet.value?.currency || 'cny'
+    : recordsCurrencyFilter.value,
+)
+const allRowActive = computed(() => recordsAllMode.value && recordsAllCurrency.value === currencyFilter.value)
 const allRowLabel = computed(() => creditAllWalletsLabel(currencyFilter.value))
 const sheetTitle = computed(() => (props.hideBalance ? '选择钱包' : '信用额度'))
 
@@ -77,7 +96,8 @@ watch(
       return
     }
     if (props.hideBalance) {
-      currencyFilter.value = recordsSelectAll.value ? recordsCurrencyFilter.value : ''
+      if (recordsSelectAll.value) currencyFilter.value = recordsAllCurrency.value
+      else currencyFilter.value = props.currencyRequired ? (selectedWallet.value?.currency ?? 'cny') : ''
     }
     if (recordsAllMode.value) return
     const selected = wallets.value.find((item) => item.id === selectedId.value)
@@ -103,10 +123,9 @@ function toggleSearch() {
   else void nextTick(() => searchInputRef.value?.focus())
 }
 
-const accountFilterTabs: { key: CreditCurrencyCode | ''; label: string }[] = [
-  { key: '', label: '全部' },
-  ...CREDIT_CURRENCY_TABS,
-]
+const accountFilterTabs = computed<{ key: CreditCurrencyCode | ''; label: string }[]>(() =>
+  props.currencyRequired ? [...CREDIT_CURRENCY_TABS] : [{ key: '', label: '全部' }, ...CREDIT_CURRENCY_TABS],
+)
 
 function setCurrencyFilter(key: CreditCurrencyCode | '') {
   currencyFilter.value = key
@@ -261,7 +280,7 @@ function onHandlePointerUp() {
               v-if="showAllRow"
               type="button"
               class="mh5-credit-account-card mh5-credit-account-card--all"
-              :class="{ 'mh5-credit-account-card--active': recordsAllMode }"
+              :class="{ 'mh5-credit-account-card--active': allRowActive }"
               @click="onSelectAll"
             >
               <img
@@ -272,7 +291,7 @@ function onHandlePointerUp() {
                 height="28"
               />
               <span class="mh5-credit-account-card__all-name">{{ $t(allRowLabel) }}</span>
-              <span v-if="recordsAllMode" class="mh5-credit-account-card__check" aria-hidden="true">
+              <span v-if="allRowActive" class="mh5-credit-account-card__check" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <circle cx="8" cy="8" r="8" fill="#d99d46" />
                   <path d="M4.8 8.2l2.2 2.2 4.2-4.4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" />
