@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
-import { ANCHOR_CHANNEL_PAGE_SIZE, filterAnchorChannels } from '../../constants/liveAnchorMetric'
 import {
   VIP_HALL_CHANNEL_OPTIONS,
   VIP_HALL_CURRENCY_OPTIONS,
@@ -19,7 +18,7 @@ import {
   moduleNameById,
   moduleTypeById,
   productDisplayName,
-  vipHallChannelLabels,
+  vipHallChannelLabel,
   vipHallCurrencyLabel,
   vipHallLangLabel,
   vipHallModuleStore,
@@ -53,7 +52,6 @@ const defaultFilter = (): ListFilter => ({
 
 const filter = ref<ListFilter>(defaultFilter())
 const appliedFilter = ref<ListFilter>(defaultFilter())
-const actionHint = ref('')
 const modalVisible = ref(false)
 const modalMode = ref<ModalMode>('add')
 const editingId = ref<string | null>(null)
@@ -61,18 +59,11 @@ const form = ref<VipHallProductRow>(createEmptyProductRow())
 const formHint = ref('')
 const uploadKind = ref<{ field: 'listImage'; side: 'mobile' | 'pc' } | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-const authVisible = ref(false)
-const authRowId = ref<string | null>(null)
-const authKeyword = ref('')
-const authAppliedKeyword = ref('')
-const authDraftIds = ref<string[]>([])
-const authPage = ref(1)
 
 const filterAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.filter
 const addAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.addButton
 const listAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.list
 const modalAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.modal
-const channelAuthAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.channelAuth
 
 const readonly = computed(() => modalMode.value === 'detail')
 const modalTitle = computed(() =>
@@ -83,38 +74,21 @@ const catalogOptions = computed(() => VIP_HALL_PRODUCT_CATALOG[form.value.miniPr
 const selectedLangs = computed(() =>
   VIP_HALL_LANG_OPTIONS.filter((item) => form.value.languages.includes(item.value)),
 )
+/** 所属模块只列同渠道的模块 */
+const channelModules = computed(() =>
+  vipHallModuleStore.value.filter((item) => item.channelId === form.value.channelId),
+)
+const modulePlaceholder = computed(() => {
+  if (!form.value.channelId) return '请先选择所属渠道'
+  return channelModules.value.length ? '请选择所属模块' : '该渠道暂无模块，请先在模块管理中新增'
+})
 const filteredRows = computed(() =>
   vipHallProductStore.value.filter(matchRow).sort((a, b) => a.sort - b.sort || a.id.localeCompare(b.id)),
 )
 
-const authFilteredList = computed(() => filterAnchorChannels(authAppliedKeyword.value))
-const authTotalPages = computed(() =>
-  Math.max(1, Math.ceil(authFilteredList.value.length / ANCHOR_CHANNEL_PAGE_SIZE)),
-)
-const authPageItems = computed(() => {
-  const start = (authPage.value - 1) * ANCHOR_CHANNEL_PAGE_SIZE
-  return authFilteredList.value.slice(start, start + ANCHOR_CHANNEL_PAGE_SIZE)
-})
-const authPageIds = computed(() => authPageItems.value.map((item) => item.id))
-const authPageAllSelected = computed(
-  () => authPageIds.value.length > 0 && authPageIds.value.every((id) => authDraftIds.value.includes(id)),
-)
-const authPagePartialSelected = computed(
-  () => !authPageAllSelected.value && authPageIds.value.some((id) => authDraftIds.value.includes(id)),
-)
-const authPageNumbers = computed(() =>
-  Array.from({ length: authTotalPages.value }, (_, index) => index + 1),
-)
-const formAuthLabels = computed(() => vipHallChannelLabels(form.value.channelIds))
-const authLead = computed(() => {
-  const row = authRowId.value ? vipHallProductStore.value.find((item) => item.id === authRowId.value) : null
-  const name = productDisplayName(row ?? form.value)
-  return name === '-' ? '新增产品' : name
-})
-
 function matchRow(row: VipHallProductRow) {
   const f = appliedFilter.value
-  if (f.channel && !row.channelIds.includes(f.channel)) return false
+  if (f.channel && row.channelId !== f.channel) return false
   if (f.miniProgram && row.miniProgram !== f.miniProgram) return false
   if (f.moduleId && row.moduleId !== f.moduleId) return false
   if (f.lang && !row.languages.includes(f.lang)) return false
@@ -124,13 +98,11 @@ function matchRow(row: VipHallProductRow) {
 
 function applyFilter() {
   appliedFilter.value = { ...filter.value }
-  actionHint.value = ''
 }
 
 function resetFilter() {
   filter.value = defaultFilter()
   appliedFilter.value = defaultFilter()
-  actionHint.value = ''
 }
 
 function toggleCurrency(value: VipHallCurrency) {
@@ -168,65 +140,6 @@ function openEdit(row: VipHallProductRow, mode: 'edit' | 'detail') {
 
 function closeModal() {
   modalVisible.value = false
-  closeChannelAuth()
-}
-
-function openChannelAuth(row?: VipHallProductRow) {
-  authKeyword.value = ''
-  authAppliedKeyword.value = ''
-  authPage.value = 1
-  authRowId.value = row?.id ?? null
-  authDraftIds.value = [...(row ?? form.value).channelIds]
-  authVisible.value = true
-}
-
-function closeChannelAuth() {
-  authVisible.value = false
-  authRowId.value = null
-  authKeyword.value = ''
-  authAppliedKeyword.value = ''
-  authDraftIds.value = []
-  authPage.value = 1
-}
-
-function searchChannels() {
-  authAppliedKeyword.value = authKeyword.value
-  authPage.value = 1
-}
-
-function toggleChannel(id: string) {
-  authDraftIds.value = authDraftIds.value.includes(id)
-    ? authDraftIds.value.filter((item) => item !== id)
-    : [...authDraftIds.value, id]
-}
-
-function toggleChannelPageAll() {
-  if (!authPageIds.value.length) return
-  if (authPageAllSelected.value) {
-    authDraftIds.value = authDraftIds.value.filter((id) => !authPageIds.value.includes(id))
-    return
-  }
-  authDraftIds.value = [...new Set([...authDraftIds.value, ...authPageIds.value])]
-}
-
-function goAuthPage(page: number) {
-  if (page < 1 || page > authTotalPages.value) return
-  authPage.value = page
-}
-
-function confirmChannelAuth() {
-  const ids = [...authDraftIds.value]
-  if (authRowId.value) {
-    const row = vipHallProductStore.value.find((item) => item.id === authRowId.value)
-    if (row) {
-      row.channelIds = ids
-      showPcToast(`已更新「${productDisplayName(row)}」的授权渠道`)
-    }
-  } else {
-    form.value.channelIds = ids
-    if (formHint.value === '请至少授权 1 个渠道') formHint.value = ''
-  }
-  closeChannelAuth()
 }
 
 function onMiniProgramChange() {
@@ -236,6 +149,16 @@ function onMiniProgramChange() {
 function onModuleChange() {
   applyProductTypeFromModule(form.value, moduleTypeById(vipHallModuleStore.value, form.value.moduleId))
 }
+
+watch(
+  () => form.value.channelId,
+  () => {
+    if (readonly.value || !form.value.moduleId) return
+    if (channelModules.value.some((item) => item.id === form.value.moduleId)) return
+    form.value.moduleId = ''
+    onModuleChange()
+  },
+)
 
 function triggerUpload(field: 'listImage', side: 'mobile' | 'pc') {
   if (readonly.value) return
@@ -272,6 +195,7 @@ function onFileChange(event: Event) {
 }
 
 function validateForm() {
+  if (!form.value.channelId) return '请选择所属渠道'
   if (!form.value.moduleId) return '请选择所属模块'
   if (!form.value.currencies.length) return '请至少选择 1 个支持币种'
   if (!form.value.languages.length) return '请至少选择 1 个支持语种'
@@ -290,7 +214,6 @@ function validateForm() {
   }
   const sort = Number(form.value.sort)
   if (!Number.isInteger(sort) || sort < 1) return '排序须为正整数'
-  if (!form.value.channelIds.length) return '请至少授权 1 个渠道'
   return ''
 }
 
@@ -305,24 +228,24 @@ function confirmModal() {
   if (modalMode.value === 'add') {
     payload.id = createVipHallProductId()
     vipHallProductStore.value.unshift(payload)
-    actionHint.value = `已新增产品「${productDisplayName(payload)}」`
+    showPcToast(`已新增产品「${productDisplayName(payload)}」`)
   } else if (editingId.value) {
     const idx = vipHallProductStore.value.findIndex((item) => item.id === editingId.value)
     if (idx >= 0) vipHallProductStore.value[idx] = payload
-    actionHint.value = `已保存产品「${productDisplayName(payload)}」`
+    showPcToast(`已保存产品「${productDisplayName(payload)}」`)
   }
   closeModal()
 }
 
 function toggleEnabled(row: VipHallProductRow) {
   row.enabled = !row.enabled
-  actionHint.value = `已${row.enabled ? '启用' : '禁用'}「${productDisplayName(row)}」`
+  showPcToast(`已${row.enabled ? '启用' : '禁用'}「${productDisplayName(row)}」`)
 }
 
 function removeRow(row: VipHallProductRow) {
   if (!window.confirm(`确定删除产品「${productDisplayName(row)}」吗？`)) return
   vipHallProductStore.value = vipHallProductStore.value.filter((item) => item.id !== row.id)
-  actionHint.value = `已删除「${productDisplayName(row)}」`
+  showPcToast(`已删除「${productDisplayName(row)}」`)
 }
 </script>
 
@@ -389,7 +312,6 @@ function removeRow(row: VipHallProductRow) {
           <button type="button" class="wf-btn wf-btn--add" @click="openAdd">+ 新增</button>
           <WfSpecAnnot :no="addAnnot.no" :title="addAnnot.title" :items="[...addAnnot.items]" />
         </span>
-        <p v-if="actionHint" class="wf-modal__hint">{{ actionHint }}</p>
       </div>
 
       <div class="wf-table-wrap">
@@ -400,7 +322,7 @@ function removeRow(row: VipHallProductRow) {
           <thead>
             <tr>
               <th class="wf-th">产品ID</th>
-              <th class="wf-th">渠道</th>
+              <th class="wf-th">所属渠道</th>
               <th class="wf-th">所属模块</th>
               <th class="wf-th">产品</th>
               <th class="wf-th">类型</th>
@@ -417,11 +339,7 @@ function removeRow(row: VipHallProductRow) {
             </tr>
             <tr v-for="row in filteredRows" :key="row.id">
               <td class="wf-td vhp-td--nowrap">{{ row.id }}</td>
-              <td class="wf-td wf-td--center">
-                <button type="button" class="wf-link-action" @click="openChannelAuth(row)">
-                  {{ row.channelIds.length }}
-                </button>
-              </td>
+              <td class="wf-td">{{ vipHallChannelLabel(row.channelId) }}</td>
               <td class="wf-td">{{ moduleNameById(vipHallModuleStore, row.moduleId) }}</td>
               <td class="wf-td">{{ productDisplayName(row) }}</td>
               <td class="wf-td">{{ vipHallProductTypeLabel(moduleTypeById(vipHallModuleStore, row.moduleId) || row.type) }}</td>
@@ -478,15 +396,26 @@ function removeRow(row: VipHallProductRow) {
           </header>
           <div class="wf-modal__body">
             <div class="wf-form-row vhp-form-row">
+              <label class="wf-form-row__label wf-form-row__label--required">所属渠道</label>
+              <WfSearchSelect
+                v-model="form.channelId"
+                :options="VIP_HALL_CHANNEL_OPTIONS"
+                placeholder="请选择所属渠道"
+                full
+                :disabled="readonly"
+              />
+            </div>
+
+            <div class="wf-form-row vhp-form-row">
               <label class="wf-form-row__label wf-form-row__label--required">所属模块</label>
               <select
                 v-model="form.moduleId"
                 class="wf-select wf-select--full"
-                :disabled="readonly"
+                :disabled="readonly || !form.channelId"
                 @change="onModuleChange"
               >
-                <option value="">请选择所属模块</option>
-                <option v-for="opt in vipHallModuleStore" :key="opt.id" :value="opt.id">
+                <option value="">{{ modulePlaceholder }}</option>
+                <option v-for="opt in channelModules" :key="opt.id" :value="opt.id">
                   {{ displayZhName(opt.names) }}
                 </option>
               </select>
@@ -631,19 +560,6 @@ function removeRow(row: VipHallProductRow) {
               <input v-model.number="form.sort" type="number" min="1" class="wf-input wf-input--full" :disabled="readonly" />
             </div>
 
-            <div class="wf-form-row vhp-form-row">
-              <span class="wf-form-row__label wf-form-row__label--required">渠道</span>
-              <div class="vhp-auth">
-                <button v-if="!readonly" type="button" class="wf-link-action" @click="openChannelAuth()">
-                  点击授权
-                </button>
-                <p v-if="formAuthLabels.length" class="vhp-auth__names">
-                  已授权 {{ formAuthLabels.length }} 个渠道：{{ formAuthLabels.join('、') }}
-                </p>
-                <p v-else class="wf-muted">尚未授权渠道</p>
-              </div>
-            </div>
-
             <p v-if="formHint" class="wf-modal__hint">{{ formHint }}</p>
             <input ref="fileInputRef" type="file" accept="image/*" class="vhp-file-input" @change="onFileChange" />
           </div>
@@ -658,93 +574,6 @@ function removeRow(row: VipHallProductRow) {
       </div>
     </Teleport>
 
-    <Teleport to="body">
-      <div v-if="authVisible" class="wf-modal-mask" role="presentation" @click.self="closeChannelAuth">
-        <div class="wf-modal wf-modal--scroll vhp-auth-modal" role="dialog" aria-modal="true" aria-labelledby="vhp-auth-title">
-          <header class="wf-modal__header">
-            <h3 id="vhp-auth-title" class="wf-modal__title wf-modal__title--with-spec">
-              授权渠道
-              <WfSpecAnnot
-                :no="channelAuthAnnot.no"
-                :title="channelAuthAnnot.title"
-                :items="[...channelAuthAnnot.items]"
-              />
-            </h3>
-            <button type="button" class="wf-modal__close" aria-label="关闭" @click="closeChannelAuth">×</button>
-          </header>
-          <div class="wf-modal__body">
-            <p class="vhp-auth-lead">{{ authLead }}</p>
-            <div class="wf-modal__query">
-              <label class="wf-label" for="vhp-auth-keyword">渠道选择：</label>
-              <input
-                id="vhp-auth-keyword"
-                v-model="authKeyword"
-                type="text"
-                class="wf-input"
-                placeholder="请输入关键词"
-                @keyup.enter="searchChannels"
-              />
-              <button type="button" class="wf-btn wf-btn--primary" @click="searchChannels">搜索</button>
-            </div>
-
-            <div class="vhp-auth-box">
-              <div class="vhp-auth-box__bar">
-                <label class="vhp-check">
-                  <input
-                    type="checkbox"
-                    :checked="authPageAllSelected"
-                    :indeterminate="authPagePartialSelected"
-                    :disabled="!authPageIds.length"
-                    @change="toggleChannelPageAll"
-                  />
-                  全选
-                </label>
-                <span class="wf-muted">已选：{{ authDraftIds.length }}</span>
-              </div>
-              <div v-if="authPageItems.length" class="vhp-auth-grid">
-                <label v-for="item in authPageItems" :key="item.id" class="vhp-check">
-                  <input
-                    type="checkbox"
-                    :checked="authDraftIds.includes(item.id)"
-                    @change="toggleChannel(item.id)"
-                  />
-                  {{ item.name }}
-                </label>
-              </div>
-              <p v-else class="wf-td--empty vhp-auth-empty">暂无匹配渠道</p>
-            </div>
-
-            <div v-if="authFilteredList.length" class="wf-pagination vhp-auth-pages">
-              <button type="button" class="wf-btn wf-btn--default" :disabled="authPage <= 1" @click="goAuthPage(authPage - 1)">
-                上一页
-              </button>
-              <button
-                v-for="page in authPageNumbers"
-                :key="page"
-                type="button"
-                class="wf-btn"
-                :class="page === authPage ? 'wf-btn--primary' : 'wf-btn--default'"
-                @click="goAuthPage(page)"
-              >
-                {{ page }}
-              </button>
-              <button
-                type="button"
-                class="wf-btn wf-btn--default"
-                :disabled="authPage >= authTotalPages"
-                @click="goAuthPage(authPage + 1)"
-              >
-                下一页
-              </button>
-            </div>
-          </div>
-          <div class="wf-modal__footer">
-            <button type="button" class="wf-btn wf-btn--default" @click="closeChannelAuth">取消</button>
-            <button type="button" class="wf-btn wf-btn--primary" @click="confirmChannelAuth">确定</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -787,13 +616,4 @@ function removeRow(row: VipHallProductRow) {
 .vhp-upload__placeholder { color: #999; font-size: 12px; text-align: center; }
 .vhp-upload__preview { width: 100%; height: 100%; object-fit: contain; }
 .vhp-file-input { display: none; }
-.vhp-auth { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding-top: 4px; }
-.vhp-auth__names { margin: 0; color: var(--pc-text); font-size: 13px; line-height: 1.6; word-break: break-word; }
-.vhp-auth-modal { width: 640px; }
-.vhp-auth-lead { margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: var(--pc-text-secondary); word-break: break-word; }
-.vhp-auth-box { margin-bottom: 12px; padding: 12px; border: 1px solid var(--pc-border-light); }
-.vhp-auth-box__bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.vhp-auth-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; }
-.vhp-auth-empty { padding: 24px 0; text-align: center; }
-.vhp-auth-pages { height: auto; min-height: 56px; gap: 8px; flex-wrap: wrap; padding: 8px; }
 </style>
