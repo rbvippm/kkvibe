@@ -57,7 +57,11 @@ const modalMode = ref<ModalMode>('add')
 const editingId = ref<string | null>(null)
 const form = ref<VipHallProductRow>(createEmptyProductRow())
 const formHint = ref('')
-const uploadKind = ref<{ field: 'listImage'; side: 'mobile' | 'pc' } | null>(null)
+const uploadKind = ref<
+  | { field: 'listImage'; side: 'mobile' | 'pc' }
+  | { field: 'jumpImage'; lang: VipHallLang }
+  | null
+>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 const filterAnnot = VIP_HALL_PRODUCT_ANNOT_MAP.filter
@@ -166,6 +170,12 @@ function triggerUpload(field: 'listImage', side: 'mobile' | 'pc') {
   fileInputRef.value?.click()
 }
 
+function triggerJumpUpload(lang: VipHallLang) {
+  if (readonly.value) return
+  uploadKind.value = { field: 'jumpImage', lang }
+  fileInputRef.value?.click()
+}
+
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -180,14 +190,21 @@ function onFileChange(event: Event) {
     input.value = ''
     return
   }
-  const target: VipHallAssetPair = form.value[kind.field]
   const url = URL.createObjectURL(file)
-  if (kind.side === 'mobile') {
-    target.mobileUrl = url
-    target.mobileFileName = file.name
+  if (kind.field === 'jumpImage') {
+    form.value.jumpImages = {
+      ...form.value.jumpImages,
+      [kind.lang]: { url, fileName: file.name },
+    }
   } else {
-    target.pcUrl = url
-    target.pcFileName = file.name
+    const target: VipHallAssetPair = form.value[kind.field]
+    if (kind.side === 'mobile') {
+      target.mobileUrl = url
+      target.mobileFileName = file.name
+    } else {
+      target.pcUrl = url
+      target.pcFileName = file.name
+    }
   }
   formHint.value = ''
   uploadKind.value = null
@@ -206,8 +223,10 @@ function validateForm() {
   if (form.value.type === 'game') {
     if (!form.value.miniProgram) return '请选择小程序'
     if (!form.value.product) return '请选择产品'
-  } else if (!form.value.jumpUrl.trim()) {
-    return '请输入跳转地址'
+  } else {
+    for (const lang of form.value.languages) {
+      if (!form.value.jumpImages[lang]?.url) return `请上传图片（${vipHallLangLabel(lang)}）`
+    }
   }
   if (!form.value.listImage.mobileUrl || !form.value.listImage.pcUrl) {
     return '请上传移动端与 PC 端 icon'
@@ -523,16 +542,29 @@ function removeRow(row: VipHallProductRow) {
               </div>
             </template>
 
-            <div v-else-if="form.moduleId && form.type === 'hall'" class="wf-form-row vhp-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">跳转地址</label>
-              <input
-                v-model="form.jumpUrl"
-                type="text"
-                class="wf-input wf-input--full"
-                placeholder="请输入跳转地址"
-                :disabled="readonly"
-              />
-            </div>
+            <template v-else-if="form.moduleId && form.type === 'hall'">
+              <div v-for="lang in selectedLangs" :key="`jump-${lang.value}`" class="wf-form-row vhp-form-row">
+                <label class="wf-form-row__label wf-form-row__label--required">图片（{{ lang.label }}）</label>
+                <button
+                  type="button"
+                  class="vhp-upload vhp-upload--phone"
+                  :disabled="readonly"
+                  @click="triggerJumpUpload(lang.value)"
+                >
+                  <img
+                    v-if="form.jumpImages[lang.value]?.url"
+                    :src="form.jumpImages[lang.value]?.url"
+                    :alt="`图片（${lang.label}）`"
+                    class="vhp-upload__preview"
+                  />
+                  <span v-else class="vhp-upload__placeholder">点击上传图片</span>
+                </button>
+              </div>
+              <div v-if="selectedLangs.length" class="wf-form-row vhp-form-row">
+                <span />
+                <p class="wf-form-row__hint">仅支持格式为 jpg、png、webp</p>
+              </div>
+            </template>
 
             <div class="wf-form-row vhp-form-row">
               <label class="wf-form-row__label wf-form-row__label--required">icon</label>
@@ -602,7 +634,7 @@ function removeRow(row: VipHallProductRow) {
 .vhp-switch--on .vhp-switch__knob { transform: translateX(22px); }
 .vhp-modal { width: min(720px, 92vw); }
 .vhp-modal__footer { justify-content: flex-end; }
-.vhp-form-row { grid-template-columns: 140px 1fr; }
+.vhp-form-row { grid-template-columns: 180px 1fr; }
 .vhp-checks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .vhp-check { display: inline-flex; align-items: center; gap: 6px; }
 .vhp-asset-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; width: 100%; }
@@ -611,6 +643,12 @@ function removeRow(row: VipHallProductRow) {
 .vhp-upload {
   display: flex; align-items: center; justify-content: center; width: 140px; height: 120px;
   padding: 8px; border: 1px dashed #d9d9d9; border-radius: 4px; background: #fafafa; cursor: pointer;
+}
+.vhp-upload--phone {
+  width: 78px;
+  height: 160px;
+  border-radius: 16px;
+  padding: 6px;
 }
 .vhp-upload:disabled { cursor: not-allowed; }
 .vhp-upload__placeholder { color: #999; font-size: 12px; text-align: center; }

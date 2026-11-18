@@ -21,7 +21,6 @@ import {
   type AgentSettleCurrencyFilter,
   type AgentSettleWallet,
 } from '../../constants/agentSettle'
-import { CREDIT_SETTLE_SUB_AGENT_TO_MEMBER_REBATE } from '../../constants/agentCreditSettle'
 import { AGENT_SETTLE_SPEC } from '../../constants/agentSettleSpec'
 import { dateRangeSheetPresetRange } from '../../constants/mh5DateRange'
 import { withMineHallFrom } from '../../constants/mineHall'
@@ -245,7 +244,7 @@ function winLoseClass(value: number) {
               </strong>
             </p>
             <p>
-              总退水({{ CREDIT_SETTLE_SUB_AGENT_TO_MEMBER_REBATE }}%)
+              总退水
               <strong>{{ formatSettleMoney(settleWalletRebate(wallet), wallet.currency) }}</strong>
             </p>
           </div>

@@ -8,6 +8,14 @@ export type VipHallCurrency = 'credit-cny' | 'credit-usd'
 export type VipHallProductType = 'game' | 'hall'
 export type VipHallI18nMap = Partial<Record<VipHallLang, string>>
 
+export type VipHallLangImage = {
+  url: string
+  fileName: string
+}
+
+/** 赌厅跳转图：每个已选语种一张 */
+export type VipHallLangImageMap = Partial<Record<VipHallLang, VipHallLangImage>>
+
 export type VipHallAssetPair = {
   mobileUrl: string
   mobileFileName: string
@@ -42,7 +50,8 @@ export type VipHallProductRow = {
   miniProgram: string
   product: string
   suffix: string
-  jumpUrl: string
+  /** 赌厅类型按语种上传的竖版跳转图；游戏类型留空 */
+  jumpImages: VipHallLangImageMap
   image: VipHallAssetPair
   listImage: VipHallAssetPair
   sort: number
@@ -166,6 +175,19 @@ function cloneI18nMap(map: VipHallI18nMap): VipHallI18nMap {
   return { ...map }
 }
 
+function cloneLangImages(map: VipHallLangImageMap): VipHallLangImageMap {
+  const next: VipHallLangImageMap = {}
+  for (const lang of Object.keys(map) as VipHallLang[]) {
+    const image = map[lang]
+    if (image) next[lang] = { ...image }
+  }
+  return next
+}
+
+function langImages(url: string, fileName: string, langs: VipHallLang[]): VipHallLangImageMap {
+  return Object.fromEntries(langs.map((lang) => [lang, { url, fileName }])) as VipHallLangImageMap
+}
+
 export function cloneModuleRow(row: VipHallModuleRow): VipHallModuleRow {
   return {
     ...row,
@@ -184,6 +206,7 @@ export function cloneProductRow(row: VipHallProductRow): VipHallProductRow {
     descriptions: cloneI18nMap(row.descriptions),
     currencies: [...row.currencies],
     languages: [...row.languages],
+    jumpImages: cloneLangImages(row.jumpImages),
     image: cloneAssetPair(row.image),
     listImage: cloneAssetPair(row.listImage),
   }
@@ -217,7 +240,7 @@ export function createEmptyProductRow(sort = 1, moduleId = ''): VipHallProductRo
     miniProgram: '',
     product: '',
     suffix: '',
-    jumpUrl: '',
+    jumpImages: {},
     image: emptyAssetPair(),
     listImage: emptyAssetPair(),
     sort,
@@ -313,7 +336,7 @@ export function applyProductTypeFromModule(row: VipHallProductRow, type: VipHall
     row.product = ''
     row.suffix = ''
   } else {
-    row.jumpUrl = ''
+    row.jumpImages = {}
   }
 }
 
@@ -330,7 +353,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'sports',
     product: 'sports-board',
     suffix: '/vip-club/play/sports',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/game-sports.png', 'game-sports.png'),
     listImage: assetFrom('/images/vip-club/game-sports.png', 'game-sports.png'),
     sort: 1,
@@ -348,7 +371,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'racing',
     suffix: '/vip-club/play/lottery/racing',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-racing.png', 'card-racing.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
     sort: 1,
@@ -366,7 +389,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'boat',
     suffix: '/vip-club/play/lottery/boat',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-boat.png', 'card-boat.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
     sort: 2,
@@ -384,7 +407,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'ssc',
     suffix: '/vip-club/play/lottery/ssc',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-ssc.png', 'card-ssc.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
     sort: 3,
@@ -402,7 +425,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'live',
     product: 'db-live',
     suffix: '/vip-club/play/live/db-live',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/vendors/db-logo.png', 'db-logo.png'),
     listImage: assetFrom('/images/vip-club/game-live.png', 'game-live.png'),
     sort: 1,
@@ -420,7 +443,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'slot',
     product: 'pp',
     suffix: '/vip-club/play/slot/pp',
-    jumpUrl: '',
+    jumpImages: {},
     image: assetFrom('/images/vip-club/vendors/pp-logo.png', 'pp-logo.png'),
     listImage: assetFrom('/images/vip-club/game-slot.png', 'game-slot.png'),
     sort: 1,
@@ -438,7 +461,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: '',
     product: '',
     suffix: '',
-    jumpUrl: '/vip-club/hall/macau',
+    jumpImages: langImages('/images/vip-club/hall/macau-hero.png', 'macau-hero.png', ['zh', 'zhHant', 'en']),
     image: assetFrom('/images/vip-club/flag-macau.png', 'flag-macau.png'),
     listImage: assetFrom('/images/vip-club/game-hall.png', 'game-hall.png'),
     sort: 1,
@@ -456,7 +479,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: '',
     product: '',
     suffix: '',
-    jumpUrl: '/vip-club/hall/singapore',
+    jumpImages: langImages('/images/vip-club/hall/singapore-hero.png', 'singapore-hero.png', ['zh', 'zhHant']),
     image: assetFrom('/images/vip-club/flag-singapore.png', 'flag-singapore.png'),
     listImage: assetFrom('/images/vip-club/game-hall.png', 'game-hall.png'),
     sort: 2,
@@ -467,7 +490,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
 export function productDisplayName(row: VipHallProductRow) {
   const customName = displayZhName(row.names)
   if (customName !== '-') return customName
-  if (row.type === 'hall') return row.jumpUrl || '赌厅链接'
+  if (row.type === 'hall') return '赌厅图片'
   return vipHallCatalogProductLabel(row.miniProgram, row.product) || '-'
 }
 
