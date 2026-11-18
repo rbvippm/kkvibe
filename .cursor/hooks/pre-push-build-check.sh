@@ -43,6 +43,16 @@ if [[ "$branch" != "main" && "$mentions_main" != "true" ]]; then
   allow
 fi
 
+# Cursor 钩子进程常常不带用户 shell 的 PATH，node 装在 ~/.local 时会误判编译失败
+if ! command -v npm >/dev/null 2>&1; then
+  for dir in "$HOME/.local/node/bin" "/usr/local/bin" "/opt/homebrew/bin"; do
+    if [[ -x "$dir/npm" ]]; then
+      export PATH="$dir:$PATH"
+      break
+    fi
+  done
+fi
+
 echo "[pre-push-build-check] 推送 origin/main 前执行 npm run build ..." >&2
 if ! npm run build >&2; then
   deny "打包编译失败（npm run build）。请先修复错误并重新 build 通过后，再推送到 origin/main。"
