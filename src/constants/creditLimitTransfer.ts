@@ -52,7 +52,8 @@ export type CreditTopAgentRow = {
   cashPassword: string
   creditAccount: string
   creditPassword: string
-  creditBalance: number
+  /** 信用额度按币种独立，CNY / USD 互不影响 */
+  creditBalances: Record<CreditCurrency, number>
 }
 
 export const CREDIT_INITIATOR_TYPE_OPTIONS = [
@@ -260,6 +261,11 @@ function parseCreditBalance(raw: string): number {
   return Number.isNaN(fallback) ? 0 : fallback
 }
 
+/** 一级代理信用额度分币种 Mock；未单独配置时 CNY 取占成配置当前余额，USD 为 0 */
+const CREDIT_AGENT_BALANCES: Record<string, Record<CreditCurrency, number>> = {
+  '6992885475031612267': { CNY: 5, USD: 12.8 },
+}
+
 /**
  * 上下分可选对象：占成代理配置中已授信的一级代理
  *（agentLevel=1 且具备信用账密）
@@ -277,7 +283,10 @@ export function listCreditLevel1Agents(): CreditTopAgentRow[] {
     cashPassword: row.cashAgentPassword,
     creditAccount: row.creditAgentAccount,
     creditPassword: row.creditAgentPassword,
-    creditBalance: parseCreditBalance(row.xCoinBalance),
+    creditBalances: CREDIT_AGENT_BALANCES[row.userId] ?? {
+      CNY: parseCreditBalance(row.xCoinBalance),
+      USD: 0,
+    },
   }))
 }
 

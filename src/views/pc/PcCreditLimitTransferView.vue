@@ -138,6 +138,7 @@ const agentKeyword = ref('')
 const agentSearchApplied = ref('')
 const selectedAgentId = ref<string | null>(null)
 const transferMode = ref('')
+const transferCurrency = ref<'' | CreditCurrency>('')
 const amountInput = ref('')
 const remarkInput = ref('')
 const transferHint = ref('')
@@ -161,6 +162,7 @@ function openTransferModal() {
   agentSearchApplied.value = ''
   selectedAgentId.value = null
   transferMode.value = ''
+  transferCurrency.value = ''
   amountInput.value = ''
   remarkInput.value = ''
   transferHint.value = ''
@@ -184,6 +186,8 @@ function selectAgent(agent: CreditTopAgentRow) {
 
 function validateTransferForm() {
   if (!selectedAgent.value) return '请先搜索并选择一级代理信用代理'
+  const currency = transferCurrency.value
+  if (!currency) return '请选择信用币种'
   if (!transferMode.value) return '请选择上下分方式'
   const amount = Number(amountInput.value)
   if (!amountInput.value.trim() || Number.isNaN(amount) || amount <= 0) {
@@ -192,8 +196,8 @@ function validateTransferForm() {
   if (!/^\d+(\.\d{1,2})?$/.test(amountInput.value.trim())) {
     return '金额最多保留两位小数'
   }
-  if (transferMode.value === 'down' && amount > selectedAgent.value.creditBalance) {
-    return '下分金额不能超过信用额度余额'
+  if (transferMode.value === 'down' && amount > selectedAgent.value.creditBalances[currency]) {
+    return `下分金额不能超过${currency}信用额度余额`
   }
   if (!remarkInput.value.trim()) return '请输入备注'
   if (remarkInput.value.trim().length > 16) return '备注最多 16 个字符'
@@ -207,6 +211,8 @@ function confirmTransfer() {
     return
   }
   const agent = selectedAgent.value!
+  const currency = transferCurrency.value
+  if (!currency) return
   const amount = Number(amountInput.value)
   const signed = transferMode.value === 'up' ? amount : -amount
   const now = new Date()
@@ -220,7 +226,7 @@ function confirmTransfer() {
     username: agent.username,
     userId: agent.userId,
     amount: signed,
-    currency: 'CNY',
+    currency,
     initiatorType: 'admin',
     transferMode: transferMode.value as CreditTransferMode,
     targetType: 'agent',
@@ -502,7 +508,7 @@ function confirmTransfer() {
                   <th class="wf-th">金刚号</th>
                   <th class="wf-th">现金代理账密</th>
                   <th class="wf-th">信用代理账密</th>
-                  <th class="wf-th">信用额度余额</th>
+                  <th class="wf-th credit-transfer-balance">信用额度余额</th>
                   <th class="wf-th">操作</th>
                 </tr>
               </thead>
@@ -529,7 +535,14 @@ function confirmTransfer() {
                   <td class="wf-td">
                     {{ agent.creditAccount }} / {{ agent.creditPassword }}
                   </td>
-                  <td class="wf-td wf-td--center">{{ formatCreditBalance(agent.creditBalance) }}</td>
+                  <td class="wf-td">
+                    <p class="credit-transfer-balance__line">
+                      CNY {{ formatCreditBalance(agent.creditBalances.CNY) }}
+                    </p>
+                    <p class="credit-transfer-balance__line">
+                      USD {{ formatCreditBalance(agent.creditBalances.USD) }}
+                    </p>
+                  </td>
                   <td class="wf-td wf-td--center">
                     <button type="button" class="wf-link-action" @click="selectAgent(agent)">
                       {{ selectedAgentId === agent.id ? '已选择' : '选择' }}
@@ -541,6 +554,20 @@ function confirmTransfer() {
           </div>
 
           <div class="wf-modal__form credit-transfer-form">
+            <label class="wf-modal__field">
+              <span class="wf-modal__field-label"><i class="wf-required">*</i>信用币种</span>
+              <select v-model="transferCurrency" class="wf-input wf-input--select">
+                <option value="">请选择</option>
+                <option
+                  v-for="opt in CREDIT_SUMMARY_CURRENCY_OPTIONS"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </option>
+              </select>
+            </label>
+
             <label class="wf-modal__field">
               <span class="wf-modal__field-label"><i class="wf-required">*</i>上下分方式</span>
               <select v-model="transferMode" class="wf-input wf-input--select">
@@ -754,6 +781,23 @@ function confirmTransfer() {
 
 .wf-tr--selected td {
   background: #e6f7ff;
+}
+
+.wf-modal--credit-transfer .credit-transfer-balance {
+  width: 132px;
+}
+
+.wf-modal--credit-transfer .wf-table th:last-child,
+.wf-modal--credit-transfer .wf-table td:last-child {
+  width: 72px;
+  text-align: center;
+}
+
+.credit-transfer-balance__line {
+  margin: 0;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .credit-transfer-form {
