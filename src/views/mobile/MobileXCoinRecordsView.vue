@@ -12,7 +12,6 @@ import {
   getTransferSceneOptionsByLane,
   transferSceneLane,
   formatTransferAmount,
-  formatTransferBalance,
   parseTransferLane,
   parseXCoinCreditCurrency,
   summarizeTransferLaneByCurrency,
@@ -794,10 +793,6 @@ function summaryToneClass(value: number) {
               <div v-if="detailRelatedOrderNo" class="mh5-bet-order-detail-row">
                 <span>关联单号</span>
                 <strong class="mh5-bet-order-detail-row__mono">{{ detailRelatedOrderNo }}</strong>
-              </div>
-              <div class="mh5-bet-order-detail-row">
-                <span>变动后结余</span>
-                <strong>{{ formatTransferBalance(detailRow) }}</strong>
               </div>
             </section>
 
