@@ -204,11 +204,11 @@ export const BILLING_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: 'game', label: '游戏' },
 ]
 
-/** 贵宾厅账单：转账 / 投注 / 结算（游戏账变）+ 上下分 / 系统 */
+/** 贵宾厅账单：游戏 / 投注 / 结算 + 上下分 / 系统，不含会员互转 */
 export const BILLING_VIP_TYPE_OPTIONS: BillingTypeOption[] = [
   { value: '', label: '全部' },
   { value: 'system', label: '系统' },
-  { value: 'transfer', label: '转账' },
+  { value: 'game_transfer', label: '游戏' },
   { value: 'consume', label: '投注' },
   { value: 'bonus', label: '结算' },
   { value: 'xcoin', label: '上下分' },
@@ -796,8 +796,15 @@ export function getBillingAmountUnit(currency: string) {
   return currency
 }
 
+/** 游戏：转入游戏场馆，或与小程序中心互转 */
+export function isGameTransferRecord(row: BillingRecord) {
+  if (row.type === 'game') return true
+  return row.type === 'transfer' && (/【[^】]+】/.test(row.typeLabel) || row.typeLabel.includes('小程序中心'))
+}
+
 export function matchBillingTypeFilter(row: BillingRecord, type?: string) {
   if (!type) return true
+  if (type === 'game_transfer') return isGameTransferRecord(row)
   if (type === 'xcoin') return row.type === 'xcoin_credit_up' || row.type === 'xcoin_credit_down'
   if (type === 'recharge') {
     return row.type === 'recharge' || row.type === 'receive' || row.typeLabel.startsWith('充值')
@@ -821,11 +828,11 @@ export function matchBillingTypeFilter(row: BillingRecord, type?: string) {
   return row.type === type
 }
 
-/** 贵宾厅账单：信用额度游戏账变 + 上下分 + 系统，不含现金收款/提现等 */
+/** 贵宾厅账单：信用额度游戏账变 + 上下分 + 系统，不含会员互转和现金收款/提现 */
 export function isVipClubBillingRecord(row: BillingRecord) {
   if (row.currency !== 'CNY' && row.currency !== 'USD') return false
   return (
-    row.type === 'transfer' ||
+    isGameTransferRecord(row) ||
     row.type === 'consume' ||
     row.type === 'bonus' ||
     matchBillingTypeFilter(row, 'xcoin') ||

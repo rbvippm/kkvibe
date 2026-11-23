@@ -9,9 +9,10 @@ import {
   formatBillingListTime,
   formatBillingListTypeLabel,
   getBillingAmountUnit,
+  isGameTransferRecord,
   type BillingRecord,
 } from '../../constants/billingList'
-import { withMineHallFrom } from '../../constants/mineHall'
+import { isVipClubMineFrom, withMineHallFrom } from '../../constants/mineHall'
 
 defineProps<{
   row: BillingRecord
@@ -20,6 +21,11 @@ defineProps<{
 
 const route = useRoute()
 const router = useRouter()
+
+function rowTypeLabel(row: BillingRecord) {
+  if (isVipClubMineFrom(route.query.from) && isGameTransferRecord(row)) return '游戏'
+  return formatBillingListTypeLabel(row.typeLabel)
+}
 
 function highlightText(text: string, keyword?: string) {
   const q = keyword?.trim()
@@ -51,7 +57,7 @@ function openDetail(row: BillingRecord) {
     <div class="mh5-billing-item__body">
       <div class="mh5-billing-item__title">
         <template
-          v-for="(part, index) in highlightText(formatBillingListTypeLabel(row.typeLabel), highlight)"
+          v-for="(part, index) in highlightText(rowTypeLabel(row), highlight)"
           :key="`${row.id}-t-${index}`"
         >
           <mark v-if="part.match" class="mh5-billing-item__mark">{{ part.text }}</mark>

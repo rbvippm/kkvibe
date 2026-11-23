@@ -390,6 +390,11 @@ function goStats() {
 }
 
 .mh5-billing-sheet-enter-active,
+.mh5-billing-sheet-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.mh5-billing-sheet-enter-active .mh5-wallet-sheet,
 .mh5-billing-sheet-leave-active .mh5-wallet-sheet,
 .mh5-billing-sheet-enter-active .mh5-xcoin-sheet,
 .mh5-billing-sheet-leave-active .mh5-xcoin-sheet {
