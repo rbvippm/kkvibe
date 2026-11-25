@@ -16,16 +16,22 @@ import {
   formatFundAmount,
   MOCK_USER_FUND_FLOWS,
   USER_AGENT_CREDIT_CURRENCIES,
+  USER_AGENT_CREDIT_CURRENCY_OPTIONS,
+  USER_AGENT_CREDIT_TX_TYPES,
   USER_CREDIT_AGENT_GROUPS,
   USER_CREDIT_AGENT_OPTIONS,
   USER_CREDIT_TX_TYPES,
   USER_CREDIT_WALLET_OPTIONS,
+  userCreditCurrencyLabel,
+  userCreditFlowHolder,
   userCreditWalletLabel,
   USER_DETAIL_MODULE_TABS,
   USER_FUND_LEDGER_TABS,
   MOCK_USER_CREDIT_FLOWS,
   findUserCreditWallet,
+  type UserCreditCurrency,
   type UserCreditFlowRow,
+  type UserCreditHolder,
   type UserFundLedgerTab,
   USER_FUND_CURRENCIES,
   USER_FUND_FLOW_TYPE_OPTIONS,
@@ -168,7 +174,7 @@ const agentCreditRows = ref<WalletRow[]>(
   USER_AGENT_CREDIT_CURRENCIES.map((currency, index) => ({
     id: `c${index + 1}`,
     currency,
-    tradable: currency === '代理-信用额度-CNY' ? 50000 : 8000,
+    tradable: currency === '代理-信用额度-CNY' ? 50008.6 : 8012.8,
     frozen: 0,
     address: '',
   })),
@@ -382,6 +388,7 @@ const ledgerTab = ref<UserFundLedgerTab>('cash')
 type CreditLedgerFilter = {
   agentId: string
   wallet: string
+  currency: '' | UserCreditCurrency
   txTypes: string[]
   flowNo: string
   flowType: '' | UserFundFlowType
@@ -392,6 +399,7 @@ type CreditLedgerFilter = {
 const defaultCreditFilter = (): CreditLedgerFilter => ({
   agentId: '',
   wallet: '',
+  currency: '',
   txTypes: [],
   flowNo: '',
   flowType: '',
@@ -399,10 +407,21 @@ const defaultCreditFilter = (): CreditLedgerFilter => ({
   endDate: '',
 })
 
+const CREDIT_HOLDER_OPTIONS: { value: '' | UserCreditHolder; label: string }[] = [
+  { value: '', label: '全部' },
+  { value: 'member', label: '会员' },
+  { value: 'agent', label: '代理' },
+]
+
+const creditHolder = ref<'' | UserCreditHolder>('')
 const creditFilter = ref<CreditLedgerFilter>(defaultCreditFilter())
 const appliedCreditFilter = ref<CreditLedgerFilter>(defaultCreditFilter())
 const creditHint = ref('')
 const creditDetailRow = ref<UserCreditFlowRow | null>(null)
+
+const creditTxTypeOptions = computed(() =>
+  creditHolder.value === 'agent' ? USER_AGENT_CREDIT_TX_TYPES : USER_CREDIT_TX_TYPES,
+)
 
 const creditWalletChoices = computed(() =>
   creditFilter.value.agentId
@@ -433,11 +452,48 @@ function creditWalletLabel(walletKey: string) {
   return wallet ? userCreditWalletLabel(wallet) : '-'
 }
 
+function creditRowCurrencyLabel(row: UserCreditFlowRow) {
+  if (userCreditFlowHolder(row) === 'agent' && row.currency) return userCreditCurrencyLabel(row.currency)
+  const wallet = findUserCreditWallet(row.walletKey)
+  return wallet ? userCreditCurrencyLabel(wallet.currency) : '-'
+}
+
+function setCreditHolder(next: '' | UserCreditHolder) {
+  if (creditHolder.value === next) return
+  creditHolder.value = next
+  const allowed = new Set<string>(next === 'agent' ? USER_AGENT_CREDIT_TX_TYPES : USER_CREDIT_TX_TYPES)
+  const txTypes = creditFilter.value.txTypes.filter((item) => allowed.has(item))
+  if (next === 'agent') {
+    creditFilter.value = { ...creditFilter.value, agentId: '', wallet: '', txTypes }
+    appliedCreditFilter.value = {
+      ...appliedCreditFilter.value,
+      agentId: '',
+      wallet: '',
+      currency: creditFilter.value.currency,
+      txTypes: [...txTypes],
+    }
+  } else {
+    creditFilter.value = { ...creditFilter.value, currency: '', txTypes }
+    appliedCreditFilter.value = {
+      ...appliedCreditFilter.value,
+      currency: '',
+      txTypes: [...txTypes],
+    }
+  }
+  creditHint.value = ''
+}
+
 function matchCreditFlow(row: UserCreditFlowRow) {
+  if (creditHolder.value && userCreditFlowHolder(row) !== creditHolder.value) return false
   const f = appliedCreditFilter.value
   const wallet = findUserCreditWallet(row.walletKey)
-  if (f.agentId && wallet?.agentId !== f.agentId) return false
-  if (f.wallet && row.walletKey !== f.wallet) return false
+  if (creditHolder.value === 'agent') {
+    if (f.currency && row.currency !== f.currency) return false
+  } else if (f.agentId || f.wallet) {
+    if (userCreditFlowHolder(row) !== 'member') return false
+    if (f.agentId && wallet?.agentId !== f.agentId) return false
+    if (f.wallet && row.walletKey !== f.wallet) return false
+  }
   if (f.txTypes.length && !f.txTypes.includes(row.txType)) return false
   if (f.flowNo && !row.flowNo.includes(f.flowNo.trim())) return false
   if (f.flowType && row.flowType !== f.flowType) return false
@@ -452,6 +508,10 @@ const filteredCreditFlows = computed(() =>
   ),
 )
 
+const creditEmptyText = computed(() =>
+  creditHolder.value === 'agent' && !agentCreditRows.value.length ? '暂无代理信用额度' : '暂无信用资金明细',
+)
+
 function applyCreditFilter() {
   const f = creditFilter.value
   if (f.startDate && f.endDate && f.startDate > f.endDate) {
@@ -463,6 +523,7 @@ function applyCreditFilter() {
 }
 
 function resetCreditFilter() {
+  creditHolder.value = ''
   creditFilter.value = defaultCreditFilter()
   appliedCreditFilter.value = defaultCreditFilter()
   creditHint.value = ''
@@ -907,7 +968,7 @@ watch(
 
         <template v-else>
           <div class="wf-block user-detail-page__ledger-filter">
-            <div class="wf-toolbar wf-toolbar--filters">
+            <div v-if="creditHolder !== 'agent'" class="wf-toolbar wf-toolbar--filters">
               <label class="wf-label">上级代理：</label>
               <WfSearchSelect
                 v-model="creditFilter.agentId"
@@ -925,12 +986,36 @@ watch(
                 wide
               />
             </div>
+            <div v-else class="wf-toolbar wf-toolbar--filters">
+              <label class="wf-label">币种：</label>
+              <select v-model="creditFilter.currency" class="wf-input wf-input--select">
+                <option v-for="opt in USER_AGENT_CREDIT_CURRENCY_OPTIONS" :key="opt.label" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="user-detail-page__chip-row">
+              <span class="user-detail-page__chip-label">身份</span>
+              <div class="user-detail-page__chips">
+                <button
+                  v-for="opt in CREDIT_HOLDER_OPTIONS"
+                  :key="opt.label"
+                  type="button"
+                  class="user-detail-page__chip"
+                  :class="{ 'user-detail-page__chip--active': creditHolder === opt.value }"
+                  @click="setCreditHolder(opt.value)"
+                >
+                  {{ opt.label }}
+                </button>
+              </div>
+            </div>
 
             <div class="user-detail-page__chip-row">
               <span class="user-detail-page__chip-label">交易类型</span>
               <div class="user-detail-page__chips">
                 <button
-                  v-for="txType in USER_CREDIT_TX_TYPES"
+                  v-for="txType in creditTxTypeOptions"
                   :key="txType"
                   type="button"
                   class="user-detail-page__chip"
@@ -979,9 +1064,11 @@ watch(
                 <tr>
                   <th class="wf-th wf-th--no">编号</th>
                   <th class="wf-th">流水号</th>
+                  <th class="wf-th">身份</th>
                   <th class="wf-th">上分代理</th>
                   <th class="wf-th">钱包</th>
                   <th class="wf-th">钱包ID</th>
+                  <th class="wf-th">币种</th>
                   <th class="wf-th">流水类型</th>
                   <th class="wf-th">交易类型</th>
                   <th class="wf-th">交易说明</th>
@@ -994,14 +1081,16 @@ watch(
               </thead>
               <tbody>
                 <tr v-if="!filteredCreditFlows.length">
-                  <td colspan="13" class="wf-td wf-td--empty">暂无信用资金明细</td>
+                  <td colspan="15" class="wf-td wf-td--empty">{{ creditEmptyText }}</td>
                 </tr>
                 <tr v-for="(row, index) in filteredCreditFlows" :key="row.id">
                   <td class="wf-td wf-td--center">{{ index + 1 }}</td>
                   <td class="wf-td wf-td--bill">{{ row.flowNo }}</td>
-                  <td class="wf-td">{{ findUserCreditWallet(row.walletKey)?.agentName ?? '-' }}</td>
-                  <td class="wf-td">{{ creditWalletLabel(row.walletKey) }}</td>
-                  <td class="wf-td wf-td--bill">{{ findUserCreditWallet(row.walletKey)?.walletId ?? '-' }}</td>
+                  <td class="wf-td wf-td--center">{{ userCreditFlowHolder(row) === 'agent' ? '代理' : '会员' }}</td>
+                  <td class="wf-td">{{ userCreditFlowHolder(row) === 'agent' ? '-' : (findUserCreditWallet(row.walletKey)?.agentName ?? '-') }}</td>
+                  <td class="wf-td">{{ userCreditFlowHolder(row) === 'agent' ? '-' : creditWalletLabel(row.walletKey) }}</td>
+                  <td class="wf-td wf-td--bill">{{ userCreditFlowHolder(row) === 'agent' ? '-' : (findUserCreditWallet(row.walletKey)?.walletId ?? '-') }}</td>
+                  <td class="wf-td">{{ creditRowCurrencyLabel(row) }}</td>
                   <td class="wf-td wf-td--center">{{ flowTypeLabel(row.flowType) }}</td>
                   <td class="wf-td wf-td--center">{{ row.txType }}</td>
                   <td class="wf-td">{{ row.summary }}</td>
@@ -1136,16 +1225,24 @@ watch(
               <h4 class="user-detail-page__detail-section-title">钱包信息</h4>
               <div class="user-detail-page__detail-grid user-detail-page__detail-grid--3">
                 <div>
+                  <span class="user-detail-page__detail-label">身份</span>
+                  <span>{{ userCreditFlowHolder(creditDetailRow) === 'agent' ? '代理' : '会员' }}</span>
+                </div>
+                <div>
                   <span class="user-detail-page__detail-label">上分代理</span>
-                  <span>{{ findUserCreditWallet(creditDetailRow.walletKey)?.agentName ?? '-' }}</span>
+                  <span>{{ userCreditFlowHolder(creditDetailRow) === 'agent' ? '-' : (findUserCreditWallet(creditDetailRow.walletKey)?.agentName ?? '-') }}</span>
                 </div>
                 <div>
                   <span class="user-detail-page__detail-label">钱包</span>
-                  <span>{{ creditWalletLabel(creditDetailRow.walletKey) }}</span>
+                  <span>{{ userCreditFlowHolder(creditDetailRow) === 'agent' ? '-' : creditWalletLabel(creditDetailRow.walletKey) }}</span>
                 </div>
                 <div>
                   <span class="user-detail-page__detail-label">钱包ID</span>
-                  <span>{{ findUserCreditWallet(creditDetailRow.walletKey)?.walletId ?? '-' }}</span>
+                  <span>{{ userCreditFlowHolder(creditDetailRow) === 'agent' ? '-' : (findUserCreditWallet(creditDetailRow.walletKey)?.walletId ?? '-') }}</span>
+                </div>
+                <div>
+                  <span class="user-detail-page__detail-label">币种</span>
+                  <span>{{ creditRowCurrencyLabel(creditDetailRow) }}</span>
                 </div>
               </div>
             </section>

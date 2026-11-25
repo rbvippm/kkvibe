@@ -8,8 +8,8 @@ export { PRD_DIMENSION_LABELS }
 export const RECONCILIATION_FLOW_LIST_META = {
   title: '对账流水列表',
   module: '账单管理',
-  updatedAt: '2026-11-07',
-  prdVersion: 'v1.0',
+  updatedAt: '2026-11-25',
+  prdVersion: 'v1.1',
 } as const
 
 export const RECONCILIATION_FLOW_LIST_BACKGROUND = [

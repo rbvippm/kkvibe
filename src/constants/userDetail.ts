@@ -130,12 +130,35 @@ export function findUserCreditWallet(id: string) {
 /** 信用资金明细 · 交易类型（与贵宾厅账单一致） */
 export const USER_CREDIT_TX_TYPES = ['系统', '转账', '投注', '结算', '上下分'] as const
 
+/** 代理身份只有上下分和系统，没有转账 / 投注 / 结算 */
+export const USER_AGENT_CREDIT_TX_TYPES = ['上下分', '系统'] as const
+
+export const USER_AGENT_CREDIT_CURRENCY_OPTIONS: { value: '' | UserCreditCurrency; label: string }[] = [
+  { value: '', label: '全部' },
+  { value: 'CNY', label: '信用额度-CNY' },
+  { value: 'USD', label: '信用额度-USD' },
+]
+
 export type UserCreditTxType = (typeof USER_CREDIT_TX_TYPES)[number]
+export type UserCreditHolder = 'member' | 'agent'
+
+export function userCreditFlowHolder(row: { holder?: UserCreditHolder }): UserCreditHolder {
+  return row.holder ?? 'member'
+}
+
+export function userCreditCurrencyLabel(currency: UserCreditCurrency) {
+  return `信用额度-${currency}`
+}
 
 export type UserCreditFlowRow = {
   id: string
   flowNo: string
+  /** 会员流水挂信用钱包；代理流水留空 */
   walletKey: string
+  /** 缺省为会员。代理流水没有上级代理和钱包名称 */
+  holder?: UserCreditHolder
+  /** 代理流水币种；会员流水从钱包取 */
+  currency?: UserCreditCurrency
   flowType: UserFundFlowType
   txType: UserCreditTxType
   /** 交易说明，如「上下分-上分」「投注【皇者体育】」 */
@@ -284,6 +307,91 @@ export const MOCK_USER_CREDIT_FLOWS: UserCreditFlowRow[] = [
     balanceAfter: 1000,
     createdAtBackend: '2026-07-10 10:03:45',
     createdAtClient: '2026-07-10 10:03:45',
+  },
+  {
+    id: 'cf-agent-cny-up',
+    flowNo: '389910297457140101',
+    walletKey: '',
+    holder: 'agent',
+    currency: 'CNY',
+    flowType: 'income',
+    txType: '上下分',
+    summary: '上下分-上分',
+    operatorNickname: '平台',
+    operatorUserId: '10001',
+    amount: 50000,
+    balanceBefore: 0,
+    balanceAfter: 50000,
+    createdAtBackend: '2026-07-08 11:00:00',
+    createdAtClient: '2026-07-08 11:00:00',
+  },
+  {
+    id: 'cf-agent-cny-sys',
+    flowNo: '389910297457140102',
+    walletKey: '',
+    holder: 'agent',
+    currency: 'CNY',
+    flowType: 'income',
+    txType: '系统',
+    summary: '系统-信用代理退水',
+    operatorNickname: '系统',
+    operatorUserId: '10001',
+    amount: 8.6,
+    balanceBefore: 50000,
+    balanceAfter: 50008.6,
+    createdAtBackend: '2026-07-16 02:10:00',
+    createdAtClient: '2026-07-16 02:10:00',
+  },
+  {
+    id: 'cf-agent-usd-up',
+    flowNo: '389910297457140103',
+    walletKey: '',
+    holder: 'agent',
+    currency: 'USD',
+    flowType: 'income',
+    txType: '上下分',
+    summary: '上下分-上分',
+    operatorNickname: '平台',
+    operatorUserId: '10001',
+    amount: 10000,
+    balanceBefore: 0,
+    balanceAfter: 10000,
+    createdAtBackend: '2026-07-05 15:20:00',
+    createdAtClient: '2026-07-05 15:20:00',
+  },
+  {
+    id: 'cf-agent-usd-down',
+    flowNo: '389910297457140104',
+    walletKey: '',
+    holder: 'agent',
+    currency: 'USD',
+    flowType: 'expense',
+    txType: '上下分',
+    summary: '上下分-下分',
+    operatorNickname: '平台',
+    operatorUserId: '10001',
+    amount: -2000,
+    balanceBefore: 10000,
+    balanceAfter: 8000,
+    createdAtBackend: '2026-07-12 16:40:00',
+    createdAtClient: '2026-07-12 16:40:00',
+  },
+  {
+    id: 'cf-agent-usd-sys',
+    flowNo: '389910297457140105',
+    walletKey: '',
+    holder: 'agent',
+    currency: 'USD',
+    flowType: 'income',
+    txType: '系统',
+    summary: '系统-信用代理退水',
+    operatorNickname: '系统',
+    operatorUserId: '10001',
+    amount: 12.8,
+    balanceBefore: 8000,
+    balanceAfter: 8012.8,
+    createdAtBackend: '2026-07-18 01:05:00',
+    createdAtClient: '2026-07-18 01:05:00',
   },
 ]
 

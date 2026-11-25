@@ -5,14 +5,18 @@ import WfSpecAnnot from '../wireframe/WfSpecAnnot.vue'
 import {
   creditFlowWalletLabel,
   MOCK_CREDIT_FLOW_LIST,
-  USER_CREDIT_TX_TYPES,
   type CreditFlowListRow,
 } from '../../constants/creditFlowList'
 import { CREDIT_FLOW_LIST_FILTER_SPEC, CREDIT_FLOW_LIST_TABLE_SPEC } from '../../constants/creditFlowListSpec'
 import {
   flowTypeLabel,
   formatFundAmount,
+  USER_AGENT_CREDIT_CURRENCY_OPTIONS,
+  USER_AGENT_CREDIT_TX_TYPES,
+  USER_CREDIT_TX_TYPES,
   USER_FUND_FLOW_TYPE_OPTIONS,
+  type UserCreditCurrency,
+  type UserCreditHolder,
   type UserFundFlowType,
 } from '../../constants/userDetail'
 import { signedNumberClass } from '../../utils/formatSignedNumber'
@@ -26,8 +30,10 @@ const props = defineProps<{
 
 type CreditFlowFilter = {
   userId: string
+  holder: '' | UserCreditHolder
   agentId: string
   walletId: string
+  currency: '' | UserCreditCurrency
   txTypes: string[]
   flowNo: string
   flowType: UserFundFlowType | ''
@@ -39,8 +45,10 @@ const router = useRouter()
 
 const defaultFilter = (): CreditFlowFilter => ({
   userId: '',
+  holder: '',
   agentId: '',
   walletId: '',
+  currency: '',
   txTypes: [],
   flowNo: '',
   flowType: '',
@@ -59,11 +67,46 @@ function toggleChip(list: string[], value: string) {
   else list.push(value)
 }
 
+const CREDIT_HOLDER_OPTIONS: { value: '' | UserCreditHolder; label: string }[] = [
+  { value: '', label: '全部' },
+  { value: 'member', label: '会员' },
+  { value: 'agent', label: '代理' },
+]
+
+const visibleTxTypes = computed(() =>
+  filter.value.holder === 'agent' ? USER_AGENT_CREDIT_TX_TYPES : USER_CREDIT_TX_TYPES,
+)
+
+function setHolder(next: '' | UserCreditHolder) {
+  const allowed = new Set<string>(next === 'agent' ? USER_AGENT_CREDIT_TX_TYPES : USER_CREDIT_TX_TYPES)
+  filter.value.holder = next
+  filter.value.txTypes = filter.value.txTypes.filter((item) => allowed.has(item))
+  if (next === 'agent') {
+    filter.value.agentId = ''
+    filter.value.walletId = ''
+  } else {
+    filter.value.currency = ''
+  }
+  appliedFilter.value = {
+    ...appliedFilter.value,
+    holder: next,
+    agentId: next === 'agent' ? '' : appliedFilter.value.agentId,
+    walletId: next === 'agent' ? '' : appliedFilter.value.walletId,
+    currency: next === 'agent' ? filter.value.currency : '',
+    txTypes: [...filter.value.txTypes],
+  }
+}
+
 function matchFlow(row: CreditFlowListRow) {
   const f = appliedFilter.value
   if (f.userId && row.userId !== f.userId) return false
-  if (f.agentId && row.agentId !== f.agentId) return false
-  if (f.walletId && row.walletId !== f.walletId) return false
+  if (f.holder && row.holder !== f.holder) return false
+  if (f.holder === 'agent') {
+    if (f.currency && row.currency !== f.currency) return false
+  } else {
+    if (f.agentId && row.agentId !== f.agentId) return false
+    if (f.walletId && row.walletId !== f.walletId) return false
+  }
   if (f.txTypes.length && !f.txTypes.includes(row.txType)) return false
   if (f.flowNo && !row.flowNo.includes(f.flowNo)) return false
   if (f.flowType && row.flowType !== f.flowType) return false
@@ -132,29 +175,55 @@ function openUserDetail(userId: string) {
           placeholder="请输入用户ID"
           @keyup.enter="applyFilter"
         />
-        <label class="wf-label">上级代理ID：</label>
-        <input
-          v-model="filter.agentId"
-          type="text"
-          class="wf-input"
-          placeholder="请输入上级代理ID"
-          @keyup.enter="applyFilter"
-        />
-        <label class="wf-label">钱包ID：</label>
-        <input
-          v-model="filter.walletId"
-          type="text"
-          class="wf-input"
-          placeholder="请输入钱包ID"
-          @keyup.enter="applyFilter"
-        />
+        <template v-if="filter.holder !== 'agent'">
+          <label class="wf-label">上级代理ID：</label>
+          <input
+            v-model="filter.agentId"
+            type="text"
+            class="wf-input"
+            placeholder="请输入上级代理ID"
+            @keyup.enter="applyFilter"
+          />
+          <label class="wf-label">钱包ID：</label>
+          <input
+            v-model="filter.walletId"
+            type="text"
+            class="wf-input"
+            placeholder="请输入钱包ID"
+            @keyup.enter="applyFilter"
+          />
+        </template>
+        <template v-else>
+          <label class="wf-label">币种：</label>
+          <select v-model="filter.currency" class="wf-input wf-input--select">
+            <option v-for="opt in USER_AGENT_CREDIT_CURRENCY_OPTIONS" :key="opt.label" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+        </template>
+      </div>
+
+      <div class="credit-flow-list__chip-row">
+        <span class="credit-flow-list__chip-label">身份</span>
+        <div class="credit-flow-list__chips">
+          <button
+            v-for="opt in CREDIT_HOLDER_OPTIONS"
+            :key="opt.label"
+            type="button"
+            class="credit-flow-list__chip"
+            :class="{ 'credit-flow-list__chip--active': filter.holder === opt.value }"
+            @click="setHolder(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        </div>
       </div>
 
       <div class="credit-flow-list__chip-row">
         <span class="credit-flow-list__chip-label">交易类型</span>
         <div class="credit-flow-list__chips">
           <button
-            v-for="txType in USER_CREDIT_TX_TYPES"
+            v-for="txType in visibleTxTypes"
             :key="txType"
             type="button"
             class="credit-flow-list__chip"
@@ -214,6 +283,7 @@ function openUserDetail(userId: string) {
             </th>
             <th class="wf-th">用户昵称</th>
             <th class="wf-th">用户ID</th>
+            <th class="wf-th">身份</th>
             <th class="wf-th">上级代理ID</th>
             <th class="wf-th">钱包</th>
             <th class="wf-th">钱包ID</th>
@@ -229,7 +299,7 @@ function openUserDetail(userId: string) {
         </thead>
         <tbody>
           <tr v-if="!filteredFlows.length">
-            <td colspan="15" class="wf-td wf-td--empty">暂无信用流水</td>
+            <td colspan="16" class="wf-td wf-td--empty">暂无信用流水</td>
           </tr>
           <tr v-for="(row, index) in filteredFlows" :key="row.id">
             <td class="wf-td wf-td--center">{{ index + 1 }}</td>
@@ -240,6 +310,7 @@ function openUserDetail(userId: string) {
                 {{ row.userId }}
               </button>
             </td>
+            <td class="wf-td wf-td--center">{{ row.holder === 'agent' ? '代理' : '会员' }}</td>
             <td class="wf-td wf-td--bill">{{ row.agentId }}</td>
             <td class="wf-td">{{ creditFlowWalletLabel(row) }}</td>
             <td class="wf-td wf-td--bill">{{ row.walletId }}</td>
@@ -287,6 +358,10 @@ function openUserDetail(userId: string) {
                 <div>
                   <span class="credit-flow-list__detail-label">用户ID</span>
                   <span>{{ detailRow.userId }}</span>
+                </div>
+                <div>
+                  <span class="credit-flow-list__detail-label">身份</span>
+                  <span>{{ detailRow.holder === 'agent' ? '代理' : '会员' }}</span>
                 </div>
               </div>
             </section>

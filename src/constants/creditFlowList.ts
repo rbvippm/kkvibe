@@ -4,7 +4,10 @@ import {
   findUserCreditWallet,
   MOCK_USER_CREDIT_FLOWS,
   USER_CREDIT_TX_TYPES,
+  userCreditCurrencyLabel,
+  userCreditFlowHolder,
   type UserCreditCurrency,
+  type UserCreditHolder,
   type UserCreditTxType,
   type UserFundFlowType,
 } from './userDetail'
@@ -14,10 +17,11 @@ export { USER_CREDIT_TX_TYPES }
 export type CreditFlowListRow = {
   id: string
   flowNo: string
+  holder: UserCreditHolder
   userNickname: string
   userId: string
   agentName: string
-  /** 上级代理金刚号 */
+  /** 上级代理金刚号；代理身份流水为「-」 */
   agentId: string
   currency: UserCreditCurrency
   walletId: string
@@ -38,16 +42,19 @@ export type CreditFlowListRow = {
 const DETAIL_USER = { userNickname: '小红呀呀呀呀呀', userId: '7831562076704421988' }
 
 const DETAIL_USER_ROWS: CreditFlowListRow[] = MOCK_USER_CREDIT_FLOWS.map((row) => {
+  const holder = userCreditFlowHolder(row)
   const wallet = findUserCreditWallet(row.walletKey)
+  const agent = holder === 'agent'
   return {
     id: row.id,
     flowNo: row.flowNo,
+    holder,
     ...DETAIL_USER,
-    agentName: wallet?.agentName ?? '-',
-    agentId: wallet?.agentKingkongId ?? '-',
-    currency: wallet?.currency ?? 'CNY',
-    walletId: wallet?.walletId ?? '-',
-    walletName: wallet?.walletName ?? '-',
+    agentName: agent ? '-' : (wallet?.agentName ?? '-'),
+    agentId: agent ? '-' : (wallet?.agentKingkongId ?? '-'),
+    currency: agent ? (row.currency ?? 'CNY') : (wallet?.currency ?? 'CNY'),
+    walletId: agent ? '-' : (wallet?.walletId ?? '-'),
+    walletName: agent ? '' : (wallet?.walletName ?? '-'),
     flowType: row.flowType,
     txType: row.txType,
     summary: row.summary,
@@ -91,7 +98,7 @@ const DUCK = {
   walletName: '鸭子的钱包',
 }
 
-const OTHER_USER_ROWS: CreditFlowListRow[] = [
+const OTHER_USER_ROWS: Omit<CreditFlowListRow, 'holder'>[] = [
   {
     id: 'pf1',
     flowNo: '389910297457141001',
@@ -214,10 +221,82 @@ const OTHER_USER_ROWS: CreditFlowListRow[] = [
   },
 ]
 
-export const MOCK_CREDIT_FLOW_LIST: CreditFlowListRow[] = [...DETAIL_USER_ROWS, ...OTHER_USER_ROWS].sort(
-  (a, b) => b.createdAtBackend.localeCompare(a.createdAtBackend),
-)
+const OTHER_AGENT_ROWS: CreditFlowListRow[] = [
+  {
+    id: 'pa1',
+    flowNo: '389910297457142001',
+    holder: 'agent',
+    userNickname: 'EZ',
+    userId: '9054246760393162583',
+    agentName: '-',
+    agentId: '-',
+    currency: 'CNY',
+    walletId: '-',
+    walletName: '',
+    flowType: 'income',
+    txType: '上下分',
+    summary: '上下分-上分',
+    operatorNickname: '平台',
+    operatorUserId: '10001',
+    amount: 200000,
+    balanceBefore: 0,
+    balanceAfter: 200000,
+    createdAtBackend: '2026-07-07 10:12:00',
+    createdAtClient: '2026-07-07 10:12:00',
+  },
+  {
+    id: 'pa2',
+    flowNo: '389910297457142002',
+    holder: 'agent',
+    userNickname: 'EZ',
+    userId: '9054246760393162583',
+    agentName: '-',
+    agentId: '-',
+    currency: 'USD',
+    walletId: '-',
+    walletName: '',
+    flowType: 'income',
+    txType: '系统',
+    summary: '系统-信用代理退水',
+    operatorNickname: '系统',
+    operatorUserId: '10001',
+    amount: 20,
+    balanceBefore: 0,
+    balanceAfter: 20,
+    createdAtBackend: '2026-07-17 03:20:00',
+    createdAtClient: '2026-07-17 03:20:00',
+  },
+  {
+    id: 'pa3',
+    flowNo: '389910297457142003',
+    holder: 'agent',
+    userNickname: '代理 A',
+    userId: '9054246760393162002',
+    agentName: '-',
+    agentId: '-',
+    currency: 'USD',
+    walletId: '-',
+    walletName: '',
+    flowType: 'expense',
+    txType: '上下分',
+    summary: '上下分-下分',
+    operatorNickname: '平台',
+    operatorUserId: '10001',
+    amount: -500,
+    balanceBefore: 3000,
+    balanceAfter: 2500,
+    createdAtBackend: '2026-07-14 08:30:00',
+    createdAtClient: '2026-07-14 08:30:00',
+  },
+]
 
-export function creditFlowWalletLabel(row: Pick<CreditFlowListRow, 'currency' | 'walletName'>) {
+export const MOCK_CREDIT_FLOW_LIST: CreditFlowListRow[] = [
+  ...DETAIL_USER_ROWS,
+  ...OTHER_USER_ROWS.map((row) => ({ ...row, holder: 'member' as const })),
+  ...OTHER_AGENT_ROWS,
+].sort((a, b) => b.createdAtBackend.localeCompare(a.createdAtBackend))
+
+export function creditFlowWalletLabel(row: Pick<CreditFlowListRow, 'holder' | 'currency' | 'walletName'>) {
+  if (row.holder === 'agent') return userCreditCurrencyLabel(row.currency)
   return `信用额度-${row.currency}-${row.walletName}`
 }
