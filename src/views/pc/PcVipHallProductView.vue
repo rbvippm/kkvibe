@@ -4,9 +4,9 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSearchSelect from '../../components/wireframe/WfSearchSelect.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
+import { SUPER_GROUP_SELECT_OPTIONS } from '../../constants/superGroupList'
 import {
   VIP_HALL_CHANNEL_OPTIONS,
-  VIP_HALL_COMMUNITY_OPTIONS,
   VIP_HALL_CURRENCY_OPTIONS,
   VIP_HALL_LANG_OPTIONS,
   VIP_HALL_MINI_PROGRAMS,
@@ -216,7 +216,7 @@ function onFileChange(event: Event) {
 function validateForm() {
   if (!form.value.channelId) return '请选择所属渠道'
   if (!form.value.moduleId) return '请选择所属模块'
-  if (form.value.type === 'hall' && !form.value.communityId) return '请选择社群ID'
+  if (form.value.type === 'hall' && !form.value.superGroupId) return '请选择超级群ID'
   if (!form.value.currencies.length) return '请至少选择 1 个支持币种'
   if (!form.value.languages.length) return '请至少选择 1 个支持语种'
   for (const lang of form.value.languages) {
@@ -453,11 +453,11 @@ function removeRow(row: VipHallProductRow) {
             </div>
 
             <div v-if="form.moduleId && form.type === 'hall'" class="wf-form-row vhp-form-row">
-              <label class="wf-form-row__label wf-form-row__label--required">社群ID</label>
+              <label class="wf-form-row__label wf-form-row__label--required">超级群ID</label>
               <WfSearchSelect
-                v-model="form.communityId"
-                :options="VIP_HALL_COMMUNITY_OPTIONS"
-                placeholder="请选择社群ID"
+                v-model="form.superGroupId"
+                :options="SUPER_GROUP_SELECT_OPTIONS"
+                placeholder="请选择超级群ID"
                 full
                 :disabled="readonly"
               />

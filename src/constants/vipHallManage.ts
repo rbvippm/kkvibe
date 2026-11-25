@@ -50,8 +50,8 @@ export type VipHallProductRow = {
   miniProgram: string
   product: string
   suffix: string
-  /** 赌厅绑定的社群 ID；游戏类型留空 */
-  communityId: string
+  /** 赌厅绑定的超级群 ID，取值来自超级群列表；游戏类型留空 */
+  superGroupId: string
   /** 赌厅类型按语种上传的竖版跳转图；游戏类型留空 */
   jumpImages: VipHallLangImageMap
   image: VipHallAssetPair
@@ -88,18 +88,6 @@ export const VIP_HALL_FILTER_STATUS_OPTIONS = [
   { value: 'enabled', label: '启用' },
   { value: 'disabled', label: '禁用' },
 ] as const
-
-/** 赌厅可选社群。下拉按名称或社群 ID 在前端过滤 */
-export const VIP_HALL_COMMUNITY_OPTIONS: { value: string; label: string }[] = [
-  { value: '880100201', label: '品牌宣传部（880100201）' },
-  { value: '880100211', label: '金刚官方服务群（880100211）' },
-  { value: '880100337', label: '用户体验反馈群（880100337）' },
-  { value: '880100263', label: '用户投诉群（880100263）' },
-  { value: '880100040', label: '联盟彩票介绍（880100040）' },
-  { value: '880100218', label: '弹珠玩法介绍（880100218）' },
-  { value: '880100156', label: '创业策略分享（880100156）' },
-  { value: '880100089', label: '收益优化指南（880100089）' },
-]
 
 export const VIP_HALL_MINI_PROGRAMS: { value: string; label: string }[] = [
   { value: 'sports', label: '金刚体育' },
@@ -254,7 +242,7 @@ export function createEmptyProductRow(sort = 1, moduleId = ''): VipHallProductRo
     miniProgram: '',
     product: '',
     suffix: '',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: emptyAssetPair(),
     listImage: emptyAssetPair(),
@@ -352,7 +340,7 @@ export function applyProductTypeFromModule(row: VipHallProductRow, type: VipHall
     row.suffix = ''
   } else {
     row.jumpImages = {}
-    row.communityId = ''
+    row.superGroupId = ''
   }
 }
 
@@ -369,7 +357,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'sports',
     product: 'sports-board',
     suffix: '/vip-club/play/sports',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/game-sports.png', 'game-sports.png'),
     listImage: assetFrom('/images/vip-club/game-sports.png', 'game-sports.png'),
@@ -388,7 +376,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'racing',
     suffix: '/vip-club/play/lottery/racing',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-racing.png', 'card-racing.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
@@ -407,7 +395,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'boat',
     suffix: '/vip-club/play/lottery/boat',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-boat.png', 'card-boat.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
@@ -426,7 +414,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'lottery',
     product: 'ssc',
     suffix: '/vip-club/play/lottery/ssc',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/lottery/card-ssc.png', 'card-ssc.png'),
     listImage: assetFrom('/images/vip-club/game-lottery.png', 'game-lottery.png'),
@@ -445,7 +433,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'live',
     product: 'db-live',
     suffix: '/vip-club/play/live/db-live',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/vendors/db-logo.png', 'db-logo.png'),
     listImage: assetFrom('/images/vip-club/game-live.png', 'game-live.png'),
@@ -464,7 +452,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: 'slot',
     product: 'pp',
     suffix: '/vip-club/play/slot/pp',
-    communityId: '',
+    superGroupId: '',
     jumpImages: {},
     image: assetFrom('/images/vip-club/vendors/pp-logo.png', 'pp-logo.png'),
     listImage: assetFrom('/images/vip-club/game-slot.png', 'game-slot.png'),
@@ -483,7 +471,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: '',
     product: '',
     suffix: '',
-    communityId: '880100201',
+    superGroupId: '3198821044556677889',
     jumpImages: langImages('/images/vip-club/hall/macau-hero.png', 'macau-hero.png', ['zh', 'zhHant', 'en']),
     image: assetFrom('/images/vip-club/flag-macau.png', 'flag-macau.png'),
     listImage: assetFrom('/images/vip-club/game-hall.png', 'game-hall.png'),
@@ -502,7 +490,7 @@ export const MOCK_VIP_HALL_PRODUCTS: VipHallProductRow[] = [
     miniProgram: '',
     product: '',
     suffix: '',
-    communityId: '880100211',
+    superGroupId: '2662058052844112809',
     jumpImages: langImages('/images/vip-club/hall/singapore-hero.png', 'singapore-hero.png', ['zh', 'zhHant']),
     image: assetFrom('/images/vip-club/flag-singapore.png', 'flag-singapore.png'),
     listImage: assetFrom('/images/vip-club/game-hall.png', 'game-hall.png'),

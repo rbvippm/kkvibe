@@ -5,6 +5,7 @@ import WfPagePathMenu from '../../components/wireframe/WfPagePathMenu.vue'
 import WfSpecAnnot from '../../components/wireframe/WfSpecAnnot.vue'
 import { showPcToast } from '../../composables/usePcToast'
 import { anchorGameName } from '../../constants/gameProduct'
+import { SUPER_GROUP_LIST } from '../../constants/superGroupList'
 import { SUPER_GROUP_ANNOT_MAP } from '../../constants/superGroupSpec'
 import '../../styles/pc-wireframe.css'
 
@@ -149,8 +150,8 @@ const filter = ref({
 const sourceRows = ref<SuperGroupRow[]>([
   {
     id: 1,
-    name: 'You',
-    groupId: '2662058052844112809',
+    name: SUPER_GROUP_LIST[0].name,
+    groupId: SUPER_GROUP_LIST[0].groupId,
     memberCount: 1,
     ownerName: 'Hj888',
     ownerId: '4710359942108371055',
@@ -171,8 +172,8 @@ const sourceRows = ref<SuperGroupRow[]>([
   },
   {
     id: 2,
-    name: "I'll",
-    groupId: '2825734960101539870',
+    name: SUPER_GROUP_LIST[1].name,
+    groupId: SUPER_GROUP_LIST[1].groupId,
     memberCount: 1,
     ownerName: 'Feature1',
     ownerId: '4179787047017586694',
@@ -202,8 +203,8 @@ const sourceRows = ref<SuperGroupRow[]>([
   },
   {
     id: 3,
-    name: 'H5测试',
-    groupId: '2823314448703320074',
+    name: SUPER_GROUP_LIST[2].name,
+    groupId: SUPER_GROUP_LIST[2].groupId,
     memberCount: 2,
     ownerName: '1bb8883333',
     ownerId: '3485197927430602751',
@@ -226,8 +227,8 @@ const sourceRows = ref<SuperGroupRow[]>([
   },
   {
     id: 4,
-    name: '889',
-    groupId: '3485197927430602751',
+    name: SUPER_GROUP_LIST[3].name,
+    groupId: SUPER_GROUP_LIST[3].groupId,
     memberCount: 2,
     ownerName: 'Feature1',
     ownerId: '4179787047017586694',
@@ -247,8 +248,8 @@ const sourceRows = ref<SuperGroupRow[]>([
   },
   {
     id: 5,
-    name: '直播粉丝群',
-    groupId: '3198821044556677889',
+    name: SUPER_GROUP_LIST[4].name,
+    groupId: SUPER_GROUP_LIST[4].groupId,
     memberCount: 128,
     ownerName: 'dx01',
     ownerId: '3180664521199420635',
@@ -269,8 +270,8 @@ const sourceRows = ref<SuperGroupRow[]>([
   },
   {
     id: 6,
-    name: '活动通知群',
-    groupId: '3198821044556677890',
+    name: SUPER_GROUP_LIST[5].name,
+    groupId: SUPER_GROUP_LIST[5].groupId,
     memberCount: 56,
     ownerName: 'wade',
     ownerId: '3180664521199420636',
